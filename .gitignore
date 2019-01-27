@@ -1,0 +1,15 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+.vs
+Debug/
+Release/
+__vm
+obj/
+Temp/
+*.csproj
+*.sln
+*.userprefs
+Build/
+_build/
+Library/
+Build.app/
+*.xcappdata

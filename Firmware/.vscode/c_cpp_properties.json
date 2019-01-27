@@ -1,0 +1,59 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/src",
+                "C:/nRF5_SDK",
+                "C:/nRF5_SDK/components/libraries/delay",
+                "C:/nRF5_SDK/modules/nrfx",
+                "C:/nRF5_SDK/modules/nrfx/templates/nRF52832",
+                "C:/nRF5_SDK/modules/nrfx/mdk",
+                "C:/nRF5_SDK/modules/nrfx/templates",
+                "C:/nRF5_SDK/components/boards",
+                "C:/nRF5_SDK/modules/nrfx/hal",
+                "C:/nRF5_SDK/components/libraries/util",
+                "C:/nRF5_SDK/components/libraries/log",
+                "${workspaceFolder}/pca10040/blank",
+                "C:/nRF5_SDK/components/drivers_nrf/nrf_soc_nosd",
+                "C:/nRF5_SDK/components/libraries/experimental_section_vars",
+                "C:/nRF5_SDK/components/libraries/log/src",
+                "C:/nRF5_SDK/external/segger_rtt",
+                "${workspaceFolder}/src_toconvert",
+                "C:/Projects/Dice4/Adafruit_nRF52_Arduino/cores/nRF5",
+                "C:/nRF5_SDK/external/freertos/source/include",
+                "C:/nRF5_SDK/examples/ble_peripheral/ble_app_hrs_freertos/config",
+                "C:/nRF5_SDK/external/freertos/portable/GCC/nrf52",
+                "C:/nRF5_SDK/external/freertos/portable/CMSIS/nrf52"
+            ],
+            "defines": [
+                "ARDUINO",
+                "ARDUINO_NRF52_ADAFRUIT",
+                "NRF52_SERIES",
+                "BOARD_CUSTOM",
+                "BSP_DEFINES_ONLY",
+                "CONFIG_GPIO_AS_PINRESET",
+                "FLOAT_ABI_SOFT",
+                "NRF52810_XXAA",
+                "NRF_SD_BLE_API_VERSION",
+                "S112",
+                "SOFTDEVICE_PRESENT",
+                "_CONSOLE",
+                "RGB_LED"
+            ],
+            "intelliSenseMode": "gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "C:/nRF5_SDK"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

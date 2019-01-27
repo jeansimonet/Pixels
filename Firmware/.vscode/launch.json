@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "JLink RTT Client",
+            "preLaunchTask": "JLink RTT Client",
+            "type": null,
+        },
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "_build/firmware.out",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "nRF52810_xxAA",
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": "801001366",
+            "armToolchainPath": "C:/Program Files (x86)/GNU Tools Arm Embedded/7 2018-q2-update/bin",
+        },
+    ],
+    "compounds" : [
+        {
+            "name" : "Debug",
+            "configurations": ["JLink RTT Client", "Cortex Debug"]
+        }
+    ]
+}

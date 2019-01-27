@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}",
+                "C:/nRF5_SDK",
+                "C:/nRF5_SDK/components/libraries/delay",
+                "C:/nRF5_SDK/modules/nrfx",
+                "C:/nRF5_SDK/modules/nrfx/templates/nRF52832",
+                "C:/nRF5_SDK/modules/nrfx/mdk",
+                "C:/nRF5_SDK/modules/nrfx/templates",
+                "C:/nRF5_SDK/components/boards",
+                "C:/nRF5_SDK/modules/nrfx/hal",
+                "C:/nRF5_SDK/components/libraries/util",
+                "C:/nRF5_SDK/components/libraries/log",
+                "${workspaceFolder}/pca10040/blank",
+                "C:/nRF5_SDK/components/drivers_nrf/nrf_soc_nosd",
+                "C:/nRF5_SDK/components/libraries/experimental_section_vars",
+                "C:/nRF5_SDK/components/libraries/log/src",
+                "C:/nRF5_SDK/external/segger_rtt"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "C:/nRF5_SDK"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

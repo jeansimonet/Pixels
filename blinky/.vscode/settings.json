@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "boards.h": "c",
+        "custom_board.h": "c",
+        "nrf_delay.h": "c",
+        "nrfx.h": "c",
+        "nrfx_common.h": "c",
+        "nrf_log.h": "c",
+        "nrf_log_default_backends.h": "c"
+    },
+}
