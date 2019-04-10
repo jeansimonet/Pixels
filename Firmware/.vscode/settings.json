@@ -6,6 +6,21 @@
         "nrfx.h": "c",
         "nrfx_common.h": "c",
         "nrf_log.h": "c",
-        "nrf_log_default_backends.h": "c"
+        "nrf_log_default_backends.h": "c",
+        "nrf_section.h": "c",
+        "nrf_log_internal.h": "c",
+        "nrf_log_backend_rtt.h": "c",
+        "nrfx_gpiote.h": "c",
+        "led_softblink.h": "c",
+        "cstdint": "cpp",
+        "istream": "cpp",
+        "optional": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "cmath": "cpp",
+        "nrf_atfifo.h": "c",
+        "nrf_fstorage.h": "c",
+        "nrf_dfu_ble_svci_bond_sharing.h": "c"
     },
 }

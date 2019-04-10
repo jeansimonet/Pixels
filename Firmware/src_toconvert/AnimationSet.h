@@ -3,7 +3,6 @@
 #ifndef _ANIMATIONSET_h
 #define _ANIMATIONSET_h
 
-#include "arduino.h"
 #include "Animation.h"
 #include "BulkDataTransfer.h"
 

@@ -47,32 +47,26 @@ extern "C" {
 #include "nrf_gpio.h"
 
 // LEDs definitions for PCA10040
-#define LEDS_NUMBER    1
+#define LEDS_NUMBER    0
 
 #define LED_START      7
-#define LED_1          7
 #define LED_STOP       7
 
 #define LEDS_ACTIVE_STATE 0
 
 #define LEDS_INV_MASK  LEDS_MASK
 
-#define LEDS_LIST { LED_1 }
+#define LEDS_LIST {  }
 
-#define BSP_LED_0      LED_1
-
-#define BUTTONS_NUMBER 1
+#define BUTTONS_NUMBER 0
 
 #define BUTTON_START   6
-#define BUTTON_1       6
 #define BUTTON_STOP    6
 #define BUTTON_PULL    NRF_GPIO_PIN_PULLUP
 
 #define BUTTONS_ACTIVE_STATE 0
 
-#define BUTTONS_LIST { BUTTON_1 }
-
-#define BSP_BUTTON_0   BUTTON_1
+#define BUTTONS_LIST {  }
 
 #define RX_PIN_NUMBER  8
 #define TX_PIN_NUMBER  6
@@ -156,11 +150,6 @@ extern "C" {
 #define ARDUINO_A3_PIN              29    // Analog channel 3
 #define ARDUINO_A4_PIN              30    // Analog channel 4
 #define ARDUINO_A5_PIN              31    // Analog channel 5
-
-#define NRF_CLOCK_LFCLKSRC      {.source        = NRF_CLOCK_LF_SRC_SYNTH, \
-                                 .rc_ctiv       = 16,                     \
-                                 .rc_temp_ctiv  = 4,                      \
-                                 .xtal_accuracy = 0}
 
 #ifdef __cplusplus
 }

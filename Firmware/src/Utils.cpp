@@ -1,4 +1,6 @@
 #include "Utils.h"
+#include <nrf_delay.h>
+#include <app_timer.h>
 
 /// <summary>
 /// Parses the first word out of a string (typically a command or parameter)
@@ -35,5 +37,11 @@ int Core::parseWord(char*& text, int& len, char* outWord, int outWordLen)
 	return wordLen;
 }
 
+#define APP_TIMER_MS(TICKS) ((uint32_t)ROUNDED_DIV((TICKS) * 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1), (uint64_t)APP_TIMER_CLOCK_FREQ))
 
+uint32_t Core::millis( void )
+{
+	auto ticks = app_timer_cnt_get();
+	return APP_TIMER_MS(ticks);
+}
 

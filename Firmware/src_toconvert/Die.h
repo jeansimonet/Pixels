@@ -4,12 +4,12 @@
 #define _DIE_h
 
 #include "Arduino.h"
-#include "BluetoothMessage.h"
-#include "AccelController.h"
-#include "AnimController.h"
-#include "Settings.h"
-#include "IStateEstimator.h"
-#include "AnimationSet.h"
+ #include "BluetoothMessage.h"
+// #include "AccelController.h"
+// #include "AnimController.h"
+// #include "Settings.h"
+// #include "IStateEstimator.h"
+// #include "AnimationSet.h"
 #include "DelegateArray.h"
 
 #define UPDATE_MAX_COUNT 8
@@ -24,8 +24,8 @@ class Die
 {
 private:
 	int currentFace;
-	StateEstimate currentState;
-	IStateEstimator* stateEstimators[DieState_Count];
+	// StateEstimate currentState;
+	// IStateEstimator* stateEstimators[DieState_Count];
 
 	// Our bluetooth message handlers
 	typedef void (*DieMessageHandler)(void* token, DieMessage* message);
@@ -41,10 +41,10 @@ private:
 	typedef void(*DieUpdateHandler)(void* token);
 	DelegateArray<DieUpdateHandler, UPDATE_MAX_COUNT> updateHandlers;
 
-	SendAnimSetSM sendAnimSetSM;
-	ReceiveAnimSetSM receiveAnimSetSM;
-	SendSettingsSM sendSettingsSM;
-	ReceiveSettingsSM receiveSettingsSM;
+	// SendAnimSetSM sendAnimSetSM;
+	// ReceiveAnimSetSM receiveAnimSetSM;
+	// SendSettingsSM sendSettingsSM;
+	// ReceiveSettingsSM receiveSettingsSM;
 
 public:
 	Die();

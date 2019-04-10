@@ -2,8 +2,6 @@
 #ifndef __QUEUE__
 #define __QUEUE__
 
-#include <Arduino.h>
-
 namespace Core
 {
 	/// <summary>

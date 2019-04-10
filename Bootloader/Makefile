@@ -54,13 +54,13 @@ SRC_FILES += \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_app_start.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_app_start_final.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_dfu_timers.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_fw_activation.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_info.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_wdt.c \
+  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader.c \
+  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_dfu_timers.c \
   $(SDK_ROOT)/external/nano-pb/pb_common.c \
   $(SDK_ROOT)/external/nano-pb/pb_decode.c \
   $(SDK_ROOT)/components/libraries/crypto/backend/nrf_sw/nrf_sw_backend_hash.c \
@@ -81,13 +81,6 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_chacha_poly_aead.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_ecc.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_ecdh.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_ecdsa.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_eddsa.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_hash.c \
-  $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_hmac.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -148,7 +141,7 @@ LIB_FILES += \
 # Optimization flags
 OPT = -Os -g3
 # Uncomment the line below to enable link time optimization
-#OPT += -flto
+OPT += -flto
 
 # C flags common to all targets
 CFLAGS += $(OPT)
@@ -156,10 +149,8 @@ CFLAGS += -DBLE_STACK_SUPPORT_REQD
 CFLAGS += -DBOARD_CUSTOM
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DDEBUG_NRF
-#CFLAGS += -DDEVELOP_IN_NRF52832
 CFLAGS += -DFLOAT_ABI_SOFT
 CFLAGS += -DNRF52810_XXAA
-#CFLAGS += -DNRF52_PAN_74
 CFLAGS += -DNRF_DFU_DEBUG_VERSION
 CFLAGS += -DNRF_DFU_SETTINGS_VERSION=1
 CFLAGS += -DNRF_DFU_SVCI_ENABLED
@@ -179,6 +170,8 @@ CFLAGS += -mfloat-abi=soft
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin -fshort-enums -flto
+CFLAGS += -DDEVELOP_IN_NRF52832
+CFLAGS += -DNRF52_PAN_74
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
@@ -192,10 +185,8 @@ ASMFLAGS += -DBLE_STACK_SUPPORT_REQD
 ASMFLAGS += -DBOARD_CUSTOM
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
 ASMFLAGS += -DDEBUG_NRF
-#ASMFLAGS += -DDEVELOP_IN_NRF52832
 ASMFLAGS += -DFLOAT_ABI_SOFT
 ASMFLAGS += -DNRF52810_XXAA
-#ASMFLAGS += -DNRF52_PAN_74
 ASMFLAGS += -DNRF_DFU_DEBUG_VERSION
 ASMFLAGS += -DNRF_DFU_SETTINGS_VERSION=1
 ASMFLAGS += -DNRF_DFU_SVCI_ENABLED
@@ -208,6 +199,8 @@ ASMFLAGS += -DuECC_OPTIMIZATION_LEVEL=3
 ASMFLAGS += -DuECC_SQUARE_FUNC=0
 ASMFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
 ASMFLAGS += -DuECC_VLI_NATIVE_LITTLE_ENDIAN=1
+ASMFLAGS += -DDEVELOP_IN_NRF52832
+ASMFLAGS += -DNRF52_PAN_74
 
 # Linker flags
 LDFLAGS += $(OPT)
@@ -241,7 +234,7 @@ help:
 
 TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
-
+ 
 include $(TEMPLATE_PATH)/Makefile.common
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
@@ -263,9 +256,7 @@ flash_softdevice:
 erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
-SDK_CONFIG_FILE := ../config/sdk_config.h
-CMSIS_CONFIG_TOOL := $(SDK_ROOT)/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
-sdk_config:
-	java -jar $(CMSIS_CONFIG_TOOL) $(SDK_CONFIG_FILE)
-
 reflash:  erase  flash  flash_softdevice
+
+reset:
+	nrfjprog -f nrf52 -s 801001366 --reset

@@ -1,7 +1,6 @@
 #ifndef _SLEEPMONITOR_h
 #define _SLEEPMONITOR_h
 
-#include "Arduino.h"
 #include "AccelController.h"
 
 namespace Systems

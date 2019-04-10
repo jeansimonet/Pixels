@@ -7,6 +7,10 @@
         "nrfx_common.h": "c",
         "nrf_log.h": "c",
         "nrf_log_default_backends.h": "c",
-        "nrf_bootloader.h": "c"
+        "nrf_bootloader.h": "c",
+        "nrf_bootloader_app_start.h": "c",
+        "nrf_strerror.h": "c",
+        "stdint.h": "c",
+        "nrf_dfu_utils.h": "c"
     },
 }

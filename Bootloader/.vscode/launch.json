@@ -20,6 +20,7 @@
             "interface": "swd",
             "ipAddress": null,
             "serialNumber": "801001366",
+            "stopOnEntry": false,
             "armToolchainPath": "C:/Program Files (x86)/GNU Tools Arm Embedded/7 2018-q2-update/bin",
         },
     ],
