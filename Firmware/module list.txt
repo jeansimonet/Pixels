@@ -1,0 +1,58 @@
+Drivers_nrf:
+- LOG
+- I2C
+- Power Manager
+- Watchdog
+- Flash
+
+Drivers_hw
+- DotStar
+- Battery
+- Magnet
+- Board
+- Accelerometer
+
+Modules:
+- LEDs
+- Accelerometer
+- Battery Manager
+- Magnet Manager
+- Animation Controller
+
+Config:
+- SDK Config
+- Board Config
+- Flash Settings
+
+Animations
+- Animation
+- Animation Set
+
+Bluetooth
+- BLE Stack
+- GAP
+- GATT
+- Connection params
+- Advertising
+- Peer manager
+- QWR
+
+BLE Services:
+- DFU service
+- Generic Read/Write service
+- Battery level service
+- Telemetry service
+- DebugLog service
+
+BLE Messages:
+- BLE Messages
+
+Utils:
+- Bulk Transfer
+- Utils
+- Rainbow
+
+
+- Assert handler
+
+

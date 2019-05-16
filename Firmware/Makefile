@@ -80,18 +80,24 @@ SRC_FILES += \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power_clock.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/prs/nrfx_prs.c \
-	$(PROJ_DIR)/src/main.cpp \
-	$(PROJ_DIR)/src/AccelController.cpp \
-	$(PROJ_DIR)/src/Accelerometer.cpp \
-	$(PROJ_DIR)/src/Adafruit_DotStar.cpp \
-	$(PROJ_DIR)/src/Animation.cpp \
-	$(PROJ_DIR)/src/AnimController.cpp \
-	$(PROJ_DIR)/src/APA102LEDs.cpp \
-	$(PROJ_DIR)/src/BluetoothMessage.cpp \
-	$(PROJ_DIR)/src/I2C.cpp \
-	$(PROJ_DIR)/src/LEDs.cpp \
-	$(PROJ_DIR)/src/Rainbow.cpp \
-	$(PROJ_DIR)/src/Utils.cpp \
+	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_wdt.c \
+	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_wdt.c \
+	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_saadc.c \
+	$(PROJ_DIR)/src/die.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/watchdog.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/log.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/timers.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/dfu.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/power_manager.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/i2c.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/a2d.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/flash.cpp \
+	$(PROJ_DIR)/src/config/board_config.cpp \
+	$(PROJ_DIR)/src/config/settings.cpp \
+	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
+	$(PROJ_DIR)/src/drivers_hw/lis2de12.cpp \
+	$(PROJ_DIR)/src/drivers_hw/battery.cpp \
+	$(PROJ_DIR)/src/drivers_hw/magnet.cpp \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_database.c \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_id.c \
@@ -109,7 +115,7 @@ SRC_FILES += \
 INC_FOLDERS += \
 	$(PROJ_DIR) \
 	$(PROJ_DIR)/src \
-	$(PROJ_DIR)/src_toconvert \
+	$(PROJ_DIR)/src/config \
 	$(SDK_ROOT) \
 	$(SDK_ROOT)/modules/nrfx \
 	$(SDK_ROOT)/modules/nrfx/hal \
@@ -181,7 +187,7 @@ LIB_FILES += \
 OPT = -Os -g3
 #OPT = -O0 -g3
 # Uncomment the line below to enable link time optimization
-OPT += -flto
+#OPT += -flto
 
 # C flags common to all targets
 CFLAGS += $(OPT)
@@ -207,8 +213,8 @@ CFLAGS += -mfloat-abi=soft
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin -fshort-enums
-CFLAGS += -DDEVELOP_IN_NRF52832
-CFLAGS += -DNRF52_PAN_74
+# CFLAGS += -DDEVELOP_IN_NRF52832
+# CFLAGS += -DNRF52_PAN_74
 
 # Debug
 #CFLAGS += -DDEBUG
@@ -239,8 +245,8 @@ ASMFLAGS += -DSOFTDEVICE_PRESENT
 ASMFLAGS += -DSWI_DISABLE0
 ASMFLAGS += -DRGB_LED
 ASMFLAGS += -D_CONSOLE
-ASMFLAGS += -DDEVELOP_IN_NRF52832
-ASMFLAGS += -DNRF52_PAN_74
+# ASMFLAGS += -DDEVELOP_IN_NRF52832
+# ASMFLAGS += -DNRF52_PAN_74
 
 # Linker flags
 LDFLAGS += $(OPT)

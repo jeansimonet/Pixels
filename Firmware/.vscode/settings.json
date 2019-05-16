@@ -21,6 +21,13 @@
         "cmath": "cpp",
         "nrf_atfifo.h": "c",
         "nrf_fstorage.h": "c",
-        "nrf_dfu_ble_svci_bond_sharing.h": "c"
+        "nrf_dfu_ble_svci_bond_sharing.h": "c",
+        "*.tcc": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "initializer_list": "cpp",
+        "string_view": "cpp"
     },
 }

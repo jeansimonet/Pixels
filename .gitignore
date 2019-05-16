@@ -13,3 +13,6 @@ _build/
 Library/
 Build.app/
 *.xcappdata
+*.ipch
+Firmware/.vscode/ipch/
+Bootloader/.vscode/ipch/

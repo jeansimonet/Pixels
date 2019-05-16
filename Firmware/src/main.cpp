@@ -33,11 +33,16 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "nrf_gpio.h"
+#include "nrf_delay.h"
 
 #include "ble_lbs.h"
 
 #include "I2C.h"
 #include "Accelerometer.h"
+#include "Utils.h"
+#include "APA102Leds.h"
+#include "Watchdog.h"
 
 using namespace Systems;
 using namespace Devices;
@@ -79,6 +84,12 @@ BLE_ADVERTISING_DEF(m_advertising);                                             
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 static void advertising_start(bool erase_bonds);
+
+APP_TIMER_DEF(m_leds_timer_id);
+APP_TIMER_DEF(m_ledsoff_timer_id);
+uint32_t m_leds_color;
+
+
 
 /* YOUR_JOB: Declare all services structure your application is using
  *  BLE_XYZ_DEF(m_xyz);
@@ -207,6 +218,24 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 }
 
 
+void leds_update(void* context)
+{
+    leds.setAll(m_leds_color);
+    m_leds_color += 5;
+}
+
+void leds_off(void* context)
+{
+    #define POWERPIN	9
+    nrf_gpio_cfg_output(POWERPIN);
+    nrf_gpio_pin_clear(POWERPIN);
+
+    app_timer_stop(m_leds_timer_id);
+
+    accelerometer.read();
+    NRF_LOG_INFO("%d %d %d", accelerometer.x, accelerometer.y, accelerometer.z);
+}
+
 /**@brief Function for the Timer initialization.
  *
  * @details Initializes the timer module. This creates and starts application timers.
@@ -218,14 +247,11 @@ static void timers_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Create timers.
+    err_code = app_timer_create(&m_leds_timer_id, APP_TIMER_MODE_REPEATED, leds_update);
+    APP_ERROR_CHECK(err_code);
 
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       ret_code_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
+    err_code = app_timer_create(&m_ledsoff_timer_id, APP_TIMER_MODE_SINGLE_SHOT, leds_off);
+    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -422,11 +448,12 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
-    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
-       ret_code_t err_code;
-       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-       APP_ERROR_CHECK(err_code); */
+    ret_code_t err_code;
+    err_code = app_timer_start(m_leds_timer_id, APP_TIMER_TICKS(10), NULL);
+    APP_ERROR_CHECK(err_code);
 
+    err_code = app_timer_start(m_ledsoff_timer_id, APP_TIMER_TICKS(3000), NULL);
+    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -702,6 +729,12 @@ static void advertising_start(bool erase_bonds)
  */
 int main(void)
 {
+    // leds.init();
+    // nrf_delay_ms(50);
+    // leds.setAll(Core::toColor(0, 0, 255));
+
+    watchdog.init();
+
     // Initialize.
     log_init();
 
@@ -719,21 +752,34 @@ int main(void)
     conn_params_init();
     peer_manager_init();
 
-    // wire.begin();
-	// accelerometer.init();
-    // accelerometer.setODR(ODR_PWR_DWN);
-	// accelerometer.standby();
+    wire.begin();
+	accelerometer.init();
+    accelerometer.setODR(ODR_PWR_DWN);
+	accelerometer.standby();
 
     // Start execution.
     NRF_LOG_INFO("Template example started.");
-    application_timers_start();
+    //application_timers_start();
 
     advertising_start(true);
 
+//    #define POWERPIN	9
+//   	nrf_gpio_cfg_output(POWERPIN);
+//   	nrf_gpio_pin_set(POWERPIN);
+    //leds.setAll(Core::toColor(0, 255, 0));
+
+    //leds.setLED(4, 0, );
+ 
     // Enter main loop.
+    m_leds_color = 0;
     for (;;)
     {
         idle_state_handle();
+  	    // nrf_gpio_pin_set(POWERPIN);
+        // NRF_LOG_INFO("loop");
+        //leds.setAll(Core::toColor(0, 255, 255));
+        //leds.setAll(Core::toColor(0, 0, 255));
+        watchdog.feed();
     }
 }
 

@@ -170,8 +170,8 @@ CFLAGS += -mfloat-abi=soft
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin -fshort-enums -flto
-CFLAGS += -DDEVELOP_IN_NRF52832
-CFLAGS += -DNRF52_PAN_74
+# CFLAGS += -DDEVELOP_IN_NRF52832
+# CFLAGS += -DNRF52_PAN_74
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
@@ -199,8 +199,8 @@ ASMFLAGS += -DuECC_OPTIMIZATION_LEVEL=3
 ASMFLAGS += -DuECC_SQUARE_FUNC=0
 ASMFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
 ASMFLAGS += -DuECC_VLI_NATIVE_LITTLE_ENDIAN=1
-ASMFLAGS += -DDEVELOP_IN_NRF52832
-ASMFLAGS += -DNRF52_PAN_74
+# ASMFLAGS += -DDEVELOP_IN_NRF52832
+# ASMFLAGS += -DNRF52_PAN_74
 
 # Linker flags
 LDFLAGS += $(OPT)
