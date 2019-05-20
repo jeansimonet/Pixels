@@ -28,6 +28,15 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "nrf_sdh.h": "c",
+        "nrf_sdh_soc.h": "c",
+        "nrf_soc.h": "c",
+        "nrf_section_iter.h": "c",
+        "nrf.h": "c",
+        "nrf_error.h": "c",
+        "nrf_log_backend_uart.h": "c",
+        "nrf_drv_uart.h": "c",
+        "nrfx_config.h": "c"
     },
 }

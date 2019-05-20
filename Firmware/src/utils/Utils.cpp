@@ -1,4 +1,4 @@
-#include "Utils.h"
+#include "utils.h"
 #include <nrf_delay.h>
 #include <app_timer.h>
 
@@ -10,7 +10,7 @@
 /// <param name="outWord">The return string buffer</param>
 /// <param name="outWordLen">The max length of the return string buffer</param>
 /// <returns>The length of the found word, otherwise 0</returns>
-int Core::parseWord(char*& text, int& len, char* outWord, int outWordLen)
+int Utils::parseWord(char*& text, int& len, char* outWord, int outWordLen)
 {
 	while (len > 0&& (*text == ' ' || *text == '\t'))
 	{
@@ -39,7 +39,7 @@ int Core::parseWord(char*& text, int& len, char* outWord, int outWordLen)
 
 #define APP_TIMER_MS(TICKS) ((uint32_t)ROUNDED_DIV((TICKS) * 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1), (uint64_t)APP_TIMER_CLOCK_FREQ))
 
-uint32_t Core::millis( void )
+uint32_t Utils::millis( void )
 {
 	auto ticks = app_timer_cnt_get();
 	return APP_TIMER_MS(ticks);

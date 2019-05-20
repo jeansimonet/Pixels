@@ -17,6 +17,11 @@ namespace Timers
         err_code = app_timer_init();
         APP_ERROR_CHECK(err_code);
 
+        nrf_drv_clock_lfclk_request(NULL);
+        
+        // Wait for the clock to be ready.
+        while (!nrf_clock_lf_is_running()) {;}
+
         NRF_LOG_INFO("App Timers initialized");
 
         #if DICE_SELFTEST && TIMERS_SELFTEST
@@ -30,7 +35,6 @@ namespace Timers
     }
 
     void startTimer(app_timer_id_t timer_id, uint32_t timeout_ms, void * p_context) {
-        nrf_drv_clock_lfclk_request(NULL);
         ret_code_t err_code = app_timer_start(timer_id, APP_TIMER_TICKS(timeout_ms), p_context);
         APP_ERROR_CHECK(err_code);
     }
@@ -97,6 +101,7 @@ namespace Timers
             Log::process();
             PowerManager::update();
         }
+		Log::getKey();
         NRF_LOG_INFO("Stopping timer!");
         stopTimer(ticTocTimer);
         stopTimer(fastTimer);

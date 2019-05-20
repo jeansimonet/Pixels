@@ -23,7 +23,7 @@
 // <i> in certain cases if backend has high latency and holds
 // <i> multiple messages for long time. Bigger value impacts
 // <i> RAM memory usage.
-#define NRF_LOG_MSGPOOL_ELEMENT_COUNT 8
+#define NRF_LOG_MSGPOOL_ELEMENT_COUNT 16
 
 // <q> NRF_LOG_ALLOW_OVERFLOW  - Configures behavior when circular buffer is full.
 // <i> If set then oldest logs are overwritten. Otherwise a 
@@ -34,7 +34,7 @@
 // <i> Must be power of 2 and multiple of 4.
 // <i> If NRF_LOG_DEFERRED = 0 then buffer size can be reduced to minimum.
 // <128=> 128 -> <16384=> 16384
-#define NRF_LOG_BUFSIZE 1024
+#define NRF_LOG_BUFSIZE 4096
 
 // <q> NRF_LOG_CLI_CMDS  - Enable CLI commands for the module.
 #define NRF_LOG_CLI_CMDS 0
@@ -45,7 +45,7 @@
 // <2=> Warning 
 // <3=> Info 
 // <4=> Debug 
-#define NRF_LOG_DEFAULT_LEVEL 4
+#define NRF_LOG_DEFAULT_LEVEL 3
 
 // <q> NRF_LOG_DEFERRED  - Enable deffered logger.
 // <i> Log data is buffered and can be processed in idle.
@@ -56,7 +56,7 @@
 
 // <o> NRF_LOG_STR_PUSH_BUFFER_SIZE  - Size of the buffer dedicated for strings stored using @ref NRF_LOG_PUSH.
 // <16=> 16 -> <1024=> 1024 
-#define NRF_LOG_STR_PUSH_BUFFER_SIZE 128
+#define NRF_LOG_STR_PUSH_BUFFER_SIZE 512
 
 // <e> NRF_LOG_USES_COLORS - If enabled then ANSI escape code for colors is prefixed to every string
 #define NRF_LOG_USES_COLORS 0
@@ -76,40 +76,74 @@
 #define NRF_LOG_STR_FORMATTER_TIMESTAMP_FORMAT_ENABLED 0
 
 
-//==========================================================
-// nrf_log_backend_rtt - Log RTT backend
-//==========================================================
-// <e> NRF_LOG_BACKEND_RTT_ENABLED - nrf_log_backend_rtt - Log RTT backend
-#define NRF_LOG_BACKEND_RTT_ENABLED 1
+#define NRF_LOG_BACKEND_UART_ENABLED 1
 
-// <o> NRF_LOG_BACKEND_RTT_TEMP_BUFFER_SIZE - Size of buffer for partially processed strings. 
-// <i> Size of the buffer is a trade-off between RAM usage and processing.
-// <i> if buffer is smaller then strings will often be fragmented.
-// <i> It is recommended to use size which will fit typical log and only the
-// <i> longer one will be fragmented.
-#define NRF_LOG_BACKEND_RTT_TEMP_BUFFER_SIZE 64
+#define NRF_LOG_BACKEND_UART_TX_PIN 20
+ 
+#define NRF_LOG_BACKEND_UART_BAUDRATE 30801920
+ 
+#define NRF_LOG_BACKEND_UART_TEMP_BUFFER_SIZE 512
 
-// <o> NRF_LOG_BACKEND_RTT_TX_RETRY_DELAY_MS - Period before retrying writing to RTT 
-#define NRF_LOG_BACKEND_RTT_TX_RETRY_DELAY_MS 1
+// //==========================================================
+// // <h> nRF_Segger_RTT 
+// //==========================================================
 
-// <o> NRF_LOG_BACKEND_RTT_TX_RETRY_CNT - Writing to RTT retries. 
-// <i> If RTT fails to accept any new data after retries
-// <i> module assumes that host is not active and on next
-// <i> request it will perform only one write attempt.
-// <i> On successful writing, module assumes that host is active
-// <i> and scheme with retry is applied again.
-#define NRF_LOG_BACKEND_RTT_TX_RETRY_CNT 3
+// // <o> SEGGER_RTT_CONFIG_BUFFER_SIZE_UP - Size of upstream buffer. 
+// // <i> Note that either @ref NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE
+// // <i> or this value is actually used. It depends on which one is bigger.
+// #define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 1024
+
+// // <o> SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS - Size of upstream buffer. 
+// #define SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS 2
+
+// // <o> SEGGER_RTT_CONFIG_BUFFER_SIZE_DOWN - Size of upstream buffer. 
+// #define SEGGER_RTT_CONFIG_BUFFER_SIZE_DOWN 16
+
+// // <o> SEGGER_RTT_CONFIG_MAX_NUM_DOWN_BUFFERS - Size of upstream buffer. 
+// #define SEGGER_RTT_CONFIG_MAX_NUM_DOWN_BUFFERS 2
+
+// // <o> SEGGER_RTT_CONFIG_DEFAULT_MODE  - RTT behavior if the buffer is full.
+// // <i> The following modes are supported:
+// // <0=> - SKIP  - Do not block, output nothing.
+// // <1=> - TRIM  - Do not block, output as much as fits.
+// // <2=> - BLOCK - Wait until there is space in the buffer.
+// #define SEGGER_RTT_CONFIG_DEFAULT_MODE 0
 
 
-#define NRFX_CLOCK_CONFIG_LOG_ENABLED 1
+// //==========================================================
+// // nrf_log_backend_rtt - Log RTT backend
+// //==========================================================
+// // <e> NRF_LOG_BACKEND_RTT_ENABLED - nrf_log_backend_rtt - Log RTT backend
+// #define NRF_LOG_BACKEND_RTT_ENABLED 1
+
+// // <o> NRF_LOG_BACKEND_RTT_TEMP_BUFFER_SIZE - Size of buffer for partially processed strings. 
+// // <i> Size of the buffer is a trade-off between RAM usage and processing.
+// // <i> if buffer is smaller then strings will often be fragmented.
+// // <i> It is recommended to use size which will fit typical log and only the
+// // <i> longer one will be fragmented.
+// #define NRF_LOG_BACKEND_RTT_TEMP_BUFFER_SIZE 64
+
+// // <o> NRF_LOG_BACKEND_RTT_TX_RETRY_DELAY_MS - Period before retrying writing to RTT 
+// #define NRF_LOG_BACKEND_RTT_TX_RETRY_DELAY_MS 1
+
+// // <o> NRF_LOG_BACKEND_RTT_TX_RETRY_CNT - Writing to RTT retries. 
+// // <i> If RTT fails to accept any new data after retries
+// // <i> module assumes that host is not active and on next
+// // <i> request it will perform only one write attempt.
+// // <i> On successful writing, module assumes that host is active
+// // <i> and scheme with retry is applied again.
+// #define NRF_LOG_BACKEND_RTT_TX_RETRY_CNT 3
+
+
+#define NRFX_CLOCK_CONFIG_LOG_ENABLED 0
 #define NRFX_GPIOTE_CONFIG_LOG_ENABLED 1
 #define NRFX_PRS_CONFIG_LOG_ENABLED 1
-#define NRFX_UARTE_CONFIG_LOG_ENABLED 1
-#define NRFX_UART_CONFIG_LOG_ENABLED 1
+#define NRFX_UARTE_CONFIG_LOG_ENABLED 0
+#define NRFX_UART_CONFIG_LOG_ENABLED 0
 #define NRF_MPU_CONFIG_LOG_ENABLED 1
 #define NRF_STACK_GUARD_CONFIG_LOG_ENABLED 1
 #define TASK_MANAGER_CONFIG_LOG_ENABLED 1
-#define CLOCK_CONFIG_LOG_ENABLED 1
+#define CLOCK_CONFIG_LOG_ENABLED 0
 #define COMP_CONFIG_LOG_ENABLED 1
 #define GPIOTE_CONFIG_LOG_ENABLED 1
 #define LPCOMP_CONFIG_LOG_ENABLED 1
@@ -126,10 +160,10 @@
 #define TIMER_CONFIG_LOG_ENABLED 1
 #define TWIS_CONFIG_LOG_ENABLED 1
 #define TWI_CONFIG_LOG_ENABLED 1
-#define UART_CONFIG_LOG_ENABLED 1
+#define UART_CONFIG_LOG_ENABLED 0
 #define USBD_CONFIG_LOG_ENABLED 1
 #define WDT_CONFIG_LOG_ENABLED 1
-#define APP_TIMER_CONFIG_LOG_ENABLED 1
+#define APP_TIMER_CONFIG_LOG_ENABLED 0
 #define APP_USBD_CDC_ACM_CONFIG_LOG_ENABLED 1
 #define APP_USBD_CONFIG_LOG_ENABLED 1
 #define APP_USBD_DUMMY_CONFIG_LOG_ENABLED 1
@@ -140,12 +174,12 @@
 #define NRF_BLOCK_DEV_EMPTY_CONFIG_LOG_ENABLED 1
 #define NRF_BLOCK_DEV_QSPI_CONFIG_LOG_ENABLED 1
 #define NRF_BLOCK_DEV_RAM_CONFIG_LOG_ENABLED 1
-#define NRF_CLI_BLE_UART_CONFIG_LOG_ENABLED 1
-#define NRF_CLI_LIBUARTE_CONFIG_LOG_ENABLED 1
-#define NRF_CLI_UART_CONFIG_LOG_ENABLED 1
-#define NRF_LIBUARTE_CONFIG_LOG_ENABLED 1
+#define NRF_CLI_BLE_UART_CONFIG_LOG_ENABLED 0
+#define NRF_CLI_LIBUARTE_CONFIG_LOG_ENABLED 0
+#define NRF_CLI_UART_CONFIG_LOG_ENABLED 0
+#define NRF_LIBUARTE_CONFIG_LOG_ENABLED 0
 #define NRF_MEMOBJ_CONFIG_LOG_ENABLED 1
-#define NRF_PWR_MGMT_CONFIG_LOG_ENABLED 1
+#define NRF_PWR_MGMT_CONFIG_LOG_ENABLED 0
 #define NRF_QUEUE_CONFIG_LOG_ENABLED 1
 #define NRF_SDH_ANT_LOG_ENABLED 1
 #define NRF_SDH_BLE_LOG_ENABLED 1

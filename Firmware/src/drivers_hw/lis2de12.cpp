@@ -30,8 +30,15 @@ Distributed as-is; no warranty is given.
 #include "lis2de12.h"
 #include "drivers_nrf/i2c.h"
 #include "nrf_log.h"
+#include "../drivers_nrf/log.h"
+#include "../drivers_nrf/power_manager.h"
+#include "../drivers_nrf/timers.h"
+#include "nrf_gpio.h"
+#include "../config/board_config.h"
+#include "../drivers_nrf/gpiote.h"
 
 using namespace DriversNRF;
+using namespace Config;
 
 #define DEV_ADDRESS 0x18
 
@@ -115,6 +122,48 @@ namespace LIS2DE12
 		setScale(scale);  // Set up accelerometer scale
 		setODR(odr);  // Set up output data rate
 		active();  // Set to active to start reading
+
+		// Make sure our interrupts are cleared to begin with!
+		disableTransientInterrupt();
+		clearTransientInterrupt();
+
+		#if DICE_SELFTEST && LIS2DE12_SELFTEST
+		selfTest();
+		#endif
+		#if DICE_SELFTEST && LIS2DE12_SELFTEST_INT
+		selfTestInterrupt();
+		#endif
+	}
+
+	// Helper method to convert register readings to signed integers
+	short  twosComplement(uint8_t registerValue) {
+		// If a positive value, return it
+		if ((registerValue & 0x80) == 0) {
+			return registerValue;
+		} else {
+			// Otherwise perform the 2's complement math on the value
+			uint8_t comp = ~(registerValue - 0x01);
+			return (short)comp * -1;
+		}
+	}
+
+	float getScaleMult() {
+		float scaleMult = -1.0f;
+		switch (scale) {
+			case SCALE_2G:
+				scaleMult = 2.0f;
+				break;
+			case SCALE_4G:
+				scaleMult = 4.0f;
+				break;
+			case SCALE_8G:
+				scaleMult = 8.0f;
+				break;
+			case SCALE_16G:
+				scaleMult = 16.0f;
+				break;
+		}
+		return scaleMult;
 	}
 
 	/// <summary>
@@ -128,22 +177,13 @@ namespace LIS2DE12
 	/// </summary>
 	void read()
 	{
-		x = readRegister(OUT_X_H);
-		y = readRegister(OUT_Y_H);
-		z = readRegister(OUT_Z_H);
-		cx = (float)x / (float)(1 << 11) * (float)(scale);
-		cy = (float)y / (float)(1 << 11) * (float)(scale);
-		cz = (float)z / (float)(1 << 11) * (float)(scale);
-	}
-
-	/// <summary>
-	/// Helper that converts a raw reading value to a float
-	/// </summary>
-	/// <param name="value"></param>
-	/// <returns></returns>
-	float convert(short value)
-	{
-		return (float)value / (float)(1 << 11) * (float)(scale);
+		x = twosComplement(readRegister(OUT_X_H));
+		y = twosComplement(readRegister(OUT_Y_H));
+		z = twosComplement(readRegister(OUT_Z_H));
+		float scaleMult = getScaleMult();
+		cx = (float)x / (float)(1 << 7) * scaleMult;
+		cy = (float)y / (float)(1 << 7) * scaleMult;
+		cz = (float)z / (float)(1 << 7) * scaleMult;
 	}
 
 	/// <summary>
@@ -168,7 +208,7 @@ namespace LIS2DE12
 		// Must be in standby mode to make changes!!!
 		uint8_t cfg = readRegister(CTRL_REG4);
 		cfg &= 0b11001111; // Mask out scale bits
-		cfg |= (fsr << 4);  // Neat trick, see page 22. 00 = 2G, 01 = 4A, 10 = 8G
+		cfg |= (fsr << 4);
 		writeRegister(CTRL_REG4, cfg);
 	}
 
@@ -184,7 +224,6 @@ namespace LIS2DE12
 		writeRegister(CTRL_REG1, ctrl);
 	}
 
-
 	/// <summary>
 	/// ENABLE INTERRUPT ON TRANSIENT MOTION DETECTION
 	/// This function sets up the MMA8452Q to trigger an interrupt on pin 1
@@ -194,20 +233,21 @@ namespace LIS2DE12
 	{
 		standby();
 
-		// // Tell the accelerometer that we want transient interrupts!
-		// writeRegister(TRANSIENT_CFG, 0b00011110); // enable latch, xyz and hi-pass filter
+		// Enable OR of acceleration interrupt on any axis
+		writeRegister(INT1_CFG, 0b00101010);
 
-		// // Setup the threshold
-		// writeRegister(TRANSIENT_THS, 16); // Minimum threshold
+		// Setup the high-pass filter
+		//writeRegister(CTRL_REG2, 0b00110001);
+		writeRegister(CTRL_REG2, 0b00000000);
 
-		// // Set detection count
-		// writeRegister(TRANSIENT_COUNT, 1); // Shortest detection period
+		// Setup the threshold
+		writeRegister(INT1_THS, 32);
 
-		// // Route the transient interrupt to interrupt pin 1
-		// writeRegister(CTRL_REG5, 0b00100000);
+		// Setup the duration to minimum
+		writeRegister(INT1_DURATION, 1);
 
-		// // Enable the transient interrupt
-		// writeRegister(CTRL_REG4, 0b00100000);
+		// Enable interrupt on xyz axes
+		writeRegister(CTRL_REG3, 0b01000000);
 
 		active();
 	}
@@ -218,10 +258,10 @@ namespace LIS2DE12
 	/// </summary>
 	void clearTransientInterrupt()
 	{
-		// standby();
-		// uint8_t dontCare = readRegister(TRANSIENT_SRC);
-		// // maybe log to console->..
-		// active();
+		standby();
+		readRegister(INT1_SRC);
+		// maybe log to console->..
+		active();
 	}
 
 	/// <summary>
@@ -229,11 +269,10 @@ namespace LIS2DE12
 	/// </summary>
 	void disableTransientInterrupt()
 	{
-		// standby();
-
-		// writeRegister(TRANSIENT_CFG, 0b000000000);
-
-		// active();
+		standby();
+		// Disable interrupt on xyz axes
+		writeRegister(CTRL_REG3, 0b00000000);
+		active();
 	}
 
 	/// <summary>
@@ -290,6 +329,63 @@ namespace LIS2DE12
 		I2C::write(DEV_ADDRESS & 0x8000, reg, true);
 		I2C::read(DEV_ADDRESS, buffer, len);
 	}
+
+	#if DICE_SELFTEST && LIS2DE12_SELFTEST
+    APP_TIMER_DEF(readAccTimer);
+    void readAcc(void* context) {
+		read();
+        NRF_LOG_INFO("x=%d, cx=" NRF_LOG_FLOAT_MARKER, x, NRF_LOG_FLOAT(cx));
+        NRF_LOG_INFO("y=%d, cy=" NRF_LOG_FLOAT_MARKER, y, NRF_LOG_FLOAT(cy));
+        NRF_LOG_INFO("z=%d, cz=" NRF_LOG_FLOAT_MARKER, z, NRF_LOG_FLOAT(cz));
+    }
+
+    void selfTest() {
+        Timers::createTimer(&readAccTimer, APP_TIMER_MODE_REPEATED, readAcc);
+        NRF_LOG_INFO("Reading Acc, press any key to abort");
+        Log::process();
+
+        Timers::startTimer(readAccTimer, 1000, nullptr);
+        while (!Log::hasKey()) {
+            Log::process();
+			PowerManager::feed();
+            PowerManager::update();
+        }
+		Log::getKey();
+        NRF_LOG_INFO("Stopping to read acc!");
+        Timers::stopTimer(readAccTimer);
+        Log::process();
+    }
+	#endif
+
+	#if DICE_SELFTEST && LIS2DE12_SELFTEST_INT
+	bool interruptTriggered = false;
+	void accInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+		// pin and action don't matter
+		interruptTriggered = true;
+	}
+
+    void selfTestInterrupt() {
+        NRF_LOG_INFO("Setting accelerator to trigger interrupt");
+
+		// Set interrupt pin
+		GPIOTE::enableInterrupt(
+			BoardManager::getBoard()->accInterruptPin,
+			NRF_GPIO_PIN_NOPULL,
+			NRF_GPIOTE_POLARITY_LOTOHI,
+			accInterruptHandler);
+
+		enableTransientInterrupt();
+        Log::process();
+        while (!interruptTriggered) {
+            Log::process();
+			PowerManager::feed();
+            PowerManager::update();
+        }
+        NRF_LOG_INFO("Interrupt triggered!");
+        Log::process();
+    }
+	#endif
+
 }
 }
 

@@ -3,6 +3,8 @@
         {
             "name": "Win32",
             "includePath": [
+                "C:\\Users\\frogi\\AppData\\Local\\Arduino15\\packages\\SparkFun\\tools\\**",
+                "C:\\Users\\frogi\\AppData\\Local\\Arduino15\\packages\\SparkFun\\hardware\\nRF5\\0.2.3\\**",
                 "${workspaceFolder}",
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/src/config",
@@ -36,7 +38,8 @@
                 "databaseFilename": ""
             },
             "cStandard": "c11",
-            "cppStandard": "c++11"
+            "cppStandard": "c++11",
+            "forcedInclude": []
         }
     ],
     "version": 4

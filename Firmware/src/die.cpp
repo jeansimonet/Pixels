@@ -11,6 +11,7 @@
 #include "drivers_nrf/power_manager.h"
 #include "drivers_nrf/i2c.h"
 #include "drivers_nrf/flash.h"
+#include "drivers_nrf/gpiote.h"
 
 #include "config/board_config.h"
 #include "config/settings.h"
@@ -20,9 +21,32 @@
 #include "drivers_hw/battery.h"
 #include "drivers_hw/magnet.h"
 
+#include "nrf_sdh.h"
+#include "nrf_sdh_ble.h"
+#include "nrf_fstorage_sd.h"
+
 using namespace DriversNRF;
 using namespace Config;
 using namespace DriversHW;
+
+#define APP_BLE_CONN_CFG_TAG    1
+
+/**@brief Callback function for asserts in the SoftDevice.
+ *
+ * @details This function will be called in case of an assert in the SoftDevice.
+ *
+ * @warning This handler is an example only and does not fit a final product. You need to analyze 
+ *          how your product is supposed to react in case of Assert.
+ * @warning On assert from the SoftDevice, the system can only recover on reset.
+ *
+ * @param[in]   line_num   Line number of the failing ASSERT call.
+ * @param[in]   file_name  File name of the failing ASSERT call.
+ */
+void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
+{
+    app_error_handler(0xDEADBEEF, line_num, p_file_name);
+}
+
 
 namespace Die
 {
@@ -49,6 +73,9 @@ namespace Die
         // Then the timers
         Timers::init();
 
+        // GPIO Interrupts
+        GPIOTE::init();
+
         // Power manager handles going to sleep and resetting the board
         PowerManager::init();
         
@@ -67,27 +94,40 @@ namespace Die
         // Now that we know which board we are, initialize the battery monitoring A2D
         A2D::initBatteryPin();
 
-        // // Flash is needed to update settings/animations
-        // Flash::init();
+    // ret_code_t rc;
+    // uint32_t   ram_start;
 
-        // // I2C is needed for the accelerometer, but depends on the board info
-        // I2C::init();
+        /* Enable the SoftDevice. */
+        ret_code_t rc = nrf_sdh_enable_request();
+        APP_ERROR_CHECK(rc);
 
-        // //--------------------
-        // // Initialize Hardware drivers
-        // //--------------------
+    // rc = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
+    // APP_ERROR_CHECK(rc);
 
-        // // Lights also depend on board info
-        // APA102::init();
+    // rc = nrf_sdh_ble_enable(&ram_start);
+    // APP_ERROR_CHECK(rc);
 
-        // // Accel pins depend on the board info
-        // LIS2DE12::init();
+        // Flash is needed to update settings/animations
+        Flash::init();
+
+        // I2C is needed for the accelerometer, but depends on the board info
+        I2C::init();
+
+        //--------------------
+        // Initialize Hardware drivers
+        //--------------------
+
+        // Lights also depend on board info
+        APA102::init();
+
+        // Accel pins depend on the board info
+        LIS2DE12::init();
 
         // Battery sense pin depends on board info
         Battery::init();
 
-        // // Magnet, so we know if ne need to go into DFU mode immediately
-        // Magnet::init(); 
+        // Magnet, so we know if ne need to go into DFU mode immediately
+        Magnet::init(); 
         
         // // The we read user settings from flash, or set some defaults if none are found
         // SettingsManager::init();

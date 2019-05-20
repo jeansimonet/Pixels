@@ -135,6 +135,7 @@ namespace A2D
             PowerManager::feed();
             PowerManager::update();
         }
+		Log::getKey();
         NRF_LOG_INFO("Finished reading board id!");
         Timers::stopTimer(readBoardIdTimer);
     }
@@ -158,6 +159,7 @@ namespace A2D
             PowerManager::feed();
             PowerManager::update();
         }
+		Log::getKey();
         NRF_LOG_INFO("Finished reading vbat!");
         Timers::stopTimer(readVBatTimer);
     }

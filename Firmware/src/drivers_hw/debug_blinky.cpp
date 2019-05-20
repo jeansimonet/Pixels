@@ -1,8 +1,8 @@
 #include "debug_blinky.h"
 #include "nrf_gpio.h"
 
-#define TX_PIN 16
-#define RX_PIN 20
+#define TX_PIN 20
+#define RX_PIN 16
 
 namespace DriversHW
 {

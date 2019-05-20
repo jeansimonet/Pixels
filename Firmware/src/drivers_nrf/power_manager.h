@@ -1,5 +1,7 @@
 #pragma once
 
+#include "nrf_pwr_mgmt.h"
+
 namespace DriversNRF
 {
     // Initializes the sdk log system
@@ -8,6 +10,8 @@ namespace DriversNRF
         void init();
         void feed();
         void update();
+        void pause();
+        void resume();
         void goToSystemOff();
     }
 }

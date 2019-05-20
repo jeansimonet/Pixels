@@ -3,7 +3,7 @@
 #include "nrf_power.h"
 #include "nrf_bootloader_info.h"
 #include "app_error.h"
-#include "nrf_log.h"
+#include "log.h"
 
 namespace DriversNRF
 {
@@ -36,6 +36,7 @@ namespace PowerManager
                 NRF_LOG_INFO("NRF_PWR_MGMT_EVT_PREPARE_RESET");
                 break;
         }
+        Log::process();
         return true;
     }
 

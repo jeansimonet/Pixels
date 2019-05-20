@@ -2,6 +2,7 @@
 #include "nrf_drv_twi.h"
 #include "app_error.h"
 #include "config/board_config.h"
+#include "nrf_log.h"
 
 namespace DriversNRF
 {
@@ -25,6 +26,8 @@ namespace I2C
         //APP_ERROR_CHECK(err_code);
 
         nrf_drv_twi_enable(&m_twi);
+
+        NRF_LOG_INFO("I2C Initialized.");
     }
 
     bool write(uint8_t device, uint8_t value, bool no_stop)

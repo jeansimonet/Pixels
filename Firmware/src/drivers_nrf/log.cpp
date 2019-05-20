@@ -3,7 +3,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "app_error.h"
-#include "SEGGER_RTT.h"
+//#include "SEGGER_RTT.h"
 
 namespace DriversNRF
 {
@@ -28,11 +28,13 @@ namespace Log
     }
 
     bool hasKey() {
-        return SEGGER_RTT_HasKey();
+        return false;
+//        return SEGGER_RTT_HasKey();
     }
     
     int getKey() {
-        return SEGGER_RTT_GetKey();
+        return 0;
+//        return SEGGER_RTT_GetKey();
     }
 
 

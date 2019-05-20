@@ -1,12 +1,9 @@
-// ConsoleUtils.h
-
-#ifndef _CONSOLEUTILS_h
-#define _CONSOLEUTILS_h
+#pragma once
 
 #include <stdint.h>
 #include <algorithm>
 
-namespace Core
+namespace Utils
 {
 	int parseWord(char*& text, int& len, char* outWord, int outWordLen);
 
@@ -20,6 +17,4 @@ namespace Core
 
 	uint32_t millis( void );
 }
-
-#endif
 

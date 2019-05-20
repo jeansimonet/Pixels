@@ -32,5 +32,7 @@ namespace DriversHW
     uint32_t getPixelColor(uint16_t n);
     uint16_t numPixels();
     uint8_t *getPixels();
+
+    void selfTest();
   }
 }

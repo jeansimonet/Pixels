@@ -3,8 +3,12 @@
 #include "nrf_delay.h"
 #include "config/board_config.h"
 #include "string.h" // for memset
+#include "../utils/Rainbow.h"
+#include "../drivers_nrf/log.h"
+#include "../drivers_nrf/power_manager.h"
 
 using namespace Config;
+using namespace DriversNRF;
 
 #define DOTSTAR_BRG (1 | (2 << 2) | (0 << 4))
 #define OFFSET_RED (DOTSTAR_BRG & 3)
@@ -32,12 +36,29 @@ namespace APA102
 		clear();
 
 		// Initialize the pins
-		nrf_gpio_cfg_output(dataPin);
-		nrf_gpio_cfg_output(clockPin);
+		nrf_gpio_cfg(dataPin,
+    		NRF_GPIO_PIN_DIR_OUTPUT,
+    		NRF_GPIO_PIN_INPUT_DISCONNECT,
+    		NRF_GPIO_PIN_NOPULL,
+			NRF_GPIO_PIN_S0S1,
+    		NRF_GPIO_PIN_NOSENSE);
+
+		nrf_gpio_cfg(clockPin,
+    		NRF_GPIO_PIN_DIR_OUTPUT,
+    		NRF_GPIO_PIN_INPUT_DISCONNECT,
+    		NRF_GPIO_PIN_NOPULL,
+			NRF_GPIO_PIN_S0S1,
+    		NRF_GPIO_PIN_NOSENSE);
+
 		nrf_gpio_cfg_output(powerPin);
 		nrf_gpio_pin_clear(dataPin);
 		nrf_gpio_pin_clear(clockPin);
 		nrf_gpio_pin_clear(powerPin);
+
+
+		#if DICE_SELFTEST && APA102_SELFTEST
+		selfTest();
+		#endif
 	}
 
 	void clear() {
@@ -54,25 +75,9 @@ namespace APA102
 				nrf_gpio_pin_clear(dataPin);
 			}
 			nrf_gpio_pin_set(clockPin);
-			nrf_delay_us(1);
 			nrf_gpio_pin_clear(clockPin);
-			nrf_delay_us(1);
 		}
 	}
-
-	/* ISSUE DATA TO LED STRIP -------------------------------------------------
-
-	From the Adafruit original code:
-	"Although the LED driver has an additional per-pixel 5-bit brightness
-	setting, it is NOT used or supported here because it's a brain-dead
-	misfeature that's counter to the whole point of Dot Stars, which is to
-	have a much faster PWM rate than NeoPixels.  It gates the high-speed
-	PWM output through a second, much slower PWM (about 400 Hz), rendering
-	it useless for POV.  This brings NOTHING to the table that can't be
-	already handled better in one's sketch code.  If you really can't live
-	without this abomination, you can fork the library and add it for your
-	own use, but any pull requests for this will NOT be merged, nuh uh!"
-	*/
 
 	void show(void) {
 
@@ -82,7 +87,7 @@ namespace APA102
 		nrf_gpio_pin_set(powerPin);
 
 		// May need a delay here...
-		//nrf_delay_ms(1);
+		nrf_delay_ms(10);
 
 		uint8_t *ptr = pixels;            // -> LED data
 		uint16_t n = numLEDs;              // Counter
@@ -162,6 +167,28 @@ namespace APA102
 	uint8_t* getPixels() {
 		return pixels;
 	}
+
+	#if DICE_SELFTEST && APA102_SELFTEST
+	void selfTest() {
+        NRF_LOG_INFO("Turning LEDs On, press any key to stop");
+		for (int i = 0; i < numLEDs; ++i) {
+			int phase = 255 * i / numLEDs;
+			uint32_t color = Rainbow::wheel(phase);
+			setPixelColor(i, color);
+		}
+		show();
+        while (!Log::hasKey()) {
+            Log::process();
+			PowerManager::feed();
+            PowerManager::update();
+        }
+		Log::getKey();
+        NRF_LOG_INFO("Turning LEDs Off!");
+    	clear();
+		show();
+	}
+	#endif
+
 }
 }
 
@@ -223,4 +250,40 @@ uint8_t sine8(uint8_t x) {
 uint8_t gamma8(uint8_t x) {
 	return _gammaTable[x]; // 0-255 in, 0-255 out
 }
+
+// // Slightly different, this makes the rainbow equally distributed throughout
+// void rainbowCycle(uint8_t wait, uint8_t intensity)
+// {
+// 	uint16_t i, j;
+
+// 	for (j = 0; j<256; j++)
+// 	{
+// 		for (i = 0; i< NUMPIXELS; i++)
+// 		{
+// 			strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255, intensity));
+// 		}
+// 		strip.show();
+// 		nrf_delay_ms(wait);
+// 	}
+// }
+
+// // Slightly different, this makes the rainbow equally distributed throughout
+// void rainbowAll(int repeat, uint8_t wait, uint8_t intensity)
+// {
+// 	uint16_t i, j;
+
+// 	for (int k = 0; k < repeat; ++k)
+// 	{
+// 		for (j = 0; j<256; j++)
+// 		{
+// 			uint32_t color = Wheel(j, intensity);
+// 			for (i = 0; i< NUMPIXELS; i++)
+// 			{
+// 				strip.setPixelColor(i, color);
+// 			}
+// 			strip.show();
+// 			nrf_delay_ms(wait);
+// 		}
+// 	}
+// }
 

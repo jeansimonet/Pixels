@@ -124,8 +124,37 @@
 //==========================================================
 
 // <e> NRFX_UARTE_ENABLED - nrfx_uarte - UARTE peripheral driver
-#define NRFX_UARTE_ENABLED 0
+#define NRFX_UARTE_ENABLED 1
 
+#define NRFX_UARTE0_ENABLED 1
+
+#define UART_EASY_DMA_SUPPORT 1
+
+#define UART_DEFAULT_CONFIG_HWFC 0
+
+#define UART_DEFAULT_CONFIG_PARITY 0
+
+// <323584=> 1200 baud 
+// <643072=> 2400 baud 
+// <1290240=> 4800 baud 
+// <2576384=> 9600 baud 
+// <3862528=> 14400 baud 
+// <5152768=> 19200 baud 
+// <7716864=> 28800 baud 
+// <8388608=> 31250 baud 
+// <10289152=> 38400 baud 
+// <15007744=> 56000 baud 
+// <15400960=> 57600 baud 
+// <20615168=> 76800 baud 
+// <30801920=> 115200 baud 
+// <61865984=> 230400 baud 
+// <67108864=> 250000 baud 
+// <121634816=> 460800 baud 
+// <251658240=> 921600 baud 
+// <268435456=> 1000000 baud 
+#define UART_DEFAULT_CONFIG_BAUDRATE 30801920
+
+#define UART_DEFAULT_CONFIG_IRQ_PRIORITY 6
 
 //==========================================================
 // UART peripheral driver
@@ -140,7 +169,9 @@
 //==========================================================
 
 // <e> UART_ENABLED - nrf_drv_uart - UART/UARTE peripheral driver - legacy layer
-#define UART_ENABLED 0
+#define UART_ENABLED 1
+
+#define UART0_ENABLED 1
 
 
 //==========================================================
@@ -300,7 +331,7 @@
 
 // <o> NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S - Standby timeout (in seconds). 
 // <i> Shutdown procedure will begin no earlier than after this number of seconds.
-#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 5
+#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 30
 
 // <q> NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED  - Enables FPU event cleaning.
 #define NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED 0
@@ -368,32 +399,6 @@
 // <o> NRFX_TWIM_DEFAULT_CONFIG_IRQ_PRIORITY  - Interrupt priority
 // <0=> 0 (highest) -> 7 (lowest)
 #define NRFX_TWIM_DEFAULT_CONFIG_IRQ_PRIORITY 6
-
-
-//==========================================================
-// <h> nRF_Segger_RTT 
-//==========================================================
-
-// <o> SEGGER_RTT_CONFIG_BUFFER_SIZE_UP - Size of upstream buffer. 
-// <i> Note that either @ref NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE
-// <i> or this value is actually used. It depends on which one is bigger.
-#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 1024
-
-// <o> SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS - Size of upstream buffer. 
-#define SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS 2
-
-// <o> SEGGER_RTT_CONFIG_BUFFER_SIZE_DOWN - Size of upstream buffer. 
-#define SEGGER_RTT_CONFIG_BUFFER_SIZE_DOWN 16
-
-// <o> SEGGER_RTT_CONFIG_MAX_NUM_DOWN_BUFFERS - Size of upstream buffer. 
-#define SEGGER_RTT_CONFIG_MAX_NUM_DOWN_BUFFERS 2
-
-// <o> SEGGER_RTT_CONFIG_DEFAULT_MODE  - RTT behavior if the buffer is full.
-// <i> The following modes are supported:
-// <0=> - SKIP  - Do not block, output nothing.
-// <1=> - TRIM  - Do not block, output as much as fits.
-// <2=> - BLOCK - Wait until there is space in the buffer.
-#define SEGGER_RTT_CONFIG_DEFAULT_MODE 0
 
 
 //==========================================================
