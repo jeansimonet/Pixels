@@ -595,8 +595,8 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
  */
 static void peer_manager_init(void)
 {
-    ble_gap_sec_params_t sec_param;
     ret_code_t           err_code;
+    ble_gap_sec_params_t sec_param;
 
     err_code = pm_init();
     APP_ERROR_CHECK(err_code);

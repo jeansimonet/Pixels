@@ -27,7 +27,7 @@ namespace Config
 
             // Power Management pins
             uint32_t chargingStatePin;
-            uint32_t vledFaultPin;
+            uint32_t CoilStatePin;
             uint32_t vbatSensePin;
 
             // Magnet pin

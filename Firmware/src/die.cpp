@@ -6,7 +6,6 @@
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/timers.h"
 #include "drivers_nrf/log.h"
-#include "drivers_nrf/dfu.h"
 #include "drivers_nrf/a2d.h"
 #include "drivers_nrf/power_manager.h"
 #include "drivers_nrf/i2c.h"
@@ -21,6 +20,9 @@
 #include "drivers_hw/battery.h"
 #include "drivers_hw/magnet.h"
 
+#include "bluetooth/bluetooth_stack.h"
+#include "bluetooth/generic_data_service.h"
+
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_fstorage_sd.h"
@@ -28,6 +30,7 @@
 using namespace DriversNRF;
 using namespace Config;
 using namespace DriversHW;
+using namespace Bluetooth;
 
 #define APP_BLE_CONN_CFG_TAG    1
 
@@ -63,10 +66,6 @@ namespace Die
         Watchdog::init();
 #endif
 
-        // Then DFU interrupt service, it's important to initialize
-        // this as soon as possible
-        DriversNRF::DFU::init();
-
         // Then the log system
         Log::init();
 
@@ -91,21 +90,17 @@ namespace Die
         // on the board and determine what kind of die this is.
         BoardManager::init();
 
+        // Magnet, so we know if ne need to go into DFU mode immediately
+        Magnet::init(); 
+        
         // Now that we know which board we are, initialize the battery monitoring A2D
         A2D::initBatteryPin();
 
-    // ret_code_t rc;
-    // uint32_t   ram_start;
+        // Enable bluetooth
+        Stack::init();
 
-        /* Enable the SoftDevice. */
-        ret_code_t rc = nrf_sdh_enable_request();
-        APP_ERROR_CHECK(rc);
-
-    // rc = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
-    // APP_ERROR_CHECK(rc);
-
-    // rc = nrf_sdh_ble_enable(&ram_start);
-    // APP_ERROR_CHECK(rc);
+        // Add generic data service
+        GenericDataService::init();
 
         // Flash is needed to update settings/animations
         Flash::init();
@@ -126,18 +121,19 @@ namespace Die
         // Battery sense pin depends on board info
         Battery::init();
 
-        // Magnet, so we know if ne need to go into DFU mode immediately
-        Magnet::init(); 
-        
         // // The we read user settings from flash, or set some defaults if none are found
         // SettingsManager::init();
 
-    }
+        // Start advertising!
+        Stack::startAdvertising();
+   }
 
     // Main loop!
     void update() {
         if (!Log::process())
         {
+            Watchdog::feed();
+            PowerManager::feed();
             PowerManager::update();
         }
     }

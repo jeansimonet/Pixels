@@ -1,13 +1,10 @@
 #pragma once
 
-namespace bluetooth
+namespace Advertising
 {
     class Advertising
     {
     public:
-        void init();
-        void startAdvertising();
-        void disableAdvertisingOnDisconnect();
     };
 
     extern Advertising advertising;

@@ -26,16 +26,15 @@ namespace Battery
         // Status pin needs a pull-up, and is pulled low when charging
         nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
 
-        // Fault pin needs a pull-up as well, and is pulled low when vcc fails
-        // Unlikely to be useful, as I'm guessing the cpu will stop working...
-        nrf_gpio_cfg_input(BoardManager::getBoard()->vledFaultPin, NRF_GPIO_PIN_PULLUP);
+        // +5V sense pin needs a pull-down and is pulled up while charging
+        nrf_gpio_cfg_input(BoardManager::getBoard()->CoilStatePin, NRF_GPIO_PIN_PULLDOWN);
 
         // Read battery level and convert
         float vbattery = checkVBat();
         int charging = checkCharging() ? 1 : 0;
-        int fault = checkVCCFault() ? 1 : 0;
+        int coil = checkCoil() ? 1 : 0;
 
-        NRF_LOG_INFO("Battery initialized, Charging=%d, Fault=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, fault, NRF_LOG_FLOAT(vbattery));
+        NRF_LOG_INFO("Battery initialized, Charging=%d, Coil=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
 
         #if DICE_SELFTEST && BATTERY_SELFTEST
         selfTest();
@@ -51,10 +50,8 @@ namespace Battery
         return nrf_gpio_pin_read(BoardManager::getBoard()->chargingStatePin) == 0;
     }
 
-    bool checkVCCFault() {
-        // Fault pin needs a pull-up as well, and is pulled low when vcc fails
-        // Unlikely to be useful, as I'm guessing the cpu will stop working...
-        return nrf_gpio_pin_read(BoardManager::getBoard()->vledFaultPin) == 0;
+    bool checkCoil() {
+        return nrf_gpio_pin_read(BoardManager::getBoard()->CoilStatePin) != 0;
     }
 
     #if DICE_SELFTEST && BATTERY_SELFTEST
@@ -62,8 +59,8 @@ namespace Battery
     void printBatStats(void* context) {
         float vbattery = checkVBat();
         int charging = checkCharging() ? 1 : 0;
-        int fault = checkVCCFault() ? 1 : 0;
-        NRF_LOG_INFO("Charging=%d, Fault=%d, Voltage=" NRF_LOG_FLOAT_MARKER, charging, fault, NRF_LOG_FLOAT(vbattery));
+        int coil = checkCoil() ? 1 : 0;
+        NRF_LOG_INFO("Charging=%d, Coil=%d, Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
     }
 
     void selfTest() {

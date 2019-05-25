@@ -28,7 +28,7 @@ namespace BoardManager
 
         // Power Management pins
         .chargingStatePin = 1,
-        .vledFaultPin = 0,
+        .CoilStatePin = 0,
         .vbatSensePin = NRF_SAADC_INPUT_AIN2,
 
         // Magnet pin
@@ -79,7 +79,7 @@ namespace BoardManager
 
         // Power Management pins
         .chargingStatePin = 10,
-        .vledFaultPin = 9,
+        .CoilStatePin = 9,
         .vbatSensePin = NRF_SAADC_INPUT_AIN3,
 
         // Magnet pin
@@ -115,7 +115,7 @@ namespace BoardManager
 
         // Power Management pins
         .chargingStatePin = 10,
-        .vledFaultPin = 9,
+        .CoilStatePin = 9,
         .vbatSensePin = NRF_SAADC_INPUT_AIN3,
 
         // Magnet pin

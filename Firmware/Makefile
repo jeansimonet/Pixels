@@ -77,6 +77,8 @@ SRC_FILES += \
 	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
 	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
 	$(PROJ_DIR)/src/die.cpp \
+	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
+	$(PROJ_DIR)/src/bluetooth/generic_data_service.cpp \
 	$(PROJ_DIR)/src/config/board_config.cpp \
 	$(PROJ_DIR)/src/config/settings.cpp \
 	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
@@ -84,7 +86,6 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_hw/lis2de12.cpp \
 	$(PROJ_DIR)/src/drivers_hw/magnet.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/a2d.cpp \
-	$(PROJ_DIR)/src/drivers_nrf/dfu.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/flash.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/gpiote.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/i2c.cpp \
@@ -275,7 +276,7 @@ erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
 zip: default
-	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware.zip
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB8 $(OUTPUT_DIRECTORY)/firmware.zip
 
 settings: default
 	nrfutil settings generate --family NRF52810 --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --bootloader-version 0xff --bl-settings-version 1 $(OUTPUT_DIRECTORY)/firmware_settings.hex
@@ -286,3 +287,8 @@ flash: settings zip
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware_settings.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
+
+flash_ble: zip
+	@echo Flashing: $(OUTPUT_DIRECTORY)/nrf52810_xxaa_s112.hex over BLE DFU
+	nrfutil dfu ble -ic NRF51 -p COM5 -snr 680120179 -n DiceDfuTarg -pkg _build/firmware.zip
+

@@ -7,7 +7,7 @@ namespace DriversHW
         void init();
         float checkVBat();
         bool checkCharging();
-        bool checkVCCFault();
+        bool checkCoil();
 
         void selfTest();
     }

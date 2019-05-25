@@ -37,6 +37,7 @@
         "nrf_error.h": "c",
         "nrf_log_backend_uart.h": "c",
         "nrf_drv_uart.h": "c",
-        "nrfx_config.h": "c"
+        "nrfx_config.h": "c",
+        "ble_nus.h": "c"
     },
 }
