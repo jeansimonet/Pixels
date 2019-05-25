@@ -169,6 +169,16 @@
 #define NRF_BL_DFU_INACTIVITY_TIMEOUT_MS 120000
 #endif
 
+// <i> Timer before starting the app when magnet is present
+#ifndef CUSTOM_BL_DFU_INACTIVITY_MAGNET_TIMEOUT_MS
+#define CUSTOM_BL_DFU_INACTIVITY_MAGNET_TIMEOUT_MS 30000
+#endif
+
+// <i> Timer before starting the app when magnet is NOT present
+#ifndef CUSTOM_BL_DFU_INACTIVITY_TIMEOUT_MS
+#define CUSTOM_BL_DFU_INACTIVITY_TIMEOUT_MS 5000
+#endif
+
 // </h> 
 //==========================================================
 

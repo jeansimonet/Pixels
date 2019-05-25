@@ -59,7 +59,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_fw_activation.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_info.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_wdt.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader.c \
+  $(PROJ_DIR)/custom_bootloader.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_dfu_timers.c \
   $(SDK_ROOT)/external/nano-pb/pb_common.c \
   $(SDK_ROOT)/external/nano-pb/pb_decode.c \

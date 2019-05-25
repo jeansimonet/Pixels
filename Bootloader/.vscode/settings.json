@@ -11,6 +11,7 @@
         "nrf_bootloader_app_start.h": "c",
         "nrf_strerror.h": "c",
         "stdint.h": "c",
-        "nrf_dfu_utils.h": "c"
+        "nrf_dfu_utils.h": "c",
+        "nrf_dfu_settings.h": "c"
     },
 }
