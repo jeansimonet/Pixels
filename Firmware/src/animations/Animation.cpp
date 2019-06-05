@@ -1,216 +1,135 @@
-#include "Animation.h"
-#include "APA102LEDs.h"
-#include "Utils.h"
+#include "animation.h"
+#include "animation_set.h"
+
+#include "assert.h"
+#include "../utils/utils.h"
 
 #define MAX_LEVEL (256)
 
-using namespace Core;
+using namespace Utils;
 
-/// <summary>
-/// Dims the passed in color by the passed in intensity (normalized 0 - 255)
-/// </summary>
-uint32_t scaleColor(uint32_t refColor, uint8_t intensity)
+namespace Animations
 {
-	uint8_t r = getRed(refColor);
-	uint8_t g = getGreen(refColor);
-	uint8_t b = getBlue(refColor);
-	return toColor(r * intensity / MAX_LEVEL, g * intensity / MAX_LEVEL, b * intensity / MAX_LEVEL);
-}
-
-/// <summary>
-/// Returns the keyframe's color in uint32_t type!
-/// </summary>
-uint32_t RGBKeyframe::color() const
-{
-	return toColor(red, green, blue);
-}
-
-/// <summary>
-/// Interpolate between keyframes of an animation curve
-/// </summary>
-/// <param name="time">The normalized time (0 - 255)</param>
-/// <returns>The normalized intensity (0 - 255)</returns>
-uint32_t AnimationTrack::evaluateNormalized(int time) const
-{
-	if (count == 0)
-		return 0;
-
-	// Find the first keyframe
-	int nextIndex = 0;
-	while (nextIndex < count && keyframes[nextIndex].time < time)
+	/// <summary>
+	/// Dims the passed in color by the passed in intensity (normalized 0 - 255)
+	/// </summary>
+	uint32_t scaleColor(uint32_t refColor, uint8_t intensity)
 	{
-		nextIndex++;
+		uint8_t r = getRed(refColor);
+		uint8_t g = getGreen(refColor);
+		uint8_t b = getBlue(refColor);
+		return toColor(r * intensity / MAX_LEVEL, g * intensity / MAX_LEVEL, b * intensity / MAX_LEVEL);
 	}
 
-	if (nextIndex == 0)
-	{
-		// The first keyframe is already after the requested time, clamp to first value
-		return keyframes[nextIndex].color();
+	uint16_t RGBKeyframe::time() const {
+		// Unpack
+		uint16_t time50th = (timeAndColor & 0b1111111110000000) >> 7;
+		return time50th * 20;
 	}
-	else if (nextIndex == count)
-	{
-		// The last keyframe is still before the requested time, clamp to the last value
-		return keyframes[nextIndex - 1].color();
-	}
-	else
-	{
-		// Grab the prev and next keyframes
-		auto& nextKeyframe = keyframes[nextIndex];
-		auto& prevKeyframe = keyframes[nextIndex - 1];
-
-		// Compute the interpolation parameter
-		// To stick to integer math, we'll scale the values
-		int scaler = 1024;
-		int scaledPercent = (time - prevKeyframe.time) * scaler / (nextKeyframe.time - prevKeyframe.time);
-		int scaledRed = prevKeyframe.red * (scaler - scaledPercent) + nextKeyframe.red * scaledPercent;
-		int scaledGreen = prevKeyframe.green * (scaler - scaledPercent) + nextKeyframe.green * scaledPercent;
-		int scaledBlue = prevKeyframe.blue * (scaler - scaledPercent) + nextKeyframe.blue * scaledPercent;
-		return toColor(scaledRed / scaler, scaledGreen / scaler, scaledBlue / scaler);
-	}
-}
-
-/// <summary>
-/// Evaluate an animation track's intensity for a given time, in milliseconds.
-/// Values outside the track's range are clamped to first or last keyframe value.
-/// </summary>
-/// <returns>A normalized intensity (0-255)</returns>
-uint32_t AnimationTrack::evaluate(int time) const
-{
-	uint32_t ret = 0;
-	if (time < startTime)
-	{
-		ret = evaluateNormalized(0);
-	}
-	else if (time >= startTime + duration)
-	{
-		ret = evaluateNormalized(256);
-	}
-	else
-	{
-		int scaler = MAX_LEVEL;
-		int scaledTime = (time - startTime) * scaler / duration;
-		ret = evaluateNormalized(scaledTime);
+	
+	uint32_t RGBKeyframe::color() const {
+		// Unpack
+		uint16_t index = timeAndColor & 0b01111111;
+		return AnimationSet::getColor(index);
 	}
 
-	// Scale the return value
-	return ret;
-}
-
-void AnimationTrack::AddKeyframe(uint8_t time, uint8_t red, uint8_t green, uint8_t blue)
-{
-	if (count < MAX_KEYFRAMES)
-	{
-		keyframes[count].time = time;
-		keyframes[count].red = red;
-		keyframes[count].green = green;
-		keyframes[count].blue = blue;
-		count++;
+	void RGBKeyframe::setTimeAndColorIndex(uint16_t timeInMS, uint16_t colorIndex) {
+		timeAndColor = (((timeInMS / 20) & 0b111111111) << 7) |
+					   (colorIndex & 0b1111111);
 	}
-}
 
-/// <summary>
-/// Kick off the animation
-/// </summary>
-void Animation::start() const
-{
-	// Nothing to do here!
-}
 
-/// <summary>
-/// Computes the list of LEDs that need to be on, and what their intensities should be
-/// based on the different tracks of this animation.
-/// </summary>
-/// <param name="time">The animation time (in milliseconds)</param>
-/// <param name="retIndices">the return list of LED indices to fill, max size should be at least 21, the total number of leds</param>
-/// <param name="retColors">the return list of LED color to fill, max size should be at least 21, the total number of leds</param>
-/// <returns>The number of leds/intensities added to the return array</returns>
-int Animation::updateLEDs(int time, int retIndices[], uint32_t retColors[]) const
-{
-	for (int i = 0; i < count; ++i)
-	{
-		retIndices[i] = tracks[i].ledIndex;
-		retColors[i] = tracks[i].evaluate(time);
+	RGBKeyframe AnimationTrack::getKeyframe(uint16_t keyframeIndex) const {
+		assert(keyframeIndex < keyFrameCount);
+		return AnimationSet::getKeyframe(keyframesOffset + keyframeIndex);
 	}
-	return count;
-}
 
-/// <summary>
-/// Clear all LEDs controlled by this animation, for instance when
-/// the anim gets interrupted.
-/// </summary>
-int Animation::stop(int retIndices[]) const
-{
-	for (int i = 0; i < count; ++i)
-	{
-		retIndices[i] = tracks[i].ledIndex;
-	}
-	return count;
-}
+	/// <summary>
+	/// Evaluate an animation track's for a given time, in milliseconds.
+	/// Values outside the track's range are clamped to first or last keyframe value.
+	/// </summary>
+	uint32_t AnimationTrack::evaluate(int time) const {
+		uint32_t ret = 0;
 
-/// <summary>
-/// Returns the duration of this animation
-/// </summary>
-int Animation::totalDuration() const
-{
-	return duration;
-}
+		if (keyFrameCount == 0)
+			return 0;
 
-/// <summary>
-/// Computes how much space this animation actually takes
-/// </summary>
-int Animation::Computeuint8_tSize() const
-{
-	return Computeuint8_tSizeForTracks(count);
-}
-
-/// <summary>
-/// Helper to add tracks to an animation. Used for testing
-/// </summary>
-bool Animation::SetTrack(const AnimationTrack& track, int index)
-{
-	bool ret = index < count;
-	if (ret)
-	{
-		tracks[index] = track;
-		short trackEnd = track.startTime + track.duration;
-		if (duration < trackEnd)
-		{
-			duration = trackEnd;
+		// Find the first keyframe
+		int nextIndex = 0;
+		while (nextIndex < keyFrameCount && getKeyframe(nextIndex).time() < time) {
+			nextIndex++;
 		}
+
+		if (nextIndex == 0) {
+			// The first keyframe is already after the requested time, clamp to first value
+			return getKeyframe(nextIndex).color();
+		} else if (nextIndex == keyFrameCount) {
+			// The last keyframe is still before the requested time, clamp to the last value
+			return getKeyframe(nextIndex- 1).color();
+		} else {
+			// Grab the prev and next keyframes
+			auto nextKeyframe = getKeyframe(nextIndex);
+			uint16_t nextKeyframeTime = nextKeyframe.time();
+			uint32_t nextKeyframeColor = nextKeyframe.color();
+
+			auto prevKeyframe = getKeyframe(nextIndex - 1);
+			uint16_t prevKeyframeTime = prevKeyframe.time();
+			uint32_t prevKeyframeColor = prevKeyframe.color();
+
+			// Compute the interpolation parameter
+			// To stick to integer math, we'll scale the values
+			int scaler = 1024;
+			int scaledPercent = (time - prevKeyframeTime) * scaler / (nextKeyframeTime - prevKeyframeTime);
+			int scaledRed = getRed(prevKeyframeColor)* (scaler - scaledPercent) + getRed(nextKeyframeColor) * scaledPercent;
+			int scaledGreen = getGreen(prevKeyframeColor) * (scaler - scaledPercent) + getGreen(nextKeyframeColor) * scaledPercent;
+			int scaledBlue = getBlue(prevKeyframeColor) * (scaler - scaledPercent) + getBlue(nextKeyframeColor) * scaledPercent;
+			return toColor(scaledRed / scaler, scaledGreen / scaler, scaledBlue / scaler);
+		}
+
+		// Scale the return value
+		return ret;
 	}
-	return ret;
-}
 
-int Animation::TrackCount() const
-{
-	return count;
-}
+	/// <summary>
+	/// Computes the list of LEDs that need to be on, and what their intensities should be
+	/// based on the different tracks of this animation.
+	/// </summary>
+	/// <param name="time">The animation time (in milliseconds)</param>
+	/// <param name="retIndices">the return list of LED indices to fill, max size should be at least 21, the total number of leds</param>
+	/// <param name="retColors">the return list of LED color to fill, max size should be at least 21, the total number of leds</param>
+	/// <returns>The number of leds/intensities added to the return array</returns>
+	int Animation::updateLEDs(int time, int retIndices[], uint32_t retColors[]) const
+	{
+		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
+		for (int i = 0; i < trackCount; ++i)
+		{
+			retIndices[i] = tracks[i].ledIndex;
+			retColors[i] = tracks[i].evaluate(time);
+		}
+		return trackCount;
+	}
 
-/// <summary>
-/// Returns a track
-/// </summary>
-const AnimationTrack& Animation::GetTrack(int index) const
-{
-	return tracks[index];
-}
+	/// <summary>
+	/// Clear all LEDs controlled by this animation, for instance when
+	/// the anim gets interrupted.
+	/// </summary>
+	int Animation::stop(int retIndices[]) const
+	{
+		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
+		for (int i = 0; i < trackCount; ++i)
+		{
+			retIndices[i] = tracks[i].ledIndex;
+		}
+		return trackCount;
+	}
 
-
-/// <summary>
-/// Computes how much space an animation would actually take, given an expected number of tracks
-/// </summary>
-int Animation::Computeuint8_tSizeForTracks(int trackCount)
-{
-	return sizeof(Animation) + sizeof(AnimationTrack) * (trackCount - 1);
-}
-
-/// <summary>
-/// Allocates a new animation, client must free it!
-/// </summary>
-Animation* Animation::AllocateAnimation(int trackCount)
-{
-	Animation* ret = (Animation*)malloc(Computeuint8_tSizeForTracks(trackCount));
-	ret->duration = 0;
-	ret->count = trackCount;
-	return ret;
+	/// <summary>
+	/// Returns a track
+	/// </summary>
+	AnimationTrack Animation::GetTrack(int index) const
+	{
+		assert(index < trackCount);
+		return AnimationSet::getTrack(tracksOffset + index);
+	}
 }
 

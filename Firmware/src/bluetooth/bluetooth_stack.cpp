@@ -355,5 +355,27 @@ namespace Stack
         config.ble_adv_on_disconnect_disabled = true;
         ble_advertising_modes_config_set(&m_advertising, &config);
     }
+
+    bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
+        ble_gatts_hvx_params_t     hvx_params;
+        memset(&hvx_params, 0, sizeof(hvx_params));
+
+        hvx_params.handle = handle;
+        hvx_params.p_data = data;
+        hvx_params.p_len = &len;
+        hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+        ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+        APP_ERROR_CHECK(err_code);
+        return err_code == NRF_SUCCESS;
+    }
+
+    void slowAdvertising() {
+        ble_advertising_start(&m_advertising, BLE_ADV_MODE_SLOW);
+    }
+
+    void stopAdvertising() {
+        ble_advertising_start(&m_advertising, BLE_ADV_MODE_IDLE);
+    }
+
 }
 }

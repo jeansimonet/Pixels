@@ -1,22 +1,12 @@
-// APA102LEDs.h
-
-#ifndef _APA102LEDS_h
-#define _APA102LEDS_h
-
-#include "apa102.h"
-
-extern Adafruit_DotStar strip;
+#pragma once
 
 namespace Modules
 {
-#define LED_COUNT (20)
-
 	/// <summary>
 	/// Controls the APA102 LEDs on the Dice through a simple interface
 	/// </summary>
-	class LEDs
+	namespace LEDs
 	{
-	public:
 		void init();
 		void stop();
 		void set(int face, int led, uint32_t color, bool flush);
@@ -25,12 +15,7 @@ namespace Modules
 		void setAll(uint32_t color);
 		void show();
 		void clearAll();
-		static int ledIndex(int face, int led);
-	};
-
-	extern LEDs leds;
+		int ledIndex(int face, int led);
+	}
 }
-
-
-#endif
 

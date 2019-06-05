@@ -21,11 +21,14 @@
 #include "drivers_hw/magnet.h"
 
 #include "bluetooth/bluetooth_stack.h"
-#include "bluetooth/generic_data_service.h"
+#include "bluetooth/bluetooth_message_service.h"
+#include "bluetooth/bulk_data_transfer.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_fstorage_sd.h"
+
+#include "nrf_drv_clock.h"
 
 using namespace DriversNRF;
 using namespace Config;
@@ -50,6 +53,10 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
     app_error_handler(0xDEADBEEF, line_num, p_file_name);
 }
 
+APP_TIMER_DEF(turnOffTimer);
+void turnOff(void* context) {
+    Stack::slowAdvertising();
+}
 
 namespace Die
 {
@@ -62,9 +69,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-#if !DICE_SELFTEST
         Watchdog::init();
-#endif
 
         // Then the log system
         Log::init();
@@ -100,10 +105,13 @@ namespace Die
         Stack::init();
 
         // Add generic data service
-        GenericDataService::init();
+        MessageService::init();
 
         // Flash is needed to update settings/animations
         Flash::init();
+
+        // The we read user settings from flash, or set some defaults if none are found
+        SettingsManager::init();
 
         // I2C is needed for the accelerometer, but depends on the board info
         I2C::init();
@@ -121,12 +129,19 @@ namespace Die
         // Battery sense pin depends on board info
         Battery::init();
 
-        // // The we read user settings from flash, or set some defaults if none are found
-        // SettingsManager::init();
-
         // Start advertising!
         Stack::startAdvertising();
-   }
+
+        //--------------------
+        // Initialize Modules
+        //--------------------
+        
+        #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
+        // Test bulk bulk_data_transfer
+        //SendBulkData::selfTest();
+        ReceiveBulkData::selfTest();
+        #endif
+    }
 
     // Main loop!
     void update() {

@@ -3,9 +3,9 @@
 #include "nrf_log.h"
 #include "app_error.h"
 
-#define SETTINGS_ADDRESS 0x3F000
+#define SETTINGS_ADDRESS 0x27000
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
-#define SETTINGS_PAGE_COUNT 1 // <-- FIXME!!!
+#define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
 
@@ -17,8 +17,10 @@ namespace SettingsManager
 
 	void init() {
 		if (!checkValid()) {
+			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
 			programDefaults();
 		}
+		NRF_LOG_INFO("Settings initialized");
 	}
 
 	bool checkValid() {
@@ -38,23 +40,11 @@ namespace SettingsManager
 	}
 
 	void writeToFlash(Settings* sourceSettings) {
-		char* sourceRaw = (char*)sourceSettings;
-		return writeToFlash(sourceRaw + sizeof(uint32_t), sizeof(Settings) - 2 * sizeof(uint32_t));
-	}
-
-	void writeToFlash(void* rawData, size_t rawDataSize) {
-		uint32_t expected = sizeof(Settings) - 2 * sizeof(uint32_t);
-		if (rawDataSize == expected) {
-			uint32_t dest = SETTINGS_ADDRESS;
-			uint32_t key = SETTINGS_VALID_KEY;
-			Flash::write(dest, &key, sizeof(key));
-			dest += sizeof(key);
-			Flash::write(dest, rawData, rawDataSize);
-			dest += sizeof(rawDataSize);
-			Flash::write(dest, &key, sizeof(key));
-		} else {
-			NRF_LOG_ERROR("Wrong Settings size, could not program flash");
-		}
+		Settings* dest = (Settings*)SETTINGS_ADDRESS;
+		uint32_t key = SETTINGS_VALID_KEY;
+		Flash::write((uint32_t)&(dest->headMarker), &key, sizeof(key));
+		Flash::write((uint32_t)&(dest->name), &(sourceSettings->name), sizeof(Settings) - 2 * sizeof(key));
+		Flash::write((uint32_t)&(dest->tailMarker), &key, sizeof(key));
 	}
 
 	void setDefaults(Settings& outSettings) {

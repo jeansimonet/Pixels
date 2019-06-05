@@ -25,7 +25,7 @@ namespace I2C
         nrf_drv_twi_init(&m_twi, &twi_config, NULL, NULL);
         //APP_ERROR_CHECK(err_code);
 
-        nrf_drv_twi_enable(&m_twi);
+        nrf_drv_twi_enable(&m_twi);        
 
         NRF_LOG_INFO("I2C Initialized.");
     }

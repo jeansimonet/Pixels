@@ -331,7 +331,7 @@
 
 // <o> NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S - Standby timeout (in seconds). 
 // <i> Shutdown procedure will begin no earlier than after this number of seconds.
-#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 30
+#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 5
 
 // <q> NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED  - Enables FPU event cleaning.
 #define NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED 0
@@ -768,7 +768,7 @@
 //==========================================================
 
 // <e> PEER_MANAGER_ENABLED - peer_manager - Peer Manager
-#define PEER_MANAGER_ENABLED 1
+#define PEER_MANAGER_ENABLED 0
 
 // <o> PM_MAX_REGISTRANTS - Number of event handlers that can be registered. 
 #define PM_MAX_REGISTRANTS 3
@@ -833,7 +833,7 @@
 #define BLE_IAS_C_ENABLED 0     // <q> BLE_IAS_C_ENABLED  - ble_ias_c - Immediate Alert Service Client
 #define BLE_IAS_ENABLED 0       // <e> BLE_IAS_ENABLED - ble_ias - Immediate Alert Service
 #define BLE_LBS_C_ENABLED 0     // <q> BLE_LBS_C_ENABLED  - ble_lbs_c - Nordic LED Button Service Client
-#define BLE_LBS_ENABLED 1       // <q> BLE_LBS_ENABLED  - ble_lbs - LED Button Service
+#define BLE_LBS_ENABLED 0       // <q> BLE_LBS_ENABLED  - ble_lbs - LED Button Service
 #define BLE_LLS_ENABLED 0       // <q> BLE_LLS_ENABLED  - ble_lls - Link Loss Service
 #define BLE_NUS_C_ENABLED 0     // <q> BLE_NUS_C_ENABLED  - ble_nus_c - Nordic UART Central Service
 #define BLE_NUS_ENABLED 0       // <e> BLE_NUS_ENABLED - ble_nus - Nordic UART Service
@@ -871,7 +871,7 @@
 //==========================================================
 
 // <e> FDS_ENABLED - fds - Flash data storage module
-#define FDS_ENABLED 1
+#define FDS_ENABLED 0
 
 // <o> FDS_VIRTUAL_PAGES - Number of virtual flash pages to use. 
 // <i> One of the virtual pages is reserved by the system for garbage collection.
@@ -959,14 +959,14 @@
 // <8=> Pause in SLEEP, Run in HALT 
 // <9=> Run in SLEEP and HALT 
 // <0=> Pause in SLEEP and HALT 
-#define NRFX_WDT_CONFIG_BEHAVIOUR 1
+#define NRFX_WDT_CONFIG_BEHAVIOUR 8
 
 // <o> NRFX_WDT_CONFIG_RELOAD_VALUE - Reload value  <15-4294967295> 
 #define NRFX_WDT_CONFIG_RELOAD_VALUE 2000
 
 // <o> NRFX_WDT_CONFIG_IRQ_PRIORITY  - Interrupt priority
 // 0 to 7, 0 is highest
-#define NRFX_WDT_CONFIG_IRQ_PRIORITY 6
+#define NRFX_WDT_CONFIG_IRQ_PRIORITY 7
 
 
 #include "sdk_config_logging.h"

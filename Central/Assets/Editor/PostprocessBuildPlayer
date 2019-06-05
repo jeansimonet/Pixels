@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+use File::Copy; 
+
+print ("\n*** Starting PostprocessBuildPlayer ***\n");
+
+my $installPath = $ARGV[0]; 
+
+#values to watch for already existing
+my $requiredDeviceCapsString = "UIRequiredDeviceCapabilities";
+my $backgroundModesString = "UIBackgroundModes";
+my $bluetoothLEString = "bluetooth-le";
+
+#go through the info.plist file line by line until you find this one: 
+my $endOfPlist = "</dict>"; 
+   
+# The type of player built: 
+# "dashboard", "standaloneWin32", "standaloneOSXIntel", "standaloneOSXPPC", "standaloneOSXUniversal", "webplayer", "iPhone" 
+my $target = $ARGV[1]; 
+   
+print ("\n*** PostprocessBuildPlayer - Building at '$installPath' with target: $target ***\n"); 
+  
+################################################################ 
+# This modifies info.plist to add the external accessory       # 
+# entries                                                      # 
+################################################################ 
+   
+#open this file 
+   
+$oplistPath = $installPath."/Info.plist"; 
+$nplistPath = $installPath."/Info.plist.tmp"; 
+   
+open OLDPLIST, "<", $oplistPath or die("Cannot open Info.plist"); 
+open NEWPLIST, ">", $nplistPath or die("Cannot create new Info.plist"); 
+   
+my $nextLine = 0;    
+my $requiredDeviceCapsFound = 0;
+my $backgroundModesFound = 0;
+
+while(<OLDPLIST>) 
+{
+   if ($nextLine == 1)
+   {
+      if ($_ =~ m/$bluetoothLEString/)
+      {
+      }
+      else
+      {
+         $_ =~ s|</array>|\n\t<string>bluetooth-le</string></array>|
+      }
+
+      $nextLine = 0;
+   }
+    
+   ################################################################
+   # Check for required device caps string already exists         #
+   ################################################################ 
+   if ($_ =~ m/$requiredDeviceCapsString/ )
+   {
+      $nextLine = 1;
+   }
+      
+   ################################################################ 
+   # Check for background modes string already exists             # 
+   ################################################################ 
+   if ($_ =~ m/$backgroundModesString/ )
+   {
+      $backgroundModesFound = 1;
+   }
+    
+   ################################################################ 
+   # Add any key/value pairs you want at the end of Info.plist    # 
+   ################################################################ 
+   
+   if ($_ =~ m/$endOfPlist/ && $backgrounModesFound == 0)
+   {
+      my $keys = "";
+          
+      $keys .= "   <key>UIBackgroundModes</key>\n";
+      $keys .= "   <array>\n";
+      $keys .= "      <string>bluetooth-central</string>\n";
+      $keys .= "      <string>bluetooth-peripheral</string>\n";
+      $keys .= "   </array>\n";
+       
+      $_ = $keys . $_; 
+   } 
+       
+   print NEWPLIST $_; 
+} 
+   
+close OLDPLIST; 
+close NEWPLIST; 
+   
+`mv \'$nplistPath\' \'$oplistPath\'`; 

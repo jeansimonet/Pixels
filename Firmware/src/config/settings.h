@@ -18,6 +18,7 @@ namespace Config
 		float sigmaThresholdEnd;
 		float faceThreshold;
 		int minRollTime;
+		
 		// Indicates whether there is valid data
 		uint32_t tailMarker;
 	};

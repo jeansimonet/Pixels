@@ -77,6 +77,8 @@ namespace DriversHW
 		void clearTransientInterrupt();
 		void disableTransientInterrupt();
 
+		void powerDown();
+
 		void selfTest();
 		void selfTestInterrupt();
 	}

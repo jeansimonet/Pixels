@@ -38,6 +38,8 @@
         "nrf_log_backend_uart.h": "c",
         "nrf_drv_uart.h": "c",
         "nrfx_config.h": "c",
-        "ble_nus.h": "c"
+        "ble_nus.h": "c",
+        "limits": "cpp",
+        "nrfx_log.h": "c"
     },
 }

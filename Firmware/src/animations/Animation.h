@@ -1,72 +1,63 @@
-// KeyframedLEDs.h
-
-#ifndef _KEYFRAMEDLEDS_h
-#define _KEYFRAMEDLEDS_h
+#pragma once
 
 #include <stdint.h>
 
-#define MAX_KEYFRAMES (8)
+#pragma pack(push, 1)
 
-/// <summary>
-/// Stores a single keyframe of an LED animation
-/// </summary>
-struct RGBKeyframe
+namespace Animations
 {
-public:
-	uint8_t time;		// 0 - 255 (normalized)
-	uint8_t red;		// 0 - 255 (normalized)
-	uint8_t green;
-	uint8_t blue;
+	/// <summary>
+	/// Stores a single keyframe of an LED animation
+	/// size: 2 bytes, split this way:
+	/// - 9 bits: time 0 - 511 in 50th of a second (i.e )
+	///   + 1    -> 0.02s
+	///   + 500  -> 10s
+	/// - 7 bits: color lookup (128 values)
+	/// </summary>
+	struct RGBKeyframe
+	{
+	public:
+		uint16_t timeAndColor;
 
-	uint32_t color() const;
-};
+		uint16_t time() const; // unpack the time in ms
+		uint32_t color() const;// unpack the color using the lookup table from the animation set
 
-/// <summary>
-/// An animation track is essentially a scaled animation curve for a
-/// specific LED. It defines how long the curve is stretched over and when it starts.
-/// With 8 keyframes, on the die, a track should take 8 * 4 + 8 = 40 uint8_ts
-/// </summary>
-struct AnimationTrack
-{
-public:
-	RGBKeyframe keyframes[MAX_KEYFRAMES];
-	short startTime;	// ms
-	short duration;		// ms
-	short padding;
-	uint8_t ledIndex;		// 0 - 20
-	uint8_t count;
+		void setTimeAndColorIndex(uint16_t timeInMS, uint16_t colorIndex);
+	};
 
-	uint32_t evaluateNormalized(int time) const;
-	uint32_t evaluate(int time) const;
-	void AddKeyframe(uint8_t time, uint8_t red, uint8_t green, uint8_t blue);
-};
+	/// <summary>
+	/// An animation track is essentially an animation curve for a specific LED.
+	/// size: 4 bytes (+ the actual keyframe data)
+	/// </summary>
+	struct AnimationTrack
+	{
+	public:
+		uint16_t keyframesOffset; // offset into a global keyframe buffer
+		uint8_t ledIndex;	// 0 - 20
+		uint8_t keyFrameCount;		// Keyframe count
 
-/// <summary>
-/// A keyframe-based animation
-/// </summary>
-class Animation
-{
-private:
-	short duration; // ms
-	short count;
-	AnimationTrack tracks[1]; // Actual size is determined by 'count', the data 'overflows' the end of the struct!
+		RGBKeyframe getKeyframe(uint16_t keyframeIndex) const;
+		uint32_t evaluate(int time) const;
+	};
 
-public:
-	// Interface implementation
-	void start() const;
-	int updateLEDs(int time, int retIndices[], uint32_t retColors[]) const;
-	int stop(int retIndices[]) const;
-	int totalDuration() const;
-	int Computeuint8_tSize() const;
+	/// <summary>
+	/// A keyframe-based animation
+	/// size: 8 bytes (+ actual track and keyframe data)
+	/// </summary>
+	class Animation
+	{
+	public:
+		uint16_t duration; // in ms
+		uint16_t tracksOffset; // offset into a global buffer of tracks
+		uint16_t trackCount;
+		uint16_t padding;
 
-	// Used for testing, manually creating animations
-	bool SetTrack(const AnimationTrack& track, int index);
-	int TrackCount() const;
-	const AnimationTrack& GetTrack(int index) const;
+	public:
+		AnimationTrack GetTrack(int index) const;
+		int updateLEDs(int time, int retIndices[], uint32_t retColors[]) const;
+		int stop(int retIndices[]) const;
+	};
 
-	static int Computeuint8_tSizeForTracks(int trackCount);
-	static Animation* AllocateAnimation(int trackCount);
-};
+}
 
-#endif
-
+#pragma pack(pop)

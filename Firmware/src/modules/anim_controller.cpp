@@ -1,193 +1,195 @@
-#include "AnimController.h"
-#include "Animation.h"
-#include "nrf_delay.h"
-#include "app_timer.h"
-#include "Utils.h"
-#include "APA102LEDs.h"
+#include "anim_controller.h"
+#include "animations/animation.h"
+#include "drivers_nrf/timers.h"
+#include "utils/utils.h"
+#include "config/board_config.h"
+#include "drivers_hw/apa102.h"
+#include "app_error.h"
 
+using namespace Animations;
 using namespace Modules;
+using namespace DriversNRF;
+using namespace DriversHW;
 
+#define MAX_ANIMS (20)
 #define TIMER2_RESOLUTION 33 //ms
 
-AnimController Modules::animController;
-
-_APP_TIMER_DEF(animControllerTimer);
-
-/// <summary>
-/// Constructor
-/// </summary>
-AnimController::AnimInstance::AnimInstance()
-	: animation(nullptr)
-	, startTime(0)
+namespace Modules
 {
-}
-
-/// <summary>
-/// Constructor
-/// </summary>
-AnimController::AnimController()
-	: count(0)
+namespace AnimController
 {
-}
-
-/// <summary>
-/// Kick off the animation controller, registering it with the Timer system
-/// </summary>
-void AnimController::begin()
-{
-	ret_code_t ret_code = app_timer_create(&animControllerTimer, APP_TIMER_MODE_REPEATED, AnimController::animationControllerUpdate);
-	APP_ERROR_CHECK(ret_code);
-
-	ret_code = app_timer_start(animControllerTimer, APP_TIMER_TICKS(TIMER2_RESOLUTION), NULL);
-	APP_ERROR_CHECK(ret_code);
-}
-
-/// <summary>
-/// Called by the timer system to update current animations
-/// </summary>
-void AnimController::update()
-{
-	update(Core::millis());
-}
-
-/// <summary>
-/// Update all currently running animations, and performing housekeeping when necessary
-/// </summary>
-/// <param name="ms">Current global time in milliseconds</param>
-void AnimController::update(int ms)
-{
-	for (int i = 0; i < count; ++i)
+	/// <summary>
+	/// Internal helper struct used to store a running animation instance
+	/// </summary>
+	struct AnimInstance
 	{
-		auto& anim = animations[i];
-		int animTime = ms - anim.startTime;
-		if (animTime > anim.animation->totalDuration())
+		Animation const * animation;
+		int startTime; //ms
+
+		AnimInstance()
+			: animation(nullptr)
+			, startTime(0)
 		{
-			// The animation is over, get rid of it!
-			removeAtIndex(i);
-
-			// Decrement loop counter since we just replaced the current anim
-			i--;
 		}
-		else
+	};
+
+	// Our currently running animations
+	AnimInstance animations[MAX_ANIMS];
+	int animationCount;
+
+	APP_TIMER_DEF(animControllerTimer);
+	// To be passed to the timer
+	void animationControllerUpdate(void* param)
+	{
+		update(Utils::millis());
+	}
+
+	/// <summary>
+	/// Kick off the animation controller, registering it with the Timer system
+	/// </summary>
+	void init()
+	{
+		animationCount = 0;
+		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
+		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
+	}
+
+	/// <summary>
+	/// Update all currently running animations, and performing housekeeping when necessary
+	/// </summary>
+	/// <param name="ms">Current global time in milliseconds</param>
+	void update(int ms)
+	{
+		for (int i = 0; i < animationCount; ++i)
 		{
-			// Update the leds
-			int ledIndices[LED_COUNT];
-			uint32_t colors[LED_COUNT];
-			int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
-			leds.setLEDs(ledIndices, colors, ledCount);
+			auto& anim = animations[i];
+			int animTime = ms - anim.startTime;
+			if (animTime > anim.animation->duration)
+			{
+				// The animation is over, get rid of it!
+				removeAtIndex(i);
+
+				// Decrement loop counter since we just replaced the current anim
+				i--;
+			}
+			else
+			{
+				// Update the leds
+				int ledIndices[MAX_LED_COUNT];
+				uint32_t colors[MAX_LED_COUNT];
+				int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
+				APA102::setPixelColors(ledIndices, colors, ledCount);
+			}
 		}
+		APA102::show();
 	}
-}
 
-// To be passed to the timer
-void AnimController::animationControllerUpdate(void* param)
-{
-	((AnimController*)param)->update();
-}
-
-/// <summary>
-/// Stop updating animations
-/// </summary>
-void AnimController::stop()
-{
-	auto ret_code = app_timer_stop(animControllerTimer);
-	APP_ERROR_CHECK(ret_code);
-}
-
-/// <summary>
-/// Add an animation to the list of running animations
-/// </summary>
-void AnimController::play(const Animation* anim)
-{
-	int prevAnimIndex = 0;
-	for (; prevAnimIndex < count; ++prevAnimIndex)
+	/// <summary>
+	/// Stop updating animations
+	/// </summary>
+	void stop()
 	{
-		if (animations[prevAnimIndex].animation == anim)
+		Timers::stopTimer(animControllerTimer);
+	}
+
+	/// <summary>
+	/// Add an animation to the list of running animations
+	/// </summary>
+	void play(const Animation* anim)
+	{
+		int prevAnimIndex = 0;
+		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
-			break;
+			if (animations[prevAnimIndex].animation == anim)
+			{
+				break;
+			}
 		}
-	}
 
-	int ms = Core::millis();
-	if (prevAnimIndex < count)
-	{
-		// Replace a previous animation
-		stopAtIndex(prevAnimIndex);
-
-		animations[prevAnimIndex].startTime = ms;
-		animations[prevAnimIndex].animation->start();
-	}
-	else if (count < MAX_ANIMS)
-	{
-		// Add a new animation
-		animations[count].animation = anim;
-		animations[count].startTime = ms;
-		animations[count].animation->start();
-		count++;
-	}
-	// Else there is no more room
-}
-
-/// <summary>
-/// Forcibly stop a currently running animation
-/// </summary>
-void AnimController::stop(const Animation* anim)
-{
-	int prevAnimIndex = 0;
-	for (; prevAnimIndex < count; ++prevAnimIndex)
-	{
-		if (animations[prevAnimIndex].animation == anim)
+		int ms = Utils::millis();
+		if (prevAnimIndex < animationCount)
 		{
-			break;
+			// Replace a previous animation
+			stopAtIndex(prevAnimIndex);
+			animations[prevAnimIndex].startTime = ms;
 		}
+		else if (animationCount < MAX_ANIMS)
+		{
+			// Add a new animation
+			animations[animationCount].animation = anim;
+			animations[animationCount].startTime = ms;
+			animationCount++;
+		}
+		// Else there is no more room
 	}
 
-	if (prevAnimIndex < count)
+	/// <summary>
+	/// Forcibly stop a currently running animation
+	/// </summary>
+	void stop(const Animation* anim)
 	{
-		removeAtIndex(prevAnimIndex);
-	}
-	// Else the animation isn't playing
-}
+		int prevAnimIndex = 0;
+		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
+		{
+			if (animations[prevAnimIndex].animation == anim)
+			{
+				break;
+			}
+		}
 
-/// <summary>
-/// Stop all currently running animations
-/// </summary>
-void AnimController::stopAll()
-{
-	for (int i = 0; i < count; ++i)
+		if (prevAnimIndex < animationCount)
+		{
+			removeAtIndex(prevAnimIndex);
+		}
+		// Else the animation isn't playing
+	}
+
+	/// <summary>
+	/// Stop all currently running animations
+	/// </summary>
+	void stopAll()
 	{
-		animations[i].animation = nullptr;
-		animations[i].startTime = 0;
+		for (int i = 0; i < animationCount; ++i)
+		{
+			animations[i].animation = nullptr;
+			animations[i].startTime = 0;
+		}
+		animationCount = 0;
+		APA102::clear();
+		APA102::show();
 	}
-	count = 0;
-	leds.clearAll();
-}
 
-/// <summary>
-/// Helper function to clear anim LED turned on by a current animation
-/// </summary>
-void AnimController::stopAtIndex(int animIndex)
-{
-	// Found the animation, start by killing the leds it controls
-	int ledIndices[LED_COUNT];
-	uint32_t zeros[LED_COUNT] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-	int ledCount = animations[animIndex].animation->stop(ledIndices);
-	leds.setLEDs(ledIndices, zeros, ledCount);
-}
-
-/// <summary>
-/// Helper method: Stop the animation at the given index. Used by Stop(IAnimation*)
-/// </summary>
-void AnimController::removeAtIndex(int animIndex)
-{
-	stopAtIndex(animIndex);
-
-	// Shift the other animations
-	for (; animIndex < count - 1; ++animIndex)
+	/// <summary>
+	/// Helper function to clear anim LED turned on by a current animation
+	/// </summary>
+	void stopAtIndex(int animIndex)
 	{
-		animations[animIndex] = animations[animIndex + 1];
+		// Found the animation, start by killing the leds it controls
+		int ledIndices[MAX_LED_COUNT];
+		uint32_t zeros[MAX_LED_COUNT];
+		memset(zeros, 0, sizeof(uint32_t) * MAX_LED_COUNT);
+		int ledCount = animations[animIndex].animation->stop(ledIndices);
+		APA102::setPixelColors(ledIndices, zeros, ledCount);
+		APA102::show();
 	}
 
-	// Reduce the count
-	count--;
+	/// <summary>
+	/// Helper method: Stop the animation at the given index. Used by Stop(IAnimation*)
+	/// </summary>
+	void removeAtIndex(int animIndex)
+	{
+		stopAtIndex(animIndex);
+
+		// Shift the other animations
+		for (; animIndex < animationCount - 1; ++animIndex)
+		{
+			animations[animIndex] = animations[animIndex + 1];
+		}
+
+		// Reduce the count
+		animationCount--;
+	}
+
 }
+}
+

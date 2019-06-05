@@ -295,6 +295,10 @@ namespace LIS2DE12
 		writeRegister(CTRL_REG1, c | 0x08); //Set the active bit to begin detection
 	}
 
+	void powerDown() {
+		writeRegister(CTRL_REG1, 0b00001000); //Set the active bit to begin detection
+	}
+
 	/// <summary>
 	/// WRITE A SINGLE REGISTER
 	/// 	Write a single uint8_t of data to a register in the MMA8452Q.

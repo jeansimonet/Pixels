@@ -159,7 +159,7 @@ namespace BoardManager
         float vboard = DriversNRF::A2D::readVBoard();
 
         // Now that we're done reading, we can turn off the drive pin
-        nrf_gpio_cfg_input(BOARD_DETECT_DRIVE_PIN, NRF_GPIO_PIN_NOPULL);
+        nrf_gpio_cfg_default(BOARD_DETECT_DRIVE_PIN);
 
         // Do some computation to figure out which variant we're working with!
         // D20v3 board uses 20k over 100k voltage divider

@@ -77,8 +77,12 @@ SRC_FILES += \
 	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
 	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
 	$(PROJ_DIR)/src/die.cpp \
+	$(PROJ_DIR)/src/animations/animation.cpp \
+	$(PROJ_DIR)/src/animations/animation_set.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
-	$(PROJ_DIR)/src/bluetooth/generic_data_service.cpp \
+	$(PROJ_DIR)/src/bluetooth/bluetooth_messages.cpp \
+	$(PROJ_DIR)/src/bluetooth/bluetooth_message_service.cpp \
+	$(PROJ_DIR)/src/bluetooth/bulk_data_transfer.cpp \
 	$(PROJ_DIR)/src/config/board_config.cpp \
 	$(PROJ_DIR)/src/config/settings.cpp \
 	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
@@ -206,11 +210,11 @@ COMMON_FLAGS += -DSWI_DISABLE0
 COMMON_FLAGS += -mcpu=cortex-m4
 COMMON_FLAGS += -mthumb -mabi=aapcs
 COMMON_FLAGS += -mfloat-abi=soft
+COMMON_FLAGS += -DNRF52_PAN_74
 
 # COMMON_FLAGS += -DDEBUG
 # COMMON_FLAGS += -DDEBUG_NRF
 # COMMON_FLAGS += -DDEVELOP_IN_NRF52832
-# COMMON_FLAGS += -DNRF52_PAN_74
 
 # C flags common to all targets
 CFLAGS += $(OPT)

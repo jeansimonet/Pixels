@@ -110,6 +110,11 @@ namespace Flash
         waitForFlashReady();
     }
 
+    uint32_t bytesToPages(uint32_t size) {
+        uint32_t pageSize = fstorage.p_flash_info->erase_unit;
+        return (size + pageSize - 1) / pageSize;
+    }
+
 
     #if DICE_SELFTEST && FLASH_SELFTEST
     bool testing = false;

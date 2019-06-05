@@ -22,12 +22,13 @@ namespace Battery
 
         // Drive the status pin down for a moment
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
+        uint32_t coilPin = BoardManager::getBoard()->CoilStatePin;
 
         // Status pin needs a pull-up, and is pulled low when charging
-        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
+        nrf_gpio_cfg_default(statePin);
 
         // +5V sense pin needs a pull-down and is pulled up while charging
-        nrf_gpio_cfg_input(BoardManager::getBoard()->CoilStatePin, NRF_GPIO_PIN_PULLDOWN);
+        nrf_gpio_cfg_default(coilPin);
 
         // Read battery level and convert
         float vbattery = checkVBat();
@@ -47,11 +48,19 @@ namespace Battery
 
     bool checkCharging() {
         // Status pin needs a pull-up, and is pulled low when charging
-        return nrf_gpio_pin_read(BoardManager::getBoard()->chargingStatePin) == 0;
+        uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
+        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_NOPULL);
+        bool ret = nrf_gpio_pin_read(BoardManager::getBoard()->chargingStatePin) == 0;
+        nrf_gpio_cfg_default(statePin);
+        return ret;
     }
 
     bool checkCoil() {
-        return nrf_gpio_pin_read(BoardManager::getBoard()->CoilStatePin) != 0;
+        uint32_t coilPin = BoardManager::getBoard()->CoilStatePin;
+        nrf_gpio_cfg_input(coilPin, NRF_GPIO_PIN_NOPULL);
+        bool ret = nrf_gpio_pin_read(BoardManager::getBoard()->CoilStatePin) != 0;
+        nrf_gpio_cfg_default(coilPin);
+        return ret;
     }
 
     #if DICE_SELFTEST && BATTERY_SELFTEST
