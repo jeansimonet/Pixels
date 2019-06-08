@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2018, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -60,11 +60,6 @@
 #include "app_error_weak.h"
 #include "nrf_bootloader_info.h"
 #include "nrf_delay.h"
-#include "nrf_dfu_settings.h"
-#include "nrf_dfu_utils.h"
-#include "nrf_bootloader_wdt.h"
-#include "nrf_bootloader_info.h"
-#include "nrf_bootloader_fw_activation.h"
 
 static void on_error(void)
 {

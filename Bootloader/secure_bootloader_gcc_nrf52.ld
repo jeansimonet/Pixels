@@ -8,8 +8,8 @@ MEMORY
   FLASH (rx) : ORIGIN = 0x28000, LENGTH = 0x6000
   RAM (rwx) :  ORIGIN = 0x20002390, LENGTH = 0x3c70
   bootloader_settings_page (r) : ORIGIN = 0x0002F000, LENGTH = 0x1000
-  mbr_params_page (r) : ORIGIN = 0x0002E000, LENGTH = 0x1000
   uicr_mbr_params_page (r) : ORIGIN = 0x10001018, LENGTH = 0x4
+  mbr_params_page (r) : ORIGIN = 0x0002E000, LENGTH = 0x1000
   uicr_bootloader_start_address (r) : ORIGIN = 0x10001014, LENGTH = 0x4
 }
 
@@ -79,6 +79,12 @@ SECTIONS
     KEEP(*(SORT(.crypto_data*)))
     PROVIDE(__stop_crypto_data = .);
   } > FLASH
+  .log_const_data :
+  {
+    PROVIDE(__start_log_const_data = .);
+    KEEP(*(SORT(.log_const_data*)))
+    PROVIDE(__stop_log_const_data = .);
+  } > FLASH
     .nrf_queue :
   {
     PROVIDE(__start_nrf_queue = .);
@@ -91,23 +97,17 @@ SECTIONS
     KEEP(*(SORT(.dfu_trans*)))
     PROVIDE(__stop_dfu_trans = .);
   } > FLASH
-    .svc_data :
-  {
-    PROVIDE(__start_svc_data = .);
-    KEEP(*(.svc_data))
-    PROVIDE(__stop_svc_data = .);
-  } > FLASH
-  .log_const_data :
-  {
-    PROVIDE(__start_log_const_data = .);
-    KEEP(*(SORT(.log_const_data*)))
-    PROVIDE(__stop_log_const_data = .);
-  } > FLASH
     .nrf_balloc :
   {
     PROVIDE(__start_nrf_balloc = .);
     KEEP(*(.nrf_balloc))
     PROVIDE(__stop_nrf_balloc = .);
+  } > FLASH
+    .svc_data :
+  {
+    PROVIDE(__start_svc_data = .);
+    KEEP(*(.svc_data))
+    PROVIDE(__stop_svc_data = .);
   } > FLASH
   .sdh_ble_observers :
   {
@@ -121,12 +121,6 @@ SECTIONS
     KEEP(*(SORT(.log_backends*)))
     PROVIDE(__stop_log_backends = .);
   } > FLASH
-  .sdh_stack_observers :
-  {
-    PROVIDE(__start_sdh_stack_observers = .);
-    KEEP(*(SORT(.sdh_stack_observers*)))
-    PROVIDE(__stop_sdh_stack_observers = .);
-  } > FLASH
   .sdh_req_observers :
   {
     PROVIDE(__start_sdh_req_observers = .);
@@ -139,6 +133,12 @@ SECTIONS
     KEEP(*(SORT(.sdh_state_observers*)))
     PROVIDE(__stop_sdh_state_observers = .);
   } > FLASH
+  .sdh_stack_observers :
+  {
+    PROVIDE(__start_sdh_stack_observers = .);
+    KEEP(*(SORT(.sdh_stack_observers*)))
+    PROVIDE(__stop_sdh_stack_observers = .);
+  } > FLASH
   .sdh_soc_observers :
   {
     PROVIDE(__start_sdh_soc_observers = .);
@@ -147,5 +147,6 @@ SECTIONS
   } > FLASH
 
 } INSERT AFTER .text
+
 
 INCLUDE "nrf_common.ld"

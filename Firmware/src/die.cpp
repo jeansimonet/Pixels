@@ -136,11 +136,11 @@ namespace Die
         // Initialize Modules
         //--------------------
         
-        #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
-        // Test bulk bulk_data_transfer
-        //SendBulkData::selfTest();
-        ReceiveBulkData::selfTest();
-        #endif
+        // #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
+        // // Test bulk bulk_data_transfer
+        // //SendBulkData::selfTest();
+        // ReceiveBulkData::selfTest();
+        // #endif
     }
 
     // Main loop!

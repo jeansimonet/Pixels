@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016 - 2018, Nordic Semiconductor ASA
+ * Copyright (c) 2016 - 2019, Nordic Semiconductor ASA
  *
  * All rights reserved.
  *
@@ -80,8 +80,6 @@ STATIC_ASSERT(NRF_LOG_BACKEND_FLASH_START_PAGE != 0,
     "If nrf_log flash backend is used it cannot use space after code because it would collide with settings page.");
 #endif
 
-#define MAGNET_PIN 6
-
 /**@brief Weak implemenation of nrf_dfu_init
  *
  * @note   This function will be overridden if nrf_dfu.c is
@@ -132,7 +130,6 @@ static void reset_after_flash_write(void * p_context)
 ret_code_t custom_bootloader_start_app();
 ret_code_t custom_bootloader_enter_dfu();
 
-
 static void bootloader_reset(void)
 {
     NRF_LOG_DEBUG("Resetting bootloader.");
@@ -151,7 +148,8 @@ static void inactivity_timeout(void)
 
 static void start_app_timeout(void)
 {
-    NRF_LOG_INFO("DFU not connected to, starting app.");
+    NRF_LOG_INFO("DFU not connected to, starting app now.");
+    NRF_LOG_PROCESS();
     nrf_bootloader_app_start();
 }
 
@@ -331,6 +329,7 @@ static bool dfu_enter_check(void)
     return false;
 }
 
+
 ret_code_t custom_bootloader_app_valid() {
 
     // Erase additional data like peer data or advertisement name
@@ -344,15 +343,15 @@ ret_code_t custom_bootloader_app_valid() {
     nrf_dfu_settings_backup(flash_write_callback);
     ASSERT(m_flash_write_done);
 
-    return NRF_SUCCESS;
+    nrf_bootloader_app_start();
+    NRF_LOG_ERROR("Unreachable");
+
+    return NRF_ERROR_INTERNAL;
 }
 
 ret_code_t custom_bootloader_enter_dfu() {
-    nrf_bootloader_wdt_init();
-
+	nrf_bootloader_wdt_init();
     scheduler_init();
-
-    // Clear all DFU stop flags.
     dfu_enter_flags_clear();
 
     // Call user-defined init function if implemented
@@ -370,7 +369,7 @@ ret_code_t custom_bootloader_enter_dfu() {
 
     NRF_LOG_DEBUG("Enter main loop");
     loop_forever(); // This function will never return.
-    NRF_LOG_ERROR("Should never come here: After looping forever.");
+    NRF_LOG_ERROR("Unreachable");
 
     // Should not be reached
     return NRF_ERROR_INTERNAL;
@@ -384,9 +383,6 @@ ret_code_t nrf_bootloader_init(nrf_dfu_observer_t observer)
     nrf_bootloader_fw_activation_result_t activation_result;
 
     m_user_observer = observer;
-
-    // Magnet pin needs a pull-up, and is pulled low when North pole is present
-    //nrf_gpio_cfg_input(MAGNET_PIN, NRF_GPIO_PIN_PULLUP);
 
     if (NRF_BL_DFU_ENTER_METHOD_BUTTON)
     {
@@ -407,10 +403,12 @@ ret_code_t nrf_bootloader_init(nrf_dfu_observer_t observer)
         case ACTIVATION_NONE:
             if (dfu_enter_check()) {
                 // DFU is necessary, enter it
-                nrf_bootloader_dfu_inactivity_timer_restart(NRF_BOOTLOADER_MS_TO_TICKS(NRF_BL_DFU_CONTINUATION_TIMEOUT_MS), inactivity_timeout);
+                NRF_LOG_INFO("Entering DFU because no valid app");
+                nrf_bootloader_dfu_inactivity_timer_restart(NRF_BOOTLOADER_MS_TO_TICKS(NRF_BL_DFU_INACTIVITY_TIMEOUT_MS), inactivity_timeout);
                 custom_bootloader_enter_dfu();
             } else {
                 // App is valid, enter dfu only for a short amount of time, then start the app!
+                NRF_LOG_INFO("Entering DFU for a few seconds, because app is valid");
                 nrf_bootloader_dfu_inactivity_timer_restart(NRF_BOOTLOADER_MS_TO_TICKS(CUSTOM_BL_DFU_INACTIVITY_TIMEOUT_MS), start_app_timeout);
                 custom_bootloader_app_valid();
                 custom_bootloader_enter_dfu();
@@ -418,6 +416,7 @@ ret_code_t nrf_bootloader_init(nrf_dfu_observer_t observer)
             break;
 
         case ACTIVATION_SUCCESS_EXPECT_ADDITIONAL_UPDATE:
+            NRF_LOG_INFO("Activation Success, waiting for additional update");
             nrf_bootloader_dfu_inactivity_timer_restart(NRF_BOOTLOADER_MS_TO_TICKS(NRF_BL_DFU_CONTINUATION_TIMEOUT_MS), inactivity_timeout);
             custom_bootloader_enter_dfu();
             break;
@@ -428,6 +427,7 @@ ret_code_t nrf_bootloader_init(nrf_dfu_observer_t observer)
             return NRF_ERROR_INTERNAL; // Should not reach this.
 
         case ACTIVATION_ERROR:
+            NRF_LOG_ERROR("Activation Error");
         default:
             return NRF_ERROR_INTERNAL;
     }
