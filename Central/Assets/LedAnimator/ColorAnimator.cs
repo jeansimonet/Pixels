@@ -75,27 +75,27 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		}
 	}
 
-	public Animations.RGBAnimationTrack Serialize(float unitSize)
-	{
-		var rect = (ColorSlider.transform as RectTransform).rect;
-		return new Animations.RGBAnimationTrack()
-		{
-			startTime = (short)Mathf.RoundToInt(LeftBound * 1000 / unitSize),
-			duration = (short)Mathf.RoundToInt((RightBound - LeftBound) * 1000 / unitSize),
-			ledIndex = (byte)LedSpriteToIndex(_image.sprite.name),
-			count = 1,
-			keyframes = ColorSlider.Serialize(),
-		};
-	}
+	//public Animations.RGBAnimationTrack Serialize(float unitSize)
+	//{
+	//	var rect = (ColorSlider.transform as RectTransform).rect;
+	//	return new Animations.RGBAnimationTrack()
+	//	{
+	//		startTime = (short)Mathf.RoundToInt(LeftBound * 1000 / unitSize),
+	//		duration = (short)Mathf.RoundToInt((RightBound - LeftBound) * 1000 / unitSize),
+	//		ledIndex = (byte)LedSpriteToIndex(_image.sprite.name),
+	//		count = 1,
+	//		keyframes = ColorSlider.Serialize(),
+	//	};
+	//}
 
-	public void Deserialize(Animations.RGBAnimationTrack track, float unitSize)
-	{
-		ShowConfirmRemove(false);
-		SetLedSprite(LedSelector.Instance.GetLedSprite(ColorAnimator.IndexToLedSprite(track.ledIndex)));
-		LeftBound = track.startTime / 1000f * unitSize;
-		RightBound = LeftBound + track.duration / 1000f * unitSize;
-		ColorSlider.Deserialize(track.keyframes);
-	}
+	//public void Deserialize(Animations.RGBAnimationTrack track, float unitSize)
+	//{
+	//	ShowConfirmRemove(false);
+	//	SetLedSprite(LedSelector.Instance.GetLedSprite(ColorAnimator.IndexToLedSprite(track.ledIndex)));
+	//	LeftBound = track.startTime / 1000f * unitSize;
+	//	RightBound = LeftBound + track.duration / 1000f * unitSize;
+	//	ColorSlider.Deserialize(track.keyframes);
+	//}
 
 	public static int LedSpriteToIndex(string spriteName)
 	{

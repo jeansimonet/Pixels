@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Animations;
 using System.Text;
+using System.Runtime.InteropServices;
 
 public class Die
 	: MonoBehaviour
@@ -178,14 +179,14 @@ public class Die
 			return;
 		}
 
-        StringBuilder builder = new StringBuilder();
-        builder.Append("Received ");
-        for (int i = 0; i < data.Length; ++i)
-        {
-            builder.Append(data[i].ToString("X2"));
-            builder.Append(" ");
-        }
-        Debug.Log(builder.ToString());
+        //StringBuilder builder = new StringBuilder();
+        //builder.Append("Received ");
+        //for (int i = 0; i < data.Length; ++i)
+        //{
+        //    builder.Append(data[i].ToString("X2"));
+        //    builder.Append(" ");
+        //}
+        //Debug.Log(builder.ToString());
 
         // Process the message coming from the actual die!
         var message = DieMessages.FromByteArray(data);
@@ -247,7 +248,6 @@ public class Die
     {
         bool msgReceived = false; 
         DieMessage msg = default(DieMessage);
-        Debug.Log("Waiting for message " + msgType.ToString());
         MessageReceivedDelegate callback = (ackMsg) =>
         {
             msgReceived = true;
@@ -257,7 +257,6 @@ public class Die
         AddMessageHandler(msgType, callback);
         yield return new WaitUntil(() => msgReceived);
         RemoveMessageHandler(msgType, callback);
-        Debug.Log("Received message " + msg.GetType().ToString());
         if (msgReceivedCallback != null)
         {
             msgReceivedCallback.Invoke(msg);
@@ -267,11 +266,9 @@ public class Die
     IEnumerator SendMessageWithAck<T>(T message, DieMessageType ackType)
         where T : DieMessage
     {
-        Debug.Log("Sending chunk");
         bool msgReceived = false;
         MessageReceivedDelegate callback = (ackMsg) =>
         {
-            Debug.Log("msgReceived=true");
             msgReceived = true;
         };
 
@@ -281,7 +278,6 @@ public class Die
 
         yield return new WaitUntil(() => msgReceived);
         RemoveMessageHandler(ackType, callback);
-        Debug.Log("Chunk received");
     }
 
     IEnumerator SendMessageWithAckOrTimeout<T>(T message, DieMessageType ackType, float timeOut)
@@ -360,7 +356,7 @@ public class Die
         Debug.Log("Die is ready, sending data");
 
         // Then transfer data
-        short offset = 0;
+        ushort offset = 0;
         while (remainingSize > 0)
         {
             var data = new DieMessageBulkData();
@@ -388,7 +384,7 @@ public class Die
 
         // Allocate a byte buffer
         byte[] buffer = new byte[size];
-        short totalDataReceived = 0;
+        ushort totalDataReceived = 0;
 
         // Setup bulk receive handler
         MessageReceivedDelegate bulkReceived = (msg) =>
@@ -423,57 +419,67 @@ public class Die
     {
         // Prepare the die
         var prepareDie = new DieMessageTransferAnimSet();
-        prepareDie.count = (byte)set.animations.Length;
-        prepareDie.totalAnimationByteSize = (short)set.GetTotalByteSize();
-        Debug.Log("sending animation set setup");
+        prepareDie.keyFrameCount = set.getKeyframeCount();
+        prepareDie.trackCount = set.getTrackCount();
+        prepareDie.animationCount = set.getAnimationCount();
+        Debug.Log("Animation Data to be sent:");
+        Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+        Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.AnimationTrack>());
+        Debug.Log("animations: " + prepareDie.animationCount + " * " + Marshal.SizeOf<Animations.Animation>());
+        Debug.Log("palette: " + AnimationSet.PALETTE_SIZE);
+
+        //StringBuilder builder = new StringBuilder();
+        //builder.AppendLine("Sending animation set setup");
+        //builder.Append("keyframes: ");
+        //builder.Append(prepareDie.keyFrameCount);
+        //builder.AppendLine();
+        //builder.Append("tracks: ");
+        //builder.Append(prepareDie.trackCount);
+        //builder.AppendLine();
+        //builder.Append("animations: ");
+        //builder.Append(prepareDie.animationCount);
+        //builder.AppendLine();
+        //Debug.Log(builder.ToString());
         yield return StartCoroutine(SendMessageWithAck(prepareDie, DieMessageType.TransferAnimSetAck));
 
         Debug.Log("die is ready, sending animations");
-        // Die is ready, perform bulk transfer for each of the animations
-        foreach (var anim in set.animations)
-        {
-            Debug.Log("sending bulk data");
-            byte[] animBytes = RGBAnimation.ToByteArray(anim);
-            yield return StartCoroutine(UploadBulkData(animBytes));
-
-            Debug.Log("finished sending build data, waiting");
-            // Then wait until the die is ready for the next anim bulk transfer
-            yield return StartCoroutine(WaitForMessage(DieMessageType.TransferAnimReadyForNextAnim, null));
-            Debug.Log("die is ready for next anim");
-        }
+        Debug.Log("byte array should be: " + set.ComputeAnimationDataSize());
+        var setData = set.ToByteArray();
+        yield return StartCoroutine(UploadBulkData(setData));
 
         // We're done!
+        Debug.Log("Done!");
     }
 
-    public IEnumerator DownloadAnimationSet(AnimationSet outSet)
-    {
-        // Request the anim set from the die
-        SendMessage(new DieMessageRequestAnimSet());
+    //public IEnumerator DownloadAnimationSet(AnimationSet outSet)
+    //{
+    //    // Request the anim set from the die
+    //    SendMessage(new DieMessageRequestAnimSet());
 
-        // Now wait for the setup message back
-        int animCount = 0;
-        yield return StartCoroutine(WaitForMessage(DieMessageType.TransferAnimSet, (msg) =>
-        {
-            var setupMsg = (DieMessageTransferAnimSet)msg;
-            animCount = setupMsg.count;
-        }));
+    //    // Now wait for the setup message back
+    //    int animCount = 0;
+    //    yield return StartCoroutine(WaitForMessage(DieMessageType.TransferAnimSet, (msg) =>
+    //    {
+    //        var setupMsg = (DieMessageTransferAnimSet)msg;
+    //        animCount = setupMsg.count;
+    //    }));
 
-        // Got the message, acknowledge it
-        StartCoroutine(SendMessage(new DieMessageTransferAnimSetAck()));
+    //    // Got the message, acknowledge it
+    //    StartCoroutine(SendMessage(new DieMessageTransferAnimSetAck()));
 
-        outSet.animations = new RGBAnimation[animCount];
-        for (int i = 0; i < animCount; ++i)
-        {
-            byte[] animData = null;
-            yield return StartCoroutine(DownloadBulkData((buf) => animData = buf));
-            outSet.animations[i] = RGBAnimation.FromByteArray(animData);
+    //    outSet.animations = new RGBAnimation[animCount];
+    //    for (int i = 0; i < animCount; ++i)
+    //    {
+    //        byte[] animData = null;
+    //        yield return StartCoroutine(DownloadBulkData((buf) => animData = buf));
+    //        outSet.animations[i] = RGBAnimation.FromByteArray(animData);
 
-            // Tell die we're ready for next anim
-            StartCoroutine(SendMessage(new DieMessageTransferAnimReadyForNextAnim()));
-        }
+    //        // Tell die we're ready for next anim
+    //        StartCoroutine(SendMessage(new DieMessageTransferAnimReadyForNextAnim()));
+    //    }
 
-        // We've read all the anims!
-    }
+    //    // We've read all the anims!
+    //}
 
     public IEnumerator UploadSettings(DieSettings settings)
     {

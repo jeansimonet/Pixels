@@ -107,31 +107,11 @@ public class CurrentDicePoolDice
 
     void RenameDie()
     {
-        // HACK!!! Request data from die!
-        //renameDieDialog.Show(die);
-        byte[] data = new byte[256];
-        for (int i = 0; i < 256; ++i)
-        {
-            data[i] = (byte)i;
-        }
+        var set = Animations.EditAnimationSet.CreateTestSet();
+        Debug.Log(set.ToString());
+        var dieSet = set.ToAnimationSet();
 
-        Debug.Log("Sending bulk data!");
-        die.PrepareBulkData();
-        StartCoroutine(die.UploadBulkData(data));
-
-        //StartCoroutine(die.DownloadBulkData((data) =>
-        //{
-        //    StringBuilder builder = new StringBuilder();
-        //    builder.Append("Received ");
-        //    for (int i = 0; i < data.Length; ++i)
-        //    {
-        //        builder.Append(data[i].ToString("X2"));
-        //        builder.Append(" ");
-        //    }
-        //    Debug.Log(builder.ToString());
-        //}));
-        //Debug.Log("Requesting bulk data!");
-        //die.RequestBulkData();
+        StartCoroutine(die.UploadAnimationSet(dieSet));
         HideCommands();
     }
 

@@ -367,7 +367,7 @@ ret_code_t custom_bootloader_enter_dfu() {
         return NRF_ERROR_INTERNAL;
     }
 
-    NRF_LOG_DEBUG("Enter main loop");
+    NRF_LOG_DEBUG("Enter main loop, waiting for BLE DFU request");
     loop_forever(); // This function will never return.
     NRF_LOG_ERROR("Unreachable");
 

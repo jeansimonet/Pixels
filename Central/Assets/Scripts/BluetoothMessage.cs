@@ -20,7 +20,6 @@ public enum DieMessageType : byte
     BulkDataAck,
     TransferAnimSet,
     TransferAnimSetAck,
-    TransferAnimReadyForNextAnim,
     TransferSettings,
     TransferSettingsAck,
     DebugLog,
@@ -186,7 +185,7 @@ public class DieMessageBulkData
 {
     public DieMessageType type { get; set; } = DieMessageType.BulkData;
     public byte size;
-    public short offset;
+    public ushort offset;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
     public byte[] data;
 }
@@ -196,7 +195,7 @@ public class DieMessageBulkDataAck
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.BulkDataAck;
-    public short offset;
+    public ushort offset;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -204,8 +203,9 @@ public class DieMessageTransferAnimSet
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSet;
-    public byte count;
-    public short totalAnimationByteSize;
+    public ushort keyFrameCount;
+    public ushort trackCount;
+    public ushort animationCount;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -213,13 +213,6 @@ public class DieMessageTransferAnimSetAck
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSetAck;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public class DieMessageTransferAnimReadyForNextAnim
-    : DieMessage
-{
-    public DieMessageType type { get; set; } = DieMessageType.TransferAnimReadyForNextAnim;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

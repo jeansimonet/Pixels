@@ -49,8 +49,6 @@ namespace Animations
 	/// Values outside the track's range are clamped to first or last keyframe value.
 	/// </summary>
 	uint32_t AnimationTrack::evaluate(int time) const {
-		uint32_t ret = 0;
-
 		if (keyFrameCount == 0)
 			return 0;
 
@@ -85,9 +83,6 @@ namespace Animations
 			int scaledBlue = getBlue(prevKeyframeColor) * (scaler - scaledPercent) + getBlue(nextKeyframeColor) * scaledPercent;
 			return toColor(scaledRed / scaler, scaledGreen / scaler, scaledBlue / scaler);
 		}
-
-		// Scale the return value
-		return ret;
 	}
 
 	/// <summary>

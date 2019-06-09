@@ -25,8 +25,6 @@ const char* Message::GetMessageTypeString(Message::MessageType msgType)
 		return "TransferAnimSet";
 	case MessageType_TransferAnimSetAck:
 		return "TransferAnimSetAck";
-	case MessageType_TransferAnimReadyForNextAnim:
-		return "TransferAnimReadyForNextAnim";
 	case MessageType_TransferSettings:
 		return "TransferSettings";
 	case MessageType_TransferSettingsAck:

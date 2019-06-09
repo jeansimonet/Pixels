@@ -19,15 +19,17 @@ namespace Bluetooth
 	/// </summary>
 	namespace SendBulkData
 	{
-		typedef void (*sendResultCallback)(bool result);
-		void send(const uint8_t* theData, short theSize, sendResultCallback callback);
+		typedef void (*sendResultCallback)(void* context, bool result, const uint8_t* data, uint16_t size);
+		void send(const uint8_t* theData, uint16_t theSize, void* context,   sendResultCallback callback);
 		void selfTest();
 	};
 
 	namespace ReceiveBulkData
 	{
-		typedef void (*receiveResultCallback)(bool result, uint8_t* data, short size);
-		void receive(receiveResultCallback callback);
+		typedef void (*receiveResultCallback)(void* context, bool result, uint8_t* data, uint16_t size);
+		void receive(void* context, receiveResultCallback callback);
+		typedef void (*receiveToFlashResultCallback)(void* context, bool result, uint16_t size);
+		void receiveToFlash(uint32_t flashAddress, void* context, receiveToFlashResultCallback callback);
 		void selfTest();
 	};
 }

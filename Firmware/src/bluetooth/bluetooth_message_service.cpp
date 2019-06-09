@@ -5,6 +5,9 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 #include "nrf_sdh_ble.h"
+#include "drivers_nrf/scheduler.h"
+
+using namespace DriversNRF;
 
 namespace Bluetooth
 {
@@ -22,6 +25,7 @@ namespace MessageService
     uint16_t service_handle;
     ble_gatts_char_handles_t rx_handles;
     ble_gatts_char_handles_t tx_handles;
+    uint8_t sendMessageBuffer[32];
 
 	struct HandlerAndToken
 	{
@@ -97,8 +101,8 @@ namespace MessageService
                     ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
                     if (p_evt_write->handle == rx_handles.value_handle)
                     {
-                        NRF_LOG_INFO("Generic Service Message Received: %d bytes", p_evt_write->len);
-                        NRF_LOG_HEXDUMP_INFO(p_evt_write->data, p_evt_write->len);
+                        NRF_LOG_DEBUG("Generic Service Message Received: %d bytes", p_evt_write->len);
+                        NRF_LOG_HEXDUMP_DEBUG(p_evt_write->data, p_evt_write->len);
                         OnMessageReceived(p_evt_write->data, p_evt_write->len);
                     }
                     // Else its not meant for us
@@ -115,18 +119,19 @@ namespace MessageService
     }
 
     bool send(const uint8_t* data, uint16_t size) {
-        NRF_LOG_INFO("Generic Service Message Sending: %d bytes", size);
-        NRF_LOG_HEXDUMP_INFO(data, size);
+        NRF_LOG_DEBUG("Generic Service Message Sending: %d bytes", size);
+        NRF_LOG_HEXDUMP_DEBUG(data, size);
         return Stack::send(tx_handles.value_handle, data, size);
     }
 
     bool SendMessage(Message::MessageType msgType) {
         Message msg(msgType);
-        return send(reinterpret_cast<const uint8_t*>(&msg), sizeof(Message));
+        return SendMessage(&msg, sizeof(Message));
     }
 
     bool SendMessage(const Message* msg, int msgSize) {
-        return send(reinterpret_cast<const uint8_t*>(msg), msgSize);
+        memcpy(sendMessageBuffer, msg, msgSize);
+        return send(sendMessageBuffer, msgSize);
     }
 
     void RegisterMessageHandler(Message::MessageType msgType, void* token, MessageHandler handler) {
@@ -146,23 +151,29 @@ namespace MessageService
         messageHandlers[msgType].token = nullptr;
     }
 
+    void MessageSchedulerHandler(void* data, uint16_t size) {
+        // Cast the data
+        auto msg = reinterpret_cast<const Message*>(data);
+        // #if defined(_CONSOLE)
+        // debugPrint("Received ");
+        // debugPrint(DieMessage::GetMessageTypeString(msg->type));
+        // debugPrint("(");
+        // debugPrint(msg->type);
+        // debugPrintln(")");
+        // #endif
+        auto handler = messageHandlers[(int)msg->type];
+        if (handler.handler != nullptr)
+        {
+            handler.handler(handler.token, msg);
+        }
+    }
+
     void OnMessageReceived(const uint8_t* data, uint16_t len) {
         if (len >= sizeof(Message))
         {
             auto msg = reinterpret_cast<const Message*>(data);
             if (msg->type >= Message::MessageType_State && msg->type < Message::MessageType_Count) {
-                // #if defined(_CONSOLE)
-                // debugPrint("Received ");
-                // debugPrint(DieMessage::GetMessageTypeString(msg->type));
-                // debugPrint("(");
-                // debugPrint(msg->type);
-                // debugPrintln(")");
-                // #endif
-                auto handler = messageHandlers[(int)msg->type];
-                if (handler.handler != nullptr)
-                {
-                    handler.handler(handler.token, msg);
-                }
+    		    Scheduler::push(data, len, MessageSchedulerHandler);
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);
             }

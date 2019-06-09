@@ -5,6 +5,7 @@
 
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/timers.h"
+#include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/log.h"
 #include "drivers_nrf/a2d.h"
 #include "drivers_nrf/power_manager.h"
@@ -24,6 +25,8 @@
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
 
+#include "animations/Animation_set.h"
+
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_fstorage_sd.h"
@@ -34,6 +37,7 @@ using namespace DriversNRF;
 using namespace Config;
 using namespace DriversHW;
 using namespace Bluetooth;
+using namespace Animations;
 
 #define APP_BLE_CONN_CFG_TAG    1
 
@@ -69,10 +73,13 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        Watchdog::init();
+        //Watchdog::init();
 
         // Then the log system
         Log::init();
+
+        // Then the timers
+        Scheduler::init();
 
         // Then the timers
         Timers::init();
@@ -81,7 +88,7 @@ namespace Die
         GPIOTE::init();
 
         // Power manager handles going to sleep and resetting the board
-        PowerManager::init();
+        //PowerManager::init();
         
         // Analog to digital converter next, so we can
         // identify the board we're dealing with
@@ -136,21 +143,21 @@ namespace Die
         // Initialize Modules
         //--------------------
         
-        // #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
-        // // Test bulk bulk_data_transfer
-        // //SendBulkData::selfTest();
-        // ReceiveBulkData::selfTest();
-        // #endif
+        #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
+        // Test bulk bulk_data_transfer
+        //SendBulkData::selfTest();
+        ReceiveBulkData::selfTest();
+        #endif
+
+        AnimationSet::init();
     }
 
     // Main loop!
     void update() {
-        if (!Log::process())
-        {
-            Watchdog::feed();
-            PowerManager::feed();
-            PowerManager::update();
-        }
+        Scheduler::update();
+        // Watchdog::feed();
+        // PowerManager::feed();
+        // PowerManager::update();
     }
 }
 

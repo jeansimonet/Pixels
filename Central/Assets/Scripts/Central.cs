@@ -368,14 +368,14 @@ public class Central
 
     public void SendBytes(Die die, byte[] bytes, int length, System.Action bytesWrittenCallback)
 	{
-        StringBuilder builder = new StringBuilder();
-        builder.Append("Sending ");
-        for (int i = 0; i < length; ++i)
-        {
-            builder.Append(bytes[i].ToString("X2"));
-            builder.Append(" ");
-        }
-        Debug.Log(builder.ToString());
+        //StringBuilder builder = new StringBuilder();
+        //builder.Append("Sending ");
+        //for (int i = 0; i < length; ++i)
+        //{
+        //    builder.Append(bytes[i].ToString("X2"));
+        //    builder.Append(" ");
+        //}
+        //Debug.Log(builder.ToString());
         if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
         {
             BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, (ignore) =>

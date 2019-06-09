@@ -29,7 +29,6 @@ namespace Config
 		bool checkValid();
 		Config::Settings const * const getSettings();
 
-		void eraseSettings();
 		void writeToFlash(Settings* sourceSettings);
 		void writeToFlash(void* rawData, size_t rawDataSize);
 		void setDefaults(Settings& outSettings);

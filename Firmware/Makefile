@@ -11,32 +11,20 @@ $(OUTPUT_DIRECTORY)/firmware.out: \
 # Source files common to all targets
 SRC_FILES += \
 	$(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
-	$(SDK_ROOT)/components/ble/ble_services/ble_lbs/ble_lbs.c \
-	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu.c \
-	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu_unbonded.c \
 	$(SDK_ROOT)/components/ble/common/ble_advdata.c \
 	$(SDK_ROOT)/components/ble/common/ble_conn_params.c \
 	$(SDK_ROOT)/components/ble/common/ble_conn_state.c \
 	$(SDK_ROOT)/components/ble/common/ble_srv_common.c \
 	$(SDK_ROOT)/components/ble/nrf_ble_gatt/nrf_ble_gatt.c \
 	$(SDK_ROOT)/components/ble/nrf_ble_qwr/nrf_ble_qwr.c \
-	$(SDK_ROOT)/components/ble/peer_manager/peer_manager.c \
 	$(SDK_ROOT)/components/ble/peer_manager/gatt_cache_manager.c \
 	$(SDK_ROOT)/components/ble/peer_manager/gatts_cache_manager.c \
 	$(SDK_ROOT)/components/ble/peer_manager/id_manager.c \
-	$(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \
-	$(SDK_ROOT)/components/ble/peer_manager/peer_database.c \
-	$(SDK_ROOT)/components/ble/peer_manager/peer_id.c \
-	$(SDK_ROOT)/components/ble/peer_manager/peer_manager_handler.c \
-	$(SDK_ROOT)/components/ble/peer_manager/pm_buffer.c \
-	$(SDK_ROOT)/components/ble/peer_manager/security_dispatcher.c \
-	$(SDK_ROOT)/components/ble/peer_manager/security_manager.c \
 	$(SDK_ROOT)/components/boards/boards.c \
 	$(SDK_ROOT)/components/libraries/atomic/nrf_atomic.c \
 	$(SDK_ROOT)/components/libraries/atomic_fifo/nrf_atfifo.c \
 	$(SDK_ROOT)/components/libraries/atomic_flags/nrf_atflags.c \
 	$(SDK_ROOT)/components/libraries/balloc/nrf_balloc.c \
-	$(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_svci.c \
 	$(SDK_ROOT)/components/libraries/bsp/bsp.c \
 	$(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
 	$(SDK_ROOT)/components/libraries/fds/fds.c \
@@ -95,6 +83,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_nrf/i2c.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/log.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/power_manager.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/scheduler.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/timers.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/watchdog.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
@@ -201,9 +190,6 @@ COMMON_FLAGS += -DBOARD_CUSTOM
 COMMON_FLAGS += -DCONFIG_GPIO_AS_PINRESET
 COMMON_FLAGS += -DFLOAT_ABI_SOFT
 COMMON_FLAGS += -DNRF52810_XXAA
-COMMON_FLAGS += -DNRF_DFU_SVCI_ENABLED
-COMMON_FLAGS += -DNRF_DFU_TRANSPORT_BLE=1
-COMMON_FLAGS += -DNRF_SD_BLE_API_VERSION=6
 COMMON_FLAGS += -DS112
 COMMON_FLAGS += -DSOFTDEVICE_PRESENT
 COMMON_FLAGS += -DSWI_DISABLE0
@@ -296,3 +282,8 @@ flash_ble: zip
 	@echo Flashing: $(OUTPUT_DIRECTORY)/nrf52810_xxaa_s112.hex over BLE DFU
 	nrfutil dfu ble -ic NRF51 -p COM5 -snr 680120179 -n DiceDfuTarg -pkg _build/firmware.zip
 
+# Flash softdevice
+flash_softdevice:
+	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
+	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --reset

@@ -28,7 +28,7 @@ public class TimelineView : MonoBehaviour
 	ColorAnimator _colorAnimPrefab = null;
 
 	float _widthPadding;
-	Animations.AnimationSet _animSet;
+	Animations.EditAnimationSet _animSet;
 
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
@@ -102,32 +102,8 @@ public class TimelineView : MonoBehaviour
 	public void LoadFromFile()
 	{
 		Debug.Log("LoadFromFile");
-		// Generate random anims
-		for (int i = 0; i < _animSet.animations.Length; ++i)
-		{
-			var data = new Animations.RGBAnimation();
-			data.duration = (short)Mathf.RoundToInt(1000 * Random.Range(1, 11));
-			data.tracks = new Animations.RGBAnimationTrack[Random.Range(1, 11)];
-			for (int j = 0; j < data.tracks.Length; ++j)
-			{
-				Animations.RGBAnimationTrack track = new Animations.RGBAnimationTrack();
-				track.startTime = (short)Random.Range(0, data.duration - 100);
-				track.duration = (short)Random.Range(100, data.duration - track.startTime);
-				track.ledIndex = (byte)Random.Range(0, 21);
-				track.keyframes = new Animations.RGBKeyframe[Random.Range(1, 6)];
-				for (int k = 0; k < track.keyframes.Length; ++k)
-				{
-					track.keyframes[k].time = (byte)Random.Range(0, 256);
-					track.keyframes[k].red = (byte)Random.Range(0, 256);
-					track.keyframes[k].blue = (byte)Random.Range(0, 256);
-					track.keyframes[k].green = (byte)Random.Range(0, 256);
-				}
-				data.tracks[j] = track;
-			}
-			_animSet.animations[i] = data;
-		}
 
-		// ----> Update _animSet with data from dice
+        // Load from file then update _animSet with data from dice
 
 		ShowFace(0);
 		_animSetTogglesRoot.GetComponentsInChildren<Toggle>().First().isOn = true;
@@ -153,44 +129,7 @@ public class TimelineView : MonoBehaviour
 
 	public void PrintData()
 	{
-		int i = 0;
-		foreach (var data in _animSet.animations)
-		{
-			var str = new System.Text.StringBuilder();
-			str.Append("#");
-			str.Append(i);
-			str.Append(" -> ");
-			str.Append(data.tracks.Length);
-			str.Append(" color animations");
-			str.Append(", duration of ");
-			str.Append(data.duration);
-			str.AppendLine(" seconds");
-			foreach (var t in data.tracks)
-			{
-				str.Append(" * ");
-				str.Append(t.startTime);
-				str.Append(", ");
-				str.Append(t.duration);
-				str.Append(", ");
-				str.Append(t.ledIndex);
-				str.AppendLine();
-				foreach (var k in t.keyframes)
-				{
-					str.Append("    * ");
-					str.Append(k.time);
-					str.Append(", (");
-					str.Append(k.red);
-					str.Append(", ");
-					str.Append(k.green);
-					str.Append(", ");
-					str.Append(k.blue);
-					str.Append(")");
-					str.AppendLine();
-				}
-			}
-			Debug.Log(str.ToString());
-			++i;
-		}
+        _animSet.ToString();
 	}
 
 	void ShowFace(int index)
@@ -205,37 +144,36 @@ public class TimelineView : MonoBehaviour
 
 	void Serialize()
 	{
-		var anims = GetComponentsInChildren<ColorAnimator>();
+		//var anims = GetComponentsInChildren<ColorAnimator>();
 
-		Debug.LogFormat("Serializing {0} color animations", anims.Length);
+		//Debug.LogFormat("Serializing {0} color animations", anims.Length);
 
-		var anim = new Animations.RGBAnimation()
-		{
-			duration = (short)Mathf.RoundToInt(1000 * Duration),
-			tracks = anims.Select(a => a.Serialize(Unit)).ToArray()
-		};
-		_animSet.animations[CurrentFace] = anim;
+		//var anim = new Animations.EditAnimation()
+		//{
+		//	tracks = anims.Select(a => a.Serialize(Unit)).ToArray()
+		//};
+		//_animSet.animations[CurrentFace] = anim;
 	}
 
 	void Deserialize()
 	{
-		var data = _animSet.animations[CurrentFace];
-		if (data == null)
-		{
-			Debug.LogError("Null animation data at index " + CurrentFace);
-			return;
-		}
+		//var data = _animSet.animations[CurrentFace];
+		//if (data == null)
+		//{
+		//	Debug.LogError("Null animation data at index " + CurrentFace);
+		//	return;
+		//}
 
-		Debug.LogFormat("Deserializing {0} color animations", data.tracks.Length);
+		//Debug.LogFormat("Deserializing {0} color animations", data.tracks.Length);
 
-		Clear();
-		Duration = data.duration / 1000f;
+		//Clear();
+		//Duration = data.duration / 1000f;
 
-		foreach (var track in data.tracks)
-		{
-			var colorAnim = CreateAnimation();
-			colorAnim.Deserialize(track, Unit);
-		}
+		//foreach (var track in data.tracks)
+		//{
+		//	var colorAnim = CreateAnimation();
+		//	colorAnim.Deserialize(track, Unit);
+		//}
 
 		Repaint();
 	}
@@ -328,12 +266,7 @@ public class TimelineView : MonoBehaviour
 
 	void Awake()
 	{
-		_animSet = new Animations.AnimationSet
-		{
-			animations = Enumerable.Range(0, 6)
-				.Select(i => new Animations.RGBAnimation() { duration = 1000, tracks = new Animations.RGBAnimationTrack[0] })
-				.ToArray()
-		};
+        _animSet = new Animations.EditAnimationSet();
 		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
 		Duration = _minDuration;
 		Zoom = _minZoom;

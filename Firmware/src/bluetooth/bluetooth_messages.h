@@ -23,7 +23,6 @@ struct Message
 		MessageType_BulkDataAck,
 		MessageType_TransferAnimSet,
 		MessageType_TransferAnimSetAck,
-		MessageType_TransferAnimReadyForNextAnim,
 		MessageType_TransferSettings,
 		MessageType_TransferSettingsAck,
 		MessageType_DebugLog,
@@ -91,7 +90,7 @@ struct MessageAcc
 struct MessageBulkSetup
 	: Message
 {
-	short size;
+	uint16_t size;
 
 	inline MessageBulkSetup() : Message(Message::MessageType_BulkSetup) {}
 };
@@ -100,7 +99,7 @@ struct MessageBulkData
 	: Message
 {
 	uint8_t size;
-	short offset;
+	uint16_t offset;
 	uint8_t data[16];
 
 	inline MessageBulkData() : Message(Message::MessageType_BulkData) {}
@@ -109,15 +108,16 @@ struct MessageBulkData
 struct MessageBulkDataAck
 	: Message
 {
-	short offset;
+	uint16_t offset;
 	inline MessageBulkDataAck() : Message(Message::MessageType_BulkDataAck) {}
 };
 
 struct MessageTransferAnimSet
 	: Message
 {
-	uint8_t count;
-	short totalAnimationByteSize;
+	uint16_t keyFrameCount;
+	uint16_t trackCount;
+	uint16_t animationCount;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
 };

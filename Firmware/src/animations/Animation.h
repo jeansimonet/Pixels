@@ -44,7 +44,7 @@ namespace Animations
 	/// A keyframe-based animation
 	/// size: 8 bytes (+ actual track and keyframe data)
 	/// </summary>
-	class Animation
+	struct Animation
 	{
 	public:
 		uint16_t duration; // in ms
