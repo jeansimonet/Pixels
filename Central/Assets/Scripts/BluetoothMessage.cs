@@ -40,6 +40,7 @@ public enum DieMessageType : byte
 
     TestBulkSend,
     TestBulkReceive,
+    SetAllLEDsToColor,
 }
 
 public interface DieMessage
@@ -356,5 +357,13 @@ public class DieMessageTestBulkReceive
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TestBulkReceive;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetAllLEDsToColor
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetAllLEDsToColor;
+    public uint color;
 }
 

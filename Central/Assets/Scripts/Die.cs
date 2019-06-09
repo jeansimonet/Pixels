@@ -603,4 +603,22 @@ public class Die
     {
         PostMessage(new DieMessageTestBulkReceive());
     }
+
+    public void SetLEDsToRandomColor()
+    {
+        var msg = new DieMessageSetAllLEDsToColor();
+        uint r = (byte)Random.Range(0, 256);
+        uint g = (byte)Random.Range(0, 256);
+        uint b = (byte)Random.Range(0, 256);
+        msg.color = (r << 16) + (g << 8) + b;
+        PostMessage(msg);
+    }
+
+    public void SetLEDsToColor(Color color)
+    {
+        var msg = new DieMessageSetAllLEDsToColor();
+        Color32 color32 = color;
+        msg.color = (uint)((color32.r << 16) + (color32.g << 8) + color32.b);
+        PostMessage(msg);
+    }
 }

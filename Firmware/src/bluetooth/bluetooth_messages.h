@@ -44,6 +44,7 @@ struct Message
 		// TESTING 
 		MessageType_TestBulkSend,
 		MessageType_TestBulkReceive,
+		MessageType_SetAllLEDsToColor,
 
 		MessageType_Count
 	};
@@ -176,6 +177,13 @@ struct MessageDefaultAnimSetColor
 {
 	uint32_t color;
 	inline MessageDefaultAnimSetColor() : Message(Message::MessageType_DefaultAnimSetColor) {}
+};
+
+struct MessageSetAllLEDsToColor
+: public Message
+{
+	uint32_t color;
+	inline MessageSetAllLEDsToColor() : Message(Message::MessageType_SetAllLEDsToColor) {}
 };
 }
 

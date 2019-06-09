@@ -107,12 +107,7 @@ public class CurrentDicePoolDice
 
     void RenameDie()
     {
-        var set = Animations.EditAnimationSet.CreateTestSet();
-        Debug.Log(set.ToString());
-        var dieSet = set.ToAnimationSet();
-
-        StartCoroutine(die.UploadAnimationSet(dieSet));
-        HideCommands();
+        die.SetLEDsToRandomColor();
     }
 
     void FlashDie()

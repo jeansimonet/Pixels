@@ -27,6 +27,8 @@
 
 #include "animations/Animation_set.h"
 
+#include "modules/led_color_tester.h"
+
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_fstorage_sd.h"
@@ -38,6 +40,7 @@ using namespace Config;
 using namespace DriversHW;
 using namespace Bluetooth;
 using namespace Animations;
+using namespace Modules;
 
 #define APP_BLE_CONN_CFG_TAG    1
 
@@ -73,7 +76,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        //Watchdog::init();
+        Watchdog::init();
 
         // Then the log system
         Log::init();
@@ -150,14 +153,17 @@ namespace Die
         #endif
 
         AnimationSet::init();
+
+        // Useful for development
+        LEDColorTester::init();
     }
 
     // Main loop!
     void update() {
         Scheduler::update();
-        // Watchdog::feed();
-        // PowerManager::feed();
-        // PowerManager::update();
+        Watchdog::feed();
+        PowerManager::feed();
+        PowerManager::update();
     }
 }
 

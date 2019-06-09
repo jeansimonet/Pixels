@@ -7,7 +7,7 @@ namespace Utils
 {
 	int parseWord(char*& text, int& len, char* outWord, int outWordLen);
 
-	constexpr uint32_t toColor(uint8_t red, uint8_t green, uint8_t blue) { return red << 16 | green << 8 | blue; }
+	constexpr uint32_t toColor(uint8_t red, uint8_t green, uint8_t blue) { return (uint32_t)(red << 16) | (uint32_t)(green << 8) | (uint32_t)blue; }
 	constexpr uint8_t getRed(uint32_t color) { return (color >> 16) & 0xFF; }
 	constexpr uint8_t getGreen(uint32_t color) { return (color >> 8) & 0xFF; }
 	constexpr uint8_t getBlue(uint32_t color) { return (color) & 0xFF; }

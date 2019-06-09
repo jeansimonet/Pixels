@@ -13,6 +13,7 @@ public class TelemetryDemoDie : MonoBehaviour
     public Button showOffButton;
     public Button showOff2Button;
     public Text faceNumberText;
+    public ColorSelector selector;
 
     Die die;
 
@@ -23,7 +24,10 @@ public class TelemetryDemoDie : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-
+        selector.onMouseButtonUp.AddListener(() =>
+        {
+            die.SetLEDsToColor(ColorSelector.GetColor());
+        });
     }
 
     // Update is called once per frame

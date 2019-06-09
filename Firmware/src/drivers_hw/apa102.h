@@ -28,6 +28,7 @@ namespace DriversHW
     void show(void);
     void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
     void setPixelColor(uint16_t n, uint32_t c);
+    void setAll(uint32_t c);
     void setPixelColors(int* indices, uint32_t* colors, int count);
     uint32_t color(uint8_t r, uint8_t g, uint8_t b);
     uint32_t getPixelColor(uint16_t n);
@@ -35,5 +36,8 @@ namespace DriversHW
     uint8_t *getPixels();
 
     void selfTest();
+
+    uint8_t sine8(uint8_t x);
+    uint8_t gamma8(uint8_t x);
   }
 }

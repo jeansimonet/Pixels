@@ -86,6 +86,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_nrf/scheduler.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/timers.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/watchdog.cpp \
+	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \
