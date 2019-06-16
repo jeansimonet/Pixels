@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __QUEUE__
-#define __QUEUE__
 
 namespace Core
 {
@@ -70,5 +68,3 @@ namespace Core
 	};
 
 }
-
-#endif

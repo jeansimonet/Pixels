@@ -5,6 +5,7 @@
 #include "config/board_config.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
+#include "nrf_log.h"
 
 using namespace Animations;
 using namespace Modules;
@@ -95,8 +96,25 @@ namespace AnimController
 	/// <summary>
 	/// Add an animation to the list of running animations
 	/// </summary>
-	void play(const Animation* anim)
+	void play(const Animations::Animation* anim)
 	{
+		#if (NRF_LOG_DEFAULT_LEVEL == 4)
+		NRF_LOG_DEBUG("Playing Anim!");
+		NRF_LOG_DEBUG("  Track count: %d", anim->trackCount);
+		for (int t = 0; t < anim->trackCount; ++t) {
+			auto& track = anim->GetTrack(t);
+			NRF_LOG_DEBUG("  Track %d:", t);
+			NRF_LOG_DEBUG("  Track Offset %d:", anim->tracksOffset + t);
+			NRF_LOG_DEBUG("  Keyframe count: %d", track.keyFrameCount);
+			for (int k = 0; k < track.keyFrameCount; ++k) {
+				auto& keyframe = track.getKeyframe(k);
+				int time = keyframe.time();
+				uint32_t color = keyframe.color();
+				NRF_LOG_DEBUG("    Offset %d: %d -> %06x", (track.keyframesOffset + k), time, color);
+			}
+		}
+		#endif
+
 		int prevAnimIndex = 0;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
@@ -126,7 +144,7 @@ namespace AnimController
 	/// <summary>
 	/// Forcibly stop a currently running animation
 	/// </summary>
-	void stop(const Animation* anim)
+	void stop(const Animations::Animation* anim)
 	{
 		int prevAnimIndex = 0;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)

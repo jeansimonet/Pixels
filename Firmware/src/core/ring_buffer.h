@@ -1,8 +1,7 @@
 #pragma once
-#ifndef __RINGBUFFER__
-#define __RINGBUFFER__
 
 #include <stdint.h>
+#include <memory.h>
 
 namespace Core
 {
@@ -79,4 +78,3 @@ namespace Core
 	};
 }
 
-#endif

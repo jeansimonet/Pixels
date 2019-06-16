@@ -36,7 +36,7 @@ namespace Animations
 		uint8_t ledIndex;	// 0 - 20
 		uint8_t keyFrameCount;		// Keyframe count
 
-		RGBKeyframe getKeyframe(uint16_t keyframeIndex) const;
+		const RGBKeyframe& getKeyframe(uint16_t keyframeIndex) const;
 		uint32_t evaluate(int time) const;
 	};
 
@@ -53,7 +53,7 @@ namespace Animations
 		uint16_t padding;
 
 	public:
-		AnimationTrack GetTrack(int index) const;
+		const AnimationTrack& GetTrack(int index) const;
 		int updateLEDs(int time, int retIndices[], uint32_t retColors[]) const;
 		int stop(int retIndices[]) const;
 	};

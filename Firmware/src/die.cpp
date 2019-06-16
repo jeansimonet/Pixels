@@ -24,10 +24,13 @@
 #include "bluetooth/bluetooth_stack.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
+#include "bluetooth/telemetry.h"
 
 #include "animations/Animation_set.h"
 
 #include "modules/led_color_tester.h"
+#include "modules/accelerometer.h"
+#include "modules/anim_controller.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -76,7 +79,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        Watchdog::init();
+        //Watchdog::init();
 
         // Then the log system
         Log::init();
@@ -139,12 +142,12 @@ namespace Die
         // Battery sense pin depends on board info
         Battery::init();
 
-        // Start advertising!
-        Stack::startAdvertising();
-
         //--------------------
         // Initialize Modules
         //--------------------
+
+        // Animation set needs flash and board info
+        AnimationSet::init();
         
         #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
         // Test bulk bulk_data_transfer
@@ -152,16 +155,25 @@ namespace Die
         ReceiveBulkData::selfTest();
         #endif
 
-        AnimationSet::init();
-
         // Useful for development
         LEDColorTester::init();
+
+        // Accelerometer
+        Accelerometer::init();
+
+        // Telemetry depends on accelerometer
+        Telemetry::init();
+
+        AnimController::init();
+
+        // Start advertising!
+        Stack::startAdvertising();
     }
 
     // Main loop!
     void update() {
         Scheduler::update();
-        Watchdog::feed();
+//        Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
     }

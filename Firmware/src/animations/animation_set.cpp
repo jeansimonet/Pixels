@@ -2,12 +2,14 @@
 #include "utils/utils.h"
 #include "drivers_nrf/flash.h"
 #include "drivers_nrf/scheduler.h"
+#include "config/board_config.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
 #include "assert.h"
 #include "nrf_log.h"
+#include "nrf_delay.h"
 
 #define ANIMATION_SET_VALID_KEY (0x600DF00D) // Good Food ;)
 // We place animation set and animations in descending addresses
@@ -53,11 +55,17 @@ namespace AnimationSet
 	#define ANIMATION_SET_DATA_ADDRESS (ANIMATION_SET_ADDRESS + sizeof(Data))
 
 	// The animation set always points at a specific address in memory
-	const Data* data = (const Data*)ANIMATION_SET_DATA_ADDRESS;
+	const Data* data = (const Data*)ANIMATION_SET_ADDRESS;
 
 	void init()
 	{
+		if (!CheckValid()) {
+			NRF_LOG_INFO("Animation Set not valid, programming default");
+			ProgramDefaultAnimationSet();
+		}
 		MessageService::RegisterMessageHandler(Message::MessageType_TransferAnimSet, nullptr, ReceiveAnimationSetHandler);
+		NRF_LOG_INFO("Animation Set initialized");
+		//printAnimationInfo();
 	}
 
 	/// <summary>
@@ -91,7 +99,7 @@ namespace AnimationSet
 				data->palette[colorIndex * 3 + 2]);
 	}
 
-	RGBKeyframe getKeyframe(uint16_t keyFrameIndex) {
+	const RGBKeyframe& getKeyframe(uint16_t keyFrameIndex) {
 		assert(CheckValid() && keyFrameIndex < data->keyFrameCount);
 		return data->keyframes[keyFrameIndex];
 	}
@@ -101,7 +109,7 @@ namespace AnimationSet
 		return data->keyFrameCount;
 	}
 
-	AnimationTrack getTrack(uint16_t trackIndex) {
+	const AnimationTrack& getTrack(uint16_t trackIndex) {
 		assert(CheckValid() && trackIndex < data->trackCount);
 		return data->tracks[trackIndex];
 	}
@@ -116,7 +124,7 @@ namespace AnimationSet
 		return data->trackCount;
 	}
 
-	Animation getAnimation(uint16_t animIndex) {
+	const Animation& getAnimation(uint16_t animIndex) {
 		assert(CheckValid() && animIndex < data->animationCount);
 		return data->animations[animIndex];
 	}
@@ -222,5 +230,161 @@ namespace AnimationSet
 		);
 	}
 
+	void ProgramDefaultAnimationSet() {
+
+		uint8_t palette[12];
+		palette[0] = 0;
+		palette[1] = 0;
+		palette[2] = 0;
+
+		palette[3] = 128;
+		palette[4] = 0;
+		palette[5] = 0;
+
+		palette[6] = 0;
+		palette[7] = 128;
+		palette[8] = 0;
+
+		palette[9] = 0;
+		palette[10] = 0;
+		palette[11] = 128;
+
+		// Create a few keyframes
+		int keyFrameCount = 4 * 3;
+		RGBKeyframe keyframes[keyFrameCount];
+		keyframes[0].setTimeAndColorIndex(0, 0);
+		keyframes[1].setTimeAndColorIndex(300, 1);
+		keyframes[2].setTimeAndColorIndex(700, 1);
+		keyframes[3].setTimeAndColorIndex(1000, 0);
+
+		keyframes[4].setTimeAndColorIndex(0, 0);
+		keyframes[5].setTimeAndColorIndex(300, 2);
+		keyframes[6].setTimeAndColorIndex(700, 2);
+		keyframes[7].setTimeAndColorIndex(1000, 0);
+
+		keyframes[8].setTimeAndColorIndex(0, 0);
+		keyframes[9].setTimeAndColorIndex(300, 3);
+		keyframes[10].setTimeAndColorIndex(700, 3);
+		keyframes[11].setTimeAndColorIndex(1000, 0);
+
+		// Create tracks
+		int ledCount = Config::BoardManager::getBoard()->ledCount;
+		int trackCount = ledCount * 3 + ledCount * 3;
+		AnimationTrack tracks[trackCount];
+		for (int c = 0; c < 3; ++c) {
+			for (int f = 0; f < ledCount; ++f) {
+				// Each anim is a single track per face
+				int trackIndex = c * ledCount + f;
+				tracks[trackIndex].keyFrameCount = 4;
+				tracks[trackIndex].ledIndex = f;
+				tracks[trackIndex].keyframesOffset = c * 4;
+			}
+		}
+
+		// Last set of tracks, all leds together
+		for (int c = 0; c < 3; ++c) {
+			for (int i = 0; i < ledCount; ++i) {
+				int trackIndex = c * ledCount + i;
+				tracks[ledCount * 3 + trackIndex].keyFrameCount = 4;
+				tracks[ledCount * 3 + trackIndex].ledIndex = i;
+				tracks[ledCount * 3 + trackIndex].keyframesOffset = c * 4;
+			}
+		}
+
+		// Create animations
+		int animCount = ledCount * 3 + 3;
+		Animation animations[animCount];
+		for (int c = 0; c < 3; ++c) {
+			for (int a = 0; a < ledCount; ++a) {
+				int animIndex = c * ledCount + a;
+				animations[animIndex].tracksOffset = c * ledCount + a;
+				animations[animIndex].trackCount = 1;
+				animations[animIndex].duration = 1000;
+			}
+		}
+
+		// Create last 3 anims
+		for (int c = 0; c < 3; ++c) {
+			int animIndex = ledCount * 3 + c;
+			animations[animIndex].tracksOffset = ledCount * 3 + ledCount * c;
+			animations[animIndex].trackCount = ledCount;
+			animations[animIndex].duration = 1000;
+		}
+
+		// Program all this into flash
+		uint32_t buffersSize =
+			keyFrameCount * sizeof(RGBKeyframe) +
+			trackCount * sizeof(AnimationTrack) +
+			animCount * sizeof(Animation) +
+			PALETTE_SIZE;
+
+		NRF_LOG_INFO("Programming default anim set");
+		NRF_LOG_DEBUG("keyframes: %d * %d", keyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_DEBUG("Tracks: %d * %d", trackCount, sizeof(AnimationTrack));
+		NRF_LOG_DEBUG("animations: %d * %d", animCount, sizeof(Animation));
+		NRF_LOG_DEBUG("palette: %d", PALETTE_SIZE);
+
+		uint32_t totalSize = buffersSize + sizeof(Data);
+		uint32_t flashSize = getFlashByteSize(totalSize);
+		uint32_t pageAddress = ANIMATION_SET_ADDRESS;
+		uint32_t dataAddress = ANIMATION_SET_DATA_ADDRESS;
+		uint32_t pageCount = Flash::bytesToPages(flashSize);
+
+		// Start by erasing the flash
+		NRF_LOG_DEBUG("Erasing flash");
+		Flash::eraseSynchronous(pageAddress, pageCount);
+
+		// Then program the palette
+		NRF_LOG_DEBUG("Writing palette");
+		uint32_t paletteAddress = dataAddress;
+		Flash::writeSynchronous(paletteAddress, palette, 12 * sizeof(uint8_t) * 3);
+		NRF_LOG_DEBUG("Writing keyframes");
+		uint32_t keyframesAddress = paletteAddress + PALETTE_SIZE;
+		Flash::writeSynchronous(keyframesAddress, keyframes, keyFrameCount * sizeof(RGBKeyframe));
+		NRF_LOG_DEBUG("Writing tracks");
+		uint32_t tracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
+		Flash::writeSynchronous(tracksAddress, tracks, trackCount * sizeof(AnimationTrack));
+		NRF_LOG_DEBUG("Writing animations");
+		uint32_t animationsAddress = tracksAddress + trackCount * sizeof(AnimationTrack);
+		Flash::writeSynchronous(animationsAddress, animations, animCount * sizeof(Animation));
+
+		// Create the dataset
+		NRF_LOG_DEBUG("Writing anim set");
+		Data data;
+		data.headMarker = ANIMATION_SET_VALID_KEY;
+		data.palette = (const uint8_t*)paletteAddress;
+		data.keyframes = (const RGBKeyframe*)keyframesAddress;
+		data.keyFrameCount = keyFrameCount;
+		data.tracks = (const AnimationTrack*)tracksAddress;
+		data.trackCount = trackCount;
+		data.animations = (const Animation*)animationsAddress;
+		data.animationCount = animCount;
+		data.tailMarker = ANIMATION_SET_VALID_KEY;
+
+		// And write it!
+		Flash::writeSynchronous(ANIMATION_SET_ADDRESS, &data, sizeof(Data));
+		NRF_LOG_INFO("Done");
+	}
+
+	void printAnimationInfo() {
+		NRF_LOG_INFO("Animation Count: %d", getAnimationCount());
+		for (int a = 0; a < getAnimationCount(); ++a) {
+			auto& anim = getAnimation(a);
+			NRF_LOG_INFO("Anim %d:", a);
+			NRF_LOG_INFO("  Track count: %d", anim.trackCount);
+			for (int t = 0; t < anim.trackCount; ++t) {
+				auto& track = anim.GetTrack(t);
+				NRF_LOG_INFO("  Track %d:", t);
+				NRF_LOG_INFO("  Track Offset %d:", anim.tracksOffset + t);
+				NRF_LOG_INFO("  Keyframe count: %d", track.keyFrameCount);
+				for (int k = 0; k < track.keyFrameCount; ++k) {
+					auto& keyframe = track.getKeyframe(k);
+					int time = keyframe.time();
+					uint32_t color = keyframe.color();
+					NRF_LOG_INFO("    Offset %d: %d -> %06x", (track.keyframesOffset + k), time, color);
+				}
+			}
+		}
+	}
 }
 }

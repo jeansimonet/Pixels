@@ -17,13 +17,15 @@ namespace Animations
 		int ComputeAnimationDataSize();
 
 		uint32_t getColor(uint16_t colorIndex);
-		RGBKeyframe getKeyframe(uint16_t keyFrameIndex);
+		const RGBKeyframe& getKeyframe(uint16_t keyFrameIndex);
 		uint16_t getKeyframeCount();
-		AnimationTrack getTrack(uint16_t trackIndex);
+		const AnimationTrack& getTrack(uint16_t trackIndex);
 		AnimationTrack const * const getTracks(uint16_t tracksStartIndex);
 		uint16_t getTrackCount();
-		Animation getAnimation(uint16_t animIndex);
+		const Animation& getAnimation(uint16_t animIndex);
 		uint16_t getAnimationCount();
+		void ProgramDefaultAnimationSet();
+		void printAnimationInfo();
 
 		void ReceiveAnimationSetHandler(void* context, const Bluetooth::Message* msg);
 	}

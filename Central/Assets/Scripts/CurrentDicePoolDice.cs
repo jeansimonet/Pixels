@@ -105,9 +105,33 @@ public class CurrentDicePoolDice
         HideCommands();
     }
 
+    void OnTelemetryData(string characteristic, byte[] data)
+    {
+        Debug.Log("Telemetry Message Received");
+    }
+
     void RenameDie()
     {
-        die.SetLEDsToRandomColor();
+        StartCoroutine(telemetryCoroutine());
+    }
+
+    IEnumerator telemetryCoroutine()
+    {
+        BluetoothLEHardwareInterface.SubscribeCharacteristic(
+            die.address,
+            "6E401000-B5A3-F393-E0A9-E50E24DCCA9E",
+            "6E401001-B5A3-F393-E0A9-E50E24DCCA9E",
+            null,
+            OnTelemetryData);
+
+        yield return new WaitForSeconds(0.5f);
+
+        BluetoothLEHardwareInterface.WriteCharacteristic(
+            die.address,
+            "6E401000-B5A3-F393-E0A9-E50E24DCCA9E",
+            "6E401002-B5A3-F393-E0A9-E50E24DCCA9E",
+            new byte[1] { 1 },
+            1, false, null);
     }
 
     void FlashDie()

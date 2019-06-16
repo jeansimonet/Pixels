@@ -71,6 +71,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_messages.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_message_service.cpp \
 	$(PROJ_DIR)/src/bluetooth/bulk_data_transfer.cpp \
+	$(PROJ_DIR)/src/bluetooth/telemetry.cpp \
 	$(PROJ_DIR)/src/config/board_config.cpp \
 	$(PROJ_DIR)/src/config/settings.cpp \
 	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
@@ -86,6 +87,8 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_nrf/scheduler.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/timers.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/watchdog.cpp \
+	$(PROJ_DIR)/src/modules/accelerometer.cpp \
+	$(PROJ_DIR)/src/modules/anim_controller.cpp \
 	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \
@@ -199,8 +202,8 @@ COMMON_FLAGS += -mthumb -mabi=aapcs
 COMMON_FLAGS += -mfloat-abi=soft
 COMMON_FLAGS += -DNRF52_PAN_74
 
-# COMMON_FLAGS += -DDEBUG
-# COMMON_FLAGS += -DDEBUG_NRF
+COMMON_FLAGS += -DDEBUG
+COMMON_FLAGS += -DDEBUG_NRF
 # COMMON_FLAGS += -DDEVELOP_IN_NRF52832
 
 # C flags common to all targets
@@ -216,6 +219,7 @@ CFLAGS += -fno-builtin -fshort-enums
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
+CXXFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += -fno-rtti
 CXXFLAGS += -fno-exceptions
 

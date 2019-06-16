@@ -128,7 +128,7 @@ public class Die
 	{
 		if (connected)
 		{
-            SendMessage(new DieMessagePlayAnim() { index = (byte)animationIndex });
+            StartCoroutine(SendMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
 		}
 	}
 
@@ -136,8 +136,8 @@ public class Die
 	public void Ping()
 	{
 		if (connected)
-		{ 
-            SendMessage(new DieMessageRequestState());
+		{
+            StartCoroutine(SendMessage(new DieMessageRequestState()));
         }
     }
 

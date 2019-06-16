@@ -39,7 +39,7 @@ namespace Animations
 	}
 
 
-	RGBKeyframe AnimationTrack::getKeyframe(uint16_t keyframeIndex) const {
+	const RGBKeyframe& AnimationTrack::getKeyframe(uint16_t keyframeIndex) const {
 		assert(keyframeIndex < keyFrameCount);
 		return AnimationSet::getKeyframe(keyframesOffset + keyframeIndex);
 	}
@@ -121,7 +121,7 @@ namespace Animations
 	/// <summary>
 	/// Returns a track
 	/// </summary>
-	AnimationTrack Animation::GetTrack(int index) const
+	const AnimationTrack& Animation::GetTrack(int index) const
 	{
 		assert(index < trackCount);
 		return AnimationSet::getTrack(tracksOffset + index);

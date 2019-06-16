@@ -90,6 +90,7 @@ namespace LIS2DE12
 {
 	short x, y, z;
 	float cx, cy, cz;
+
 	LIS2DE12_Scale scale;
 
 	void writeRegister(LIS2DE12_Register reg, uint8_t data);

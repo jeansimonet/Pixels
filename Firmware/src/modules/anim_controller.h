@@ -2,6 +2,11 @@
 
 #include "stdint.h"
 
+namespace Animations
+{
+	struct Animation;
+}
+
 namespace Modules
 {
 	/// <summary>
@@ -17,8 +22,8 @@ namespace Modules
 
 		void init();
 		void stop();
-		void play(const Animation* anim);
-		void stop(const Animation* anim);
+		void play(const Animations::Animation* anim);
+		void stop(const Animations::Animation* anim);
 		void stopAll();
 	}
 }
