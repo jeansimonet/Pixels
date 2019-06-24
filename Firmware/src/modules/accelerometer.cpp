@@ -2,13 +2,15 @@
 
 #include "drivers_hw/lis2de12.h"
 #include "utils/utils.h"
-#include "app_timer.h"
 #include "core/ring_buffer.h"
+#include "config/board_config.h"
+#include "app_timer.h"
 #include "nrf_log.h"
 
 using namespace Modules;
 using namespace Core;
 using namespace DriversHW;
+using namespace Config;
 
 // This defines how frequently we try to read the accelerometer
 #define TIMER2_RESOLUTION (500)	// ms
@@ -54,7 +56,11 @@ namespace Accelerometer
 	/// </summary>
 	void update(void* context) {
 		LIS2DE12::read();
-		face = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		if (newFace != face) {
+			NRF_LOG_INFO("NewFace: %d", (newFace + 1));
+			face = newFace;
+		}
 
 		AccelFrame newFrame;
 		newFrame.X = LIS2DE12::x;
@@ -132,62 +138,26 @@ namespace Accelerometer
 	/// Crudely compares accelerometer readings passed in to determine the current face up
 	/// </summary>
 	/// <returns>The face number, starting at 0</returns>
-	int determineFace(float x, float y, float z)
+	int determineFace(float x, float y, float z, float* outConfidence)
 	{
-		if (abs(x) > abs(y))
-		{
-			if (abs(x) > abs(z))
-			{
-				// X is greatest direction
-				if (x > 0)
-				{
-					return 1;
-				}
-				else
-				{
-					return 4;
-				}
-			}
-			else
-			{
-				// Z is greatest direction
-				if (z > 0)
-				{
-					return 0;
-				}
-				else
-				{
-					return 5;
-				}
+		// Compare against face normals stored in board manager
+		int faceCount = BoardManager::getBoard()->ledCount;
+		auto& normals = BoardManager::getBoard()->faceNormals;
+		float3 acc(x, y, z);
+		acc.normalize();
+		float bestDot = -1000.0f;
+		int bestFace = -1;
+		for (int i = 0; i < faceCount; ++i) {
+			float dot = float3::dot(acc, normals[i]);
+			if (dot > bestDot) {
+				bestDot = dot;
+				bestFace = i;
 			}
 		}
-		else
-		{
-			if (abs(z) > abs(y))
-			{
-				// Z is greatest direction
-				if (z > 0)
-				{
-					return 0;
-				}
-				else
-				{
-					return 5;
-				}
-			}
-			else
-			{
-				// Y is greatest direction
-				if (y > 0)
-				{
-					return 2;
-				}
-				else
-				{
-					return 3;
-				}
-			}
+		if (outConfidence != nullptr) {
+			*outConfidence = bestDot;
 		}
+		return bestFace;
 	}
 
 	/// <summary>

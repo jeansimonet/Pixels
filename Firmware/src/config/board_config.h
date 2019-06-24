@@ -36,7 +36,7 @@ namespace Config
             // LED config
             int ledCount;
             uint8_t faceToLedLookup[MAX_LED_COUNT];
-            Core::float3 faceNormal[MAX_LED_COUNT];
+            Core::float3 faceNormals[MAX_LED_COUNT];
         };
 
         void init();

@@ -36,8 +36,7 @@ namespace Modules
 
 		typedef void(*ClientMethod)(void* param, const AccelFrame& accelFrame);
 
-		// To be passed to the timer
-		int determineFace(float x, float y, float z);
+		int determineFace(float x, float y, float z, float* outConfidence = nullptr);
 
 		void init();
 		void start();

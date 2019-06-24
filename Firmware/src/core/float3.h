@@ -54,7 +54,15 @@ namespace Core
 		}
 		float magnitude() const
 		{
-			return sqrt(magnitude());
+			return sqrt(sqrMagnitude());
+		}
+		float3& normalize()
+		{
+			float mag = magnitude();
+			x /= mag;
+			y /= mag;
+			z /= mag;
+			return *this;
 		}
 		static float dot(const float3& left, const float3& right)
 		{

@@ -37,7 +37,7 @@ namespace BoardManager
         // LED config
         .ledCount = 21,
         .faceToLedLookup = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 },
-        .faceNormal = {
+        .faceNormals = {
             {0, 0, 1},  // This is not the correct data
             {0, 0, -1}, // This is not the correct data
             {0, 1, 0},  // This is not the correct data
@@ -88,7 +88,7 @@ namespace BoardManager
         // LED config
         .ledCount = 6,
         .faceToLedLookup = { 0, 1, 2, 3, 4, 5, }, // This is not the correct data
-        .faceNormal = {
+        .faceNormals = {
             {0, 0, 1},  // This is not the correct data
             {0, 0, -1}, // This is not the correct data
             {0, 1, 0},  // This is not the correct data
@@ -124,7 +124,7 @@ namespace BoardManager
         // LED config
         .ledCount = 20,
         .faceToLedLookup = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }, // This is not the correct data
-        .faceNormal = {
+        .faceNormals = {
             {0, 0, 1},  // This is not the correct data
             {0, 0, -1}, // This is not the correct data
             {0, 1, 0},  // This is not the correct data
