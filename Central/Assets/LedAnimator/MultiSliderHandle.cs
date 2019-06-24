@@ -19,6 +19,8 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	MultiSlider _slider;
 	Vector2 _dragOffset;
 
+    const float _snapInterval = 0.01f; // 10ms
+
 	//public bool IsSelected { get { return EventSystem.current.currentSelectedGameObject == gameObject; } }
 	public bool Selected { get { return _slider.ActiveHandle == this; } }
 	public Color Color { get { return _image.color; } }
@@ -74,14 +76,22 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_slider.Direction == SliderDirection.Horizontal)
 		{
 			float x = Mathf.Clamp(Input.mousePosition.x + _dragOffset.x, min.x, max.x);
-			float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
+
+            // Snap to interval increments
+            x = _snapInterval * Mathf.RoundToInt(x / _snapInterval);
+
+            float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
 			transform.position = new Vector2(x, y);
 		}
 		else
 		{
 			float x = Mathf.Lerp(min.x, max.x, _slider.HandlePosition);
 			float y = Mathf.Clamp(Input.mousePosition.y + _dragOffset.y, min.y, max.y);
-			transform.position = new Vector2(x, y);
+
+            // Snap to interval increments
+            y = _snapInterval * Mathf.RoundToInt(y / _snapInterval);
+
+            transform.position = new Vector2(x, y);
 		}
 
 		_slider.Repaint();
