@@ -15,6 +15,8 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	float _unitWidth = 200; // Width for 1 second
 	[SerializeField]
+	float _snapInterval = 0.1f; // In seconds
+	[SerializeField]
 	float _ticksLength = 0.5f;
 	[SerializeField]
 	RectTransform _animSetTogglesRoot = null;
@@ -32,6 +34,7 @@ public class TimelineView : MonoBehaviour
 
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
+	public float SnapInterval => _snapInterval;
 	public float Unit { get { return _unitWidth * Zoom; } }
 	public int AnimationCount { get { return _colorAnimsRoot.childCount - 1; } }
 	public int CurrentFace { get; private set; }
