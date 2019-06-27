@@ -6,15 +6,15 @@ using UnityEngine.UI;
 public class UIDie : MonoBehaviour
 {
 	[SerializeField]
-	UISpritesAsset sprites;
+	UISpritesAsset sprites = null;
 	[SerializeField]
-	Image _diceFaceUI;
+	Image _diceFaceUI = null;
 	[SerializeField]
-	Text _diceNameUI;
+	Text _diceNameUI = null;
 	[SerializeField]
-	Button _moreOptionsButton;
+	Button _moreOptionsButton = null;
 	//[SerializeField]
-	//Text[] _diceStatsUI;
+	//Text[] _diceStatsUI = null;
 
 	public int faceNumber
 	{
