@@ -39,11 +39,18 @@ public class BorderHandle : MonoBehaviour, IFocusable, IPointerDownHandler, IDra
 
 	void IDragHandler.OnDrag(PointerEventData eventData)
 	{
+		float unit = GetComponentInParent<TimelineView>().Unit; //TODO
+		float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+
 		var parentRect = (transform.parent as RectTransform).rect;
 		float xMin = transform.parent.TransformPoint(parentRect.xMin, 0, 0).x;
 		float xMax = transform.parent.TransformPoint(parentRect.xMax, 0, 0).x;
 
 		float x = Mathf.Clamp(Input.mousePosition.x + _dragOffset.x, xMin, xMax);
+
+		// Snap to interval increments
+		x = xMin + snap * Mathf.RoundToInt((x - xMin) / snap);
+		
 		transform.position = new Vector2(x, transform.position.y);
 
 		if (Moved != null) Moved();
