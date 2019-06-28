@@ -143,13 +143,40 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		_texture.Apply(false);
 	}
 
+	public Color GetColorAt(float pos)
+	{
+		float width = (transform as RectTransform).rect.width;
+		float x0 = transform.parent.InverseTransformPoint(transform.position).x;
+		float cursor = (pos - x0) / width;
+
+		if ((cursor >= 0) && (cursor <= 1))
+		{
+			var colorsAndPos = GetColorAndPos();
+			colorsAndPos.Insert(0, new ColorAndPos(colorsAndPos[0].Color, 0));
+			colorsAndPos.Add(new ColorAndPos(colorsAndPos.Last().Color, 1));
+
+			float lastMax = 0;
+			for (int i = 1; i < colorsAndPos.Count; ++i)
+			{
+				float max = colorsAndPos[i].Pos;
+				if (cursor <= max)
+				{
+					return Color.Lerp(colorsAndPos[i - 1].Color, colorsAndPos[i].Color, (cursor - lastMax) / (max - lastMax));
+				}
+				lastMax = max;
+			}
+			throw new System.InvalidOperationException();
+		}
+		return new Color();
+	}
+
 	List<ColorAndPos> GetColorAndPos()
 	{
-		var rect = (transform as RectTransform).rect;
+		float width = (transform as RectTransform).rect.width;
 		return transform.OfType<RectTransform>().Select(t => t.GetComponent<MultiSliderHandle>())
 			.Where(h => h != null)
 			.OrderBy(h => h.transform.localPosition.x)
-			.Select(h => new ColorAndPos(h.Color, (h.transform.localPosition.x - rect.xMin) / rect.width)).ToList();
+			.Select(h => new ColorAndPos(h.Color, h.transform.localPosition.x / width)).ToList();
 	}
 
 	void Clear()
@@ -193,11 +220,5 @@ public class MultiSlider : MonoBehaviour, IFocusable
 	void Start()
 	{
 		Repaint();
-	}
-
-	// Update is called once per frame
-	void Update()
-	{
-
 	}
 }
