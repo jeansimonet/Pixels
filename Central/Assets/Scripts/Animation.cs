@@ -41,6 +41,7 @@ namespace Animations
     /// - 7 bits: color lookup (128 values)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
     public struct RGBKeyframe
     {
 		public ushort timeAndColor;
@@ -60,7 +61,7 @@ namespace Animations
 
         public uint color(AnimationSet set)
         {
-            return set.getColor(colorIndex());
+            return set.getColor32(colorIndex());
         }
 
         public void setTimeAndColorIndex(ushort timeInMS, ushort colorIndex)
@@ -75,6 +76,7 @@ namespace Animations
     /// size: 4 bytes (+ the actual keyframe data)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
     public struct RGBTrack
     {
         public ushort keyframesOffset; // offset into a global keyframe buffer
@@ -138,6 +140,7 @@ namespace Animations
     /// size: 4 bytes (+ the actual keyframe data)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
     public struct AnimationTrack
     {
         public ushort trackOffset; // offset into a global keyframe buffer
@@ -160,6 +163,7 @@ namespace Animations
     /// size: 8 bytes (+ actual track and keyframe data)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
     public struct Animation
     {
 		public ushort duration; // in ms
@@ -174,6 +178,14 @@ namespace Animations
         }
     };
 
+    /// <summary>
+    /// Animation Set is the set of all animations and colors stored in the die
+    /// This data gets transfered straight to the dice. For that purpose, the data
+    /// is essentially 'exploded' into flat buffers. i.e. a all the keyframes of all the
+    /// anims are stored in a single keyframe array, and individual tracks reference
+    /// 'their' keyframes using an offset and count into that array.
+    /// </summary>
+    [System.Serializable]
     public class AnimationSet
     {
         public const int PALETTE_SIZE = 128 * 3;
@@ -198,12 +210,20 @@ namespace Animations
                 Marshal.SizeOf<Animation>() * animations.Length;
         }
 
-        public uint getColor(ushort colorIndex)
+        public uint getColor32(ushort colorIndex)
         {
             return Utils.toColor(
                 palette[colorIndex * 3 + 0],
                 palette[colorIndex * 3 + 1],
                 palette[colorIndex * 3 + 2]);
+        }
+
+        public Color getColor(ushort colorIndex)
+        {
+            return new Color(
+                palette[colorIndex * 3 + 0] / 255.0f,
+                palette[colorIndex * 3 + 1] / 255.0f,
+                palette[colorIndex * 3 + 2] / 255.0f);
         }
 
         public ref RGBKeyframe getKeyframe(ushort keyFrameIndex)
@@ -288,213 +308,5 @@ namespace Animations
             Marshal.FreeHGlobal(ptr);
             return ret;
         }
-
     }
-
-    public class EditPalette
-    {
-        public Color[] colors = new Color[128];
-    }
-
-    public class EditKeyframe
-    {
-        public float time = -1;
-        public int colorIndex = -1;
-    }
-
-    public class EditTrack
-    {
-        public int ledIndex = -1;
-        public float duration { get { return keyframes.Max(k => k.time); } }
-        public List<EditKeyframe> keyframes = new List<EditKeyframe>();
-    }
-
-    public class EditAnimation
-    {
-        public float duration { get { return tracks.Max(t => t.duration); } }
-        public List<EditTrack> tracks = new List<EditTrack>();
-    }
-
-    public class EditAnimationSet
-    {
-        public EditPalette palette = new EditPalette();
-        public List<EditAnimation> animations = new List<EditAnimation>();
-
-        public void FromAnimationSet(AnimationSet set)
-        {
-            for (int i = 0; i < palette.colors.Length; ++i)
-            {
-                palette.colors[i] = new Color(
-                    (float)set.palette[i * 3 + 0] / 255.0f,
-                    (float)set.palette[i * 3 + 1] / 255.0f,
-                    (float)set.palette[i * 3 + 2] / 255.0f);
-            }
-
-            // Reset the animations, and read them in!
-            animations = new List<EditAnimation>();
-            for (int i = 0; i < set.animations.Length; ++i)
-            {
-                var anim = set.getAnimation((ushort)i);
-                var editAnim = new EditAnimation();
-                for (int j = 0; j < anim.trackCount; ++j)
-                {
-                    var track = anim.GetTrack(set, (ushort)j);
-                    var editTrack = new EditTrack();
-                    editTrack.ledIndex = track.ledIndex;
-                    var rgbTrack = track.GetTrack(set);
-                    for (int k = 0; k < rgbTrack.keyFrameCount; ++k)
-                    {
-                        var kf = rgbTrack.GetKeyframe(set, (ushort)k);
-                        var editKf = new EditKeyframe();
-                        editKf.time = (float)kf.time() / 1000.0f;
-                        editKf.colorIndex = kf.colorIndex();
-                        editTrack.keyframes.Add(editKf);
-                    }
-                    editAnim.tracks.Add(editTrack);
-                }
-                animations.Add(editAnim);
-            }
-        }
-
-        public AnimationSet ToAnimationSet()
-        {
-            AnimationSet set = new AnimationSet();
-            for (int i = 0; i < palette.colors.Length; ++i)
-            {
-                set.palette[i * 3 + 0] = (byte)(palette.colors[i].r * 255.0f);
-                set.palette[i * 3 + 1] = (byte)(palette.colors[i].g * 255.0f);
-                set.palette[i * 3 + 2] = (byte)(palette.colors[i].b * 255.0f);
-            }
-
-            int currentTrackOffset = 0;
-            int currentKeyframeOffset = 0;
-
-            var anims = new List<Animation>();
-            var tracks = new List<AnimationTrack>();
-            var rgbTracks = new List<RGBTrack>();
-            var keyframes = new List<RGBKeyframe>();
-
-            // Add animations
-            for (int i = 0; i < animations.Count; ++i)
-            {
-                var editAnim = animations[i];
-                var anim = new Animation();
-                anim.duration = (ushort)(editAnim.duration * 1000.0f);
-                anim.tracksOffset = (ushort)currentTrackOffset;
-                anim.trackCount = (ushort)editAnim.tracks.Count;
-                anims.Add(anim);
-
-                // Now add tracks
-                for (int j = 0; j < editAnim.tracks.Count; ++j)
-                {
-                    var editTrack = editAnim.tracks[j];
-                    var track = new AnimationTrack();
-                    track.ledIndex = (byte)editTrack.ledIndex;
-
-                    var rgbTrack = new RGBTrack();
-                    rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
-                    rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
-                    track.trackOffset = (ushort)rgbTracks.Count;
-                    rgbTracks.Add(rgbTrack);
-
-                    tracks.Add(track);
-
-                    // Now add keyframes
-                    for (int k = 0; k < editTrack.keyframes.Count; ++k)
-                    {
-                        var editKeyframe = editTrack.keyframes[k];
-                        var keyframe = new RGBKeyframe();
-                        keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)editKeyframe.colorIndex);
-                        keyframes.Add(keyframe);
-                    }
-                    currentKeyframeOffset += editTrack.keyframes.Count;
-                }
-                currentTrackOffset += editAnim.tracks.Count;
-            }
-
-            set.keyframes = keyframes.ToArray();
-            set.rgbTracks = rgbTracks.ToArray();
-            set.tracks = tracks.ToArray();
-            set.animations = anims.ToArray();
-
-            return set;
-        }
-
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
-            builder.Append("Animations: ");
-            builder.Append(animations.Count);
-            builder.AppendLine();
-            for (int i = 0; i < animations.Count; ++i)
-            {
-                var anim = animations[i];
-                builder.Append("\tAnim ");
-                builder.Append(i);
-                builder.Append(" contains ");
-                builder.Append(anim.tracks.Count);
-                builder.Append(" tracks");
-                builder.AppendLine();
-                for (int j = 0; j < anim.tracks.Count; ++j)
-                {
-                    var track = anim.tracks[j];
-                    builder.Append("\t\tTrack ");
-                    builder.Append(j);
-                    builder.Append(" contains ");
-                    builder.Append(track.keyframes.Count);
-                    builder.Append(" keyframes");
-                    builder.AppendLine();
-                    for (int k = 0; k < track.keyframes.Count; ++k)
-                    {
-                        var keyframe = track.keyframes[k];
-                        builder.Append("\t\t\tTime ");
-                        builder.Append(keyframe.time);
-                        builder.Append(" : ");
-                        builder.Append(keyframe.colorIndex);
-                        builder.AppendLine();
-                    }
-                }
-            }
-            return builder.ToString();
-        }
-
-        public static EditAnimationSet CreateTestSet()
-        {
-            EditAnimationSet set = new EditAnimationSet();
-            for (int r = 0; r < 8; ++r)
-            {
-                float red = (float)r / 8;
-                for (int g = 0; g < 4; ++g)
-                {
-                    float green = (float)g / 4;
-                    for (int b = 0; b < 4; ++b)
-                    {
-                        float blue = (float)b / 4;
-                        set.palette.colors[r * 4 * 4 + g * 4 + b] = new Color(red, green, blue);
-                    }
-                }
-            }
-            for (int a = 0; a < 5; ++a)
-            {
-                EditAnimation anim = new EditAnimation();
-                for (int i = 0; i < a + 1; ++i)
-                {
-                    var track = new EditTrack();
-                    track.ledIndex = i;
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        var kf = new EditKeyframe();
-                        kf.time = j;
-                        kf.colorIndex = a * 10 + i * 3 + j;
-                        track.keyframes.Add(kf);
-                    }
-                    anim.tracks.Add(track);
-                }
-                set.animations.Add(anim);
-            }
-
-            return set;
-        }
-    }
-
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class DiceAnimProgrammer
     : MonoBehaviour
@@ -8,12 +9,13 @@ public class DiceAnimProgrammer
 {
     public Central central;
     public TimelineView timeline;
+    public string JsonFilePath = "animation_set.json";
 
-    HashSet<Die> dice;
+    Die die = null;
+    Animations.EditAnimationSet animationSet;
 
     void Awake()
     {
-        dice = new HashSet<Die>();
     }
 
     // Use this for initialization
@@ -24,52 +26,62 @@ public class DiceAnimProgrammer
 
         // Register to be notified of new dice getting connected
         central.RegisterClient(this);
+
+        // Create empty anim if needed
+        animationSet = new Animations.EditAnimationSet();
+        animationSet.animations = new List<Animations.EditAnimation>();
+        animationSet.animations.Add(new Animations.EditAnimation());
+        timeline.ChangeCurrentAnimation(animationSet.animations[0]);
     }
 
     public void OnNewDie(Die die)
     {
-        //// Create the UI for the die
-        //// Make sure to turn on the list!
-        //noDiceIndicator.SetActive(false);
-        //diceRoot.SetActive(true);
-
-        //var template = diceRoot.transform.GetChild(0).gameObject;
-        //var go = template;
-        //if (trackedDice.Count > 0)
-        //{
-        //    // Copy first item rather than use it
-        //    go = GameObject.Instantiate(template, diceRoot.transform);
-        //}
-
-        //var cmp = go.GetComponent<TelemetryDemoDie>();
-        //cmp.Setup(die);
-        Debug.Log("Led animator connected to " + die.name);
-        dice.Add(die);
+        if (this.die == null)
+        {
+            this.die = die;
+            Debug.Log("Led animator connected to " + die.name);
+        }
     }
 
 
     // Update is called once per frame
-    void Update () {
+    void Update ()
+    {
 		
 	}
 
-    public void UploadCurrentAnim(Animations.AnimationSet animSet)
+    public void SaveToJsonFile()
     {
-        // Try to send the anim down!
-        foreach (var die in dice)
-        {
-            Debug.Log("Uploading anim on die " + die.name);
-            StartCoroutine(die.UploadAnimationSet(animSet));
-        }
+        timeline.ApplyChanges();
 
+        Debug.Log(animationSet.ToString());
+
+        string jsonText = JsonUtility.ToJson(animationSet.ToAnimationSet(), true);
+        File.WriteAllText(JsonFilePath, jsonText);
+    }
+
+    public void LoadFromJsonFile()
+    {
+        string jsonText = File.ReadAllText(JsonFilePath);
+        animationSet.FromAnimationSet(JsonUtility.FromJson<Animations.AnimationSet>(jsonText));
+
+        Debug.Log(animationSet.ToString());
+
+        if (animationSet.animations.Count > 0)
+        {
+            timeline.ChangeCurrentAnimation(animationSet.animations[0]);
+        }
+    }
+
+    public void UploadAnimationSet()
+    {
+        if (die != null)
+        {
+            die.UploadAnimationSet(animationSet.ToAnimationSet());
+        }
     }
 
     public void PlayAnim()
     {
-        foreach (var die in dice)
-        {
-            Debug.Log("Playing anim on die " + die.name);
-            die.PlayAnimation(0);
-        }
     }
 }

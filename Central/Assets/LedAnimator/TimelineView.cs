@@ -32,7 +32,6 @@ public class TimelineView : MonoBehaviour
 	Transform _playCursor = null;
 
 	float _widthPadding;
-	Animations.EditAnimationSet _animSet;
 	bool _playAnims;
 	float _playTime;
 
@@ -41,7 +40,7 @@ public class TimelineView : MonoBehaviour
 	public float SnapInterval => _snapInterval;
 	public float Unit =>_unitWidth * Zoom;
 	public int AnimationCount =>_colorAnimsRoot.childCount - 1;
-	public int CurrentFace { get; private set; }
+	public Animations.EditAnimation CurrentAnimation { get; private set; }
 	public bool PlayAnimations => _playAnims;
 
 	public ColorAnimator ActiveColorAnimator { get; private set; }
@@ -74,58 +73,17 @@ public class TimelineView : MonoBehaviour
 		});
 	}
 
-	public void ChangeCurrentFace(int index)
+	public void ChangeCurrentAnimation(Animations.EditAnimation anim)
 	{
-		if (CurrentFace != index)
+		if (CurrentAnimation != anim)
 		{
-			// Save current anims
-			Serialize();
-
-			// And show
-			ShowFace(index);
+            ShowAnimation(anim);
 		}
-	}
-
-	public void SaveToFile()
-	{
-		Debug.Log("SaveToFile");
-		Serialize();
-		PrintData();
-
-		// ----> Save _animSet in file
-	}
-
-	public void LoadFromFile()
-	{
-		Debug.Log("LoadFromFile");
-
-        // Load from file then update _animSet with data from dice
-
-		ShowFace(0);
-		_animSetTogglesRoot.GetComponentsInChildren<Toggle>().First().isOn = true;
-	}
-
-	public void UploadToDice()
-	{
-		Debug.Log("UploadToDice");
-		Serialize();
-
-		// ----> Send _animSet to dice
-	}
-
-	public void DownloadFromDice()
-	{
-		Debug.Log("DownloadFromDice");
-
-		// ----> Update _animSet with data from dice
-
-		ShowFace(0);
-		_animSetTogglesRoot.GetComponentsInChildren<Toggle>().First().isOn = true;
 	}
 
 	public void PrintData()
 	{
-        _animSet.ToString();
+        //_animation.ToString();
 	}
 
 	public void TogglePlayAnimations()
@@ -133,7 +91,12 @@ public class TimelineView : MonoBehaviour
 		_playAnims = !_playAnims;
 	}
 
-	ColorAnimator CreateAnimation(Sprite sprite = null)
+    public void ApplyChanges()
+    {
+        Serialize();
+    }
+
+    ColorAnimator CreateAnimation(Sprite sprite = null)
 	{
 		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
 		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
@@ -145,50 +108,37 @@ public class TimelineView : MonoBehaviour
 		return colorAnim;
 	}
 
-	void ShowFace(int index)
+	void ShowAnimation(Animations.EditAnimation anim)
 	{
-		// Select face to show
-		CurrentFace = index;
+        // Select face to show
+        CurrentAnimation = anim;
 
-		// Load data and display
-		Deserialize();
-		Repaint();
-	}
+        // Load data and display
+        Deserialize();
+        Repaint();
+    }
 
-	void Serialize()
+    void Serialize()
 	{
-		//var anims = GetComponentsInChildren<ColorAnimator>();
-
-		//Debug.LogFormat("Serializing {0} color animations", anims.Length);
-
-		//var anim = new Animations.EditAnimation()
-		//{
-		//	tracks = anims.Select(a => a.Serialize(Unit)).ToArray()
-		//};
-		//_animSet.animations[CurrentFace] = anim;
+        CurrentAnimation.tracks = new List<Animations.EditTrack>();
+        foreach (var t in GetComponentsInChildren<ColorAnimator>())
+        {
+            CurrentAnimation.tracks.Add(t.ToAnimationTrack(Unit));
+        }
 	}
 
 	void Deserialize()
 	{
-		//var data = _animSet.animations[CurrentFace];
-		//if (data == null)
-		//{
-		//	Debug.LogError("Null animation data at index " + CurrentFace);
-		//	return;
-		//}
+        Clear();
+        Duration = CurrentAnimation.duration;
 
-		//Debug.LogFormat("Deserializing {0} color animations", data.tracks.Length);
+        foreach (var track in CurrentAnimation.tracks)
+        {
+            var colorAnim = CreateAnimation();
+            colorAnim.FromAnimationTrack(track, Unit);
+        }
 
-		//Clear();
-		//Duration = data.duration / 1000f;
-
-		//foreach (var track in data.tracks)
-		//{
-		//	var colorAnim = CreateAnimation();
-		//	colorAnim.Deserialize(track, Unit);
-		//}
-
-		Repaint();
+        Repaint();
 	}
 
 	void OnColorAnimatorGotFocus(ColorAnimator colorAnim)
@@ -279,7 +229,6 @@ public class TimelineView : MonoBehaviour
 
 	void Awake()
 	{
-        _animSet = new Animations.EditAnimationSet();
 		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
 		Duration = _minDuration;
 		Zoom = _minZoom;
