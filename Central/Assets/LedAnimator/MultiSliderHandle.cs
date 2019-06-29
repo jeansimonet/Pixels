@@ -13,13 +13,14 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	[SerializeField]
 	RectTransform _selectedOvr = null;
 
+	[SerializeField]
+	Text _valueTxt = null;
+
 	Canvas _canvas = null;
 
 	Image _image;
 	MultiSlider _slider;
 	Vector2 _dragOffset;
-
-    const float _snapInterval = 0.01f; // 10ms
 
 	//public bool IsSelected { get { return EventSystem.current.currentSelectedGameObject == gameObject; } }
 	public bool Selected { get { return _slider.ActiveHandle == this; } }
@@ -69,6 +70,9 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 	void IDragHandler.OnDrag(PointerEventData eventData)
 	{
+		float unit = GetComponentInParent<TimelineView>().Unit; //TODO
+		float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+
 		var rect = (_slider.transform as RectTransform).rect;
 		Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
 		Vector2 max = _slider.transform.TransformPoint(rect.xMax, rect.yMax, 0);
@@ -76,11 +80,10 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_slider.Direction == SliderDirection.Horizontal)
 		{
 			float x = Mathf.Clamp(Input.mousePosition.x + _dragOffset.x, min.x, max.x);
+            float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
 
             // Snap to interval increments
-            x = _snapInterval * Mathf.RoundToInt(x / _snapInterval);
-
-            float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
+            x = min.x + snap * Mathf.RoundToInt((x - min.x) / snap);
 			transform.position = new Vector2(x, y);
 		}
 		else
@@ -89,11 +92,11 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 			float y = Mathf.Clamp(Input.mousePosition.y + _dragOffset.y, min.y, max.y);
 
             // Snap to interval increments
-            y = _snapInterval * Mathf.RoundToInt(y / _snapInterval);
-
+            y = min.y + snap * Mathf.RoundToInt((y - min.y) / snap);
             transform.position = new Vector2(x, y);
 		}
 
+		RepaintValue();
 		_slider.Repaint();
 	}
 
@@ -118,6 +121,33 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_canvas != null)
 		{
 			_canvas.overrideSorting = Selected;
+		}
+		RepaintValue();
+	}
+
+	void RepaintValue()
+	{
+		if (_valueTxt != null)
+		{
+			float unit = GetComponentInParent<TimelineView>().Unit; //TODO
+			float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+
+			var rect = (_slider.transform as RectTransform).rect;
+			Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
+
+			// Slider value
+			float value;
+			if (_slider.Direction == SliderDirection.Horizontal)
+			{
+				float x = transform.position.x - min.x;
+				value = (_slider.transform.localPosition.x + x) / unit;
+			}
+			else
+			{
+				float y = transform.position.y - min.y;
+				value = (_slider.transform.localPosition.y + y) / unit;
+			}
+			_valueTxt.text = value.ToString();
 		}
 	}
 
@@ -144,11 +174,6 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 	// Use this for initialization
 	void Start()
-	{
-	}
-
-	// Update is called once per frame
-	void Update()
 	{
 	}
 }

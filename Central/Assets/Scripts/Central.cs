@@ -56,10 +56,10 @@ public class Central
         [System.Serializable]
         public class DiceAndAddress
         {
-            public string name;
-            public string address;
+            public string name = null;
+            public string address = null;
         }
-        public List<DiceAndAddress> dice;
+        public List<DiceAndAddress> dice = null;
     }
 
     VirtualBluetoothInterface virtualBluetooth;

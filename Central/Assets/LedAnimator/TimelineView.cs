@@ -15,6 +15,8 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	float _unitWidth = 200; // Width for 1 second
 	[SerializeField]
+	float _snapInterval = 0.1f; // In seconds
+	[SerializeField]
 	float _ticksLength = 0.5f;
 	[SerializeField]
 	RectTransform _animSetTogglesRoot = null;
@@ -26,15 +28,21 @@ public class TimelineView : MonoBehaviour
 	RectTransform _animBottomButtons = null;
 	[SerializeField]
 	ColorAnimator _colorAnimPrefab = null;
+	[SerializeField]
+	Transform _playCursor = null;
 
 	float _widthPadding;
 	Animations.EditAnimationSet _animSet;
+	bool _playAnims;
+	float _playTime;
 
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
-	public float Unit { get { return _unitWidth * Zoom; } }
-	public int AnimationCount { get { return _colorAnimsRoot.childCount - 1; } }
+	public float SnapInterval => _snapInterval;
+	public float Unit =>_unitWidth * Zoom;
+	public int AnimationCount =>_colorAnimsRoot.childCount - 1;
 	public int CurrentFace { get; private set; }
+	public bool PlayAnimations => _playAnims;
 
 	public ColorAnimator ActiveColorAnimator { get; private set; }
 
@@ -64,18 +72,6 @@ public class TimelineView : MonoBehaviour
 				Repaint();
 			}
 		});
-	}
-
-	ColorAnimator CreateAnimation(Sprite sprite = null)
-	{
-		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
-		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
-		if (sprite != null)
-		{
-			colorAnim.SetLedSprite(sprite);
-		}
-		colorAnim.GotFocus += OnColorAnimatorGotFocus;
-		return colorAnim;
 	}
 
 	public void ChangeCurrentFace(int index)
@@ -130,6 +126,23 @@ public class TimelineView : MonoBehaviour
 	public void PrintData()
 	{
         _animSet.ToString();
+	}
+
+	public void TogglePlayAnimations()
+	{
+		_playAnims = !_playAnims;
+	}
+
+	ColorAnimator CreateAnimation(Sprite sprite = null)
+	{
+		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
+		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
+		if (sprite != null)
+		{
+			colorAnim.SetLedSprite(sprite);
+		}
+		colorAnim.GotFocus += OnColorAnimatorGotFocus;
+		return colorAnim;
 	}
 
 	void ShowFace(int index)
@@ -282,6 +295,30 @@ public class TimelineView : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
+		bool play = _playAnims && (_colorAnimsRoot.childCount > 0);
+		_playCursor.gameObject.SetActive(play);
+		if (play)
+		{
+			_playTime += Time.unscaledDeltaTime;
+			if (_playTime > Duration)
+			{
+				_playTime = 0;
+			}
 
+			var slider = _colorAnimsRoot.GetChild(0).GetComponent<ColorAnimator>().ColorSlider;
+			_playCursor.GetComponentInChildren<Image>().color = slider.GetColorAt(_playTime * Unit);
+
+			var transf = _colorAnimsRoot.GetChild(0).GetComponentInChildren<MovableArea>().transform;
+			float x0 = transf.localPosition.x;
+
+			transf = _playCursor.transform;
+			var pos = transf.localPosition;
+			pos.x = x0 + _playTime * Unit;
+			transf.localPosition = pos;
+		}
+		else
+		{
+			_playTime = 0;
+		}
 	}
 }
