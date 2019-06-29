@@ -5,6 +5,7 @@
 #include "core/ring_buffer.h"
 #include "config/board_config.h"
 #include "app_timer.h"
+#include "app_error.h"
 #include "nrf_log.h"
 
 using namespace Modules;

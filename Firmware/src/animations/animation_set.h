@@ -19,9 +19,10 @@ namespace Animations
 		uint32_t getColor(uint16_t colorIndex);
 		const RGBKeyframe& getKeyframe(uint16_t keyFrameIndex);
 		uint16_t getKeyframeCount();
+		const RGBTrack& getRGBTrack(uint16_t trackIndex);
+		uint16_t getRGBTrackCount();
 		const AnimationTrack& getTrack(uint16_t trackIndex);
 		AnimationTrack const * const getTracks(uint16_t tracksStartIndex);
-		uint16_t getTrackCount();
 		const Animation& getAnimation(uint16_t animIndex);
 		uint16_t getAnimationCount();
 		void ProgramDefaultAnimationSet();

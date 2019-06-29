@@ -420,10 +420,11 @@ public class Die
         // Prepare the die
         var prepareDie = new DieMessageTransferAnimSet();
         prepareDie.keyFrameCount = set.getKeyframeCount();
-        prepareDie.trackCount = set.getTrackCount();
+        prepareDie.trackCount = set.getRGBTrackCount();
         prepareDie.animationCount = set.getAnimationCount();
         Debug.Log("Animation Data to be sent:");
         Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+        Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
         Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.AnimationTrack>());
         Debug.Log("animations: " + prepareDie.animationCount + " * " + Marshal.SizeOf<Animations.Animation>());
         Debug.Log("palette: " + AnimationSet.PALETTE_SIZE);

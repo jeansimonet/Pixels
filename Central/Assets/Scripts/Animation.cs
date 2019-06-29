@@ -75,11 +75,11 @@ namespace Animations
     /// size: 4 bytes (+ the actual keyframe data)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct AnimationTrack
+    public struct RGBTrack
     {
         public ushort keyframesOffset; // offset into a global keyframe buffer
-        public byte ledIndex;   // 0 - 20
         public byte keyFrameCount;      // Keyframe count
+        public byte padding;   // 0 - 20
 
         public ref RGBKeyframe GetKeyframe(AnimationSet set, ushort keyframeIndex)
         {
@@ -132,6 +132,29 @@ namespace Animations
         }
     }
 
+
+    /// <summary>
+    /// An animation track is essentially an animation curve for a specific LED.
+    /// size: 4 bytes (+ the actual keyframe data)
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct AnimationTrack
+    {
+        public ushort trackOffset; // offset into a global keyframe buffer
+        public byte ledIndex;   // 0 - 20
+        public byte padding;      // Keyframe count
+
+        public ref RGBTrack GetTrack(AnimationSet set)
+        {
+            return ref set.getRGBTrack(trackOffset);
+        }
+
+        public uint evaluate(AnimationSet set, int time)
+        {
+            return GetTrack(set).evaluate(set, time);
+        }
+    }
+
     /// <summary>
     /// A keyframe-based animation
     /// size: 8 bytes (+ actual track and keyframe data)
@@ -157,6 +180,7 @@ namespace Animations
 
         public byte[] palette;
         public RGBKeyframe[] keyframes;
+        public RGBTrack[] rgbTracks;
         public AnimationTrack[] tracks;
         public Animation[] animations;
 
@@ -169,6 +193,7 @@ namespace Animations
         {
             return palette.Length * Marshal.SizeOf(typeof(byte)) +
                 Marshal.SizeOf<RGBKeyframe>() * keyframes.Length +
+                Marshal.SizeOf<RGBTrack>() * rgbTracks.Length +
                 Marshal.SizeOf<AnimationTrack>() * tracks.Length +
                 Marshal.SizeOf<Animation>() * animations.Length;
         }
@@ -189,6 +214,16 @@ namespace Animations
         public ushort getKeyframeCount()
         {
             return (ushort)keyframes.Length;
+        }
+
+        public ref RGBTrack getRGBTrack(ushort trackIndex)
+        {
+            return ref rgbTracks[trackIndex];
+        }
+
+        public ushort getRGBTrackCount()
+        {
+            return (ushort)rgbTracks.Length;
         }
 
         public ref AnimationTrack getTrack(ushort trackIndex)
@@ -228,7 +263,14 @@ namespace Animations
                 current += Marshal.SizeOf<RGBKeyframe>();
             }
 
-            // Copy tracks
+            // Copy rgb tracks
+            foreach (var track in rgbTracks)
+            {
+                Marshal.StructureToPtr(track, current, false);
+                current += Marshal.SizeOf<RGBTrack>();
+            }
+
+            // Copy animation tracks
             foreach (var track in tracks)
             {
                 Marshal.StructureToPtr(track, current, false);
@@ -299,9 +341,10 @@ namespace Animations
                     var track = anim.GetTrack(set, (ushort)j);
                     var editTrack = new EditTrack();
                     editTrack.ledIndex = track.ledIndex;
-                    for (int k = 0; k < track.keyFrameCount; ++k)
+                    var rgbTrack = track.GetTrack(set);
+                    for (int k = 0; k < rgbTrack.keyFrameCount; ++k)
                     {
-                        var kf = track.GetKeyframe(set, (ushort)k);
+                        var kf = rgbTrack.GetKeyframe(set, (ushort)k);
                         var editKf = new EditKeyframe();
                         editKf.time = (float)kf.time() / 1000.0f;
                         editKf.colorIndex = kf.colorIndex();
@@ -328,6 +371,7 @@ namespace Animations
 
             var anims = new List<Animation>();
             var tracks = new List<AnimationTrack>();
+            var rgbTracks = new List<RGBTrack>();
             var keyframes = new List<RGBKeyframe>();
 
             // Add animations
@@ -346,8 +390,13 @@ namespace Animations
                     var editTrack = editAnim.tracks[j];
                     var track = new AnimationTrack();
                     track.ledIndex = (byte)editTrack.ledIndex;
-                    track.keyframesOffset = (ushort)currentKeyframeOffset;
-                    track.keyFrameCount = (byte)editTrack.keyframes.Count;
+
+                    var rgbTrack = new RGBTrack();
+                    rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
+                    rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
+                    track.trackOffset = (ushort)rgbTracks.Count;
+                    rgbTracks.Add(rgbTrack);
+
                     tracks.Add(track);
 
                     // Now add keyframes
@@ -364,6 +413,7 @@ namespace Animations
             }
 
             set.keyframes = keyframes.ToArray();
+            set.rgbTracks = rgbTracks.ToArray();
             set.tracks = tracks.ToArray();
             set.animations = anims.ToArray();
 

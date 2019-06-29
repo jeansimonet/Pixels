@@ -40,6 +40,10 @@ namespace AnimationSet
 		const RGBKeyframe* keyframes; // pointer to the array of tracks
 		uint32_t keyFrameCount;
 
+		// The RGB tracks we have
+		const RGBTrack* rgbTracks; // pointer to the array of tracks
+		uint32_t rgbTrackCount;
+
 		// The animations we have
 		const AnimationTrack* tracks; // pointer to the array of tracks
 		uint32_t trackCount;
@@ -87,7 +91,7 @@ namespace AnimationSet
 		return 
 			sizeof(uint8_t) * COLOR_MAP_SIZE * 3 +
 			sizeof(RGBKeyframe) * data->keyFrameCount +
-			sizeof(AnimationTrack) * data->trackCount +
+			sizeof(RGBTrack) * data->trackCount +
 			sizeof(Animation) * data-> animationCount;
 	}
 
@@ -109,6 +113,16 @@ namespace AnimationSet
 		return data->keyFrameCount;
 	}
 
+	const RGBTrack& getRGBTrack(uint16_t trackIndex) {
+		assert(CheckValid() && trackIndex < data->trackCount);
+		return data->rgbTracks[trackIndex];
+	}
+
+	uint16_t getRGBTrackCount() {
+		assert(CheckValid());
+		return data->rgbTrackCount;
+	}
+
 	const AnimationTrack& getTrack(uint16_t trackIndex) {
 		assert(CheckValid() && trackIndex < data->trackCount);
 		return data->tracks[trackIndex];
@@ -117,11 +131,6 @@ namespace AnimationSet
 	AnimationTrack const * const getTracks(uint16_t tracksStartIndex) {
 		assert(CheckValid() && tracksStartIndex < data->trackCount);
 		return &(data->tracks[tracksStartIndex]);
-	}
-
-	uint16_t getTrackCount() {
-		assert(CheckValid());
-		return data->trackCount;
 	}
 
 	const Animation& getAnimation(uint16_t animIndex) {
@@ -145,6 +154,7 @@ namespace AnimationSet
 		uint32_t dataAddress;
 		uint32_t buffersSize;
 		uint32_t keyFrameCount;
+		uint32_t rgbTrackCount;
 		uint32_t trackCount;
 		uint32_t animationCount;
 	} programmingToken;
@@ -157,15 +167,17 @@ namespace AnimationSet
 
 		uint32_t buffersSize =
 			message->keyFrameCount * sizeof(RGBKeyframe) +
+			message->rgbTrackCount * sizeof(RGBTrack) +
 			message->trackCount * sizeof(AnimationTrack) +
 			message->animationCount * sizeof(Animation) +
 			PALETTE_SIZE;
 
 		NRF_LOG_DEBUG("Animation Data to be received:");
-		NRF_LOG_DEBUG("keyframes: %d * %d", message->keyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(AnimationTrack));
-		NRF_LOG_DEBUG("animations: %d * %d", message->animationCount, sizeof(Animation));
-		NRF_LOG_DEBUG("palette: %d", PALETTE_SIZE);
+		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
+		NRF_LOG_DEBUG("Animation Tracks: %d * %d", message->trackCount, sizeof(AnimationTrack));
+		NRF_LOG_DEBUG("Animations: %d * %d", message->animationCount, sizeof(Animation));
+		NRF_LOG_DEBUG("Palette: %d", PALETTE_SIZE);
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
@@ -183,6 +195,7 @@ namespace AnimationSet
 		programmingToken.dataAddress = dataAddress;
 		programmingToken.buffersSize = buffersSize;
 		programmingToken.keyFrameCount = message->keyFrameCount;
+		programmingToken.rgbTrackCount = message->rgbTrackCount;
 		programmingToken.trackCount = message->trackCount;
 		programmingToken.animationCount = message->animationCount;
 
@@ -204,15 +217,23 @@ namespace AnimationSet
 							NRF_LOG_DEBUG("Setting up pointers");
 							Data data;
 							data.headMarker = ANIMATION_SET_VALID_KEY;
-							data.palette = (const uint8_t*)programmingToken.dataAddress;
-							data.keyframes = (const RGBKeyframe*)(programmingToken.dataAddress + PALETTE_SIZE);
+							uint32_t address = programmingToken.dataAddress;
+							data.palette = (const uint8_t*)address;
+							address += PALETTE_SIZE;
+
+							data.keyframes = (const RGBKeyframe*)address;
 							data.keyFrameCount = programmingToken.keyFrameCount;
-							data.tracks = (const AnimationTrack*)(programmingToken.dataAddress + PALETTE_SIZE
-																+ programmingToken.keyFrameCount * sizeof(RGBKeyframe));
+							address += programmingToken.keyFrameCount * sizeof(RGBKeyframe);
+
+							data.rgbTracks = (const RGBTrack*)address;
+							data.rgbTrackCount = programmingToken.rgbTrackCount;
+							address += programmingToken.rgbTrackCount * sizeof(RGBTrack);
+
+							data.tracks = (const AnimationTrack*)address;
 							data.trackCount = programmingToken.trackCount;
-							data.animations = (const Animation*)(programmingToken.dataAddress + PALETTE_SIZE
-															+ programmingToken.keyFrameCount * sizeof(RGBKeyframe)
-															+ programmingToken.trackCount * sizeof(AnimationTrack));
+							address += programmingToken.trackCount * sizeof(AnimationTrack);
+
+							data.animations = (const Animation*)address;
 							data.animationCount = programmingToken.animationCount;
 							data.tailMarker = ANIMATION_SET_VALID_KEY;
 							NRF_LOG_DEBUG("Writing set");
@@ -269,25 +290,25 @@ namespace AnimationSet
 
 		// Create tracks
 		int ledCount = Config::BoardManager::getBoard()->ledCount;
-		int trackCount = ledCount * 3 + ledCount * 3;
-		AnimationTrack tracks[trackCount];
+
+		// One track per color
+		int rgbTrackCount = 3;
+		RGBTrack rgbTracks[rgbTrackCount];
 		for (int c = 0; c < 3; ++c) {
-			for (int f = 0; f < ledCount; ++f) {
-				// Each anim is a single track per face
-				int trackIndex = c * ledCount + f;
-				tracks[trackIndex].keyFrameCount = 4;
-				tracks[trackIndex].ledIndex = f;
-				tracks[trackIndex].keyframesOffset = c * 4;
-			}
+			// Each anim is a single track per face
+			int trackIndex = c;
+			rgbTracks[trackIndex].keyFrameCount = 4;
+			rgbTracks[trackIndex].keyframesOffset = c * 4;
 		}
 
-		// Last set of tracks, all leds together
+		// Create animation tracks
+		int trackCount = ledCount * 3;
+		AnimationTrack tracks[trackCount];
 		for (int c = 0; c < 3; ++c) {
-			for (int i = 0; i < ledCount; ++i) {
-				int trackIndex = c * ledCount + i;
-				tracks[ledCount * 3 + trackIndex].keyFrameCount = 4;
-				tracks[ledCount * 3 + trackIndex].ledIndex = i;
-				tracks[ledCount * 3 + trackIndex].keyframesOffset = c * 4;
+			for (int l = 0; l < ledCount; ++l) {
+				int trackIndex = c * ledCount + l;
+				tracks[trackIndex].ledIndex = l;
+				tracks[trackIndex].trackOffset = c;
 			}
 		}
 
@@ -306,7 +327,7 @@ namespace AnimationSet
 		// Create last 3 anims
 		for (int c = 0; c < 3; ++c) {
 			int animIndex = ledCount * 3 + c;
-			animations[animIndex].tracksOffset = ledCount * 3 + ledCount * c;
+			animations[animIndex].tracksOffset = c * ledCount;
 			animations[animIndex].trackCount = ledCount;
 			animations[animIndex].duration = 1000;
 		}
@@ -314,15 +335,17 @@ namespace AnimationSet
 		// Program all this into flash
 		uint32_t buffersSize =
 			keyFrameCount * sizeof(RGBKeyframe) +
+			rgbTrackCount * sizeof(RGBTrack) +
 			trackCount * sizeof(AnimationTrack) +
 			animCount * sizeof(Animation) +
 			PALETTE_SIZE;
 
 		NRF_LOG_INFO("Programming default anim set");
-		NRF_LOG_DEBUG("keyframes: %d * %d", keyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("Tracks: %d * %d", trackCount, sizeof(AnimationTrack));
-		NRF_LOG_DEBUG("animations: %d * %d", animCount, sizeof(Animation));
-		NRF_LOG_DEBUG("palette: %d", PALETTE_SIZE);
+		NRF_LOG_DEBUG("Keyframes: %d * %d", keyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_DEBUG("RGB Tracks: %d * %d", rgbTrackCount, sizeof(RGBTrack));
+		NRF_LOG_DEBUG("Animation Tracks: %d * %d", trackCount, sizeof(AnimationTrack));
+		NRF_LOG_DEBUG("Animations: %d * %d", animCount, sizeof(Animation));
+		NRF_LOG_DEBUG("Palette: %d", PALETTE_SIZE);
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
@@ -338,13 +361,16 @@ namespace AnimationSet
 		NRF_LOG_DEBUG("Writing palette");
 		uint32_t paletteAddress = dataAddress;
 		Flash::writeSynchronous(paletteAddress, palette, 12 * sizeof(uint8_t) * 3);
-		NRF_LOG_DEBUG("Writing keyframes");
+		NRF_LOG_DEBUG("Writing RGB keyframes");
 		uint32_t keyframesAddress = paletteAddress + PALETTE_SIZE;
 		Flash::writeSynchronous(keyframesAddress, keyframes, keyFrameCount * sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("Writing tracks");
-		uint32_t tracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
+		NRF_LOG_DEBUG("Writing RGB tracks");
+		uint32_t rgbTracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
+		Flash::writeSynchronous(rgbTracksAddress, rgbTracks, rgbTrackCount * sizeof(RGBTrack));
+		NRF_LOG_DEBUG("Writing Animation tracks");
+		uint32_t tracksAddress = rgbTracksAddress + rgbTrackCount * sizeof(RGBTrack);
 		Flash::writeSynchronous(tracksAddress, tracks, trackCount * sizeof(AnimationTrack));
-		NRF_LOG_DEBUG("Writing animations");
+		NRF_LOG_DEBUG("Writing Animations");
 		uint32_t animationsAddress = tracksAddress + trackCount * sizeof(AnimationTrack);
 		Flash::writeSynchronous(animationsAddress, animations, animCount * sizeof(Animation));
 
@@ -355,6 +381,8 @@ namespace AnimationSet
 		data.palette = (const uint8_t*)paletteAddress;
 		data.keyframes = (const RGBKeyframe*)keyframesAddress;
 		data.keyFrameCount = keyFrameCount;
+		data.rgbTracks = (const RGBTrack*)rgbTracksAddress;
+		data.rgbTrackCount = rgbTrackCount;
 		data.tracks = (const AnimationTrack*)tracksAddress;
 		data.trackCount = trackCount;
 		data.animations = (const Animation*)animationsAddress;
@@ -374,14 +402,16 @@ namespace AnimationSet
 			NRF_LOG_INFO("  Track count: %d", anim.trackCount);
 			for (int t = 0; t < anim.trackCount; ++t) {
 				auto& track = anim.GetTrack(t);
+				auto& rgbTrack = track.getTrack();
 				NRF_LOG_INFO("  Track %d:", t);
 				NRF_LOG_INFO("  Track Offset %d:", anim.tracksOffset + t);
-				NRF_LOG_INFO("  Keyframe count: %d", track.keyFrameCount);
-				for (int k = 0; k < track.keyFrameCount; ++k) {
-					auto& keyframe = track.getKeyframe(k);
+				NRF_LOG_INFO("  RGBTrack Offset %d:", track.trackOffset);
+				NRF_LOG_INFO("  Keyframe count: %d", rgbTrack.keyFrameCount);
+				for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
+					auto& keyframe = rgbTrack.getKeyframe(k);
 					int time = keyframe.time();
 					uint32_t color = keyframe.color();
-					NRF_LOG_INFO("    Offset %d: %d -> %06x", (track.keyframesOffset + k), time, color);
+					NRF_LOG_INFO("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
 				}
 			}
 		}

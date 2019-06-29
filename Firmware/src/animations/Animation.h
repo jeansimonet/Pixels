@@ -29,14 +29,29 @@ namespace Animations
 	/// An animation track is essentially an animation curve for a specific LED.
 	/// size: 4 bytes (+ the actual keyframe data)
 	/// </summary>
-	struct AnimationTrack
+	struct RGBTrack
 	{
 	public:
 		uint16_t keyframesOffset; // offset into a global keyframe buffer
-		uint8_t ledIndex;	// 0 - 20
 		uint8_t keyFrameCount;		// Keyframe count
+		uint8_t padding;
 
 		const RGBKeyframe& getKeyframe(uint16_t keyframeIndex) const;
+		uint32_t evaluate(int time) const;
+	};
+
+	/// <summary>
+	/// AnimationTrack track is essentially an animation associated with a track
+	/// size: 4 bytes (+ the actual keyframe data)
+	/// </summary>
+	struct AnimationTrack
+	{
+	public:
+		uint16_t trackOffset; // offset into a global keyframe buffer
+		uint8_t ledIndex;	// 0 - 20
+		uint8_t padding;
+
+		const RGBTrack& getTrack() const;
 		uint32_t evaluate(int time) const;
 	};
 

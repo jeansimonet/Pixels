@@ -39,7 +39,7 @@ namespace Animations
 	}
 
 
-	const RGBKeyframe& AnimationTrack::getKeyframe(uint16_t keyframeIndex) const {
+	const RGBKeyframe& RGBTrack::getKeyframe(uint16_t keyframeIndex) const {
 		assert(keyframeIndex < keyFrameCount);
 		return AnimationSet::getKeyframe(keyframesOffset + keyframeIndex);
 	}
@@ -48,7 +48,7 @@ namespace Animations
 	/// Evaluate an animation track's for a given time, in milliseconds.
 	/// Values outside the track's range are clamped to first or last keyframe value.
 	/// </summary>
-	uint32_t AnimationTrack::evaluate(int time) const {
+	uint32_t RGBTrack::evaluate(int time) const {
 		if (keyFrameCount == 0)
 			return 0;
 
@@ -85,6 +85,14 @@ namespace Animations
 		}
 	}
 
+	const RGBTrack& AnimationTrack::getTrack() const {
+		return AnimationSet::getRGBTrack(trackOffset);
+	}
+
+	uint32_t AnimationTrack::evaluate(int time) const {
+		return getTrack().evaluate(time);
+	}
+
 	/// <summary>
 	/// Computes the list of LEDs that need to be on, and what their intensities should be
 	/// based on the different tracks of this animation.
@@ -98,8 +106,9 @@ namespace Animations
 		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
 		for (int i = 0; i < trackCount; ++i)
 		{
+			const RGBTrack& rgbTrack = tracks[i].getTrack();
 			retIndices[i] = tracks[i].ledIndex;
-			retColors[i] = tracks[i].evaluate(time);
+			retColors[i] = rgbTrack.evaluate(time);
 		}
 		return trackCount;
 	}

@@ -205,6 +205,7 @@ public class DieMessageTransferAnimSet
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSet;
     public ushort keyFrameCount;
+    public ushort rgbTrackCount;
     public ushort trackCount;
     public ushort animationCount;
 }
