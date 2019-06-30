@@ -19,7 +19,7 @@ namespace Flash
 
     NRF_FSTORAGE_DEF(nrf_fstorage_t fstorage);
 
-    FlashCallback callback;
+    FlashCallback callback; // This should be allocated per call...
 
     /**@brief   Helper function to obtain the last address on the last page of the on-chip flash that
      *          can be used to write user data.
@@ -109,15 +109,9 @@ namespace Flash
         }
         
         if (callback != nullptr) {
-            Scheduler::push(&info, sizeof(FlashCallbackInfo),
-                [](void * p_event_data, uint16_t event_size) {
-                    auto info = (FlashCallbackInfo*)p_event_data;
-                    callback(info->result, info->address, info->size);
-
-                    // Clean up!
-                    callback = nullptr;
-                }
-            );
+            callback(info.result, info.address, info.size);
+        } else {
+            NRF_LOG_DEBUG("No callback");
         }
     }
 

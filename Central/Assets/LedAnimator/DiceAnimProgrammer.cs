@@ -53,9 +53,6 @@ public class DiceAnimProgrammer
     public void SaveToJsonFile()
     {
         timeline.ApplyChanges();
-
-        Debug.Log(animationSet.ToString());
-
         string jsonText = JsonUtility.ToJson(animationSet.ToAnimationSet(), true);
         File.WriteAllText(JsonFilePath, jsonText);
     }
@@ -64,9 +61,6 @@ public class DiceAnimProgrammer
     {
         string jsonText = File.ReadAllText(JsonFilePath);
         animationSet.FromAnimationSet(JsonUtility.FromJson<Animations.AnimationSet>(jsonText));
-
-        Debug.Log(animationSet.ToString());
-
         if (animationSet.animations.Count > 0)
         {
             timeline.ChangeCurrentAnimation(animationSet.animations[0]);
@@ -75,13 +69,26 @@ public class DiceAnimProgrammer
 
     public void UploadAnimationSet()
     {
+        timeline.ApplyChanges();
         if (die != null)
         {
-            die.UploadAnimationSet(animationSet.ToAnimationSet());
+            StartCoroutine(die.UploadAnimationSet(animationSet.ToAnimationSet()));
+        }
+    }
+
+    public void DownloadAnimationSet()
+    {
+        if (die != null)
+        {
+            //die.DownloadAnimationSet(animationSet.ToAnimationSet());
         }
     }
 
     public void PlayAnim()
     {
+        if (die != null)
+        {
+            die.PlayAnimation(0);
+        }
     }
 }

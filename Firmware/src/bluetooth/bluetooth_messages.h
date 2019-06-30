@@ -116,6 +116,7 @@ struct MessageBulkDataAck
 struct MessageTransferAnimSet
 	: Message
 {
+	uint16_t paletteSize;
 	uint16_t keyFrameCount;
 	uint16_t rgbTrackCount;
 	uint16_t trackCount;

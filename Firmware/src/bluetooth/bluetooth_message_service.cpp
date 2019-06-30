@@ -143,6 +143,7 @@ namespace MessageService
         {
             messageHandlers[msgType].handler = handler;
             messageHandlers[msgType].token = token;
+            NRF_LOG_DEBUG("Setting message handler for %d to %08x", msgType, handler);
         }
     }
 
@@ -164,6 +165,7 @@ namespace MessageService
         auto handler = messageHandlers[(int)msg->type];
         if (handler.handler != nullptr)
         {
+            NRF_LOG_DEBUG("Calling message handler %08x", handler.handler);
             handler.handler(handler.token, msg);
         }
     }
@@ -177,6 +179,8 @@ namespace MessageService
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);
             }
+        } else {
+            NRF_LOG_ERROR("Bad Message Length %d", len);
         }
     }
 }

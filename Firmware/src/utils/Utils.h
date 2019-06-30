@@ -16,5 +16,8 @@ namespace Utils
 	}
 
 	uint32_t millis( void );
+	uint8_t sine8(uint8_t x);
+	uint8_t gamma8(uint8_t x);
+	uint32_t gamma(uint32_t color);
 }
 

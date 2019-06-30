@@ -79,6 +79,13 @@ namespace AnimController
 				int ledIndices[MAX_LED_COUNT];
 				uint32_t colors[MAX_LED_COUNT];
 				int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
+
+				// Gamma correct...
+				for (int j = 0; j < ledCount; ++j) {
+					colors[j] = Utils::gamma(colors[j]);
+				}
+
+				// And light up!
 				APA102::setPixelColors(ledIndices, colors, ledCount);
 			}
 		}
@@ -105,12 +112,15 @@ namespace AnimController
 			auto& track = anim->GetTrack(t);
 			NRF_LOG_DEBUG("  Track %d:", t);
 			NRF_LOG_DEBUG("  Track Offset %d:", anim->tracksOffset + t);
-			NRF_LOG_DEBUG("  Keyframe count: %d", track.keyFrameCount);
-			for (int k = 0; k < track.keyFrameCount; ++k) {
-				auto& keyframe = track.getKeyframe(k);
+			NRF_LOG_DEBUG("  LED index %d:", track.ledIndex);
+			NRF_LOG_DEBUG("  RGB Track Offset %d:", track.trackOffset);
+			auto& rgbTrack = track.getTrack();
+			NRF_LOG_DEBUG("  RGB Keyframe count: %d", rgbTrack.keyFrameCount);
+			for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
+				auto& keyframe = rgbTrack.getKeyframe(k);
 				int time = keyframe.time();
 				uint32_t color = keyframe.color();
-				NRF_LOG_DEBUG("    Offset %d: %d -> %06x", (track.keyframesOffset + k), time, color);
+				NRF_LOG_DEBUG("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
 			}
 		}
 		#endif

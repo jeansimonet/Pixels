@@ -419,28 +419,17 @@ public class Die
     {
         // Prepare the die
         var prepareDie = new DieMessageTransferAnimSet();
+        prepareDie.paletteSize = set.getPaletteSize();
         prepareDie.keyFrameCount = set.getKeyframeCount();
-        prepareDie.trackCount = set.getRGBTrackCount();
+        prepareDie.rgbTrackCount = set.getRGBTrackCount();
+        prepareDie.trackCount = set.getTrackCount();
         prepareDie.animationCount = set.getAnimationCount();
         Debug.Log("Animation Data to be sent:");
+        Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
         Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
         Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
         Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.AnimationTrack>());
         Debug.Log("animations: " + prepareDie.animationCount + " * " + Marshal.SizeOf<Animations.Animation>());
-        Debug.Log("palette: " + AnimationSet.PALETTE_SIZE);
-
-        //StringBuilder builder = new StringBuilder();
-        //builder.AppendLine("Sending animation set setup");
-        //builder.Append("keyframes: ");
-        //builder.Append(prepareDie.keyFrameCount);
-        //builder.AppendLine();
-        //builder.Append("tracks: ");
-        //builder.Append(prepareDie.trackCount);
-        //builder.AppendLine();
-        //builder.Append("animations: ");
-        //builder.Append(prepareDie.animationCount);
-        //builder.AppendLine();
-        //Debug.Log(builder.ToString());
         yield return StartCoroutine(SendMessageWithAck(prepareDie, DieMessageType.TransferAnimSetAck));
 
         Debug.Log("die is ready, sending animations");

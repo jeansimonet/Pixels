@@ -188,18 +188,13 @@ namespace Animations
     [System.Serializable]
     public class AnimationSet
     {
-        public const int PALETTE_SIZE = 128 * 3;
+        public const int MAX_PALETTE_SIZE = 128 * 3;
 
         public byte[] palette;
         public RGBKeyframe[] keyframes;
         public RGBTrack[] rgbTracks;
         public AnimationTrack[] tracks;
         public Animation[] animations;
-
-        public AnimationSet()
-        {
-            palette = new byte[PALETTE_SIZE];
-        }
 
         public int ComputeAnimationDataSize()
         {
@@ -229,6 +224,11 @@ namespace Animations
         public ref RGBKeyframe getKeyframe(ushort keyFrameIndex)
         {
             return ref keyframes[keyFrameIndex];
+        }
+
+        public ushort getPaletteSize()
+        {
+            return (ushort)palette.Length;
         }
 
         public ushort getKeyframeCount()

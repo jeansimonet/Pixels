@@ -105,6 +105,7 @@ namespace Animations
             }
 
             // Add the colors to the palette
+            set.palette = new byte[colors.Count * 3];
             foreach (var ci in colors)
             {
                 Color color = ci.Key;

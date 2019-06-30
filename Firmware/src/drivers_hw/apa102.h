@@ -36,8 +36,5 @@ namespace DriversHW
     uint8_t *getPixels();
 
     void selfTest();
-
-    uint8_t sine8(uint8_t x);
-    uint8_t gamma8(uint8_t x);
   }
 }

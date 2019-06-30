@@ -14,7 +14,7 @@
 #define ANIMATION_SET_VALID_KEY (0x600DF00D) // Good Food ;)
 // We place animation set and animations in descending addresses
 // So the animation set is at the top of the page
-#define PALETTE_SIZE (COLOR_MAP_SIZE * 3)
+#define MAX_PALETTE_SIZE (COLOR_MAP_SIZE * 3)
 
 #define ANIMATION_SET_ADDRESS (0x28000)
 
@@ -32,8 +32,9 @@ namespace AnimationSet
 		uint32_t headMarker;
 
 		// The palette for all animations, stored in RGB RGB RGB etc...
-		// 128 * 3 = 376 bytes
+		// Maximum 128 * 3 = 376 bytes
 		const uint8_t* palette;
+		uint32_t paletteSize; // In bytes (divide by 3 for colors)
 		// Size is constant: PALETTE_SIZE
 
 		// The animations we have
@@ -89,14 +90,14 @@ namespace AnimationSet
 			return -1;
 
 		return 
-			sizeof(uint8_t) * COLOR_MAP_SIZE * 3 +
+			sizeof(uint8_t) * data->paletteSize * 3 +
 			sizeof(RGBKeyframe) * data->keyFrameCount +
 			sizeof(RGBTrack) * data->trackCount +
 			sizeof(Animation) * data-> animationCount;
 	}
 
 	uint32_t getColor(uint16_t colorIndex) {
-		assert(CheckValid() && colorIndex < COLOR_MAP_SIZE);
+		assert(CheckValid() && colorIndex < (data->paletteSize / 3));
 		return toColor(
 				data->palette[colorIndex * 3 + 0],
 				data->palette[colorIndex * 3 + 1],
@@ -138,6 +139,10 @@ namespace AnimationSet
 		return data->animations[animIndex];
 	}
 
+	uint16_t getPaletteSize() {
+		assert(CheckValid());
+		return data->paletteSize;
+	}
 
 	uint16_t getAnimationCount() {
 		assert(CheckValid());
@@ -153,12 +158,15 @@ namespace AnimationSet
 	{
 		uint32_t dataAddress;
 		uint32_t buffersSize;
+		uint32_t paletteSize;
 		uint32_t keyFrameCount;
 		uint32_t rgbTrackCount;
 		uint32_t trackCount;
 		uint32_t animationCount;
 	} programmingToken;
 
+
+	Data* newData = nullptr;
 
 	void ReceiveAnimationSetHandler(void* context, const Message* msg) {
 
@@ -170,14 +178,14 @@ namespace AnimationSet
 			message->rgbTrackCount * sizeof(RGBTrack) +
 			message->trackCount * sizeof(AnimationTrack) +
 			message->animationCount * sizeof(Animation) +
-			PALETTE_SIZE;
+			message->paletteSize * sizeof(uint8_t);
 
 		NRF_LOG_DEBUG("Animation Data to be received:");
+		NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
 		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(RGBKeyframe));
 		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
 		NRF_LOG_DEBUG("Animation Tracks: %d * %d", message->trackCount, sizeof(AnimationTrack));
 		NRF_LOG_DEBUG("Animations: %d * %d", message->animationCount, sizeof(Animation));
-		NRF_LOG_DEBUG("Palette: %d", PALETTE_SIZE);
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
@@ -194,6 +202,7 @@ namespace AnimationSet
 		// Store the address and size
 		programmingToken.dataAddress = dataAddress;
 		programmingToken.buffersSize = buffersSize;
+		programmingToken.paletteSize = message->paletteSize;
 		programmingToken.keyFrameCount = message->keyFrameCount;
 		programmingToken.rgbTrackCount = message->rgbTrackCount;
 		programmingToken.trackCount = message->trackCount;
@@ -215,31 +224,38 @@ namespace AnimationSet
 						if (success) {
 							// Program the animation set itself
 							NRF_LOG_DEBUG("Setting up pointers");
-							Data data;
-							data.headMarker = ANIMATION_SET_VALID_KEY;
+							newData = (Data*)malloc(sizeof(Data));
+							newData->headMarker = ANIMATION_SET_VALID_KEY;
 							uint32_t address = programmingToken.dataAddress;
-							data.palette = (const uint8_t*)address;
-							address += PALETTE_SIZE;
+							newData->palette = (const uint8_t*)address;
+							newData->paletteSize = programmingToken.paletteSize;
+							address += programmingToken.paletteSize * sizeof(uint8_t);
 
-							data.keyframes = (const RGBKeyframe*)address;
-							data.keyFrameCount = programmingToken.keyFrameCount;
+							newData->keyframes = (const RGBKeyframe*)address;
+							newData->keyFrameCount = programmingToken.keyFrameCount;
 							address += programmingToken.keyFrameCount * sizeof(RGBKeyframe);
 
-							data.rgbTracks = (const RGBTrack*)address;
-							data.rgbTrackCount = programmingToken.rgbTrackCount;
+							newData->rgbTracks = (const RGBTrack*)address;
+							newData->rgbTrackCount = programmingToken.rgbTrackCount;
 							address += programmingToken.rgbTrackCount * sizeof(RGBTrack);
 
-							data.tracks = (const AnimationTrack*)address;
-							data.trackCount = programmingToken.trackCount;
+							newData->tracks = (const AnimationTrack*)address;
+							newData->trackCount = programmingToken.trackCount;
 							address += programmingToken.trackCount * sizeof(AnimationTrack);
 
-							data.animations = (const Animation*)address;
-							data.animationCount = programmingToken.animationCount;
-							data.tailMarker = ANIMATION_SET_VALID_KEY;
+							newData->animations = (const Animation*)address;
+							newData->animationCount = programmingToken.animationCount;
+							newData->tailMarker = ANIMATION_SET_VALID_KEY;
 							NRF_LOG_DEBUG("Writing set");
-							Flash::write(ANIMATION_SET_ADDRESS, &data, sizeof(Data),
+
+							Flash::write(ANIMATION_SET_ADDRESS, newData, sizeof(Data),
 								[](bool result, uint32_t address, uint16_t size) {
 									NRF_LOG_INFO("Animation Set written to flash!");
+									free(newData);
+
+									if (!CheckValid()) {
+										NRF_LOG_ERROR("Animation data is not valid!");
+									}
 								}
 							);
 						} else {
@@ -253,7 +269,8 @@ namespace AnimationSet
 
 	void ProgramDefaultAnimationSet() {
 
-		uint8_t palette[12];
+		int paletteSize = 12;
+		uint8_t palette[paletteSize];
 		palette[0] = 0;
 		palette[1] = 0;
 		palette[2] = 0;
@@ -338,14 +355,14 @@ namespace AnimationSet
 			rgbTrackCount * sizeof(RGBTrack) +
 			trackCount * sizeof(AnimationTrack) +
 			animCount * sizeof(Animation) +
-			PALETTE_SIZE;
+			paletteSize * sizeof(uint8_t);
 
 		NRF_LOG_INFO("Programming default anim set");
 		NRF_LOG_DEBUG("Keyframes: %d * %d", keyFrameCount, sizeof(RGBKeyframe));
 		NRF_LOG_DEBUG("RGB Tracks: %d * %d", rgbTrackCount, sizeof(RGBTrack));
 		NRF_LOG_DEBUG("Animation Tracks: %d * %d", trackCount, sizeof(AnimationTrack));
 		NRF_LOG_DEBUG("Animations: %d * %d", animCount, sizeof(Animation));
-		NRF_LOG_DEBUG("Palette: %d", PALETTE_SIZE);
+		NRF_LOG_DEBUG("Palette: %d * %d", paletteSize, sizeof(uint8_t));
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
@@ -360,9 +377,9 @@ namespace AnimationSet
 		// Then program the palette
 		NRF_LOG_DEBUG("Writing palette");
 		uint32_t paletteAddress = dataAddress;
-		Flash::writeSynchronous(paletteAddress, palette, 12 * sizeof(uint8_t) * 3);
+		Flash::writeSynchronous(paletteAddress, palette, paletteSize * sizeof(uint8_t));
 		NRF_LOG_DEBUG("Writing RGB keyframes");
-		uint32_t keyframesAddress = paletteAddress + PALETTE_SIZE;
+		uint32_t keyframesAddress = paletteAddress + paletteSize * sizeof(uint8_t);
 		Flash::writeSynchronous(keyframesAddress, keyframes, keyFrameCount * sizeof(RGBKeyframe));
 		NRF_LOG_DEBUG("Writing RGB tracks");
 		uint32_t rgbTracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
@@ -376,25 +393,30 @@ namespace AnimationSet
 
 		// Create the dataset
 		NRF_LOG_DEBUG("Writing anim set");
-		Data data;
-		data.headMarker = ANIMATION_SET_VALID_KEY;
-		data.palette = (const uint8_t*)paletteAddress;
-		data.keyframes = (const RGBKeyframe*)keyframesAddress;
-		data.keyFrameCount = keyFrameCount;
-		data.rgbTracks = (const RGBTrack*)rgbTracksAddress;
-		data.rgbTrackCount = rgbTrackCount;
-		data.tracks = (const AnimationTrack*)tracksAddress;
-		data.trackCount = trackCount;
-		data.animations = (const Animation*)animationsAddress;
-		data.animationCount = animCount;
-		data.tailMarker = ANIMATION_SET_VALID_KEY;
+		Data newData;
+		newData.headMarker = ANIMATION_SET_VALID_KEY;
+		newData.palette = (const uint8_t*)paletteAddress;
+		newData.paletteSize = paletteSize;
+		newData.keyframes = (const RGBKeyframe*)keyframesAddress;
+		newData.keyFrameCount = keyFrameCount;
+		newData.rgbTracks = (const RGBTrack*)rgbTracksAddress;
+		newData.rgbTrackCount = rgbTrackCount;
+		newData.tracks = (const AnimationTrack*)tracksAddress;
+		newData.trackCount = trackCount;
+		newData.animations = (const Animation*)animationsAddress;
+		newData.animationCount = animCount;
+		newData.tailMarker = ANIMATION_SET_VALID_KEY;
 
 		// And write it!
-		Flash::writeSynchronous(ANIMATION_SET_ADDRESS, &data, sizeof(Data));
+		Flash::writeSynchronous(ANIMATION_SET_ADDRESS, &newData, sizeof(Data));
 		NRF_LOG_INFO("Done");
 	}
 
 	void printAnimationInfo() {
+		NRF_LOG_INFO("Palette size: %d bytes", getPaletteSize());
+		for (int p = 0; p < getPaletteSize() / 3; ++p) {
+			NRF_LOG_INFO("  Color %d: %08x", p, getColor(p));
+		}
 		NRF_LOG_INFO("Animation Count: %d", getAnimationCount());
 		for (int a = 0; a < getAnimationCount(); ++a) {
 			auto& anim = getAnimation(a);
