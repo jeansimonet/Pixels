@@ -19,8 +19,6 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	float _ticksLength = 0.5f;
 	[SerializeField]
-	RectTransform _animSetTogglesRoot = null;
-	[SerializeField]
 	RectTransform _ticksRoot = null;
 	[SerializeField]
 	RectTransform _colorAnimsRoot = null;
@@ -120,7 +118,7 @@ public class TimelineView : MonoBehaviour
 
     void Serialize()
 	{
-        CurrentAnimation.tracks = new List<Animations.EditTrack>();
+        CurrentAnimation.tracks.Clear();
         foreach (var t in GetComponentsInChildren<ColorAnimator>())
         {
             CurrentAnimation.tracks.Add(t.ToAnimationTrack(Unit));
@@ -130,13 +128,17 @@ public class TimelineView : MonoBehaviour
 	void Deserialize()
 	{
         Clear();
-        Duration = CurrentAnimation.duration;
 
-        foreach (var track in CurrentAnimation.tracks)
-        {
-            var colorAnim = CreateAnimation();
-            colorAnim.FromAnimationTrack(track, Unit);
-        }
+		if (!CurrentAnimation.empty)
+		{
+			Duration = CurrentAnimation.duration;
+
+			foreach (var track in CurrentAnimation.tracks)
+			{
+				var colorAnim = CreateAnimation();
+				colorAnim.FromAnimationTrack(track, Unit);
+			}
+		}
 
         Repaint();
 	}
@@ -155,6 +157,8 @@ public class TimelineView : MonoBehaviour
 
 	void Clear()
 	{
+		Duration = _minDuration;
+		Zoom = _minZoom;
 		ActiveColorAnimator = null;
 		for (int i = _colorAnimsRoot.childCount - 1; i >= 0; --i)
 		{
@@ -230,8 +234,6 @@ public class TimelineView : MonoBehaviour
 	void Awake()
 	{
 		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
-		Duration = _minDuration;
-		Zoom = _minZoom;
 		Clear();
 	}
 
@@ -244,7 +246,7 @@ public class TimelineView : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		bool play = _playAnims && (_colorAnimsRoot.childCount > 0);
+		bool play = _playAnims && (_colorAnimsRoot.childCount > 1);
 		_playCursor.gameObject.SetActive(play);
 		if (play)
 		{

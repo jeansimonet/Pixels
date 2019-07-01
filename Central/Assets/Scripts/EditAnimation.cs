@@ -32,17 +32,9 @@ namespace Animations
     /// </summary>
     public class EditAnimation
     {
-        public float duration
-        {
-            get
-            {
-                if (tracks == null || tracks.Count == 0)
-                    return 0.0f;
-                else
-                    return tracks.Max(t => t.duration);
-            }
-        }
-        public List<EditTrack> tracks = new List<EditTrack>();
+        public float duration => empty ? 0 : tracks.Max(t => t.duration);
+        public bool empty => tracks?.Count == 0;
+        public List<EditTrack> tracks { get; private set; } = new List<EditTrack>();
     }
 
     /// <summary>
