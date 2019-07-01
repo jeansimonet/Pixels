@@ -20,6 +20,6 @@ public class AnimInfoText : MonoBehaviour
 	void Update()
 	{
 		_text.text = _timeline.Duration + " second(s)\n"
-			+ _timeline.AnimationCount + " animation(s)";
+			+ _timeline.ColorAnimCount + " animation(s)";
 	}
 }

@@ -37,6 +37,16 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		_image.sprite = sprite;
 	}
 
+	public void ShowColor(float cursorPos)
+	{
+		_image.color = ColorSlider.GetColorAt(cursorPos);
+	}
+
+	public void ResetColor()
+	{
+		_image.color = Color.white;
+	}
+
 	public void Maximize()
 	{
 		_movableColorSlider.Maximize();

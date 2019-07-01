@@ -30,6 +30,7 @@ public class TimelineView : MonoBehaviour
 	Transform _playCursor = null;
 
 	float _widthPadding;
+	float _animPosX0;
 	bool _playAnims;
 	float _playTime;
 
@@ -37,11 +38,11 @@ public class TimelineView : MonoBehaviour
 	public int Zoom { get; private set; }
 	public float SnapInterval => _snapInterval;
 	public float Unit =>_unitWidth * Zoom;
-	public int AnimationCount =>_colorAnimsRoot.childCount - 1;
+	public int ColorAnimCount => _colorAnimsRoot.childCount - 1;
 	public Animations.EditAnimation CurrentAnimation { get; private set; }
 	public bool PlayAnimations => _playAnims;
-
 	public ColorAnimator ActiveColorAnimator { get; private set; }
+	public ColorAnimator[] ColorAnimators => _colorAnimsRoot.GetComponentsInChildren<ColorAnimator>();
 
 	public void ModifyDuration(float signedOffset)
 	{
@@ -234,6 +235,7 @@ public class TimelineView : MonoBehaviour
 	void Awake()
 	{
 		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
+		_animPosX0 = _colorAnimsRoot.GetComponentInChildren<MovableArea>().transform.localPosition.x;
 		Clear();
 	}
 
@@ -246,30 +248,37 @@ public class TimelineView : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		bool play = _playAnims && (_colorAnimsRoot.childCount > 1);
+		bool play = _playAnims && (ColorAnimCount > 0);
 		_playCursor.gameObject.SetActive(play);
 		if (play)
 		{
+			// Compute animation time
 			_playTime += Time.unscaledDeltaTime;
 			if (_playTime > Duration)
 			{
 				_playTime = 0;
 			}
 
-			var slider = _colorAnimsRoot.GetChild(0).GetComponent<ColorAnimator>().ColorSlider;
-			_playCursor.GetComponentInChildren<Image>().color = slider.GetColorAt(_playTime * Unit);
+			// Update current color for each animation
+			float cursorPos = _playTime * Unit;
+			foreach (var colorAnim in ColorAnimators)
+			{
+				colorAnim.ShowColor(cursorPos);
+			}
 
-			var transf = _colorAnimsRoot.GetChild(0).GetComponentInChildren<MovableArea>().transform;
-			float x0 = transf.localPosition.x;
-
-			transf = _playCursor.transform;
+			// Move cursor
+			var transf = _playCursor.transform;
 			var pos = transf.localPosition;
-			pos.x = x0 + _playTime * Unit;
+			pos.x = _animPosX0 + cursorPos;
 			transf.localPosition = pos;
 		}
 		else
 		{
 			_playTime = 0;
+			foreach (var colorAnim in ColorAnimators)
+			{
+				colorAnim.ResetColor();
+			}
 		}
 	}
 }

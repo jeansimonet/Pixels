@@ -148,13 +148,13 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		_texture.Apply(false);
 	}
 
-	public Color GetColorAt(float pos)
+	public Color GetColorAt(float cursorPos)
 	{
 		float width = (transform as RectTransform).rect.width;
 		float x0 = transform.parent.InverseTransformPoint(transform.position).x;
-		float cursor = (pos - x0) / width;
+		float cursorPercent = (cursorPos - x0) / width;
 
-		if ((cursor >= 0) && (cursor <= 1))
+		if ((cursorPercent >= 0) && (cursorPercent <= 1))
 		{
 			var colorsAndPos = GetColorAndPos();
 			colorsAndPos.Insert(0, new ColorAndPos(colorsAndPos[0].Color, 0));
@@ -164,9 +164,9 @@ public class MultiSlider : MonoBehaviour, IFocusable
 			for (int i = 1; i < colorsAndPos.Count; ++i)
 			{
 				float max = colorsAndPos[i].Pos;
-				if (cursor <= max)
+				if (cursorPercent <= max)
 				{
-					return Color.Lerp(colorsAndPos[i - 1].Color, colorsAndPos[i].Color, (cursor - lastMax) / (max - lastMax));
+					return Color.Lerp(colorsAndPos[i - 1].Color, colorsAndPos[i].Color, (cursorPercent - lastMax) / (max - lastMax));
 				}
 				lastMax = max;
 			}
