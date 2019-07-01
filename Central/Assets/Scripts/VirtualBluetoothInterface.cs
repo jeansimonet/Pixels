@@ -16,9 +16,9 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
     IEnumerator currentCoroutine;
     bool scanning = false;
 
-    string dieServiceGUID = "fe84";
-    string subscribeCharacteristic = "2d30c082-f39f-4ce6-923f-3484ea480596";
-    string writeCharacteristic = "2d30c083-f39f-4ce6-923f-3484ea480596";
+    string dieServiceGUID = "4DCCA9E1-B5A3-F393-E0A9-E50E24DCCA9E";
+    string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+    string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
     string[] fakeServices =
     {

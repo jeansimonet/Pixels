@@ -3,20 +3,32 @@
         9,
         9,
         9,
-        197,
-        197,
-        197,
-        247,
-        247,
-        247,
         255,
+        214,
+        42,
         255,
-        255,
-        249,
-        30,
+        104,
+        0,
+        97,
         8,
+        0,
         97,
         124,
+        255,
+        4,
+        33,
+        229,
+        0,
+        134,
+        0,
+        44,
+        60,
+        255,
+        73,
+        254,
+        73,
+        0,
+        223,
         255
     ],
     "keyframes": [
@@ -24,45 +36,122 @@
             "timeAndColor": 0
         },
         {
-            "timeAndColor": 1153
+            "timeAndColor": 3201
         },
         {
-            "timeAndColor": 2432
+            "timeAndColor": 6402
         },
         {
-            "timeAndColor": 3714
+            "timeAndColor": 9603
         },
         {
-            "timeAndColor": 4992
+            "timeAndColor": 12928
         },
         {
-            "timeAndColor": 6403
+            "timeAndColor": 1920
         },
         {
-            "timeAndColor": 16000
+            "timeAndColor": 5121
         },
         {
-            "timeAndColor": 0
+            "timeAndColor": 7938
         },
         {
-            "timeAndColor": 1156
+            "timeAndColor": 11523
         },
         {
-            "timeAndColor": 14085
+            "timeAndColor": 15360
         },
         {
-            "timeAndColor": 16000
+            "timeAndColor": 3840
+        },
+        {
+            "timeAndColor": 7041
+        },
+        {
+            "timeAndColor": 10244
+        },
+        {
+            "timeAndColor": 12933
+        },
+        {
+            "timeAndColor": 17152
+        },
+        {
+            "timeAndColor": 3840
+        },
+        {
+            "timeAndColor": 7046
+        },
+        {
+            "timeAndColor": 10244
+        },
+        {
+            "timeAndColor": 12935
+        },
+        {
+            "timeAndColor": 17152
+        },
+        {
+            "timeAndColor": 3840
+        },
+        {
+            "timeAndColor": 7048
+        },
+        {
+            "timeAndColor": 10244
+        },
+        {
+            "timeAndColor": 12933
+        },
+        {
+            "timeAndColor": 17152
+        },
+        {
+            "timeAndColor": 5120
+        },
+        {
+            "timeAndColor": 7942
+        },
+        {
+            "timeAndColor": 11145
+        },
+        {
+            "timeAndColor": 14343
+        },
+        {
+            "timeAndColor": 18432
         }
     ],
     "rgbTracks": [
         {
             "keyframesOffset": 0,
-            "keyFrameCount": 7,
+            "keyFrameCount": 5,
             "padding": 0
         },
         {
-            "keyframesOffset": 7,
-            "keyFrameCount": 4,
+            "keyframesOffset": 5,
+            "keyFrameCount": 5,
+            "padding": 0
+        },
+        {
+            "keyframesOffset": 10,
+            "keyFrameCount": 5,
+            "padding": 0
+        },
+        {
+            "keyframesOffset": 15,
+            "keyFrameCount": 5,
+            "padding": 0
+        },
+        {
+            "keyframesOffset": 20,
+            "keyFrameCount": 5,
+            "padding": 0
+        },
+        {
+            "keyframesOffset": 25,
+            "keyFrameCount": 5,
             "padding": 0
         }
     ],
@@ -76,13 +165,33 @@
             "trackOffset": 1,
             "ledIndex": 1,
             "padding": 0
+        },
+        {
+            "trackOffset": 2,
+            "ledIndex": 2,
+            "padding": 0
+        },
+        {
+            "trackOffset": 3,
+            "ledIndex": 3,
+            "padding": 0
+        },
+        {
+            "trackOffset": 4,
+            "ledIndex": 4,
+            "padding": 0
+        },
+        {
+            "trackOffset": 5,
+            "ledIndex": 5,
+            "padding": 0
         }
     ],
     "animations": [
         {
-            "duration": 2500,
+            "duration": 2880,
             "tracksOffset": 0,
-            "trackCount": 2,
+            "trackCount": 6,
             "padding": 0
         }
     ]

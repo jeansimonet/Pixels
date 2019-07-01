@@ -13,6 +13,11 @@ public class DiceAnimProgrammer
 
     Die die = null;
     Animations.EditAnimationSet animationSet;
+    
+    // We use this to compare against the last version uploaded on the dice
+    // and avoid re-uploading the set every time.
+    // This is a hack to not have to implement change detection in the animation editor
+    byte[] animationSetByteArray; 
 
     void Awake()
     {
@@ -67,12 +72,44 @@ public class DiceAnimProgrammer
         }
     }
 
+    bool ByteArraysEquals(byte[] array1, byte[] array2)
+    {
+        if (array1.Length != array2.Length)
+            return false;
+
+        for (int i = 0; i < array1.Length; ++i)
+        {
+            if (array1[i] != array2[i])
+                return false;
+        }
+
+        return true;
+    }
+
     public void UploadAnimationSet()
     {
+        StartCoroutine(UploadAnimationSetCr());
+    }
+
+    IEnumerator UploadAnimationSetCr()
+    {
         timeline.ApplyChanges();
-        if (die != null)
+        var rawAnim = animationSet.ToAnimationSet();
+        var newByteArray = rawAnim.ToByteArray();
+        if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
         {
-            StartCoroutine(die.UploadAnimationSet(animationSet.ToAnimationSet()));
+            // Update stored array
+            animationSetByteArray = newByteArray;
+
+            // Write to file (why not?)
+            string jsonText = JsonUtility.ToJson(animationSet.ToAnimationSet(), true);
+            File.WriteAllText(JsonFilePath, jsonText);
+
+            // Upload!
+            if (die != null)
+            {
+                yield return StartCoroutine(die.UploadAnimationSet(rawAnim));
+            }
         }
     }
 
@@ -86,8 +123,14 @@ public class DiceAnimProgrammer
 
     public void PlayAnim()
     {
+        StartCoroutine(PlayAnimCr());
+    }
+
+    IEnumerator PlayAnimCr()
+    {
         if (die != null)
         {
+            yield return StartCoroutine(UploadAnimationSetCr());
             die.PlayAnimation(0);
         }
     }
