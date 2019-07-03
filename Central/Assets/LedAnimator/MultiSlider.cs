@@ -187,8 +187,7 @@ public class MultiSlider : MonoBehaviour, IFocusable
 	ColorAndPos[] GetColorAndPos()
 	{
 		float width = (transform as RectTransform).rect.width;
-		var list = transform.OfType<RectTransform>().Select(t => t.GetComponent<MultiSliderHandle>())
-			.Where(h => h != null)
+		var list = AllHandles
 			.OrderBy(h => h.transform.localPosition.x)
 			.Select(h => new ColorAndPos(h.Color, h.transform.localPosition.x / width)).ToList();
 		// Insert key at beginning and end to transion from black color

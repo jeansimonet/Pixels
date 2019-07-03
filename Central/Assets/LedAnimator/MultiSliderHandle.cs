@@ -70,9 +70,6 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 	void IDragHandler.OnDrag(PointerEventData eventData)
 	{
-		float unit = GetComponentInParent<TimelineView>().Unit; //TODO
-		float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
-
 		var rect = (_slider.transform as RectTransform).rect;
 		Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
 		Vector2 max = _slider.transform.TransformPoint(rect.xMax, rect.yMax, 0);
@@ -81,20 +78,16 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		{
 			float x = Mathf.Clamp(Input.mousePosition.x + _dragOffset.x, min.x, max.x);
             float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
-
-            // Snap to interval increments
-            x = min.x + snap * Mathf.RoundToInt((x - min.x) / snap);
 			transform.position = new Vector2(x, y);
 		}
 		else
 		{
 			float x = Mathf.Lerp(min.x, max.x, _slider.HandlePosition);
 			float y = Mathf.Clamp(Input.mousePosition.y + _dragOffset.y, min.y, max.y);
-
-            // Snap to interval increments
-            y = min.y + snap * Mathf.RoundToInt((y - min.y) / snap);
             transform.position = new Vector2(x, y);
 		}
+
+		Snap();
 
 		RepaintValue();
 		_slider.Repaint();
@@ -108,6 +101,27 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (Selected)
 		{
 			Palette.Instance.ColorSelected += ChangeColor;
+		}
+	}
+
+	void Snap()
+	{
+		float unit = GetComponentInParent<TimelineView>().Unit; //TODO
+		float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+
+		var rect = (_slider.transform as RectTransform).rect;
+		Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
+		Vector2 max = _slider.transform.TransformPoint(rect.xMax, rect.yMax, 0);
+
+		if (_slider.Direction == SliderDirection.Horizontal)
+		{
+            float x = min.x + snap * Mathf.RoundToInt((transform.position.x - min.x) / snap);
+			transform.position = new Vector2(x, transform.position.y);
+		}
+		else
+		{
+            float y = min.y + snap * Mathf.RoundToInt((transform.position.y - min.y) / snap);
+            transform.position = new Vector2(transform.position.x, y);
 		}
 	}
 
@@ -130,7 +144,6 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_valueTxt != null)
 		{
 			float unit = GetComponentInParent<TimelineView>().Unit; //TODO
-			float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
 
 			var rect = (_slider.transform as RectTransform).rect;
 			Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
@@ -175,5 +188,11 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	// Use this for initialization
 	void Start()
 	{
+		// If deleted before start run, we won't find the TimelineView
+		if (GetComponentInParent<TimelineView>() != null)
+		{
+			Snap();
+			RepaintValue();
+		}
 	}
 }
