@@ -67,6 +67,13 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		timeline.Repaint(); //TODO
 	}
 
+	public void DuplicateSelf()
+	{
+		RemoveFocus();
+		var timeline = GetComponentInParent<TimelineView>();
+		timeline.AddAnim(ToAnimationTrack(timeline.Unit));
+	}
+
 	public void GiveFocus()
 	{
 		if (!HasFocus)

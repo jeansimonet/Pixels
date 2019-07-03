@@ -80,9 +80,4 @@ public class MovableArea : MonoBehaviour
 		OnLeftHandleMoved();
 		OnRightHandleMoved();
 	}
-
-	// Update is called once per frame
-	void Update()
-	{
-	}
 }

@@ -81,9 +81,11 @@ public class MultiSlider : MonoBehaviour, IFocusable
                 float width = (transform as RectTransform).rect.width;
                 float x0 = transform.parent.InverseTransformPoint(transform.position).x;
                 float time = (c.Pos * width + x0) / unitSize;
-                return new Animations.EditKeyframe() {
+                return new Animations.EditKeyframe()
+				{
                     time = time,
-                    color = c.Color };
+                    color = c.Color
+				};
             }));
         return ret;
 	}
@@ -96,11 +98,23 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		{
 			Clear();
 
-            bool first = true;
-            foreach (var kf in keyframes)
+			bool dupHandle = false;
+            for (int i = 0; i < keyframes.Count; ++i)
             {
+				var kf = keyframes[i];
+
+				// Skip automatically inserted keyframes
+				if ((i == 0) && (kf.time == 0) && (kf.color == Color.black))
+				{
+					continue;
+				}
+				if (((i + 1) == keyframes.Count) && (kf.time == 1) && (kf.color == Color.black))
+				{
+					continue;
+				}
+
                 var handle = AllHandles[0]; // Initially we should have only one handle
-                if (!first)
+                if (dupHandle)
                 {
                     handle = handle.Duplicate();
                 }
@@ -114,7 +128,7 @@ public class MultiSlider : MonoBehaviour, IFocusable
                 pos.x = kf.time * unitSize - x0;
                 handle.transform.localPosition = pos;
 
-                first = false;
+                dupHandle = true;
             }
 
             SelectHandle(null);
@@ -130,12 +144,10 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		if (_suspendRepaint) return;
 
 		var colorsAndPos = GetColorAndPos();
-		colorsAndPos.Insert(0, new ColorAndPos(colorsAndPos[0].Color, 0));
-		colorsAndPos.Add(new ColorAndPos(colorsAndPos.Last().Color, 1));
 
 		Color[] pixels = _texture.GetPixels();
 		int x = 0, lastMax = 0;
-		for (int i = 1; i < colorsAndPos.Count; ++i)
+		for (int i = 1; i < colorsAndPos.Length; ++i)
 		{
 			int max = Mathf.RoundToInt(colorsAndPos[i].Pos * pixels.Length);
 			for (; x < max; ++x)
@@ -157,11 +169,8 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		if ((cursorPercent >= 0) && (cursorPercent <= 1))
 		{
 			var colorsAndPos = GetColorAndPos();
-			colorsAndPos.Insert(0, new ColorAndPos(colorsAndPos[0].Color, 0));
-			colorsAndPos.Add(new ColorAndPos(colorsAndPos.Last().Color, 1));
-
 			float lastMax = 0;
-			for (int i = 1; i < colorsAndPos.Count; ++i)
+			for (int i = 1; i < colorsAndPos.Length; ++i)
 			{
 				float max = colorsAndPos[i].Pos;
 				if (cursorPercent <= max)
@@ -175,13 +184,23 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		return new Color();
 	}
 
-	List<ColorAndPos> GetColorAndPos()
+	ColorAndPos[] GetColorAndPos()
 	{
 		float width = (transform as RectTransform).rect.width;
-		return transform.OfType<RectTransform>().Select(t => t.GetComponent<MultiSliderHandle>())
+		var list = transform.OfType<RectTransform>().Select(t => t.GetComponent<MultiSliderHandle>())
 			.Where(h => h != null)
 			.OrderBy(h => h.transform.localPosition.x)
 			.Select(h => new ColorAndPos(h.Color, h.transform.localPosition.x / width)).ToList();
+		// Insert key at beginning and end to transion from black color
+		if (list[0].Pos > 0)
+		{
+			list.Insert(0, new ColorAndPos(Color.black, 0));
+		}
+		if (list.Last().Pos < 1)
+		{
+			list.Add(new ColorAndPos(Color.black, 1));
+		}
+		return list.ToArray();
 	}
 
 	void Clear()
