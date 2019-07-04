@@ -1,198 +1,87 @@
 {
-    "palette": [
-        9,
-        9,
-        9,
-        255,
-        214,
-        42,
-        255,
-        104,
-        0,
-        97,
-        8,
-        0,
-        97,
-        124,
-        255,
-        4,
-        33,
-        229,
-        0,
-        134,
-        0,
-        44,
-        60,
-        255,
-        73,
-        254,
-        73,
-        0,
-        223,
-        255
-    ],
-    "keyframes": [
-        {
-            "timeAndColor": 0
-        },
-        {
-            "timeAndColor": 3201
-        },
-        {
-            "timeAndColor": 6402
-        },
-        {
-            "timeAndColor": 9603
-        },
-        {
-            "timeAndColor": 12928
-        },
-        {
-            "timeAndColor": 1920
-        },
-        {
-            "timeAndColor": 5121
-        },
-        {
-            "timeAndColor": 7938
-        },
-        {
-            "timeAndColor": 11523
-        },
-        {
-            "timeAndColor": 15360
-        },
-        {
-            "timeAndColor": 3840
-        },
-        {
-            "timeAndColor": 7041
-        },
-        {
-            "timeAndColor": 10244
-        },
-        {
-            "timeAndColor": 12933
-        },
-        {
-            "timeAndColor": 17152
-        },
-        {
-            "timeAndColor": 3840
-        },
-        {
-            "timeAndColor": 7046
-        },
-        {
-            "timeAndColor": 10244
-        },
-        {
-            "timeAndColor": 12935
-        },
-        {
-            "timeAndColor": 17152
-        },
-        {
-            "timeAndColor": 3840
-        },
-        {
-            "timeAndColor": 7048
-        },
-        {
-            "timeAndColor": 10244
-        },
-        {
-            "timeAndColor": 12933
-        },
-        {
-            "timeAndColor": 17152
-        },
-        {
-            "timeAndColor": 5120
-        },
-        {
-            "timeAndColor": 7942
-        },
-        {
-            "timeAndColor": 11145
-        },
-        {
-            "timeAndColor": 14343
-        },
-        {
-            "timeAndColor": 18432
-        }
-    ],
-    "rgbTracks": [
-        {
-            "keyframesOffset": 0,
-            "keyFrameCount": 5,
-            "padding": 0
-        },
-        {
-            "keyframesOffset": 5,
-            "keyFrameCount": 5,
-            "padding": 0
-        },
-        {
-            "keyframesOffset": 10,
-            "keyFrameCount": 5,
-            "padding": 0
-        },
-        {
-            "keyframesOffset": 15,
-            "keyFrameCount": 5,
-            "padding": 0
-        },
-        {
-            "keyframesOffset": 20,
-            "keyFrameCount": 5,
-            "padding": 0
-        },
-        {
-            "keyframesOffset": 25,
-            "keyFrameCount": 5,
-            "padding": 0
-        }
-    ],
-    "tracks": [
-        {
-            "trackOffset": 0,
-            "ledIndex": 0,
-            "padding": 0
-        },
-        {
-            "trackOffset": 1,
-            "ledIndex": 1,
-            "padding": 0
-        },
-        {
-            "trackOffset": 2,
-            "ledIndex": 2,
-            "padding": 0
-        },
-        {
-            "trackOffset": 3,
-            "ledIndex": 3,
-            "padding": 0
-        },
-        {
-            "trackOffset": 4,
-            "ledIndex": 4,
-            "padding": 0
-        },
-        {
-            "trackOffset": 5,
-            "ledIndex": 5,
-            "padding": 0
-        }
-    ],
     "animations": [
         {
-            "duration": 2880,
-            "tracksOffset": 0,
-            "trackCount": 6,
-            "padding": 0
+            "name": "",
+            "tracks": [
+                {
+                    "ledIndex": 0,
+                    "keyframes": [
+                        {
+                            "time": 0.0,
+                            "color": {
+                                "r": 0.0,
+                                "g": 0.0,
+                                "b": 0.0,
+                                "a": 1.0
+                            }
+                        },
+                        {
+                            "time": 0.5,
+                            "color": {
+                                "r": 0.34118837118148806,
+                                "g": 0.18771624565124513,
+                                "b": 0.8235294222831726,
+                                "a": 1.0
+                            }
+                        },
+                        {
+                            "time": 1.5,
+                            "color": {
+                                "r": 0.0,
+                                "g": 0.0,
+                                "b": 0.0,
+                                "a": 1.0
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ledIndex": 1,
+                    "keyframes": [
+                        {
+                            "time": 0.4000000059604645,
+                            "color": {
+                                "r": 0.0,
+                                "g": 0.0,
+                                "b": 0.0,
+                                "a": 1.0
+                            }
+                        },
+                        {
+                            "time": 0.6000000238418579,
+                            "color": {
+                                "r": 1.0,
+                                "g": 0.40784314274787905,
+                                "b": 0.0,
+                                "a": 1.0
+                            }
+                        },
+                        {
+                            "time": 1.2000000476837159,
+                            "color": {
+                                "r": 1.0,
+                                "g": 0.929411768913269,
+                                "b": 0.30588236451148989,
+                                "a": 1.0
+                            }
+                        },
+                        {
+                            "time": 1.2999999523162842,
+                            "color": {
+                                "r": 0.0,
+                                "g": 0.0,
+                                "b": 0.0,
+                                "a": 1.0
+                            }
+                        }
+                    ]
+                }
+            ]
         }
+    ],
+    "animationMapping": [
+        0,
+        0,
+        0
     ]
 }

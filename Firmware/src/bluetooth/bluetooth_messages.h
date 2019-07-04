@@ -16,6 +16,7 @@ struct Message
 	{
 		MessageType_None = 0,
 		MessageType_State,
+		MessageType_Face,
 		MessageType_Telemetry,
 		MessageType_BulkSetup,
 		MessageType_BulkSetupAck,
@@ -67,6 +68,17 @@ struct MessageDieState
 	uint8_t state;
 
 	inline MessageDieState() : Message(Message::MessageType_State) {}
+};
+
+/// <summary>
+/// Describes a change in the current die face
+/// </summary>
+struct MessageDieFace
+	: public Message
+{
+	uint8_t face;
+
+	inline MessageDieFace() : Message(Message::MessageType_Face) {}
 };
 
 /// <summary>

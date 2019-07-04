@@ -13,6 +13,7 @@ public enum DieMessageType : byte
 {
     None = 0,
     State,
+    Face,
     Telemetry,
     BulkSetup,
     BulkSetupAck,
@@ -60,6 +61,9 @@ public static class DieMessages
             {
                 case DieMessageType.State:
                     ret = FromByteArray<DieMessageState>(data);
+                    break;
+                case DieMessageType.Face:
+                    ret = FromByteArray<DieMessageFace>(data);
                     break;
                 case DieMessageType.Telemetry:
                     ret = FromByteArray<DieMessageAcc>(data);
@@ -152,6 +156,14 @@ public class DieMessageState
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.State;
+    public byte face;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageFace
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.Face;
     public byte face;
 }
 

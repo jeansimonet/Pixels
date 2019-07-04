@@ -17,12 +17,7 @@ public class Die
 	{
 		Disconnected = -1,
 		Unknown = 0,
-		Face1 = 1,
-		Face2,
-		Face3,
-		Face4,
-		Face5,
-		Face6,
+        Idle,
 		Handling,
 		Falling,
 		Rolling,
@@ -30,6 +25,14 @@ public class Die
 		Crooked,
 		Count
 	}
+
+    public enum AnimationEvent
+    {
+        PickUp = 0,
+        Error,
+        LowBattery,
+        Count
+    }
 
     public State state { get; private set; } = State.Disconnected;
 
@@ -50,15 +53,8 @@ public class Die
 
 	public int face
 	{
-		get
-		{
-			int ret = (int)state;
-			if (ret < 1 || ret > 6)
-			{
-				ret = -1;
-			}
-			return ret;
-		}
+        get;
+        private set;
 	}
 
 	public delegate void TelemetryEvent(Die die, Vector3 acc, int millis);
@@ -91,6 +87,9 @@ public class Die
 	public delegate void StateChangedEvent(Die die, State newState);
 	public StateChangedEvent OnStateChanged;
 
+    public delegate void FaceChangedEvent(Die die, int newFace);
+    public FaceChangedEvent OnFaceChanged;
+
     public delegate void SettingsChangedEvent(Die die);
     public SettingsChangedEvent OnSettingsChanged;
 
@@ -109,6 +108,7 @@ public class Die
 
         // Setup delegates for face and telemetry
         messageDelegates.Add(DieMessageType.State, OnStateMessage);
+        messageDelegates.Add(DieMessageType.Face, OnNewFaceMessage);
         messageDelegates.Add(DieMessageType.Telemetry, OnTelemetryMessage);
         messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
     }
@@ -304,12 +304,26 @@ public class Die
     {
         // Handle the message
         var stateMsg = (DieMessageState)message;
-        state = (State)stateMsg.face;
 
-        // Notify anyone who cares
-        if (OnStateChanged != null)
+        var newState = (State)stateMsg.face;
+        if (newState != state)
         {
-            OnStateChanged.Invoke(this, state);
+            state = newState;
+
+            // Notify anyone who cares
+            OnStateChanged?.Invoke(this, state);
+        }
+    }
+
+    void OnNewFaceMessage(DieMessage message)
+    {
+        var faceMsg = (DieMessageFace)message;
+        if (faceMsg.face != face)
+        {
+            face = faceMsg.face;
+
+            // Notify anyone who cares
+            OnFaceChanged?.Invoke(this, face);
         }
     }
 

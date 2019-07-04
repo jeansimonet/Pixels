@@ -58,14 +58,14 @@ public class DiceAnimProgrammer
     public void SaveToJsonFile()
     {
         timeline.ApplyChanges();
-        string jsonText = JsonUtility.ToJson(animationSet.ToAnimationSet(), true);
+        string jsonText = JsonUtility.ToJson(animationSet, true);
         File.WriteAllText(JsonFilePath, jsonText);
     }
 
     public void LoadFromJsonFile()
     {
         string jsonText = File.ReadAllText(JsonFilePath);
-        animationSet.FromAnimationSet(JsonUtility.FromJson<Animations.AnimationSet>(jsonText));
+        animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
         if (animationSet.animations.Count > 0)
         {
             timeline.ChangeCurrentAnimation(animationSet.animations[0]);
@@ -102,7 +102,7 @@ public class DiceAnimProgrammer
             animationSetByteArray = newByteArray;
 
             // Write to file (why not?)
-            string jsonText = JsonUtility.ToJson(animationSet.ToAnimationSet(), true);
+            string jsonText = JsonUtility.ToJson(animationSet, true);
             File.WriteAllText(JsonFilePath, jsonText);
 
             // Upload!

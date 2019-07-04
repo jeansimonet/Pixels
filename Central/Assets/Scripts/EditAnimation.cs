@@ -9,6 +9,7 @@ namespace Animations
     /// <summary>
     /// Simple anition keyframe, time in seconds and color!
     /// </summary>
+    [System.Serializable]
     public class EditKeyframe
     {
         public float time = -1;
@@ -18,32 +19,43 @@ namespace Animations
     /// <summary>
     /// Simple list of keyframes for a led
     /// </summary>
+    [System.Serializable]
     public class EditTrack
     {
         public int ledIndex = -1;
         public float duration { get { return keyframes.Max(k => k.time); } }
         public float firstTime { get { return keyframes.First().time; } }
         public float lastTime { get { return keyframes.Last().time; } }
+
         public List<EditKeyframe> keyframes = new List<EditKeyframe>();
     }
 
     /// <summary>
     /// An animation is a list of tracks!
     /// </summary>
+    [System.Serializable]
     public class EditAnimation
     {
+        public string name;
         public float duration => empty ? 0 : tracks.Max(t => t.duration);
         public bool empty => tracks?.Count == 0;
-        public List<EditTrack> tracks { get; private set; } = new List<EditTrack>();
+
+        public List<EditTrack> tracks = new List<EditTrack>();
     }
 
     /// <summary>
     /// The animation set is a list of multiple animations
     /// This class knows how to convert to/from the runtime data used by the dice
     /// </summary>
+    [System.Serializable]
     public class EditAnimationSet
     {
         public List<EditAnimation> animations = new List<EditAnimation>();
+
+        /// <summary>
+        /// Maps from an animation event to the animation index to use
+        /// </summary>
+        public int[] animationMapping = new int[(int)Die.AnimationEvent.Count];
 
         public void FromAnimationSet(AnimationSet set)
         {
@@ -70,6 +82,7 @@ namespace Animations
                     editAnim.tracks.Add(editTrack);
                 }
                 animations.Add(editAnim);
+                animationMapping[i] = i;
             }
         }
 
@@ -116,9 +129,10 @@ namespace Animations
             var keyframes = new List<RGBKeyframe>();
 
             // Add animations
-            for (int i = 0; i < animations.Count; ++i)
+            for (int m = 0; m < animationMapping.Length; ++m)
             {
-                var editAnim = animations[i];
+                int animIndex = animationMapping[m];
+                var editAnim = animations[animIndex];
                 var anim = new Animation();
                 anim.duration = (ushort)(editAnim.duration * 1000.0f);
                 anim.tracksOffset = (ushort)currentTrackOffset;
