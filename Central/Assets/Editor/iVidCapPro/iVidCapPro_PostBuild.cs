@@ -58,35 +58,35 @@ public class iVidCapPro_PostBuild {
 		string appControllerBackupPath = pathToBuiltProject + Path.DirectorySeparatorChar + "Classes" +
 			Path.DirectorySeparatorChar + appControllerName + "_pre_ivcp_edit";
 		
-		// The regular expression pattern to be used for finding the place in AppController
-		// that we want to insert our get context function.
-		string insertionPointPattern = "// --- AppController";
+		//// The regular expression pattern to be used for finding the place in AppController
+		//// that we want to insert our get context function.
+		//string insertionPointPattern = "// --- AppController";
 		
-		// The definition of the get context function for Unity versions prior to 4.1.
-		string contextFunction_1 = 
-			"// Added for use by iVidCapPro.\n" +
-			"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
-            "{\n" +
-   			"    return _context;\n" +
-            "}\n\n";
+		//// The definition of the get context function for Unity versions prior to 4.1.
+		//string contextFunction_1 = 
+		//	"// Added for use by iVidCapPro.\n" +
+		//	"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
+  //          "{\n" +
+  // 			"    return _context;\n" +
+  //          "}\n\n";
 		
-		// The definition of the get context function for Unity versions 4.1 -> 4.3.
-		string contextFunction_2 = 
-			"// Added for use by iVidCapPro.\n" +
-			"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
-            "{\n" +
-   			"    return _mainDisplay->surface.context;\n" +
-            "}\n\n";
+		//// The definition of the get context function for Unity versions 4.1 -> 4.3.
+		//string contextFunction_2 = 
+		//	"// Added for use by iVidCapPro.\n" +
+		//	"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
+  //          "{\n" +
+  // 			"    return _mainDisplay->surface.context;\n" +
+  //          "}\n\n";
 
-		// The definition of the get context function for Unity versions 4.5 -> 4.6.2.
-		string contextFunction_3 = 
-			"\n" +
-			"// Added for use by iVidCapPro.\n" +
-			"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
-			"{\n" +
-			"	DisplayConnection* display = GetAppController().mainDisplay;\n" +
-			"	return display->surface.context;\n" +
-			"}\n\n";
+		//// The definition of the get context function for Unity versions 4.5 -> 4.6.2.
+		//string contextFunction_3 = 
+		//	"\n" +
+		//	"// Added for use by iVidCapPro.\n" +
+		//	"extern \"C\" EAGLContext* ivcp_UnityGetContext()\n" +
+		//	"{\n" +
+		//	"	DisplayConnection* display = GetAppController().mainDisplay;\n" +
+		//	"	return display->surface.context;\n" +
+		//	"}\n\n";
 
 		// The definition of the get context function for Unity versions 4.6 -> ?.
 		string contextFunction_4 = 
