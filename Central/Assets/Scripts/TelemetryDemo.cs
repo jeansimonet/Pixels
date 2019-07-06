@@ -80,9 +80,9 @@ public class TelemetryDemo
         trackedDice[die].OnTelemetryReceived(acc, millis);
     }
 
-    void OnDieStateChanged(Die die, Die.State newState)
+    void OnDieConnectionStateChanged(Die die, bool newConnected)
     {
-        if (newState == Die.State.Disconnected)
+        if (!newConnected)
         {
             if (trackedDice.Count > 1)
             {
@@ -101,13 +101,13 @@ public class TelemetryDemo
 
     void RegisterDieEvents(Die die)
     {
-        die.OnStateChanged += OnDieStateChanged;
+        die.OnConnectionStateChanged += OnDieConnectionStateChanged;
         die.OnTelemetry += OnDieTelemetry;
     }
 
     void UnregisterDieEvents(Die die)
     {
-        die.OnStateChanged -= OnDieStateChanged;
+        die.OnConnectionStateChanged -= OnDieConnectionStateChanged;
         die.OnTelemetry -= OnDieTelemetry;
     }
 }

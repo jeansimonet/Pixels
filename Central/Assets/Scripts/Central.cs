@@ -97,7 +97,7 @@ public class Central
 		(err) =>
 		{
 			_state = CentralState.Error;
-            Debug.LogError("Error initializing Bluetooth Central: " + err);
+            Debug.LogError(err);
 
         });
         #else
@@ -183,7 +183,7 @@ public class Central
 
         // Add the Die component and return it!
         var ret = dieGO.AddComponent<Die>();
-        ret.address = address;
+        ret.Setup(name, address);
         return ret;
     }
 
@@ -257,18 +257,18 @@ public class Central
                             if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
                             {
                                 BluetoothLEHardwareInterface.SubscribeCharacteristic(die.address,
-                                serviceGUID,
-                                subscribeCharacteristic,
-                                null,
-                                onDataReceived);
+                                    serviceGUID,
+                                    subscribeCharacteristic,
+                                    null,
+                                    onDataReceived);
                             }
                             else
                             {
                                 virtualBluetooth.SubscribeCharacteristic(die.address,
-                                serviceGUID,
-                                subscribeCharacteristic,
-                                null,
-                                onDataReceived);
+                                    serviceGUID,
+                                    subscribeCharacteristic,
+                                    null,
+                                    onDataReceived);
                             }
                             readCharacDiscovered = true;
                             gotReadOrWriteCharacteristic();

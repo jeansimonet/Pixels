@@ -12,12 +12,9 @@ namespace Config
 		char name[16];
 
 		// Face detector
-		float sigmaDecayStart;
-		float sigmaDecayStop;
-		float sigmaThresholdStart;
-		float sigmaThresholdEnd;
-		float faceThreshold;
-		int minRollTime;
+		float sigmaDecayFast;
+		float sigmaDecaySlow;
+		int minRollTime; // ms
 		
 		// Indicates whether there is valid data
 		uint32_t tailMarker;

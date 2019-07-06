@@ -31,6 +31,7 @@
 #include "modules/led_color_tester.h"
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
+#include "modules/battery_controller.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -79,7 +80,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        //Watchdog::init();
+        Watchdog::init();
 
         // Then the log system
         Log::init();
@@ -164,7 +165,11 @@ namespace Die
         // Telemetry depends on accelerometer
         Telemetry::init();
 
+        // Animation controller relies on animation set
         AnimController::init();
+
+        // Battery controller relies on the battery driver
+        BatteryController::init();
 
         // Start advertising!
         Stack::startAdvertising();
@@ -173,7 +178,7 @@ namespace Die
     // Main loop!
     void update() {
         Scheduler::update();
-//        Watchdog::feed();
+        Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
     }

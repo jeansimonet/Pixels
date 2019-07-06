@@ -32,12 +32,12 @@ public enum DieMessageType : byte
     RequestTelemetry,
     ProgramDefaultAnimSet,
     ProgramDefaultAnimSetFinished,
-    Rename,
-    RenameFinished,
     Flash,
     FlashFinished,
     RequestDefaultAnimSetColor,
     DefaultAnimSetColor,
+    RequestBatteryLevel,
+    BatteryLevel,
 
     TestBulkSend,
     TestBulkReceive,
@@ -107,9 +107,6 @@ public static class DieMessages
                 case DieMessageType.RequestTelemetry:
                     ret = FromByteArray<DieMessageRequestTelemetry>(data);
                     break;
-                case DieMessageType.RenameFinished:
-                    ret = FromByteArray<DieMessageRenameFinished>(data);
-                    break;
                 case DieMessageType.FlashFinished:
                     ret = FromByteArray<DieMessageFlashFinished>(data);
                     break;
@@ -118,6 +115,9 @@ public static class DieMessages
                     break;
                 case DieMessageType.DefaultAnimSetColor:
                     ret = FromByteArray<DieMessageDefaultAnimSetColor>(data);
+                    break;
+                case DieMessageType.BatteryLevel:
+                    ret = FromByteArray<DieMessageBatteryLevel>(data);
                     break;
                 default:
                     break;
@@ -310,23 +310,6 @@ public class DieMessageProgramDefaultAnimSetFinished
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public class DieMessageRename
-    : DieMessage
-{
-    public DieMessageType type { get; set; } = DieMessageType.Rename;
-    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
-    public string newName;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public class DieMessageRenameFinished
-    : DieMessage
-{
-    public DieMessageType type { get; set; } = DieMessageType.RenameFinished;
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public class DieMessageFlash
     : DieMessage
 {
@@ -379,5 +362,20 @@ public class DieMessageSetAllLEDsToColor
 {
     public DieMessageType type { get; set; } = DieMessageType.SetAllLEDsToColor;
     public uint color;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageBatteryLevel
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.BatteryLevel;
+    public float level;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageRequestBatteryLevel
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.RequestBatteryLevel;
 }
 

@@ -108,7 +108,7 @@ public class DiceAnimProgrammer
             // Upload!
             if (die != null)
             {
-                yield return StartCoroutine(die.UploadAnimationSet(rawAnim));
+                yield return die.UploadAnimationSet(rawAnim);
             }
         }
     }

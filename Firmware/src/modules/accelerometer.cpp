@@ -7,6 +7,7 @@
 #include "app_timer.h"
 #include "app_error.h"
 #include "nrf_log.h"
+#include "config/settings.h"
 
 using namespace Modules;
 using namespace Core;
@@ -40,11 +41,15 @@ namespace Accelerometer
 	_APP_TIMER_DEF(accelControllerTimer);
 
 	int face;
+	float slowSigma;
+	float fastSigma;
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
 
 	DelegateArray<ClientMethod, MAX_ACC_CLIENTS> clients;
+
+	void updateState();
 
 	void init()	{
 		face = 0;
@@ -87,12 +92,13 @@ namespace Accelerometer
 		newFrame.jerkY = deltaY * JERK_SCALE / deltaTime;
 		newFrame.jerkZ = deltaZ * JERK_SCALE / deltaTime;
 
-		//debugPrint("new frame jerk: ");
-		//debugPrint(newFrame.jerkX);
-		//debugPrint(", ");
-		//debugPrint(newFrame.jerkY);
-		//debugPrint(", ");
-		//debugPrintln(newFrame.jerkZ);
+		float jerkX = LIS2DE12::convert(newFrame.jerkX);
+		float jerkY = LIS2DE12::convert(newFrame.jerkY);
+		float jerkZ = LIS2DE12::convert(newFrame.jerkZ);
+		float jerk2 = jerkX * jerkX + jerkY * jerkY + jerkZ * jerkZ;
+		auto settings = SettingsManager::getSettings();
+		slowSigma = slowSigma * settings->sigmaDecaySlow + jerk2 * (1.0f - settings->sigmaDecaySlow);
+		fastSigma = slowSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
 
 		buffer.push(newFrame);
 
@@ -101,6 +107,8 @@ namespace Accelerometer
 		{
 			clients[i].handler(clients[i].token, newFrame);
 		}
+
+		updateState();
 	}
 
 	/// <summary>

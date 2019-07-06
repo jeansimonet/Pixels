@@ -7,11 +7,10 @@ namespace Modules
 	/// Manages a set of running animations, talking to the LED controller
 	/// to tell it what LEDs must have what intensity at what time.
 	/// </summary>
-	class BatteryController
+	namespace BatteryController
 	{
-    public:
         void init();
-    };
+    }
 }
 
 #endif //BATTERY_CONTROLLER

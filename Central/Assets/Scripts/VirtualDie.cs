@@ -22,7 +22,7 @@ public class VirtualDie
     System.Action<byte[]> onData;
     System.Action onDisconnect;
 
-    byte[] lastDataSent;
+    byte[] lastDataSent = new byte[1] { 0 };
 
     public VirtualDie(string name, string address, ICoroutineManager coroutineManager)
     {

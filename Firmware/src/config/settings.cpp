@@ -2,12 +2,18 @@
 #include "drivers_nrf/flash.h"
 #include "nrf_log.h"
 #include "app_error.h"
+#include "bluetooth/bluetooth_messages.h"
+#include "bluetooth/bluetooth_stack.h"
+#include "bluetooth/bluetooth_message_service.h"
+#include "bluetooth/bulk_data_transfer.h"
+#include "malloc.h"
 
 #define SETTINGS_ADDRESS 0x27000
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
 #define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
+using namespace Bluetooth;
 
 namespace Config
 {
@@ -18,8 +24,12 @@ namespace SettingsManager
 	void init() {
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
-			//programDefaults();
+			programDefaults();
 		}
+
+		// Register as a handler to program settings
+		MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
+
 		NRF_LOG_INFO("Settings initialized");
 	}
 
@@ -33,6 +43,36 @@ namespace SettingsManager
 			programDefaults();
 		}
 		return settings;
+	}
+
+	void ReceiveSettingsHandler(void* context, const Message* msg) {
+
+		NRF_LOG_INFO("Received Request to download new settings");
+
+		// Start by erasing the flash
+		Flash::erase(SETTINGS_ADDRESS, 1,
+			[](bool result, uint32_t address, uint16_t size) {
+				NRF_LOG_DEBUG("done Erasing %d page", size);
+
+				// Send Ack and receive data
+				MessageService::SendMessage(Message::MessageType_TransferSettingsAck);
+
+				// Receive all the buffers directly to flash
+				ReceiveBulkData::receiveToFlash((uint32_t)settings, nullptr,
+					[](void* context, bool success, uint16_t size) {
+						if (success) {
+							NRF_LOG_DEBUG("Finished flashing settings");
+							// Restart the bluetooth stack
+							Stack::disconnect();
+							Stack::stopAdvertising();
+							Stack::startAdvertising();
+						} else {
+							NRF_LOG_ERROR("Error transfering animation data");
+						}
+					}
+				);
+			}
+		);
 	}
 
 	void writeToFlash(Settings* sourceSettings) {

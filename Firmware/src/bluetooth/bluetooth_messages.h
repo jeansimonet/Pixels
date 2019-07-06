@@ -35,12 +35,12 @@ struct Message
 		MessageType_RequestTelemetry,
 		MessateType_ProgramDefaultAnimSet,
 		MessateType_ProgramDefaultAnimSetFinished,
-		MessageType_Rename,
-		MessageType_RenameFinished,
 		MessageType_Flash,
 		MessageType_FlashFinished,
 		MessageType_RequestDefaultAnimSetColor,
 		MessageType_DefaultAnimSetColor,
+		MessageType_RequestBatteryLevel,
+		MessageType_BatteryLevel,
 
 		// TESTING 
 		MessageType_TestBulkSend,
@@ -169,15 +169,6 @@ struct MessageProgramDefaultAnimSet
 	inline MessageProgramDefaultAnimSet() : Message(Message::MessateType_ProgramDefaultAnimSet) {}
 };
 
-struct MessageRename
-	: public Message
-{
-	char newName[16];
-
-	inline MessageRename() : Message(Message::MessageType_Rename) {}
-};
-
-
 struct MessageFlash
 	: public Message
 {
@@ -198,6 +189,13 @@ struct MessageSetAllLEDsToColor
 {
 	uint32_t color;
 	inline MessageSetAllLEDsToColor() : Message(Message::MessageType_SetAllLEDsToColor) {}
+};
+
+struct MessageBatteryLevel
+: public Message
+{
+	float level;
+	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
 };
 }
 
