@@ -4,63 +4,24 @@ using UnityEngine;
 using System.Linq;
 using System.Text;
 
-public enum CentralState
-{
-    Uninitialized = 0,
-    Initializing,
-    Idle,
-    Scanning,
-    Connecting,
-    Error,
-}
-
-
-public interface ICentral
-{
-    CentralState state { get; }
-    void BeginScanForDice(System.Action<Die> foundDieCallback);
-    void StopScanForDice();
-    void ConnectToDie(Die die, System.Action<Die> dieConnectedCallback, System.Action<Die> dieDisconnectedCallback);
-    void DisconnectDie(Die die, System.Action<Die> dieDisconnectedCallback);
-    void ForgetDie(Die die, System.Action<Die> dieForgottenCallback);
-    void DisconnectAllDice();
-    IEnumerable<Die> diceList { get; }
-}
-
-public interface IClient
-{
-    void OnNewDie(Die die);
-}
-
-public interface ISendBytes
-{
-    void SendBytes(Die die, byte[] bytes, int length, System.Action bytesWrittenCallback);
-}
 
 public class Central
 	: MonoBehaviour
-    , ICentral
-    , ISendBytes
 {
-    public string serviceGUID = "6E400000-B5A3-F393-E0A9-E50E24DCCA9E";
+    public string serviceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 	public string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 	public string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
-    public string configFileName = "dicelist.json";
-    public float connectingTimeout = 8.0f;
 
-    CentralState _state = CentralState.Uninitialized;
-
-    [System.Serializable]
-    class DiceSetConfig
+    public enum State
     {
-        [System.Serializable]
-        public class DiceAndAddress
-        {
-            public string name = null;
-            public string address = null;
-        }
-        public List<DiceAndAddress> dice = null;
+        Uninitialized = 0,
+        Initializing,
+        Idle,
+        Scanning,
+        Error,
     }
+
+    State _state = State.Uninitialized;
 
     VirtualBluetoothInterface virtualBluetooth;
 
@@ -69,10 +30,13 @@ public class Central
     public OnDieConnectionEvent onDieConnected;
     public OnDieConnectionEvent onDieDisconnected;
     public OnDieConnectionEvent onDieForgotten;
+    public OnDieConnectionEvent onDieReady;
+    public delegate void OnBluetoothErrorEvent(string message);
+    public OnBluetoothErrorEvent onBluetoothError;
 
-    HashSet<IClient> clients;
+    List<Die> dice;
 
-    public CentralState state
+    public State state
     {
         get { return _state; }
     }
@@ -81,85 +45,54 @@ public class Central
 
     void Awake()
     {
-        clients = new HashSet<IClient>();
+        dice = new List<Die>();
         virtualBluetooth = GetComponent<VirtualBluetoothInterface>();
     }
 
     void Start()
 	{
-		_state = CentralState.Initializing;
+		_state = State.Initializing;
         #if !UNITY_EDITOR_OSX
 		BluetoothLEHardwareInterface.Initialize(true, false,
 		() =>
 		{
-			_state = CentralState.Idle;
+			_state = State.Idle;
 		},
 		(err) =>
 		{
-			_state = CentralState.Error;
-            Debug.LogError(err);
-
+            onBluetoothError?.Invoke(err);
         });
         #else
         _state = CentralState.Idle;
         #endif
 	}
 
-    void Update()
-    {
-        if (_state == CentralState.Connecting)
-        {
-            if (Time.time > connectingStartTime + connectingTimeout)
-            {
-                _state = CentralState.Idle;
-            }
-        }
-    }
-
-    public void RegisterClient(IClient client)
-    {
-        clients.Add(client);
-        if (diceList != null)
-        {
-            foreach (var die in diceList)
-            {
-                client.OnNewDie(die);
-            }
-        }
-    }
-
-    public void UnregisterClient(IClient client)
-    {
-        clients.Remove(client);
-    }
-
-	public void BeginScanForDice(System.Action<Die> foundDieCallback)
+	public void BeginScanForDice()
 	{
-        if (_state == CentralState.Idle)
+        if (_state == State.Idle)
         {
-            // Destroy any die that is not currently connected!
-            foreach (var die in GetComponentsInChildren<Die>())
-            {
-                if (!die.connected)
-                {
-                    DestroyDie(die);
-                }
-            }
-
             System.Action<string, string> dieDiscovered =
                 (address, name) =>
                 {
-                    if (!diceList.Any(dc => dc.address == address))
+                    // Do we already know about this die?
+                    Die die = null;
+                    if (!dice.Any(dc => dc.address == address))
                     {
-                        var die = CreateDie(name, address);
-                        if (foundDieCallback != null)
-                            foundDieCallback(die);
-                        if (onDieDiscovered != null)
-                            onDieDiscovered(die);
+                        // We do not, create a new die
+                        die = CreateDie(name, address);
+                        dice.Add(die);
                     }
+                    else
+                    {
+                        die = dice.Find(dc => dc.address == address);
+                    }
+                    die.OnAdvertising();
+
+                    if (onDieDiscovered != null)
+                        onDieDiscovered(die);
                 };
 
-            _state = CentralState.Scanning;
+            _state = State.Scanning;
             var services = new string[] { serviceGUID };
             BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
 
@@ -175,6 +108,81 @@ public class Central
         }
 	}
 
+    public void StopScanForDice()
+    {
+        if (_state == State.Scanning)
+        {
+            BluetoothLEHardwareInterface.StopScan();
+            if (virtualBluetooth != null)
+            {
+                virtualBluetooth.StopScan();
+            }
+            _state = State.Idle;
+        }
+        else
+        {
+            Debug.LogError("Central is not currently scanning for devices, current state is " + _state);
+        }
+    }
+
+    public void ConnectToDie(Die die)
+    {
+        System.Action<string> onConnected = (ignore) => die.OnConnected();
+        System.Action<string> onDisconnected = (ignore) => die.OnLostConnection();
+        System.Action<string, string> onService = (ignore, service) => die.OnServiceDiscovered(service);
+        System.Action<string, string, string> onCharacteristic = (ignore, service, charact) => die.OnCharacterisicDiscovered(service, charact);
+
+        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
+            BluetoothLEHardwareInterface.ConnectToPeripheral(die.address, onConnected, onService, onCharacteristic, onDisconnected);
+        else
+            virtualBluetooth.ConnectToPeripheral(die.address, onConnected, onService, onCharacteristic, onDisconnected);
+    }
+
+    public void DisconnectDie(Die die)
+    {
+        System.Action<string> onDisconnected = (ignore) => die.OnLostConnection();
+        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
+            BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, onDisconnected);
+        else
+            virtualBluetooth.DisconnectPeripheral(die.address, onDisconnected);
+    }
+
+    public void SubscribeCharacteristic(Die die, string serviceGUID, string subscribeCharacteristic, System.Action subscribedCallback)
+    {
+        System.Action<string> onSubscribed = (ignore) => subscribedCallback();
+        System.Action<string, byte[]> onDataReceived = (ignore, data) => die.OnDataReceived(serviceGUID, subscribeCharacteristic, data);
+        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
+            BluetoothLEHardwareInterface.SubscribeCharacteristic(die.address, serviceGUID, subscribeCharacteristic, onSubscribed, onDataReceived);
+        else
+            virtualBluetooth.SubscribeCharacteristic(die.address, serviceGUID, subscribeCharacteristic, onSubscribed, onDataReceived);
+    }
+
+    public void WriteCharacteristic(Die die, string serviceGUID, string writeCharacteristic, byte[] bytes, int length, System.Action bytesWrittenCallback)
+    {
+        System.Action<string> onWritten = (ignore) => bytesWrittenCallback?.Invoke();
+        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
+            BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, onWritten);
+        else
+            virtualBluetooth.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, onWritten);
+    }
+
+    public void DieReady(Die die)
+    {
+        onDieReady?.Invoke(die);
+    }
+
+    public void UnresponsiveDie(Die die)
+    {
+        ForgetDie(die);
+    }
+
+    public void ForgetDie(Die die)
+    {
+        dice.Remove(die);
+        DisconnectDie(die);
+        Destroy(die);
+    }
+
     Die CreateDie(string name, string address)
     {
         // Create a die game object
@@ -183,297 +191,23 @@ public class Central
 
         // Add the Die component and return it!
         var ret = dieGO.AddComponent<Die>();
-        ret.Setup(name, address);
+        ret.Setup(name, address, Die.ConnectionState.Advertising, this);
         return ret;
     }
-
-    public void StopScanForDice()
-    {
-        if (_state == CentralState.Scanning)
-        {
-            BluetoothLEHardwareInterface.StopScan();
-            if (virtualBluetooth != null)
-            {
-                virtualBluetooth.StopScan();
-            }
-            _state = CentralState.Idle;
-        }
-        else
-        {
-            Debug.LogError("Central is not currently scanning for devices, current state is " + _state);
-        }
-    }
-
-	public void ConnectToDie(Die die,
-        System.Action<Die> dieConnectedCallback,
-        System.Action<Die> dieDisconnectedCallback)
-	{
-        if (!die.connected && _state == CentralState.Idle)
-        {
-            _state = CentralState.Connecting;
-            connectingStartTime = Time.time;
-            bool readCharacDiscovered = false;
-            bool writeCharacDiscovered = false;
-
-            System.Action gotReadOrWriteCharacteristic = () =>
-            {
-                // Do we have both read and write access? If so we're good to go!
-                if (readCharacDiscovered && writeCharacDiscovered)
-                {
-                    // If somehow we've timed out, skip this.
-                    if (_state == CentralState.Connecting)
-                    {
-                        // We're ready to go
-                        die.Connect(this);
-                        _state = CentralState.Idle;
-                        if (dieConnectedCallback != null)
-                            dieConnectedCallback(die);
-                        if (onDieConnected != null)
-                            onDieConnected(die);
-                        foreach (var client in clients)
-                        {
-                            client.OnNewDie(die);
-                        }
-                    }
-                }
-            };
-
-            System.Action<string, string, string> onCharacteristicDiscovered =
-                (ad, serv, charac) =>
-                {
-                    // Check for the service guid to match that for our dice (it's the Simblee one)
-                    if (ad == die.address && serv.ToLower() == serviceGUID.ToLower())
-                    {
-                        // Check the discovered characteristic
-                        if (charac.ToLower() == subscribeCharacteristic.ToLower())
-                        {
-                            // It's the read characteristic, subscribe to it!
-                            System.Action<string, byte[]> onDataReceived =
-                                (dev, data) =>
-                                {
-                                    die.DataReceived(data);
-                                };
-
-                            if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
-                            {
-                                BluetoothLEHardwareInterface.SubscribeCharacteristic(die.address,
-                                    serviceGUID,
-                                    subscribeCharacteristic,
-                                    null,
-                                    onDataReceived);
-                            }
-                            else
-                            {
-                                virtualBluetooth.SubscribeCharacteristic(die.address,
-                                    serviceGUID,
-                                    subscribeCharacteristic,
-                                    null,
-                                    onDataReceived);
-                            }
-                            readCharacDiscovered = true;
-                            gotReadOrWriteCharacteristic();
-                        }
-                        else if (charac.ToLower() == writeCharacteristic.ToLower())
-                        {
-                            // It's the write characteristic, remember that
-                            writeCharacDiscovered = true;
-                            gotReadOrWriteCharacteristic();
-                        }
-                        // Else we don't care about this characteristic
-                    }
-                };
-
-
-            System.Action<string> dieDisconnected =
-                (ad) =>
-                {
-                    if (ad == die.address)
-                    {
-                        if (dieDisconnectedCallback != null)
-                            dieDisconnectedCallback(die);
-                        if (onDieDisconnected != null)
-                            onDieDisconnected(die);
-                        die.Disconnect();
-                    }
-                };
-
-            if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
-            {
-                BluetoothLEHardwareInterface.ConnectToPeripheral(die.address,
-                    null,
-                    null,
-                    onCharacteristicDiscovered,
-                    dieDisconnected);
-            }
-            else
-            {
-                virtualBluetooth.ConnectToPeripheral(die.address,
-                    null,
-                    null,
-                    onCharacteristicDiscovered,
-                    dieDisconnected);
-            }
-        }
-        else
-        {
-            Debug.LogError("Central is not ready to connect, current state is " + _state);
-        }
-	}
-
-    public void DisconnectDie(Die die, System.Action<Die> dieDisconnectedCallback)
-    {
-        System.Action<string> dieDisconnected =
-            (ad) =>
-            {
-                if (ad == die.address)
-                {
-                    if (dieDisconnectedCallback != null)
-                        dieDisconnectedCallback(die);
-                    // Other callbacks are already set
-                }
-            };
-
-        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
-        {
-            BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, dieDisconnected);
-        }
-        else
-        {
-            virtualBluetooth.DisconnectPeripheral(die.address, dieDisconnected);
-        }
-    }
-
-    public void DisconnectAllDice()
-    {
-        foreach (var die in GetComponentsInChildren<Die>())
-        {
-            die.Disconnect();
-        }
-        BluetoothLEHardwareInterface.DisconnectAll();
-        if (virtualBluetooth != null)
-        {
-            virtualBluetooth.DisconnectAll();
-        }
-    }
-
-    public void ForgetDie(Die die, System.Action<Die> dieForgottenCallback)
-    {
-        StartCoroutine(ForgetDieCr(die, dieForgottenCallback));
-    }
-
 
     void DestroyDie(Die die)
     {
         GameObject.Destroy(die.gameObject);
     }
 
-    public void SendBytes(Die die, byte[] bytes, int length, System.Action bytesWrittenCallback)
-	{
-        //StringBuilder builder = new StringBuilder();
-        //builder.Append("Sending ");
-        //for (int i = 0; i < length; ++i)
-        //{
-        //    builder.Append(bytes[i].ToString("X2"));
-        //    builder.Append(" ");
-        //}
-        //Debug.Log(builder.ToString());
-        if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
-        {
-            BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, (ignore) =>
-                {
-                    if (bytesWrittenCallback != null)
-                    {
-                        bytesWrittenCallback();
-                    }
-                });
-        }
-        else
-        {
-            virtualBluetooth.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, (ignore) =>
-                {
-                    if (bytesWrittenCallback != null)
-                    {
-                        bytesWrittenCallback();
-                    }
-                });
-        }
-	}
-
-    public void OnApplicationQuit()
-    {
-        DisconnectAllDice();
-    }
-
     public IEnumerable<Die> diceList
     {
-        get
-        {
-            return GetComponentsInChildren<Die>();
-        }
+        get { return dice; }
     }
 
-    public void ConnectToDiceList(IEnumerable<Die> diceList, System.Action<Die> onDieConnected = null, System.Action<Die> onDieDisconnected = null)
+    void OnApplicationQuit()
     {
-        StartCoroutine(ConnectToDiceListCr(diceList, onDieConnected, onDieDisconnected));
+        //DisconnectAllDice();
+        BluetoothLEHardwareInterface.DeInitialize(null);
     }
-
-    private IEnumerator ConnectToDiceListCr(IEnumerable<Die> diceList, System.Action<Die> onDieConnectedCallback = null, System.Action<Die> onDieDisconnectedCallback = null)
-    {
-        foreach(var die in diceList)
-        {
-            bool connected = false;
-            ConnectToDie(die, (cdie) =>
-            {
-                connected = true;
-                if (onDieConnectedCallback != null)
-                    onDieConnectedCallback(cdie);
-            },
-            (cdie) =>
-            {
-                if (onDieDisconnectedCallback != null)
-                    onDieDisconnectedCallback(cdie);
-            });
-            yield return new WaitUntil(() => connected);
-        }
-    }
-
-    IEnumerator ForgetDieCr(Die die, System.Action<Die> dieForgottenCallback)
-    {
-        if (die.connected)
-        {
-            bool disconnected = false;
-            DisconnectDie(die, (d) => disconnected = true);
-            yield return new WaitUntil(() => disconnected);
-        }
-
-        if (dieForgottenCallback != null)
-        {
-            dieForgottenCallback(die);
-        }
-
-        if (onDieForgotten != null)
-        {
-            onDieForgotten(die);
-        }
-
-        DestroyDie(die);
-    }
-
-
-    //private void SaveDiceListToFile()
-    //{
-
-    //}
-
-    //private bool LoadDiceListFromFile()
-    //{
-    //    string path = System.IO.Path.Combine(Application.persistentDataPath, configFileName);
-    //    bool ret = System.IO.File.Exists(path);
-    //    if (ret)
-    //    {
-    //        var jsonContent = System.IO.File.ReadAllText(path);
-    //        ret = jsonContent != null;
-    //        JsonUtility.FromJson<DiceListStruct>(jsonContent);
-    //    }
-    //}
 }

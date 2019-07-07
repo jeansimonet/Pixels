@@ -21,6 +21,7 @@ namespace SettingsManager
 {
 	Settings const * const settings = (Settings const * const)SETTINGS_ADDRESS;
 
+	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void init() {
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
@@ -85,11 +86,8 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
-		outSettings.sigmaDecayStart = 0.95f;
-		outSettings.sigmaDecayStop = 0.05f;
-		outSettings.sigmaThresholdStart = 100;
-		outSettings.sigmaThresholdEnd = 0.5;
-		outSettings.faceThreshold = 0.85f;
+		outSettings.sigmaDecayFast = 0.95f;
+		outSettings.sigmaDecaySlow = 0.05f;
 		outSettings.minRollTime = 300;
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}
@@ -98,8 +96,7 @@ namespace SettingsManager
 		Flash::eraseSynchronous(SETTINGS_ADDRESS, SETTINGS_PAGE_COUNT);
 		Settings defaults;
 		setDefaults(defaults);
-		Settings* dest = (Settings*)SETTINGS_ADDRESS;
-		Flash::writeSynchronous((uint32_t)&(dest), &defaults, sizeof(Settings));
+		Flash::writeSynchronous(SETTINGS_ADDRESS, &defaults, sizeof(Settings));
 		NRF_LOG_INFO("Settings written to flash");
 	}
 }

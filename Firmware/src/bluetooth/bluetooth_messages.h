@@ -60,7 +60,7 @@ protected:
 };
 
 /// <summary>
-/// Describes a face up detection message
+/// Describes a state change detection message
 /// </summary>
 struct MessageDieState
 	: public Message

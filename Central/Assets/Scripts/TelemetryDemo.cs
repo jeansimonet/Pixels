@@ -10,7 +10,6 @@ using UnityEngine.UI.Extensions;
 
 public class TelemetryDemo
     : MonoBehaviour
-    , IClient
 {
     public Central central;
     public GameObject diceRoot;
@@ -43,10 +42,15 @@ public class TelemetryDemo
     IEnumerator Start()
 	{
         // Until we can properly record data, disable
-        yield return new WaitUntil(() => central.state == CentralState.Idle);
+        yield return new WaitUntil(() => central.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        central.RegisterClient(this);
+        central.onDieConnected += OnNewDie;
+    }
+
+    private void OnDisable()
+    {
+        central.onDieConnected -= OnNewDie;
     }
 
     public void OnNewDie(Die die)
@@ -80,9 +84,9 @@ public class TelemetryDemo
         trackedDice[die].OnTelemetryReceived(acc, millis);
     }
 
-    void OnDieConnectionStateChanged(Die die, bool newConnected)
+    void OnDieConnectionStateChanged(Die die, Die.ConnectionState newConnected)
     {
-        if (!newConnected)
+        if (newConnected == Die.ConnectionState.Unavailable)
         {
             if (trackedDice.Count > 1)
             {

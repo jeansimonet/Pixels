@@ -44,7 +44,29 @@ public class Die
         int minRollTime; // ms
     }
 
-    public bool connected { get; private set; } = false;
+    public enum ConnectionState
+    {
+        Unavailable = 0,
+        Advertising,
+        Connecting,
+        Connected,
+        Subscribing,
+        Ready
+    }
+
+    ConnectionState _connectionState = ConnectionState.Unavailable;
+    public ConnectionState connectionState
+    {
+        get { return _connectionState; }
+        private set
+        {
+            if (value != _connectionState)
+            {
+                _connectionState = value;
+                OnConnectionStateChanged?.Invoke(this, value);
+            }
+        }
+    }
 
     public State state { get; private set; } = State.Unknown;
 
@@ -70,7 +92,7 @@ public class Die
             _OnTelemetry -= value;
             if (_OnTelemetry == null || _OnTelemetry.GetInvocationList().Length == 0)
             {
-                if (connected)
+                if (connectionState == ConnectionState.Ready)
                 {
                     // Deregister from the die telemetry
                     RequestTelemetry(false);
@@ -83,7 +105,7 @@ public class Die
     public delegate void StateChangedEvent(Die die, State newState);
     public StateChangedEvent OnStateChanged;
 
-    public delegate void ConnectionStateChangedEvent(Die die, bool newConnectionState);
+    public delegate void ConnectionStateChangedEvent(Die die, ConnectionState newConnectionState);
     public ConnectionStateChangedEvent OnConnectionStateChanged;
 
     public delegate void FaceChangedEvent(Die die, int newFace);
@@ -94,8 +116,21 @@ public class Die
 
 	// For telemetry
 	int lastSampleTime; // ms
-	ISendBytes _sendBytes;
+	Central central;
     TelemetryEvent _OnTelemetry;
+
+    const string messageServiceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+    const string messageSubscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+    const string messageWriteCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
+
+    const string telemetryServiceGUID = "6E401000-B5A3-F393-E0A9-E50E24DCCA9E";
+    const string telemetrySubscribeCharacteristic = "6E401001-B5A3-F393-E0A9-E50E24DCCA9E";
+    const string telemetryWriteCharacteristic = "6E401002-B5A3-F393-E0A9-E50E24DCCA9E";
+
+    bool messageWriteCharacteristicFound = false;
+    bool messageReadCharacteristicFound = false;
+    bool telemetryWriteCharacteristicFound = false;
+    bool telemetryReadCharacteristicFound = false;
 
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
@@ -116,59 +151,165 @@ public class Die
         messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
     }
 
-    public void Setup(string name, string address)
+    public void Setup(string name, string address, ConnectionState connectionState, Central central)
     {
         this.name = name;
         this.address = address;
+        this.connectionState = connectionState;
+        this.central = central;
     }
 
-	// Use this for initialization
-	void Start ()
-	{
-	}
-	
-	// Update is called once per frame
-	void Update ()
-	{
-		
-	}
+    public void Connect()
+    {
+        StartCoroutine(ConnectCr());
+    }
 
-	public void Connect(ISendBytes sb)
-	{
-		_sendBytes = sb;
-		state = State.Unknown;
-        OnConnectionStateChanged?.Invoke(this, true);
+    IEnumerator ConnectCr()
+    {
+        bool errorOccurred = false;
+        Central.OnBluetoothErrorEvent errorHandler = (err) => errorOccurred = true;
+        try
+        {
+            bluetoothOperationInProgress = true;
+            connectionState = ConnectionState.Connecting;
+
+            central.onBluetoothError += errorHandler;
+            central.ConnectToDie(this);
+            while ((!messageWriteCharacteristicFound || !messageReadCharacteristicFound ||
+                    !telemetryWriteCharacteristicFound || !telemetryReadCharacteristicFound ||
+                    connectionState != ConnectionState.Connected) && !errorOccurred)
+            {
+                yield return null;
+            }
+
+            if (errorOccurred)
+            {
+                // Notify central
+                Debug.LogError("Die " + name + " error while connecting");
+                connectionState = ConnectionState.Unavailable;
+                central.UnresponsiveDie(this);
+            }
+            else
+            {
+                // We're connected and we've discovered all characteristics we care about, subscribe
+                connectionState = ConnectionState.Subscribing;
+                bool messageSub = false;
+                central.SubscribeCharacteristic(this, messageServiceGUID, messageSubscribeCharacteristic, () => messageSub = true);
+                bool telemSub = false;
+                central.SubscribeCharacteristic(this, telemetryServiceGUID, telemetrySubscribeCharacteristic, () => telemSub = true);
+                while ((!messageSub || !telemSub) && !errorOccurred)
+                {
+                    yield return null;
+                }
+
+                if (errorOccurred)
+                {
+                    // Notify central
+                    Debug.LogError("Die " + name + " error while subscribing");
+                    connectionState = ConnectionState.Unavailable;
+                    central.UnresponsiveDie(this);
+                }
+                else
+                {
+                    // All good!
+                    connectionState = ConnectionState.Ready;
+                    central.DieReady(this);
+                }
+            }
+        }
+        finally
+        {
+            central.onBluetoothError -= errorHandler;
+            bluetoothOperationInProgress = false;
+        }
 
         // Ping the die so we know its initial state
         Ping();
+    }
+
+    public void OnAdvertising()
+    {
+        connectionState = ConnectionState.Advertising;
+    }
+
+	public void OnConnected()
+	{
+        connectionState = ConnectionState.Connected;
 	}
 
-    public void Disconnect()
+    public void OnServiceDiscovered(string service)
     {
-        connected = false;
-        _sendBytes = null;
+    }
 
-        OnConnectionStateChanged?.Invoke(this, false);
+    public void OnCharacterisicDiscovered(string service, string characteristic)
+    {
+        if (string.Compare(service.ToLower(), messageServiceGUID.ToLower()) == 0)
+        {
+            if (string.Compare(characteristic.ToLower(), messageSubscribeCharacteristic.ToLower()) == 0)
+                messageReadCharacteristicFound = true;
+            else if (string.Compare(characteristic.ToLower(), messageWriteCharacteristic.ToLower()) == 0)
+                messageWriteCharacteristicFound = true;
+        }
+        else if (string.Compare(service.ToLower(), telemetryServiceGUID.ToLower()) == 0)
+        {
+            if (string.Compare(characteristic.ToLower(), telemetrySubscribeCharacteristic.ToLower()) == 0)
+                telemetryReadCharacteristicFound = true;
+            else if (string.Compare(characteristic.ToLower(), telemetryWriteCharacteristic.ToLower()) == 0)
+                telemetryWriteCharacteristicFound = true;
+        }
+    }
+
+    public void OnCharacterisicSubscribed(string service, string characteristic)
+    {
+    }
+
+    public void OnLostConnection()
+    {
+        connectionState = ConnectionState.Unavailable;
+    }
+
+    System.Action<string> onErrorAction;
+    public void OnError(string errorMessage)
+    {
+        onErrorAction?.Invoke(errorMessage);
+
+        // Reset to unknown state
+        connectionState = ConnectionState.Unavailable;
+
+        // Notify central that we're not sure the die is still there
+        //central.OnNotResponding(this);
+    }
+
+    public void OnDataReceived(string service, string characteristic, byte[] data)
+    {
+        if (string.Compare(service.ToLower(), messageServiceGUID.ToLower()) == 0)
+        {
+            if (string.Compare(characteristic.ToLower(), messageSubscribeCharacteristic.ToLower()) == 0)
+            {
+                // Process the message coming from the actual die!
+                var message = DieMessages.FromByteArray(data);
+                MessageReceivedDelegate del;
+                if (messageDelegates.TryGetValue(message.type, out del))
+                {
+                    del.Invoke(message);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Unknown characteristic " + characteristic);
+            }
+        }
+        else if (string.Compare(service.ToLower(), telemetryServiceGUID.ToLower()) == 0)
+        {
+            //_OnTelemetry?.Invoke()
+        }
+        else
+        {
+            Debug.LogWarning("Unknown service " + service);
+        }
     }
 
     #region Message Handling Infrastructure
-    public void DataReceived(byte[] data)
-	{
-		if (!connected)
-		{
-			Debug.LogError("Die " + name + " received data while disconnected!");
-			return;
-		}
-
-        // Process the message coming from the actual die!
-        var message = DieMessages.FromByteArray(data);
-        MessageReceivedDelegate del;
-        if (messageDelegates.TryGetValue(message.type, out del))
-        {
-            del.Invoke(message);
-        }
-	}
-
     void AddMessageHandler(DieMessageType msgType, MessageReceivedDelegate newDel)
     {
         MessageReceivedDelegate del;
@@ -204,7 +345,7 @@ public class Die
         where T : DieMessage
     {
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        _sendBytes.SendBytes(this, msgBytes, msgBytes.Length, null);
+        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
     }
 
     IEnumerator SendMessageCr<T>(T message)
@@ -212,7 +353,7 @@ public class Die
     {
         bool msgReceived = false;
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        _sendBytes.SendBytes(this, msgBytes, msgBytes.Length, () => msgReceived = true);
+        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, () => msgReceived = true);
         yield return new WaitUntil(() => msgReceived);
     }
 
@@ -246,7 +387,7 @@ public class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        _sendBytes.SendBytes(this, msgBytes, msgBytes.Length, null);
+        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
 
         yield return new WaitUntil(() => msgReceived);
         RemoveMessageHandler(ackType, callback);
@@ -264,7 +405,7 @@ public class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        _sendBytes.SendBytes(this, msgBytes, msgBytes.Length, null);
+        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
         while (!msgReceived && Time.time < startTime + timeOut)
         {
             yield return null;
@@ -279,7 +420,7 @@ public class Die
         // Handle the message
         var stateMsg = (DieMessageState)message;
 
-        var newState = (State)stateMsg.face;
+        var newState = (State)stateMsg.state;
         if (newState != state)
         {
             state = newState;
@@ -351,20 +492,31 @@ public class Die
 
     IEnumerator PerformBluetoothOperationCr(IEnumerator operationCr)
     {
-        if (connected)
+        if (connectionState == ConnectionState.Ready)
         {
             while (bluetoothOperationInProgress)
             {
                 // Busy, wait until we can talk to the die
                 yield return null;
             }
+            bool errorOccured = false;
+            Central.OnBluetoothErrorEvent errorHandler = (err) => errorOccured = true;
             try
             {
+                central.onBluetoothError += errorHandler;
                 bluetoothOperationInProgress = true;
+                // Attach to the error event
                 yield return StartCoroutine(operationCr);
+                if (errorOccured)
+                {
+                    Debug.LogError("Die " + name + " error while performing action");
+                    connectionState = ConnectionState.Unavailable;
+                    central.UnresponsiveDie(this);
+                }
             }
             finally
             {
+                central.onBluetoothError -= errorHandler;
                 bluetoothOperationInProgress = false;
             }
         }

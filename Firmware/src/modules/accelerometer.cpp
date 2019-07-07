@@ -107,8 +107,6 @@ namespace Accelerometer
 		{
 			clients[i].handler(clients[i].token, newFrame);
 		}
-
-		updateState();
 	}
 
 	/// <summary>

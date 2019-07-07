@@ -30,7 +30,7 @@ public class DemoController : MonoBehaviour
 	void Start()
 	{
         // Initialize Central
-        central.BeginScanForDice((newDie) =>
+        central.onDieDiscovered += (newDie) =>
         {
             var dieUI = GameObject.Instantiate<UIDie>(diePrefab);
             dieUI.transform.SetParent(diceRootUI.transform);
@@ -41,12 +41,14 @@ public class DemoController : MonoBehaviour
             dieUI.faceNumber = -1;
             dieUI.OnMoreOptions += () => ShowDieCommands(newDie);
             dice.Add(dieUI);
+        };
 
-            central.ConnectToDie(newDie, null, (lostDie) =>
-            {
-                GameObject.Destroy(dice.FirstOrDefault(uid => uid.die == lostDie).gameObject);
-            });
-        });
+        central.onDieDisconnected += (lostDie) =>
+        {
+            GameObject.Destroy(dice.FirstOrDefault(uid => uid.die == lostDie).gameObject);
+        };
+
+        central.BeginScanForDice();
 	}
 
 	// Update is called once per frame

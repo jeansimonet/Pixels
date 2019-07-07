@@ -5,7 +5,6 @@ using System.IO;
 
 public class DiceAnimProgrammer
     : MonoBehaviour
-    , IClient
 {
     public Central central;
     public TimelineView timeline;
@@ -27,16 +26,21 @@ public class DiceAnimProgrammer
     IEnumerator Start()
     {
         // Until we can properly record data, disable
-        yield return new WaitUntil(() => central.state == CentralState.Idle);
+        yield return new WaitUntil(() => central.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        central.RegisterClient(this);
+        central.onDieReady += OnNewDie;
 
         // Create empty anim if needed
         animationSet = new Animations.EditAnimationSet();
         animationSet.animations = new List<Animations.EditAnimation>();
         animationSet.animations.Add(new Animations.EditAnimation());
         timeline.ChangeCurrentAnimation(animationSet.animations[0]);
+    }
+
+    private void OnDisable()
+    {
+        central.onDieReady -= OnNewDie;
     }
 
     public void OnNewDie(Die die)

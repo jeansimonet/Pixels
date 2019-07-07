@@ -48,7 +48,7 @@ public class Telemetry : MonoBehaviour
         scanButton.enabled = false;
         recordButton.enabled = false;
 
-        yield return new WaitUntil(() => central.state == CentralState.Idle);
+        yield return new WaitUntil(() => central.state == Central.State.Idle);
 
         StartIdle();
     }
@@ -75,7 +75,10 @@ public class Telemetry : MonoBehaviour
 
     void StartScanning()
     {
-        central.BeginScanForDice(OnDieDiscovered);
+        central.onDieDiscovered += OnDieDiscovered;
+        central.onDieConnected += OnDieConnected;
+        central.onDieDisconnected += OnDieDisconnected;
+        central.BeginScanForDice();
         scanButton.enabled = true;
         scanText.text = "Stop";
         scanButton.onClick.RemoveAllListeners();
@@ -99,31 +102,24 @@ public class Telemetry : MonoBehaviour
         }
     }
 
-    void StartConnecting()
+    void OnDieConnected(Die die)
     {
-        StartCoroutine(ConnectToDice());
+        // Die is now tracked
+        trackedDice.Add(die, discoveredDice[die]);
+
+        // Register for telemetry events
+        die.OnTelemetry += OnDieTelemetryReceived;
     }
 
-
-    IEnumerator ConnectToDice()
+    void StartConnecting()
     {
         scanButton.enabled = false;
         scanText.text = "Connecting";
         central.StopScanForDice();
         foreach (var d in discoveredDice)
         {
-            bool connected = false;
-            central.ConnectToDie(d.Key, (cdie) => connected = true, OnDieDisconnected);
-            yield return new WaitUntil(() => connected);
-
-            // Die is now tracked
-            trackedDice.Add(d.Key, d.Value);
-
-            // Register for telemetry events
-            d.Key.OnTelemetry += OnDieTelemetryReceived;
+            central.ConnectToDie(d.Key);
         }
-        discoveredDice.Clear();
-
         StartIdle();
     }
 

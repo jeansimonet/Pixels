@@ -43,8 +43,6 @@ const char* Message::GetMessageTypeString(Message::MessageType msgType)
 		return "RequestTelemetry";
 	case MessateType_ProgramDefaultAnimSet:
 		return "ProgramDefaultAnimSet";
-	case MessageType_Rename:
-		return "Rename";
 	case MessageType_Flash:
 		return "Flash";
 	case MessageType_RequestDefaultAnimSetColor:

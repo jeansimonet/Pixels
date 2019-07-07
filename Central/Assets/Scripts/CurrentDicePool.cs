@@ -38,7 +38,6 @@ public class CurrentDicePool
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1.0f;
-        RegisterEvents();
     }
 
     public void Hide()
@@ -46,7 +45,6 @@ public class CurrentDicePool
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
-        UnregisterEvents();
     }
 
     public void Populate()
@@ -66,21 +64,18 @@ public class CurrentDicePool
         diceListRoot.SetActive(false);
         noDiceIndicator.SetActive(true);
 
-        // Add all currently selected dice
+        // Add all currently connected dice
         foreach(Die die in central.diceList)
         {
             Debug.Log("Considering die " + die.name + " (state:" + die.state + ")");
-            if (die.connected)
-            {
-                AddDie(die);
-            }
+            AddDie(die);
         }
 
         addDiceButton.onClick.RemoveAllListeners();
         addDiceButton.onClick.AddListener(() => addDiceDialog.Show());
     }
 
-    void AddDie(Die die)
+    public void AddDie(Die die)
     {
         if (diceListRoot.transform.childCount > 0)
         {
@@ -106,6 +101,10 @@ public class CurrentDicePool
             // Setup
             cmp.Setup(die, central);
 
+            if (die.connectionState == Die.ConnectionState.Advertising)
+            {
+                die.Connect();
+            }
         }
         else
         {
@@ -113,7 +112,7 @@ public class CurrentDicePool
         }
     }
 
-    void RemoveDie(Die die)
+    public void RemoveDie(Die die)
     {
         var cmp = dice.Find(dui => dui.die == die);
         if (cmp != null)
@@ -130,21 +129,6 @@ public class CurrentDicePool
                 noDiceIndicator.SetActive(true);
             }
         }
-    }
-
-    void RegisterEvents()
-    {
-        // Setup event to add newly connected dice
-        central.onDieConnected += AddDie;
-
-        // Setup events to remove disconnected dice
-        central.onDieDisconnected += RemoveDie;
-    }
-
-    void UnregisterEvents()
-    {
-        central.onDieConnected -= AddDie;
-        central.onDieDisconnected -= RemoveDie;
     }
 
 }

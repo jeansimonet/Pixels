@@ -13,6 +13,7 @@ public class AddDiceToPool : MonoBehaviour {
     public GameObject availableDiceListRoot;
     public GameObject noDiceIndicator;
     public CanvasGroup canvasGroup;
+    public CurrentDicePool pool;
 
     HashSet<Die> selectedDice;
     List<AddDiceToPoolDice> availableDice;
@@ -39,6 +40,7 @@ public class AddDiceToPool : MonoBehaviour {
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1.0f;
+        central.onDieDiscovered += AddAvailableDice;
     }
 
     public void Hide()
@@ -46,6 +48,7 @@ public class AddDiceToPool : MonoBehaviour {
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
+        central.onDieDiscovered -= AddAvailableDice;
     }
 
     public void Populate()
@@ -81,16 +84,15 @@ public class AddDiceToPool : MonoBehaviour {
         addSelectedButton.onClick.AddListener(() =>
         {
             central.StopScanForDice();
-            if (selectedDice.Count > 0)
+            foreach (var die in selectedDice)
             {
-                // Have central connect to selected dice
-                central.ConnectToDiceList(selectedDice);
+                pool.AddDie(die);
             }
             Hide();
         });
 
         // Kickoff a scan right away!
-        central.BeginScanForDice(AddAvailableDice);
+        central.BeginScanForDice();
     }
 
     private void AddAvailableDice(Die die)

@@ -64,13 +64,23 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
     app_error_handler(0xDEADBEEF, line_num, p_file_name);
 }
 
-APP_TIMER_DEF(turnOffTimer);
-void turnOff(void* context) {
-    Stack::slowAdvertising();
-}
-
 namespace Die
 {
+    enum State
+    {
+        State_Unknown = 0,
+        State_Idle,
+		State_Handling,
+		State_Falling,
+		State_Rolling,
+		State_Jerking,
+		State_Crooked,
+    };
+
+    State currentState = State_Idle;
+
+    void RequestStateHandler(void* token, const Message* message);
+
     // Start the die please!
     void init() {
 
@@ -171,6 +181,9 @@ namespace Die
         // Battery controller relies on the battery driver
         BatteryController::init();
 
+        // Register state message handler
+        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
+
         // Start advertising!
         Stack::startAdvertising();
     }
@@ -181,6 +194,14 @@ namespace Die
         Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
+    }
+
+    void RequestStateHandler(void* token, const Message* message)
+    {
+        // Central asked for the die state, return it!
+        Bluetooth::MessageDieState currentStateMsg;
+        currentStateMsg.state = (uint8_t)currentState;
+        Bluetooth::MessageService::SendMessage(&currentStateMsg);
     }
 }
 

@@ -48,7 +48,7 @@ public class CurrentDicePoolDice
         this.die = die;
         this.central = central;
         nameText.text = die.name;
-        statusText.text = die.connected ? "Ready" : "Missing";
+        statusText.text = die.connectionState.ToString();
         diceImage.color = Color.white;
         HideCommands();
 
@@ -56,6 +56,13 @@ public class CurrentDicePoolDice
         diceButton.onClick.AddListener(ShowHideCommands);
 
         this.die.OnSettingsChanged += OnDieSettingsChanged;
+        this.die.OnConnectionStateChanged += UpdateConnectionState;
+    }
+
+    private void OnDestroy()
+    {
+        this.die.OnSettingsChanged -= OnDieSettingsChanged;
+        this.die.OnConnectionStateChanged -= UpdateConnectionState;
     }
 
     void ShowHideCommands()
@@ -101,7 +108,7 @@ public class CurrentDicePoolDice
     void ForgetDie()
     {
         // Tell central to forget about this die
-        central.ForgetDie(die, null);
+        central.ForgetDie(die);
         HideCommands();
     }
 
@@ -154,5 +161,10 @@ public class CurrentDicePoolDice
     void OnDieSettingsChanged(Die die)
     {
         UpdateDieName();
+    }
+
+    void UpdateConnectionState(Die die, Die.ConnectionState newState)
+    {
+        statusText.text = newState.ToString();
     }
 }

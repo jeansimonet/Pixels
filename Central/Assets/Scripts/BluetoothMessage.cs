@@ -156,7 +156,7 @@ public class DieMessageState
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.State;
-    public byte face;
+    public byte state;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -187,6 +187,13 @@ namespace LIS2DE12
 		cz = (float)z / (float)(1 << 7) * scaleMult;
 	}
 
+	float convert(short value)
+	{
+		int a = twosComplement(readRegister(OUT_X_H));
+		float scaleMult = getScaleMult();
+		return (float)a / (float)(1 << 7) * scaleMult;
+	}
+
 	/// <summary>
 	/// CHECK IF NEW DATA IS AVAILABLE
 	///	This function checks the status of the MMA8452Q to see if new data is availble.

@@ -2,6 +2,7 @@
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "drivers_hw/battery.h"
+#include "nrf_log.h"
 
 using namespace DriversHW;
 using namespace Bluetooth;
