@@ -14,7 +14,14 @@ public class Die
 	public const float SCALE_8G = 8.0f;
 	float scale = SCALE_8G;
 
-	public enum State
+    public enum DieType
+    {
+        Unknown = 0,
+        SixSided,
+        TwentySided
+    };
+
+    public enum State
 	{
 		Unknown = 0,
         Idle,
@@ -68,11 +75,9 @@ public class Die
         }
     }
 
+    public DieType dieType { get; private set; } = DieType.Unknown;
     public State state { get; private set; } = State.Unknown;
-
-    // Name is already a part of Monobehaviour
     public string address { get; private set; } = "";
-
     public int face { get; private set; } = -1;
 
 	public delegate void TelemetryEvent(Die die, Vector3 acc, int millis);
@@ -123,14 +128,8 @@ public class Die
     const string messageSubscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     const string messageWriteCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
-    const string telemetryServiceGUID = "6E401000-B5A3-F393-E0A9-E50E24DCCA9E";
-    const string telemetrySubscribeCharacteristic = "6E401001-B5A3-F393-E0A9-E50E24DCCA9E";
-    const string telemetryWriteCharacteristic = "6E401002-B5A3-F393-E0A9-E50E24DCCA9E";
-
     bool messageWriteCharacteristicFound = false;
     bool messageReadCharacteristicFound = false;
-    bool telemetryWriteCharacteristicFound = false;
-    bool telemetryReadCharacteristicFound = false;
 
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
@@ -176,7 +175,6 @@ public class Die
             central.onBluetoothError += errorHandler;
             central.ConnectToDie(this);
             while ((!messageWriteCharacteristicFound || !messageReadCharacteristicFound ||
-                    !telemetryWriteCharacteristicFound || !telemetryReadCharacteristicFound ||
                     connectionState != ConnectionState.Connected) && !errorOccurred)
             {
                 yield return null;
@@ -195,9 +193,7 @@ public class Die
                 connectionState = ConnectionState.Subscribing;
                 bool messageSub = false;
                 central.SubscribeCharacteristic(this, messageServiceGUID, messageSubscribeCharacteristic, () => messageSub = true);
-                bool telemSub = false;
-                central.SubscribeCharacteristic(this, telemetryServiceGUID, telemetrySubscribeCharacteristic, () => telemSub = true);
-                while ((!messageSub || !telemSub) && !errorOccurred)
+                while (!messageSub && !errorOccurred)
                 {
                     yield return null;
                 }
@@ -209,12 +205,6 @@ public class Die
                     connectionState = ConnectionState.Unavailable;
                     central.UnresponsiveDie(this);
                 }
-                else
-                {
-                    // All good!
-                    connectionState = ConnectionState.Ready;
-                    central.DieReady(this);
-                }
             }
         }
         finally
@@ -223,8 +213,18 @@ public class Die
             bluetoothOperationInProgress = false;
         }
 
-        // Ping the die so we know its initial state
-        Ping();
+        if (!errorOccurred)
+        {
+            // Ask the die who it is!
+            yield return StartCoroutine(GetDieTypeCr());
+
+            // Ping the die so we know its initial state
+            yield return StartCoroutine(PingCr());
+
+            // All good!
+            connectionState = ConnectionState.Ready;
+            central.DieReady(this);
+        }
     }
 
     public void OnAdvertising()
@@ -249,13 +249,6 @@ public class Die
                 messageReadCharacteristicFound = true;
             else if (string.Compare(characteristic.ToLower(), messageWriteCharacteristic.ToLower()) == 0)
                 messageWriteCharacteristicFound = true;
-        }
-        else if (string.Compare(service.ToLower(), telemetryServiceGUID.ToLower()) == 0)
-        {
-            if (string.Compare(characteristic.ToLower(), telemetrySubscribeCharacteristic.ToLower()) == 0)
-                telemetryReadCharacteristicFound = true;
-            else if (string.Compare(characteristic.ToLower(), telemetryWriteCharacteristic.ToLower()) == 0)
-                telemetryWriteCharacteristicFound = true;
         }
     }
 
@@ -298,10 +291,6 @@ public class Die
             {
                 Debug.LogWarning("Unknown characteristic " + characteristic);
             }
-        }
-        else if (string.Compare(service.ToLower(), telemetryServiceGUID.ToLower()) == 0)
-        {
-            //_OnTelemetry?.Invoke()
         }
         else
         {
@@ -396,21 +385,35 @@ public class Die
     IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut)
         where T : DieMessage
     {
-        bool msgReceived = false;
+        return SendMessageWithAckOrTimeoutCr(message, ackType, timeOut, null, null);
+    }
+
+    IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut, System.Action<DieMessage> ackAction, System.Action timeoutAction)
+        where T : DieMessage
+    {
+        DieMessage ackMessage = null;
         float startTime = Time.time;
         MessageReceivedDelegate callback = (ackMsg) =>
         {
-            msgReceived = true;
+            ackMessage = ackMsg;
         };
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
         central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
-        while (!msgReceived && Time.time < startTime + timeOut)
+        while (ackMessage == null && Time.time < startTime + timeOut)
         {
             yield return null;
         }
         RemoveMessageHandler(ackType, callback);
+        if (ackMessage != null)
+        {
+            ackAction?.Invoke(ackMessage);
+        }
+        else
+        {
+            timeoutAction?.Invoke();
+        }
     }
     #endregion
 
@@ -453,9 +456,9 @@ public class Die
             for (int i = 0; i < 2; ++i)
             {
                 // Compute actual accelerometer readings (in Gs)
-                float cx = (float)telem.data[i].X / (float)(1 << 11) * (float)(scale);
-                float cy = (float)telem.data[i].Y / (float)(1 << 11) * (float)(scale);
-                float cz = (float)telem.data[i].Z / (float)(1 << 11) * (float)(scale);
+                float cx = (float)telem.data[i].X / (float)(1 << 7) * (float)(scale);
+                float cy = (float)telem.data[i].Y / (float)(1 << 7) * (float)(scale);
+                float cz = (float)telem.data[i].Z / (float)(1 << 7) * (float)(scale);
                 Vector3 acc = new Vector3(cx, cy, cz);
                 lastSampleTime += telem.data[i].DeltaTime; 
 
@@ -492,7 +495,7 @@ public class Die
 
     IEnumerator PerformBluetoothOperationCr(IEnumerator operationCr)
     {
-        if (connectionState == ConnectionState.Ready)
+        if (connectionState == ConnectionState.Connected || connectionState == ConnectionState.Ready)
         {
             while (bluetoothOperationInProgress)
             {
@@ -533,7 +536,28 @@ public class Die
 
     public Coroutine Ping()
     {
-        return PerformBluetoothOperation(SendMessageCr(new DieMessageRequestState()));
+        return PerformBluetoothOperation(PingCr());
+    }
+
+    IEnumerator PingCr()
+    {
+        yield return StartCoroutine(SendMessageCr(new DieMessageRequestState()));
+    }
+
+    public Coroutine GetDieType()
+    {
+        return PerformBluetoothOperation(GetDieTypeCr());
+    }
+
+    IEnumerator GetDieTypeCr()
+    {
+        var whoAreYouMsg = new DieMessageWhoAreYou();
+        System.Action<DieMessage> setDieId = (msg) =>
+        {
+            var idMsg = (DieMessageIAmADie)msg;
+            dieType = (DieType)idMsg.id;
+        };
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, setDieId, null));
     }
 
     public Coroutine UploadBulkData(byte[] bytes)

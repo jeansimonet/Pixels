@@ -91,6 +91,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/modules/anim_controller.cpp \
 	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/modules/battery_controller.cpp \
+	$(PROJ_DIR)/src/modules/die_state.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \

@@ -174,7 +174,7 @@ namespace MessageService
         if (len >= sizeof(Message))
         {
             auto msg = reinterpret_cast<const Message*>(data);
-            if (msg->type >= Message::MessageType_State && msg->type < Message::MessageType_Count) {
+            if (msg->type >= Message::MessageType_WhoAreYou && msg->type < Message::MessageType_Count) {
     		    Scheduler::push(data, len, MessageSchedulerHandler);
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);

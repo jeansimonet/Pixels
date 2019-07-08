@@ -1,5 +1,6 @@
 #include "telemetry.h"
-#include "bluetooth_stack.h"
+#include "bluetooth_message_service.h"
+#include "bluetooth_messages.h"
 #include "app_error.h"
 #include "nrf_log.h"
 #include "ble.h"
@@ -14,112 +15,84 @@ namespace Bluetooth
 {
 namespace Telemetry
 {
-    #define TELEMETRY_SERVICE_UUID {{0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0, 0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E}}
-    #define TELEMETRY_SERVICE_UUID_SHORT 0x1000
-    #define TELEMETRY_TX_CHARACTERISTIC 0x1001
-    #define TELEMETRY_RX_CHARACTERISTIC 0x1002
+    MessageAcc teleMessage;
+    Accelerometer::AccelFrame lastAccelFrame;
+    bool lastAccelWasSent;
+    bool telemetryActive;
 
-    void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context);
-
-    NRF_SDH_BLE_OBSERVER(TelemetryServiceObserver, 3, BLEObserver, nullptr);
-
-    uint16_t service_handle;
-    ble_gatts_char_handles_t tx_handles, rx_handles;
-    bool subscribed = false;
-
-	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& accelFrame);
+    void onAccDataReceived(void* param, const Accelerometer::AccelFrame& accelFrame);
+    void onRequestTelemetryMessage(void* token, const Message* message);
 
     void init() {
-
-        ret_code_t            err_code;
-        ble_uuid_t            ble_uuid;
-        ble_uuid128_t         nus_base_uuid = TELEMETRY_SERVICE_UUID;
-        ble_add_char_params_t add_char_params;
-
-        // Add a custom base UUID.
-        uint8_t uuid_type;
-        err_code = sd_ble_uuid_vs_add(&nus_base_uuid, &uuid_type);
-        APP_ERROR_CHECK(err_code);
-
-        ble_uuid.type = uuid_type;
-        ble_uuid.uuid = TELEMETRY_SERVICE_UUID_SHORT;
-
-        // Add the service.
-        err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                            &ble_uuid,
-                                            &service_handle);
-        APP_ERROR_CHECK(err_code);
-
-        // Add the RX Characteristic.
-        memset(&add_char_params, 0, sizeof(add_char_params));
-        add_char_params.uuid                     = TELEMETRY_RX_CHARACTERISTIC;
-        add_char_params.uuid_type                = uuid_type;
-        add_char_params.max_len                  = NRF_SDH_BLE_GATT_MAX_MTU_SIZE;
-        add_char_params.init_len                 = sizeof(uint8_t);
-        add_char_params.is_var_len               = true;
-        add_char_params.char_props.write         = 1;
-        add_char_params.char_props.write_wo_resp = 1;
-
-        add_char_params.read_access  = SEC_OPEN;
-        add_char_params.write_access = SEC_OPEN;
-
-        err_code = characteristic_add(service_handle, &add_char_params, &rx_handles);
-        APP_ERROR_CHECK(err_code);
-
-        // Add the TX Characteristic.
-        memset(&add_char_params, 0, sizeof(add_char_params));
-        add_char_params.uuid              = TELEMETRY_TX_CHARACTERISTIC;
-        add_char_params.uuid_type         = uuid_type;
-        add_char_params.max_len           = NRF_SDH_BLE_GATT_MAX_MTU_SIZE;
-        add_char_params.init_len          = sizeof(uint8_t);
-        add_char_params.is_var_len        = true;
-        add_char_params.char_props.notify = 1;
-
-        add_char_params.read_access       = SEC_OPEN;
-        add_char_params.write_access      = SEC_OPEN;
-        add_char_params.cccd_write_access = SEC_OPEN;
-
-        err_code = characteristic_add(service_handle, &add_char_params, &tx_handles);
-        APP_ERROR_CHECK(err_code);
+        // Register for messages to send telemetry data over!
+        MessageService::RegisterMessageHandler(Message::MessageType_RequestTelemetry, nullptr, onRequestTelemetryMessage);
 
    		NRF_LOG_INFO("Telemetry initialized");
     }
 
-    void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context)
-    {
-        switch (p_ble_evt->header.evt_id)
+	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& frame) {
+        if (lastAccelWasSent)
         {
-            case BLE_GATTS_EVT_WRITE:
-                {
-                    ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
-                    if (p_evt_write->handle == rx_handles.value_handle)
-                    {
-                        if (p_evt_write->len == 1) {
-                            if (p_evt_write->data[0] == 1) {
-                                // Register with the accelerometer, to receive acc data
-                                Accelerometer::hook(onAccDataReceived, nullptr);
-                            } else if (p_evt_write->data[0] == 0) {
-                                // Unregister with the accelerometer
-                                Accelerometer::unHook(onAccDataReceived);
-                            }
-                        }
-                    }
-                    // Else its not meant for us
-                }
-                break;
+            // Store new data in frame 0
+            teleMessage.data[0].x = frame.X;
+            teleMessage.data[0].y = frame.Y;
+            teleMessage.data[0].z = frame.Z;
+            teleMessage.data[0].deltaTime = frame.Time - lastAccelFrame.Time;
+            lastAccelWasSent = false;
+        }
+        else
+        {
+            // Store new data in frame 1
+            teleMessage.data[1].x = frame.X;
+            teleMessage.data[1].y = frame.Y;
+            teleMessage.data[1].z = frame.Z;
+            teleMessage.data[1].deltaTime = frame.Time - lastAccelFrame.Time;
 
-            case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-                break;
+            // Send the message
+            MessageService::SendMessage(&teleMessage);
+            lastAccelWasSent = true;
+            NRF_LOG_DEBUG("Sending Telemetry");
+        }
 
-            default:
-                // No implementation needed.
-                break;
+        // Always remember the last frame, so we can extract delta time!
+        lastAccelFrame = frame;
+    }
+
+    void onRequestTelemetryMessage(void* token, const Message* message) {
+        auto reqTelem = static_cast<const MessageRequestTelemetry*>(message);
+        if (reqTelem->telemetry != 0) {
+            if (!telemetryActive) {
+                NRF_LOG_INFO("Starting Telemetry");
+                start();
+            }
+        } else {
+            if (telemetryActive) {
+                NRF_LOG_INFO("Stopping Telemetry");
+                stop();
+            }
         }
     }
 
-	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& accelFrame) {
-        NRF_LOG_DEBUG("Telemetry Service Sending frame");
-        Stack::send(tx_handles.value_handle, (const uint8_t*)&accelFrame, sizeof(accelFrame));
+    void start() {
+        // Init our reuseable telemetry message
+        teleMessage.type = Message::MessageType_Telemetry;
+        for (int i = 0; i < 1; ++i)
+        {
+            teleMessage.data[i] = { 0,0,0,0 };
+        }
+
+        lastAccelWasSent = false;
+
+        // Ask the acceleration controller to be notified when
+        // new acceleration data comes in!
+        Accelerometer::hook(onAccDataReceived, nullptr);
+        telemetryActive = true;
+    }
+
+    void stop() {
+        // Stop being notified!
+        Accelerometer::unHook(onAccDataReceived);
+        telemetryActive = false;
     }
 }
 }

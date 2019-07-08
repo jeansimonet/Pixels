@@ -32,6 +32,7 @@
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
+#include "modules/die_state.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -66,21 +67,6 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 
 namespace Die
 {
-    enum State
-    {
-        State_Unknown = 0,
-        State_Idle,
-		State_Handling,
-		State_Falling,
-		State_Rolling,
-		State_Jerking,
-		State_Crooked,
-    };
-
-    State currentState = State_Idle;
-
-    void RequestStateHandler(void* token, const Message* message);
-
     // Start the die please!
     void init() {
 
@@ -182,7 +168,7 @@ namespace Die
         BatteryController::init();
 
         // Register state message handler
-        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
+        DieState::init();
 
         // Start advertising!
         Stack::startAdvertising();
@@ -194,14 +180,6 @@ namespace Die
         Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
-    }
-
-    void RequestStateHandler(void* token, const Message* message)
-    {
-        // Central asked for the die state, return it!
-        Bluetooth::MessageDieState currentStateMsg;
-        currentStateMsg.state = (uint8_t)currentState;
-        Bluetooth::MessageService::SendMessage(&currentStateMsg);
     }
 }
 

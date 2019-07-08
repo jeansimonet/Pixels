@@ -12,6 +12,8 @@ using System.Text;
 public enum DieMessageType : byte
 {
     None = 0,
+    WhoAreYou,
+    IAmADie,
     State,
     Face,
     Telemetry,
@@ -61,6 +63,12 @@ public static class DieMessages
             {
                 case DieMessageType.State:
                     ret = FromByteArray<DieMessageState>(data);
+                    break;
+                case DieMessageType.WhoAreYou:
+                    ret = FromByteArray<DieMessageWhoAreYou>(data);
+                    break;
+                case DieMessageType.IAmADie:
+                    ret = FromByteArray<DieMessageIAmADie>(data);
                     break;
                 case DieMessageType.Face:
                     ret = FromByteArray<DieMessageFace>(data);
@@ -149,6 +157,21 @@ public static class DieMessages
         Marshal.FreeHGlobal(ptr);
         return ret;
     }
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageWhoAreYou
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.WhoAreYou;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageIAmADie
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.IAmADie;
+    public byte id;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

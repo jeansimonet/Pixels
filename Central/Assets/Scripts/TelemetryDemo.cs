@@ -45,7 +45,7 @@ public class TelemetryDemo
         yield return new WaitUntil(() => central.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        central.onDieConnected += OnNewDie;
+        central.onDieReady += OnNewDie;
     }
 
     private void OnDisable()

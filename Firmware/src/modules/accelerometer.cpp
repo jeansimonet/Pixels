@@ -15,7 +15,7 @@ using namespace DriversHW;
 using namespace Config;
 
 // This defines how frequently we try to read the accelerometer
-#define TIMER2_RESOLUTION (500)	// ms
+#define TIMER2_RESOLUTION (50)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
 
 namespace Modules

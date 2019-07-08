@@ -15,6 +15,8 @@ struct Message
 	enum MessageType : uint8_t
 	{
 		MessageType_None = 0,
+		MessageType_WhoAreYou,
+		MessageType_IAmADie,
 		MessageType_State,
 		MessageType_Face,
 		MessageType_Telemetry,
@@ -196,6 +198,13 @@ struct MessageBatteryLevel
 {
 	float level;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
+};
+
+struct MessageIAmADie
+:public Message
+{
+	uint8_t id;
+	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) {}
 };
 }
 
