@@ -14,29 +14,16 @@ public class MovableArea : MonoBehaviour
 	public float LeftBound
 	{
 		get { return _leftHandle.transform.localPosition.x; }
-		set
-		{
-			var pos = _leftHandle.transform.localPosition;
-			pos.x = value;
-			_leftHandle.transform.localPosition = pos;
-			OnLeftHandleMoved();
-		}
+		set { MoveLeftHandle(value - _leftHandle.transform.localPosition.x); }
 	}
+
 	public float RightBound
 	{
 		get { return _rightHandle.transform.localPosition.x; }
-		set
-		{
-			var pos = _rightHandle.transform.localPosition;
-			pos.x = value;
-			_rightHandle.transform.localPosition = pos;
-			OnRightHandleMoved();
-		}
+		set { MoveRightHandle(value - _rightHandle.transform.localPosition.x); }
 	}
-	public float LeftWidth { get { return (_leftHandle.transform as RectTransform).rect.width; } }
-	public float RightWidth { get { return (_rightHandle.transform as RectTransform).rect.width; } }
 
-	public RectTransform Movable { get { return _movable; } }
+	public RectTransform Movable => _movable;
 
 	public void Maximize()
 	{
@@ -48,18 +35,40 @@ public class MovableArea : MonoBehaviour
 		OnRightHandleMoved();
 	}
 
+	void MoveLeftHandle(float offset)
+	{
+		_leftHandle.transform.localPosition += offset * Vector3.right;
+		OnLeftHandleMoved();
+	}
+
+	void MoveRightHandle(float offset)
+	{
+		_rightHandle.transform.localPosition += offset * Vector3.right;
+		OnRightHandleMoved();
+	}
+
 	void OnLeftHandleMoved()
 	{
-		var min = _movable.offsetMin;
-		min.x = _leftHandle.transform.localPosition.x;
-		_movable.offsetMin = min;
+		float offset = LeftBound - _movable.offsetMin.x;
+		_movable.offsetMin += offset * Vector2.right;
+
+		//TODO
+		bool stretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
+		GetComponentInChildren<MultiSlider>().LeftBoundChanged(offset, stretch);
+		if (stretch)
+		{
+			MoveRightHandle(offset);
+		}
 	}
 
 	void OnRightHandleMoved()
 	{
-		var max = _movable.offsetMax;
-		max.x = _rightHandle.transform.localPosition.x;
-		_movable.offsetMax = max;
+		float offset = RightBound - _movable.offsetMax.x;
+		_movable.offsetMax += offset * Vector2.right;
+
+		//TODO
+		bool stretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
+		GetComponentInChildren<MultiSlider>().RightBoundChanged(offset, stretch);
 	}
 
 	void OnEnable()

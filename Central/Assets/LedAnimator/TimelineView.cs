@@ -30,6 +30,10 @@ public class TimelineView : MonoBehaviour
 	ColorAnimator _colorAnimPrefab = null;
 	[SerializeField]
 	Transform _playCursor = null;
+	[SerializeField]
+	Text _title = null;
+	[SerializeField]
+	Toggle _moveStrechToogle = null;
 
 	float _widthPadding;
 	float _animPosX0;
@@ -40,6 +44,7 @@ public class TimelineView : MonoBehaviour
 	public int Zoom { get; private set; }
 	public float SnapInterval => _snapInterval;
 	public float Unit =>_unitWidth * Zoom;
+	public bool IsMoveStretchOn => _moveStrechToogle?.isOn ?? true;
 	public int ColorAnimCount => _colorAnimsRoot.childCount - 1;
 	public Animations.EditAnimation CurrentAnimation { get; private set; }
 	public bool PlayAnimations => _playAnims;

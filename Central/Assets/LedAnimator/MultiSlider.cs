@@ -184,6 +184,43 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		return new Color();
 	}
 
+	public void LeftBoundChanged(float offset, bool stretch)
+	{
+		foreach (var handle in AllHandles)
+		{
+			var pos = handle.transform.localPosition;
+			if (!stretch)
+			{
+				pos.x -= offset;
+			}
+			if (pos.x < 0)
+			{
+				pos.x = 0;
+			}
+			handle.transform.localPosition = pos;
+		}
+	}
+
+	public void RightBoundChanged(float offset, bool stretch)
+	{
+		float width = (transform as RectTransform).rect.width;
+		float stretchFactor = width / (width - offset);
+
+		foreach (var handle in AllHandles)
+		{
+			var pos = handle.transform.localPosition;
+			if (stretch)
+			{
+				pos.x *= stretchFactor;
+			}
+			if (pos.x > width)
+			{
+				pos.x = width;
+			}
+			handle.transform.localPosition = pos;
+		}
+	}
+
 	ColorAndPos[] GetColorAndPos()
 	{
 		float width = (transform as RectTransform).rect.width;
