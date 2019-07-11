@@ -22,9 +22,9 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	MultiSlider _slider;
 	Vector2 _dragOffset;
 
-	//public bool IsSelected { get { return EventSystem.current.currentSelectedGameObject == gameObject; } }
-	public bool Selected { get { return _slider.ActiveHandle == this; } }
-	public Color Color { get { return _image.color; } }
+	//public bool IsSelected => EventSystem.current.currentSelectedGameObject == gameObject;
+	public bool Selected => _slider.ActiveHandle == this;
+	public Color Color => _image.color;
 
 	public void ChangeColor(Color color)
 	{
@@ -100,6 +100,7 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		Palette.Instance.ColorSelected -= ChangeColor;
 		if (Selected)
 		{
+			Palette.Instance.SelectColor(Color);
 			Palette.Instance.ColorSelected += ChangeColor;
 		}
 	}

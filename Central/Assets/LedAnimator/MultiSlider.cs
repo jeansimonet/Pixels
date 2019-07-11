@@ -51,8 +51,13 @@ public class MultiSlider : MonoBehaviour, IFocusable
 	{
 		if (multiSliderHandle != ActiveHandle)
 		{
+			// First deselect
+			ActiveHandle = null;
+			HandleSelected?.Invoke(ActiveHandle);
+
+			// Then select new handle
 			ActiveHandle = multiSliderHandle;
-			if (HandleSelected != null) HandleSelected(ActiveHandle);
+			HandleSelected?.Invoke(ActiveHandle);
 		}
 		if (ActiveHandle != null)
 		{

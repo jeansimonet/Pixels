@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(GridLayout))]
-public class Palette : MonoBehaviour
+public class Palette : SingletonMonoBehaviour<Palette>
 {
 	[SerializeField]
 	Sprite _sourceSprite = null;
@@ -16,14 +16,6 @@ public class Palette : MonoBehaviour
 	public Color ActiveColor { get; private set; }
 
 	ToggleGroup _group;
-
-	static Palette _instance;
-	public static Palette Instance { get { if (_instance == null) FindInstance(); return _instance; } }
-
-	static void FindInstance()
-	{
-		_instance = Object.FindObjectOfType<Canvas>().rootCanvas.GetComponentInChildren<Palette>(includeInactive: true);
-	}
 
 #if UNITY_EDITOR
 	[ContextMenu("Regenerate")]
@@ -136,6 +128,18 @@ public class Palette : MonoBehaviour
 		}
 	}
 
+	public void SelectColor(Color color)
+	{
+		foreach (var toggle in GetComponentsInChildren<Toggle>())
+		{
+			if (toggle.colors.normalColor == color)
+			{
+				toggle.isOn = true;
+				break;
+			}
+		}
+	}
+
 	// Use this for initialization
 	void Start()
 	{
@@ -149,8 +153,10 @@ public class Palette : MonoBehaviour
 		if (e.MoveNext())
 		{
 			var toggle = e.Current;
-			Color color = toggle.colors.normalColor;
-			PickColor(color);
+			if (toggle.transform.localScale.x > 0)
+			{
+				PickColor(toggle.colors.normalColor);
+			}
 		}
 	}
 }
