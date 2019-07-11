@@ -25,11 +25,13 @@ public class MultiSlider : MonoBehaviour, IFocusable
 
 	public bool HasFocus { get; private set; }
 	public MultiSliderHandle ActiveHandle { get; private set; }
-	public MultiSliderHandle[] AllHandles { get { return transform.GetComponentsInChildren<MultiSliderHandle>(); } }
+	public MultiSliderHandle[] AllHandles => transform.GetComponentsInChildren<MultiSliderHandle>();
 
 	Texture2D _texture;
 	Sprite _sprite;
 	bool _suspendRepaint;
+	float _sliderPosX => transform.parent.InverseTransformPoint(transform.position).x;
+	float _sliderWidth => (transform as RectTransform).rect.width;
 
 	public void GiveFocus()
 	{
@@ -76,15 +78,13 @@ public class MultiSlider : MonoBehaviour, IFocusable
 	public List<Animations.EditKeyframe> ToAnimationKeyFrames(float unitSize)
 	{
         var ret = new List<Animations.EditKeyframe>(
-            GetColorAndPos().Select(c =>
+            GetColorAndPos().Select(colPos =>
             {
-                float width = (transform as RectTransform).rect.width;
-                float x0 = transform.parent.InverseTransformPoint(transform.position).x;
-                float time = (c.Pos * width + x0) / unitSize;
+                float time = (colPos.Pos * _sliderWidth + _sliderPosX) / unitSize;
                 return new Animations.EditKeyframe()
 				{
                     time = time,
-                    color = c.Color
+                    color = colPos.Color
 				};
             }));
         return ret;
@@ -98,17 +98,21 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		{
 			Clear();
 
+			float startTime = _sliderPosX / unitSize;
+			float endTime = (_sliderPosX + _sliderWidth) / unitSize;
+			float eps = 0.0001f;
+
 			bool dupHandle = false;
             for (int i = 0; i < keyframes.Count; ++i)
             {
 				var kf = keyframes[i];
 
 				// Skip automatically inserted keyframes
-				if ((i == 0) && (kf.time == 0) && (kf.color == Color.black))
+				if ((i == 0) && (Mathf.Abs(kf.time - startTime) < eps) && (kf.color == Color.black))
 				{
 					continue;
 				}
-				if (((i + 1) == keyframes.Count) && (kf.time == 1) && (kf.color == Color.black))
+				if (((i + 1) == keyframes.Count) && (Mathf.Abs(kf.time - endTime) < eps) && (kf.color == Color.black))
 				{
 					continue;
 				}
@@ -121,11 +125,9 @@ public class MultiSlider : MonoBehaviour, IFocusable
 
                 handle.ChangeColor(kf.color, noRepaint: true);
 
-                float width = (transform as RectTransform).rect.width;
-                float x0 = transform.parent.InverseTransformPoint(transform.position).x;
                 var rect = (transform as RectTransform).rect;
                 Vector2 pos = handle.transform.localPosition;
-                pos.x = kf.time * unitSize - x0;
+                pos.x = kf.time * unitSize - _sliderPosX;
                 handle.transform.localPosition = pos;
 
                 dupHandle = true;

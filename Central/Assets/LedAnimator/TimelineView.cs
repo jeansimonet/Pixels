@@ -9,6 +9,8 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	float _minDuration = 1;
 	[SerializeField]
+	float _durationStep = 0.5f;
+	[SerializeField]
 	int _minZoom = 1;
 	[SerializeField]
 	int _maxZoom = 10;
@@ -53,10 +55,14 @@ public class TimelineView : MonoBehaviour
 	public ColorAnimator ActiveColorAnimator { get; private set; }
 	public ColorAnimator[] ColorAnimators => _colorAnimsRoot.GetComponentsInChildren<ColorAnimator>();
 
-	public void ModifyDuration(float signedOffset)
+	public void IncreaseDuration()
 	{
-		Duration = Mathf.Max(_minDuration, Duration + signedOffset);
-		Repaint();
+		ModifyDuration(_durationStep);
+	}
+
+	public void DecreaseDuration()
+	{
+		ModifyDuration(-_durationStep);
 	}
 
 	public void ModifyZoom(int signedOffset)
@@ -145,6 +151,12 @@ public class TimelineView : MonoBehaviour
         SerializeAnimation();
     }
 
+	void ModifyDuration(float signedOffset)
+	{
+		Duration = Mathf.Max(_minDuration, Duration + signedOffset);
+		Repaint();
+	}
+
 	void ChangeAnimName(string name)
 	{
 		if (!string.IsNullOrWhiteSpace(name))
@@ -218,6 +230,12 @@ public class TimelineView : MonoBehaviour
 		if (!CurrentAnimation.empty)
 		{
 			Duration = CurrentAnimation.duration;
+
+			// Adjust duration to be a integral number of steps
+			if (Mathf.Repeat(Duration, _durationStep) > 0.0001f)
+			{
+				Duration = Mathf.Ceil(Duration / _durationStep) * _durationStep;
+			}
 
 			foreach (var track in CurrentAnimation.tracks)
 			{
