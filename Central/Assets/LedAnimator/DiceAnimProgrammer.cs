@@ -35,7 +35,7 @@ public class DiceAnimProgrammer
         animationSet = new Animations.EditAnimationSet();
         animationSet.animations = new List<Animations.EditAnimation>();
         animationSet.animations.Add(new Animations.EditAnimation());
-        timeline.ChangeCurrentAnimation(animationSet.animations[0]);
+        timeline.SetAnimations(animationSet);
     }
 
     private void OnDisable()
@@ -70,10 +70,7 @@ public class DiceAnimProgrammer
     {
         string jsonText = File.ReadAllText(JsonFilePath);
         animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
-        if (animationSet.animations.Count > 0)
-        {
-            timeline.ChangeCurrentAnimation(animationSet.animations[0]);
-        }
+        timeline.SetAnimations(animationSet);
     }
 
     bool ByteArraysEquals(byte[] array1, byte[] array2)

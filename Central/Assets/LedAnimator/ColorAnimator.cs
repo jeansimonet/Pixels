@@ -23,7 +23,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 
 	public void ChangeLed()
 	{
-		LedSelector.Instance.PickLed(sprite =>
+		LedSelectorPanel.Instance.Show(sprite =>
 		{
 			if (sprite != null)
 			{
@@ -71,7 +71,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	{
 		RemoveFocus();
 		var timeline = GetComponentInParent<TimelineView>();
-		timeline.AddAnim(ToAnimationTrack(timeline.Unit));
+		timeline.AddTrack(ToAnimationTrack(timeline.Unit));
 	}
 
 	public void GiveFocus()
@@ -105,7 +105,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
     public void FromAnimationTrack(Animations.EditTrack track, float unitSize)
     {
         ShowConfirmRemove(false);
-        SetLedSprite(LedSelector.Instance.GetLedSprite(ColorAnimator.IndexToLedSprite(track.ledIndex)));
+        SetLedSprite(LedSelectorPanel.Instance.GetLedSprite(ColorAnimator.IndexToLedSprite(track.ledIndex)));
         LeftBound = track.firstTime * unitSize;
         RightBound = track.lastTime * unitSize;
         ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);

@@ -31,10 +31,12 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	Transform _playCursor = null;
 	[SerializeField]
-	Text _title = null;
-	[SerializeField]
 	Toggle _moveStrechToogle = null;
+	[SerializeField]
+	Dropdown _namesDropdown = null;
 
+	Animations.EditAnimationSet _animationSet;
+	int _animIndex = -1;
 	float _widthPadding;
 	float _animPosX0;
 	bool _playAnims;
@@ -46,7 +48,7 @@ public class TimelineView : MonoBehaviour
 	public float Unit =>_unitWidth * Zoom;
 	public bool IsMoveStretchOn => _moveStrechToogle?.isOn ?? true;
 	public int ColorAnimCount => _colorAnimsRoot.childCount - 1;
-	public Animations.EditAnimation CurrentAnimation { get; private set; }
+	public Animations.EditAnimation CurrentAnimation => (_animIndex < 0 ? null : _animationSet.animations[_animIndex]);
 	public bool PlayAnimations => _playAnims;
 	public ColorAnimator ActiveColorAnimator { get; private set; }
 	public ColorAnimator[] ColorAnimators => _colorAnimsRoot.GetComponentsInChildren<ColorAnimator>();
@@ -65,7 +67,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddAnim()
 	{
-		LedSelector.Instance.PickLed(sprite =>
+		LedSelectorPanel.Instance.Show(sprite =>
 		{
 			if (sprite != null)
 			{
@@ -79,24 +81,58 @@ public class TimelineView : MonoBehaviour
 		});
 	}
 
-	public void AddAnim(Animations.EditTrack track)
+	public void AddTrack(Animations.EditTrack track)
 	{
 		var colorAnim = CreateAnimation();
 		colorAnim.FromAnimationTrack(track, Unit);
 		Repaint();
 	}
 
-	public void ChangeCurrentAnimation(Animations.EditAnimation anim)
+	public void SetAnimations(Animations.EditAnimationSet animations)
 	{
-		if (CurrentAnimation != anim)
+		if (animations.animations == null)
 		{
-            ShowAnimation(anim);
+			animations.animations = new List<Animations.EditAnimation>();
 		}
+		if (animations.animations.Count == 0)
+		{
+			animations.animations.Add(new Animations.EditAnimation());
+		}
+
+		// Drop current animation
+		_animIndex = -1;
+
+		// Store animation set
+		_animationSet = animations;
+
+		RefreshNames();
+		ShowAnimation(0);
 	}
 
-	public void PrintData()
+	public void AddNewAnimation()
 	{
-        //_animation.ToString();
+		_animationSet.animations.Add(new Animations.EditAnimation());
+
+		RefreshNames();
+		ShowAnimation(_animationSet.animations.Count - 1);
+	}
+
+	public void DeleteAnimation()
+	{
+		int index = _animIndex;
+
+		// Drop current animation
+		_animIndex = -1;
+
+		_animationSet.animations.RemoveAt(index);
+
+		RefreshNames();
+		ShowAnimation(index);
+	}
+
+	public void EditAnimationName()
+	{
+		AnimationNamePanel.Instance.Show(CurrentAnimation.name, ChangeAnimName);
 	}
 
 	public void TogglePlayAnimations()
@@ -106,8 +142,53 @@ public class TimelineView : MonoBehaviour
 
     public void ApplyChanges()
     {
-        Serialize();
+        SerializeAnimation();
     }
+
+	void ChangeAnimName(string name)
+	{
+		if (!string.IsNullOrWhiteSpace(name))
+		{
+			CurrentAnimation.name = name;
+			RefreshNames();
+		}
+	}
+
+	void RefreshNames()
+	{
+		int index = 0;
+		foreach (var anim in _animationSet.animations)
+		{
+			if (string.IsNullOrWhiteSpace(anim.name))
+			{
+				anim.name = $"Anim#{index + 1}";
+			}
+			++index;
+		}
+		_namesDropdown.options = _animationSet.animations.Select(a => new Dropdown.OptionData(a.name)).ToList();
+	}
+
+	void ShowAnimation(int animIndex)
+	{
+		// Make sure to use a valid index
+		animIndex = (int)Mathf.Clamp(animIndex, 0, _animationSet.animations.Count - 1);
+
+        if (animIndex != _animIndex)
+		{
+			if (CurrentAnimation != null)
+			{
+				SerializeAnimation();
+			}
+
+			// Select animation
+			_animIndex = animIndex;
+			_namesDropdown.value = _animIndex;
+
+			// Load data and display
+			DeserializeAnimation();
+			Repaint();
+		}
+	}
 
     ColorAnimator CreateAnimation(Sprite sprite = null)
 	{
@@ -121,17 +202,7 @@ public class TimelineView : MonoBehaviour
 		return colorAnim;
 	}
 
-	void ShowAnimation(Animations.EditAnimation anim)
-	{
-        // Select face to show
-        CurrentAnimation = anim;
-
-        // Load data and display
-        Deserialize();
-        Repaint();
-    }
-
-    void Serialize()
+    void SerializeAnimation()
 	{
         CurrentAnimation.tracks.Clear();
         foreach (var t in GetComponentsInChildren<ColorAnimator>())
@@ -140,7 +211,7 @@ public class TimelineView : MonoBehaviour
         }
 	}
 
-	void Deserialize()
+	void DeserializeAnimation()
 	{
         Clear();
 
@@ -256,6 +327,7 @@ public class TimelineView : MonoBehaviour
 	// Use this for initialization
 	void Start()
 	{
+		_namesDropdown.onValueChanged.AddListener(ShowAnimation);
 		Repaint();
 	}
 

@@ -4,22 +4,14 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class LedSelector : MonoBehaviour
+public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 {
 	[SerializeField]
 	RectTransform _ledsRoot = null;
 
 	System.Action<Sprite> _doneCb;
 
-	static LedSelector _instance;
-	public static LedSelector Instance { get { if (_instance == null) FindInstance(); return _instance; } }
-
-	static void FindInstance()
-	{
-		_instance = Object.FindObjectOfType<Canvas>().rootCanvas.GetComponentInChildren<LedSelector>(includeInactive: true);
-	}
-
-	public void PickLed(System.Action<Sprite> doneCB)
+	public void Show(System.Action<Sprite> doneCB)
 	{
 		_doneCb = doneCB;
 		gameObject.SetActive(true);
@@ -39,11 +31,6 @@ public class LedSelector : MonoBehaviour
 	{
 		gameObject.SetActive(false);
 		_doneCb(sprite);
-	}
-
-	void OnDestroy()
-	{
-		_instance = null;
 	}
 
 	// Use this for initialization
