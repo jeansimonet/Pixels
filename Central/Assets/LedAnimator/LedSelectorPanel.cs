@@ -9,9 +9,9 @@ public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 	[SerializeField]
 	RectTransform _ledsRoot = null;
 
-	System.Action<Sprite> _doneCb;
+	System.Action<int> _doneCb;
 
-	public void Show(System.Action<Sprite> doneCB)
+	public void Show(System.Action<int> doneCB)
 	{
 		_doneCb = doneCB;
 		gameObject.SetActive(true);
@@ -19,26 +19,24 @@ public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 
 	public void Close()
 	{
-		DoClose();
+		DoClose(-1);
 	}
 
-	public Sprite GetLedSprite(string spriteName)
-	{
-		return _ledsRoot.GetComponentsInChildren<Image>().Select(s => s.sprite).FirstOrDefault(s => s.name == spriteName);
-	}
-
-	void DoClose(Sprite sprite = null)
+	void DoClose(int number)
 	{
 		gameObject.SetActive(false);
-		_doneCb(sprite);
+		_doneCb(number);
 	}
 
 	// Use this for initialization
 	void Start()
 	{
+        int ledIndex = 0;
 		foreach (var btn in _ledsRoot.GetComponentsInChildren<Button>())
 		{
-			btn.onClick.AddListener(() => OnLedButtonClick(btn));
+            int ledIndexCopy = ledIndex;
+			btn.onClick.AddListener(() => OnLedButtonClick(ledIndexCopy));
+            ledIndex++;
 		}
 	}
 
@@ -48,8 +46,8 @@ public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 
 	}
 
-	void OnLedButtonClick(Button btn)
+	void OnLedButtonClick(int ledIndex)
 	{
-		DoClose(btn.image.sprite);
+		DoClose(ledIndex);
 	}
 }

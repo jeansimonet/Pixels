@@ -61,8 +61,11 @@ public class CurrentDicePoolDice
 
     private void OnDestroy()
     {
-        this.die.OnSettingsChanged -= OnDieSettingsChanged;
-        this.die.OnConnectionStateChanged -= UpdateConnectionState;
+        if (this.die != null)
+        {
+            this.die.OnSettingsChanged -= OnDieSettingsChanged;
+            this.die.OnConnectionStateChanged -= UpdateConnectionState;
+        }
     }
 
     void ShowHideCommands()

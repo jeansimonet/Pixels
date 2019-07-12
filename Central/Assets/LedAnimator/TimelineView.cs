@@ -73,11 +73,11 @@ public class TimelineView : MonoBehaviour
 
 	public void AddAnim()
 	{
-		LedSelectorPanel.Instance.Show(sprite =>
+		LedSelectorPanel.Instance.Show(ledIndex =>
 		{
-			if (sprite != null)
+			if (ledIndex != -1)
 			{
-				var colorAnim = CreateAnimation(sprite);
+				var colorAnim = CreateAnimation(ledIndex);
 				colorAnim.LeftBound = 0;
 				colorAnim.RightBound = Unit * Duration;
 				colorAnim.GiveFocus();
@@ -202,13 +202,13 @@ public class TimelineView : MonoBehaviour
 		}
 	}
 
-    ColorAnimator CreateAnimation(Sprite sprite = null)
+    ColorAnimator CreateAnimation(int ledIndex = -1)
 	{
 		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
 		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
-		if (sprite != null)
+		if (ledIndex != -1)
 		{
-			colorAnim.SetLedSprite(sprite);
+			colorAnim.SetLedNumber(ledIndex);
 		}
 		colorAnim.GotFocus += OnColorAnimatorGotFocus;
 		return colorAnim;

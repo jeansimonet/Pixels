@@ -38,6 +38,9 @@ public class Die
         PickUp = 0,
         Error,
         LowBattery,
+        ChargingStart,
+        ChargingDone,
+        ChargingError,
         // Etc...
         Count
     }

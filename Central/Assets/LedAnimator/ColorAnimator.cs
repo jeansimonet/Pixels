@@ -6,12 +6,16 @@ using UnityEngine.UI;
 
 public class ColorAnimator : MonoBehaviour, IFocusable
 {
-	[SerializeField]
-	Image _image = null;
+    [SerializeField]
+    Image _image = null;
+    [SerializeField]
+	Text _number = null;
 	[SerializeField]
 	MovableArea _movableColorSlider = null;
 	[SerializeField]
 	RectTransform _confirmRemovePanel = null;
+
+    int ledNumber = -1;
 
 	public event System.Action<ColorAnimator> GotFocus;
 	public bool HasFocus { get; private set; }
@@ -23,18 +27,19 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 
 	public void ChangeLed()
 	{
-		LedSelectorPanel.Instance.Show(sprite =>
+		LedSelectorPanel.Instance.Show(number =>
 		{
-			if (sprite != null)
-			{
-				SetLedSprite(sprite);
-			}
-		});
+            if (number != -1)
+            {
+                ledNumber = number;
+                SetLedNumber(ledNumber);
+            }
+        });
 	}
 
-	public void SetLedSprite(Sprite sprite)
+	public void SetLedNumber(int number)
 	{
-		_image.sprite = sprite;
+		_number.text = (number + 1).ToString();
 	}
 
 	public void ShowColor(float cursorPos)
@@ -97,7 +102,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
         var rect = (ColorSlider.transform as RectTransform).rect;
         return new Animations.EditTrack()
         {
-            ledIndex = (byte)LedSpriteToIndex(_image.sprite.name),
+            ledIndex = ledNumber,
             keyframes = ColorSlider.ToAnimationKeyFrames(unitSize),
         };
     }
@@ -105,7 +110,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
     public void FromAnimationTrack(Animations.EditTrack track, float unitSize)
     {
         ShowConfirmRemove(false);
-        SetLedSprite(LedSelectorPanel.Instance.GetLedSprite(ColorAnimator.IndexToLedSprite(track.ledIndex)));
+        SetLedNumber(track.ledIndex);
         LeftBound = track.firstTime * unitSize;
         RightBound = track.lastTime * unitSize;
         ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);
