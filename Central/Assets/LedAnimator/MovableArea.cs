@@ -49,13 +49,22 @@ public class MovableArea : MonoBehaviour
 
 	void OnLeftHandleMoved()
 	{
-		float offset = LeftBound - _movable.offsetMin.x;
-		_movable.offsetMin += offset * Vector2.right;
+		bool moveStretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
+		float offset;
+		if (moveStretch)
+		{
+			offset = LeftBound - _movable.transform.localPosition.x;
+			_movable.transform.localPosition += offset * Vector3.right;
+		}
+		else
+		{
+			offset = LeftBound - _movable.offsetMin.x;
+			_movable.offsetMin += offset * Vector2.right;
+		}
 
 		//TODO
-		bool stretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
-		GetComponentInChildren<MultiSlider>().LeftBoundChanged(offset, stretch);
-		if (stretch)
+		GetComponentInChildren<MultiSlider>().LeftBoundChanged(offset, moveStretch);
+		if (moveStretch)
 		{
 			MoveRightHandle(offset);
 		}
@@ -67,8 +76,8 @@ public class MovableArea : MonoBehaviour
 		_movable.offsetMax += offset * Vector2.right;
 
 		//TODO
-		bool stretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
-		GetComponentInChildren<MultiSlider>().RightBoundChanged(offset, stretch);
+		bool moveStretch = GetComponentInParent<TimelineView>().IsMoveStretchOn;
+		GetComponentInChildren<MultiSlider>().RightBoundChanged(offset, moveStretch);
 	}
 
 	void OnEnable()
