@@ -77,14 +77,12 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_slider.Direction == SliderDirection.Horizontal)
 		{
 			float x = Mathf.Clamp(Input.mousePosition.x + _dragOffset.x, min.x, max.x);
-            float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
-			transform.position = new Vector2(x, y);
+			transform.position = new Vector2(x, transform.position.y);
 		}
 		else
 		{
-			float x = Mathf.Lerp(min.x, max.x, _slider.HandlePosition);
 			float y = Mathf.Clamp(Input.mousePosition.y + _dragOffset.y, min.y, max.y);
-            transform.position = new Vector2(x, y);
+            transform.position = new Vector2(transform.position.x, y);
 		}
 
 		Snap();
@@ -117,12 +115,14 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (_slider.Direction == SliderDirection.Horizontal)
 		{
             float x = min.x + snap * Mathf.RoundToInt((transform.position.x - min.x) / snap);
-			transform.position = new Vector2(x, transform.position.y);
+            float y = Mathf.Lerp(min.y, max.y, _slider.HandlePosition);
+			transform.position = new Vector2(x, y);
 		}
 		else
 		{
+			float x = Mathf.Lerp(min.x, max.x, _slider.HandlePosition);
             float y = min.y + snap * Mathf.RoundToInt((transform.position.y - min.y) / snap);
-            transform.position = new Vector2(transform.position.x, y);
+            transform.position = new Vector2(x, y);
 		}
 	}
 

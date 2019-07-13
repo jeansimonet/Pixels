@@ -15,15 +15,15 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	[SerializeField]
 	RectTransform _confirmRemovePanel = null;
 
-    int ledNumber = -1;
-
 	public event System.Action<ColorAnimator> GotFocus;
 	public bool HasFocus { get; private set; }
 
 	public float LeftBound { get { return _movableColorSlider.LeftBound; } set { _movableColorSlider.LeftBound = value; } }
 	public float RightBound { get { return _movableColorSlider.RightBound; } set { _movableColorSlider.RightBound = value; } }
 
-	public MultiSlider ColorSlider { get { return _movableColorSlider.Movable.GetComponentInChildren<MultiSlider>(); } }
+	public MultiSlider ColorSlider => _movableColorSlider.Movable.GetComponentInChildren<MultiSlider>();
+
+    public int LedNumber => int.Parse(_number.text);
 
 	public void ChangeLed()
 	{
@@ -31,8 +31,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		{
             if (number != -1)
             {
-                ledNumber = number;
-                SetLedNumber(ledNumber);
+                SetLedNumber(number);
             }
         });
 	}
@@ -102,7 +101,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
         var rect = (ColorSlider.transform as RectTransform).rect;
         return new Animations.EditTrack()
         {
-            ledIndex = ledNumber,
+            ledIndex = LedNumber - 1,
             keyframes = ColorSlider.ToAnimationKeyFrames(unitSize),
         };
     }
@@ -116,25 +115,25 @@ public class ColorAnimator : MonoBehaviour, IFocusable
         ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);
     }
 
-    public static int LedSpriteToIndex(string spriteName)
-	{
-		int face = int.Parse(spriteName[spriteName.IndexOf('-') - 1].ToString());
-		int point = int.Parse(spriteName[spriteName.IndexOf('-') + 1].ToString());
-		return Enumerable.Range(1, face - 1).Sum() + point - 1;
-	}
+    // public static int LedSpriteToIndex(string spriteName)
+	// {
+	// 	int face = int.Parse(spriteName[spriteName.IndexOf('-') - 1].ToString());
+	// 	int point = int.Parse(spriteName[spriteName.IndexOf('-') + 1].ToString());
+	// 	return Enumerable.Range(1, face - 1).Sum() + point - 1;
+	// }
 
-	public static string IndexToLedSprite(int index)
-	{
-		int face = 1;
-		int count = 0;	
-		while ((count + face) <= index)
-		{
-			count += face;
-			++face;
-		}
-		int point = 1 + index - count;
-		return string.Format("Led{0}-{1}", face, point);
-	}
+	// public static string IndexToLedSprite(int index)
+	// {
+	// 	int face = 1;
+	// 	int count = 0;	
+	// 	while ((count + face) <= index)
+	// 	{
+	// 		count += face;
+	// 		++face;
+	// 	}
+	// 	int point = 1 + index - count;
+	// 	return string.Format("Led{0}-{1}", face, point);
+	// }
 
 	IFocusable[] FindFocusables()
 	{
@@ -150,11 +149,5 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	void Start()
 	{
 		ShowConfirmRemove(false);
-	}
-
-	// Update is called once per frame
-	void Update()
-	{
-
 	}
 }

@@ -35,19 +35,8 @@ public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 		foreach (var btn in _ledsRoot.GetComponentsInChildren<Button>())
 		{
             int ledIndexCopy = ledIndex;
-			btn.onClick.AddListener(() => OnLedButtonClick(ledIndexCopy));
+			btn.onClick.AddListener(() => DoClose(ledIndexCopy));
             ledIndex++;
 		}
-	}
-
-	// Update is called once per frame
-	void Update()
-	{
-
-	}
-
-	void OnLedButtonClick(int ledIndex)
-	{
-		DoClose(ledIndex);
 	}
 }
