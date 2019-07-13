@@ -43,6 +43,7 @@ public class TimelineView : MonoBehaviour
 	float _animPosX0;
 	bool _playAnims;
 	float _playTime;
+	Die.AnimationEvent[] _animRoles;
 
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
@@ -94,22 +95,36 @@ public class TimelineView : MonoBehaviour
 		Repaint();
 	}
 
-	public void SetAnimations(Animations.EditAnimationSet animations)
+	public void SetAnimations(Animations.EditAnimationSet animationSet)
 	{
-		if (animations.animations == null)
+		if (animationSet.animations == null)
 		{
-			animations.animations = new List<Animations.EditAnimation>();
+			animationSet.animations = new List<Animations.EditAnimation>();
 		}
-		if (animations.animations.Count == 0)
+		if (animationSet.animations.Count == 0)
 		{
-			animations.animations.Add(new Animations.EditAnimation());
+			animationSet.animations.Add(new Animations.EditAnimation());
+		}
+
+		if (animationSet.animationMapping != null)
+		{
+			int roleIndex = 0;
+			foreach (var index in animationSet.animationMapping)
+			{
+				if ((index >= 0) && (index < animationSet.animations.Count)
+					&& (!animationSet.animations[index].@event.HasValue))
+				{
+					animationSet.animations[index].@event = _animRoles[roleIndex];
+				}
+				++roleIndex;
+			}
 		}
 
 		// Drop current animation
 		_animIndex = -1;
 
 		// Store animation set
-		_animationSet = animations;
+		_animationSet = animationSet;
 
 		RefreshNames();
 		ShowAnimation(0);
@@ -117,7 +132,18 @@ public class TimelineView : MonoBehaviour
 
 	public void AddNewAnimation()
 	{
-		_animationSet.animations.Add(new Animations.EditAnimation());
+		var rolesTaken = _animationSet.animations.Select(a => a.@event).ToArray();
+		var anim = new Animations.EditAnimation();
+		foreach (var role in _animRoles)
+		{
+			if (!rolesTaken.Contains(role))
+			{
+				anim.@event = role;
+				break;
+			}
+		}
+
+		_animationSet.animations.Add(anim);
 
 		RefreshNames();
 		ShowAnimation(_animationSet.animations.Count - 1);
@@ -143,7 +169,36 @@ public class TimelineView : MonoBehaviour
 
 	public void EditAnimationName()
 	{
-		AnimationNamePanel.Instance.Show(CurrentAnimation.name, ChangeAnimName);
+		void ChangeAnimName(string name, string role)
+		{
+			CurrentAnimation.name = name;
+			CurrentAnimation.@event = null;
+			if (role != null)
+			{
+				CurrentAnimation.@event = _animRoles.First(r => r.ToString() == role);
+				foreach (var anim in _animationSet.animations)
+				{
+					if ((anim != CurrentAnimation) && (anim.@event == CurrentAnimation.@event))
+					{
+						anim.@event = null;
+					}
+				}
+			}
+			RefreshNames();
+		}
+
+		bool hasRole = CurrentAnimation.@event.HasValue;
+		string selectRole;
+		if (hasRole)
+		{
+			selectRole = CurrentAnimation.@event.ToString();
+		}
+		else
+		{
+			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
+		}
+		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
+		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName);
 	}
 
 	public void TogglePlayAnimations()
@@ -162,27 +217,29 @@ public class TimelineView : MonoBehaviour
 		Repaint();
 	}
 
-	void ChangeAnimName(string name)
-	{
-		if (!string.IsNullOrWhiteSpace(name))
-		{
-			CurrentAnimation.name = name;
-			RefreshNames();
-		}
-	}
-
 	void RefreshNames()
 	{
-		int index = 0;
-		foreach (var anim in _animationSet.animations)
+		string GetAnimDisplayName(Animations.EditAnimation anim)
 		{
-			if (string.IsNullOrWhiteSpace(anim.name))
+			string name = anim.@event.HasValue ? anim.@event.ToString() : string.Empty;
+			if (!string.IsNullOrWhiteSpace(anim.name))
 			{
-				anim.name = $"Anim#{index + 1}";
+				if (name.Length > 0)
+				{
+					name += " - ";
+				}
+				name += anim.name;
 			}
-			++index;
+			if (name.Length == 0)
+			{
+				int index = _animationSet.animations.IndexOf(anim);
+				name = anim.name = $"Animation #{index}";
+			}
+			return name;
 		}
-		_namesDropdown.options = _animationSet.animations.Select(a => new Dropdown.OptionData(a.name)).ToList();
+		var options = _animationSet.animations
+			.Select(a => new Dropdown.OptionData(GetAnimDisplayName(a))).ToList();
+		_namesDropdown.options = options;
 	}
 
 	void ShowAnimation(int animIndex)
@@ -226,6 +283,15 @@ public class TimelineView : MonoBehaviour
         {
             CurrentAnimation.tracks.Add(t.ToAnimationTrack(Unit));
         }
+
+		//TODO Update mapping
+		int index = 0;
+		foreach (var role in _animRoles)
+		{
+			var anim = _animationSet.animations.FirstOrDefault(a => a.@event == role);
+			_animationSet.animationMapping[index] = _animationSet.animations.IndexOf(anim);
+			++index;
+		}
 	}
 
 	void DeserializeAnimation()
@@ -342,6 +408,9 @@ public class TimelineView : MonoBehaviour
 
 	void Awake()
 	{
+		var enumValues = (Die.AnimationEvent[])System.Enum.GetValues(typeof(Die.AnimationEvent));
+		_animRoles = enumValues.Take(enumValues.Length - 1).ToArray();
+
 		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
 		_animPosX0 = _colorAnimsRoot.GetComponentInChildren<MovableArea>().transform.localPosition.x;
 		Clear();

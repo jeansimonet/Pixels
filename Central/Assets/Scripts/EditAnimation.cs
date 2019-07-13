@@ -37,6 +37,7 @@ namespace Animations
     public class EditAnimation
     {
         public string name;
+        public Die.AnimationEvent? @event;
         public float duration => empty ? 0 : tracks.Max(t => t.duration);
         public bool empty => tracks?.Count == 0;
 
