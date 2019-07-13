@@ -19,7 +19,6 @@ public class AnimInfoText : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		_text.text = _timeline.Duration + " second(s)\n"
-			+ _timeline.ColorAnimCount + " animation(s)";
+		_text.text = _timeline.Duration + " second(s)\n" + _timeline.TracksCount + " tracks(s)";
 	}
 }

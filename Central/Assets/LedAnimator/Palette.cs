@@ -11,6 +11,10 @@ public class Palette : SingletonMonoBehaviour<Palette>
 {
 	[SerializeField]
 	Sprite _sourceSprite = null;
+	[SerializeField]
+	Transform _autoRoot = null;
+	[SerializeField]
+	Toggle _specialColor = null;
 
 	public event System.Action<Color> ColorSelected;
 	public Color ActiveColor { get; private set; }
@@ -18,16 +22,16 @@ public class Palette : SingletonMonoBehaviour<Palette>
 	ToggleGroup _group;
 
 #if UNITY_EDITOR
-	[ContextMenu("Regenerate")]
+	[ContextMenu("Generate Colors")]
 	void EditorRegenerate()
 	{
-		if (transform.childCount == 0)
+		if (_autoRoot.transform.childCount == 0)
 		{
 			Debug.LogError("Leave at least one child element which will be used as a template to generate all other items");
 			return;
 		}
 
-		var grid = GetComponent<GridLayoutGroup>();
+		var grid = _autoRoot.GetComponent<GridLayoutGroup>();
 		if (grid == null)
 		{
 			Debug.LogError("A Grid Layout is required");
@@ -61,7 +65,7 @@ public class Palette : SingletonMonoBehaviour<Palette>
 		}
 
 		// Use first item as template
-		var itemTransf = transform.GetChild(0);
+		var itemTransf = _autoRoot.transform.GetChild(0);
 		var itemSel = itemTransf.GetComponentInChildren<Selectable>();
 		if (itemSel == null)
 		{
@@ -74,14 +78,14 @@ public class Palette : SingletonMonoBehaviour<Palette>
 		Undo.SetCurrentGroupName("Regenerate palette");
 		int group = Undo.GetCurrentGroup();
 
-		Undo.RecordObject(gameObject, "Regenerate palette");
+		Undo.RecordObject(_autoRoot.gameObject, "Regenerate palette");
 
-		for (int i = transform.childCount - 1; i > 0; --i)
+		for (int i = _autoRoot.transform.childCount - 1; i > 0; --i)
 		{
-			Undo.DestroyObjectImmediate(transform.GetChild(i).gameObject);
+			Undo.DestroyObjectImmediate(_autoRoot.transform.GetChild(i).gameObject);
 		}
 
-		var rectTransf = (RectTransform)transform;
+		var rectTransf = (RectTransform)_autoRoot.transform;
 
 		grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
 		grid.constraintCount = numItemsX;
@@ -104,11 +108,12 @@ public class Palette : SingletonMonoBehaviour<Palette>
 			{
 				first = false;
 
-				var go = GameObject.Instantiate(itemTransf.gameObject, transform);
+				var go = GameObject.Instantiate(itemTransf.gameObject, _autoRoot.transform);
 				var sel = go.GetComponentInChildren<Selectable>();
 				colors.normalColor = pixels[x + y * numItemsX];
 				colors.highlightedColor = colors.normalColor;
 				colors.pressedColor = colors.normalColor;
+				colors.selectedColor = colors.normalColor;
 				sel.colors = colors;
 
 				Undo.RegisterCreatedObjectUndo(go, "Duplicated palette item");
@@ -124,19 +129,25 @@ public class Palette : SingletonMonoBehaviour<Palette>
 		if (color != ActiveColor)
 		{
 			ActiveColor = color;
-			if (ColorSelected != null) ColorSelected(ActiveColor);
+			ColorSelected?.Invoke(ActiveColor);
 		}
 	}
 
 	public void SelectColor(Color color)
 	{
-		foreach (var toggle in GetComponentsInChildren<Toggle>())
+		bool found = false;
+		foreach (var toggle in _autoRoot.GetComponentsInChildren<Toggle>())
 		{
 			if (toggle.colors.normalColor == color)
 			{
 				toggle.isOn = true;
+				found = true;
 				break;
 			}
+		}
+		if (!found)
+		{
+			_specialColor.isOn = true;
 		}
 	}
 
@@ -153,10 +164,7 @@ public class Palette : SingletonMonoBehaviour<Palette>
 		if (e.MoveNext())
 		{
 			var toggle = e.Current;
-			if (toggle.transform.localScale.x > 0)
-			{
-				PickColor(toggle.colors.normalColor);
-			}
+			PickColor(toggle == _specialColor ? new Color() :  toggle.colors.normalColor);
 		}
 	}
 }

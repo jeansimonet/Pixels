@@ -128,9 +128,14 @@ public class TimelineView : MonoBehaviour
 		int index = _animIndex;
 
 		// Drop current animation
-		_animIndex = -1;
+		_animationSet.animations.RemoveAt(_animIndex);
 
-		_animationSet.animations.RemoveAt(index);
+		if (_animationSet.animations.Count == 0)
+		{
+			_animationSet.animations.Add(new Animations.EditAnimation());
+		}
+
+		_animIndex = -1;
 
 		RefreshNames();
 		ShowAnimation(index);
