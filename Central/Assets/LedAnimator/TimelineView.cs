@@ -49,7 +49,7 @@ public class TimelineView : MonoBehaviour
 	public float SnapInterval => _snapInterval;
 	public float Unit =>_unitWidth * Zoom;
 	public bool IsMoveStretchOn => _moveStrechToogle?.isOn ?? true;
-	public int ColorAnimCount => _colorAnimsRoot.childCount - 1;
+	public int TracksCount => _colorAnimsRoot.childCount - 1;
 	public Animations.EditAnimation CurrentAnimation => (_animIndex < 0 ? null : _animationSet.animations[_animIndex]);
 	public bool PlayAnimations => _playAnims;
 	public ColorAnimator ActiveColorAnimator { get; private set; }
@@ -357,7 +357,7 @@ public class TimelineView : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		bool play = _playAnims && (ColorAnimCount > 0);
+		bool play = _playAnims && (TracksCount > 0);
 		_playCursor.gameObject.SetActive(play);
 		if (play)
 		{
