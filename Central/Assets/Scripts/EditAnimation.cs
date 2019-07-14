@@ -31,9 +31,10 @@ namespace Animations
     public class EditTrack
     {
         public int ledIndex = -1;
-        public float duration => keyframes.Max(k => k.time);
-        public float firstTime => keyframes.First().time;
-        public float lastTime => keyframes.Last().time;
+        public bool empty => keyframes?.Count == 0;
+        public float duration => keyframes.Count == 0 ? 0 : keyframes.Max(k => k.time);
+        public float firstTime => keyframes.Count == 0 ? 0 : keyframes.First().time;
+        public float lastTime => keyframes.Count == 0 ? 0 : keyframes.Last().time;
 
         public List<EditKeyframe> keyframes = new List<EditKeyframe>();
 
@@ -65,6 +66,18 @@ namespace Animations
         public bool empty => tracks?.Count == 0;
 
         public List<EditTrack> tracks = new List<EditTrack>();
+
+        public void Reset()
+        {
+            name = null;
+            @event = null;
+            tracks.Clear();
+            tracks.Capacity = 20;
+            for (int i = 0; i < 20; ++i)
+            {
+                tracks.Add(new Animations.EditTrack() { ledIndex = i});
+            }
+        }
 
         public EditAnimation Duplicate()
         {

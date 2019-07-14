@@ -110,9 +110,17 @@ public class ColorAnimator : MonoBehaviour, IFocusable
     {
         ShowConfirmRemove(false);
         SetLedNumber(track.ledIndex);
-        LeftBound = track.firstTime * unitSize;
-        RightBound = track.lastTime * unitSize;
-        ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);
+		if (track.empty)
+		{
+			LeftBound = 0 * unitSize;
+			RightBound = GetComponentInParent<TimelineView>().Duration * unitSize; //TODO
+		}
+		else
+		{
+			LeftBound = track.firstTime * unitSize;
+			RightBound = track.lastTime * unitSize;
+			ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);
+		}
     }
 
     // public static int LedSpriteToIndex(string spriteName)

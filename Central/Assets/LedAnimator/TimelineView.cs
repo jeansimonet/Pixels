@@ -132,7 +132,9 @@ public class TimelineView : MonoBehaviour
 
 	public void AddNewAnimation()
 	{
-		AddAnimation(new Animations.EditAnimation());
+		var anim = new Animations.EditAnimation();
+		anim.Reset();
+		AddAnimation(anim);
 	}
 
 	public void RemoveAnimation()
@@ -319,7 +321,9 @@ public class TimelineView : MonoBehaviour
 		{
 			Duration = CurrentAnimation.duration;
 
-			// Adjust duration to be a integral number of steps
+			// Make sure that duration is not too small
+			Duration = Mathf.Max(_minDuration, Duration);
+			// And adjust it to be a integral number of steps
 			if (Mathf.Repeat(Duration, _durationStep) > 0.0001f)
 			{
 				Duration = Mathf.Ceil(Duration / _durationStep) * _durationStep;
