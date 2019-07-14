@@ -70,7 +70,7 @@ public class TimelineView : MonoBehaviour
 		Repaint();
 	}
 
-	public void AddAnim()
+	public void AddTrack()
 	{
 		LedSelectorPanel.Instance.Show(ledIndex =>
 		{
@@ -142,15 +142,17 @@ public class TimelineView : MonoBehaviour
 		// Drop current animation
 		_animationSet.animations.RemoveAt(_animIndex);
 
-		if (_animationSet.animations.Count == 0)
-		{
-			_animationSet.animations.Add(new Animations.EditAnimation());
-		}
-
 		_animIndex = -1;
 
-		RefreshNames();
-		ShowAnimation(index);
+		if (_animationSet.animations.Count == 0)
+		{
+			AddNewAnimation();
+		}
+		else
+		{
+			RefreshNames();
+			ShowAnimation(index);
+		}
 	}
 
 	public void DuplicateAnimation()
@@ -164,6 +166,18 @@ public class TimelineView : MonoBehaviour
 		_animIndex = -1;
 
 		AddAnimation(anim);
+	}
+
+	public void ClearAnimation()
+	{
+		int numChild = _colorAnimsRoot.childCount;
+		for (int i = numChild - 2; i >= 0; --i)
+		{
+			var child = _colorAnimsRoot.GetChild(i);
+			Destroy(child.gameObject);
+			child.parent = null;
+		}
+		Repaint();
 	}
 
 	public void EditAnimationName()
@@ -186,6 +200,25 @@ public class TimelineView : MonoBehaviour
 			RefreshNames();
 		}
 
+		void UserAction(AnimationPropertiesPanel.UserAction action)
+		{
+			switch (action)
+			{
+				case AnimationPropertiesPanel.UserAction.Duplicate:
+					DuplicateAnimation();
+					break;
+				case AnimationPropertiesPanel.UserAction.Clear:
+					ClearAnimation();
+					break;
+				case AnimationPropertiesPanel.UserAction.Remove:
+					RemoveAnimation();
+					break;
+				default:
+					Debug.LogError("Unsupported user action: " + action);
+					break;
+			}
+		}
+
 		bool hasRole = CurrentAnimation.@event.HasValue;
 		string selectRole;
 		if (hasRole)
@@ -197,7 +230,7 @@ public class TimelineView : MonoBehaviour
 			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
 		}
 		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
-		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, RemoveAnimation, DuplicateAnimation);
+		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, UserAction);
 	}
 
 	public void TogglePlayAnimations()
