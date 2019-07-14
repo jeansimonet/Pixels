@@ -12,18 +12,22 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 	Dropdown _roleDropdown = null;
 	[SerializeField]
 	Toggle _roleToggle = null;
+	[SerializeField]
+	Transform _confirmRemove = null;
 
 	ApplyCallback _doneCb;
+	System.Action _removeCb;
 
 	public delegate void ApplyCallback(string name, string role);
 
-	public void Show(string name, string role, bool hasRole, string[] roles, ApplyCallback applyCallback)
+	public void Show(string name, string role, bool hasRole, string[] roles, ApplyCallback applyCallback, System.Action removeCallback)
 	{
         _nameInput.text = name;
 		_roleDropdown.options = roles.Select(str => new Dropdown.OptionData(str)).ToList();
 		_roleDropdown.value = System.Array.IndexOf(roles, role);
 		_roleToggle.isOn = hasRole;
 		_doneCb = applyCallback;
+		_removeCb = removeCallback;
 		gameObject.SetActive(true);
         _nameInput.Select();
 	}
@@ -50,8 +54,14 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 		_roleDropdown.interactable = yes;
 	}
 
-	// Use this for initialization
-	void Start()
+	public void RemoveAnimation()
 	{
+		Close();
+		_removeCb();
+	}
+
+	void OnEnable()
+	{
+		_confirmRemove.gameObject.SetActive(false);
 	}
 }

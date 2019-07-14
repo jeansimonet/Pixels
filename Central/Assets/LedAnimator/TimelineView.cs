@@ -149,7 +149,7 @@ public class TimelineView : MonoBehaviour
 		ShowAnimation(_animationSet.animations.Count - 1);
 	}
 
-	public void DeleteAnimation()
+	public void RemoveAnimation()
 	{
 		int index = _animIndex;
 
@@ -198,7 +198,7 @@ public class TimelineView : MonoBehaviour
 			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
 		}
 		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
-		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName);
+		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, RemoveAnimation);
 	}
 
 	public void TogglePlayAnimations()
