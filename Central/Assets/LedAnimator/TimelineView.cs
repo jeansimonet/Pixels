@@ -78,7 +78,7 @@ public class TimelineView : MonoBehaviour
 		{
 			if (ledIndex != -1)
 			{
-				var colorAnim = CreateAnimation(ledIndex);
+				var colorAnim = CreateTrack(ledIndex);
 				colorAnim.LeftBound = 0;
 				colorAnim.RightBound = Unit * Duration;
 				colorAnim.GiveFocus();
@@ -90,7 +90,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddTrack(Animations.EditTrack track)
 	{
-		var colorAnim = CreateAnimation();
+		var colorAnim = CreateTrack();
 		colorAnim.FromAnimationTrack(track, Unit);
 		Repaint();
 	}
@@ -132,21 +132,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddNewAnimation()
 	{
-		var rolesTaken = _animationSet.animations.Select(a => a.@event).ToArray();
-		var anim = new Animations.EditAnimation();
-		foreach (var role in _animRoles)
-		{
-			if (!rolesTaken.Contains(role))
-			{
-				anim.@event = role;
-				break;
-			}
-		}
-
-		_animationSet.animations.Add(anim);
-
-		RefreshNames();
-		ShowAnimation(_animationSet.animations.Count - 1);
+		AddAnimation(new Animations.EditAnimation());
 	}
 
 	public void RemoveAnimation()
@@ -165,6 +151,19 @@ public class TimelineView : MonoBehaviour
 
 		RefreshNames();
 		ShowAnimation(index);
+	}
+
+	public void DuplicateAnimation()
+	{
+		SerializeAnimation();
+
+		var anim = CurrentAnimation.Duplicate();
+
+		anim.name = null;
+		anim.@event = null;
+		_animIndex = -1;
+
+		AddAnimation(anim);
 	}
 
 	public void EditAnimationName()
@@ -198,7 +197,7 @@ public class TimelineView : MonoBehaviour
 			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
 		}
 		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
-		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, RemoveAnimation);
+		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, RemoveAnimation, DuplicateAnimation);
 	}
 
 	public void TogglePlayAnimations()
@@ -264,7 +263,25 @@ public class TimelineView : MonoBehaviour
 		}
 	}
 
-    ColorAnimator CreateAnimation(int ledIndex = -1)
+	void AddAnimation(Animations.EditAnimation anim)
+	{
+		var rolesTaken = _animationSet.animations.Select(a => a.@event).ToArray();
+		foreach (var role in _animRoles)
+		{
+			if (!rolesTaken.Contains(role))
+			{
+				anim.@event = role;
+				break;
+			}
+		}
+
+		_animationSet.animations.Add(anim);
+
+		RefreshNames();
+		ShowAnimation(_animationSet.animations.Count - 1);
+	}
+
+    ColorAnimator CreateTrack(int ledIndex = -1)
 	{
 		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
 		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
@@ -310,7 +327,7 @@ public class TimelineView : MonoBehaviour
 
 			foreach (var track in CurrentAnimation.tracks)
 			{
-				var colorAnim = CreateAnimation();
+				var colorAnim = CreateTrack();
 				colorAnim.FromAnimationTrack(track, Unit);
 			}
 		}

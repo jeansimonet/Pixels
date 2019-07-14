@@ -13,14 +13,15 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 	[SerializeField]
 	Toggle _roleToggle = null;
 	[SerializeField]
-	Transform _confirmRemove = null;
+	Transform[] _toDisableOnShow = null;
 
 	ApplyCallback _doneCb;
 	System.Action _removeCb;
+	System.Action _duplicateCb;
 
 	public delegate void ApplyCallback(string name, string role);
 
-	public void Show(string name, string role, bool hasRole, string[] roles, ApplyCallback applyCallback, System.Action removeCallback)
+	public void Show(string name, string role, bool hasRole, string[] roles, ApplyCallback applyCallback, System.Action removeCallback, System.Action duplicateCallback)
 	{
         _nameInput.text = name;
 		_roleDropdown.options = roles.Select(str => new Dropdown.OptionData(str)).ToList();
@@ -28,6 +29,7 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 		_roleToggle.isOn = hasRole;
 		_doneCb = applyCallback;
 		_removeCb = removeCallback;
+		_duplicateCb = duplicateCallback;
 		gameObject.SetActive(true);
         _nameInput.Select();
 	}
@@ -54,6 +56,12 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 		_roleDropdown.interactable = yes;
 	}
 
+	public void DuplicateAnimation()
+	{
+		Close();
+		_duplicateCb();
+	}
+
 	public void RemoveAnimation()
 	{
 		Close();
@@ -62,6 +70,9 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 
 	void OnEnable()
 	{
-		_confirmRemove.gameObject.SetActive(false);
+		foreach (var trans in _toDisableOnShow)
+		{
+			trans.gameObject.SetActive(false);
+		}
 	}
 }
