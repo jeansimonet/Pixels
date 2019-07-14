@@ -15,8 +15,6 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	int _maxZoom = 10;
 	[SerializeField]
-	float _heightPadding = 40;
-	[SerializeField]
 	float _unitWidth = 200; // Width for 1 second
 	[SerializeField]
 	float _snapInterval = 0.1f; // In seconds
@@ -380,7 +378,7 @@ public class TimelineView : MonoBehaviour
 		// Update size
 		var size = rectTransf.sizeDelta;
 		size.x = _widthPadding + Unit * Duration;
-		size.y = _heightPadding + _colorAnimsRoot.childCount * 80 + (_colorAnimsRoot.childCount - 1) * 10; //TODO
+		size.y = _colorAnimsRoot.childCount * 68 + (_colorAnimsRoot.childCount - 1) * 10; //TODO
 		rectTransf.sizeDelta = size;
 
 		// Update vertical lines
