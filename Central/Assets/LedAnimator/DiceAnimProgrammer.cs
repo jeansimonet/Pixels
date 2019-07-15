@@ -34,7 +34,9 @@ public class DiceAnimProgrammer
         // Create empty anim if needed
         animationSet = new Animations.EditAnimationSet();
         animationSet.animations = new List<Animations.EditAnimation>();
-        animationSet.animations.Add(new Animations.EditAnimation());
+        var anim = new Animations.EditAnimation();
+        anim.Reset();
+        animationSet.animations.Add(anim);
         timeline.SetAnimations(animationSet);
     }
 

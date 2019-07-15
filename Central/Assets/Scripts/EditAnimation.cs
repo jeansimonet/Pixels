@@ -14,6 +14,14 @@ namespace Animations
     {
         public float time = -1;
         public Color color;
+
+        public EditKeyframe Duplicate()
+        {
+            var keyframe = new EditKeyframe();
+            keyframe.time = time;
+            keyframe.color = color;
+            return keyframe;
+        }
     }
 
     /// <summary>
@@ -23,11 +31,27 @@ namespace Animations
     public class EditTrack
     {
         public int ledIndex = -1;
-        public float duration { get { return keyframes.Max(k => k.time); } }
-        public float firstTime { get { return keyframes.First().time; } }
-        public float lastTime { get { return keyframes.Last().time; } }
+        public bool empty => keyframes?.Count == 0;
+        public float duration => keyframes.Count == 0 ? 0 : keyframes.Max(k => k.time);
+        public float firstTime => keyframes.Count == 0 ? 0 : keyframes.First().time;
+        public float lastTime => keyframes.Count == 0 ? 0 : keyframes.Last().time;
 
         public List<EditKeyframe> keyframes = new List<EditKeyframe>();
+
+        public EditTrack Duplicate()
+        {
+            var track = new EditTrack();
+            track.ledIndex = ledIndex;
+            if (keyframes != null)
+            {
+                track.keyframes = new List<EditKeyframe>(keyframes.Count);
+                foreach (var keyframe in keyframes)
+                {
+                    track.keyframes.Add(keyframe.Duplicate());
+                }
+            }
+            return track;
+        }
     }
 
     /// <summary>
@@ -42,6 +66,33 @@ namespace Animations
         public bool empty => tracks?.Count == 0;
 
         public List<EditTrack> tracks = new List<EditTrack>();
+
+        public void Reset()
+        {
+            name = null;
+            @event = null;
+            tracks.Clear();
+            tracks.Capacity = 20;
+            for (int i = 0; i < 20; ++i)
+            {
+                tracks.Add(new Animations.EditTrack() { ledIndex = i});
+            }
+        }
+
+        public EditAnimation Duplicate()
+        {
+            var anim = new EditAnimation();
+            anim.name = name;
+            if (tracks != null)
+            {
+                anim.tracks = new List<EditTrack>(tracks.Count);
+                foreach (var track in tracks)
+                {
+                    anim.tracks.Add(track.Duplicate());
+                }
+            }
+            return anim;
+        }
     }
 
     /// <summary>
