@@ -127,8 +127,8 @@ public class Central
 
     public void ConnectToDie(Die die)
     {
-        System.Action<string> onConnected = (ignore) => die.OnConnected();
-        System.Action<string> onDisconnected = (ignore) => die.OnLostConnection();
+        System.Action<string> onConnected = (ignore) => { die.OnConnected(); onDieConnected?.Invoke(die); };
+        System.Action<string> onDisconnected = (ignore) => { die.OnLostConnection(); onDieDisconnected?.Invoke(die); };
         System.Action<string, string> onService = (ignore, service) => die.OnServiceDiscovered(service);
         System.Action<string, string, string> onCharacteristic = (ignore, service, charact) => die.OnCharacterisicDiscovered(service, charact);
 
@@ -140,7 +140,7 @@ public class Central
 
     public void DisconnectDie(Die die)
     {
-        System.Action<string> onDisconnected = (ignore) => die.OnLostConnection();
+        System.Action<string> onDisconnected = (ignore) => { die.OnLostConnection(); onDieDisconnected?.Invoke(die); };
         if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
             BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, onDisconnected);
         else

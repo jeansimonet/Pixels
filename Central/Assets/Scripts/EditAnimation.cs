@@ -133,40 +133,43 @@ namespace Animations
             for (int m = 0; m < animationMapping.Length; ++m)
             {
                 int animIndex = animationMapping[m];
-                var editAnim = animations[animIndex];
-                var anim = new Animation();
-                anim.duration = (ushort)(editAnim.duration * 1000.0f);
-                anim.tracksOffset = (ushort)currentTrackOffset;
-                anim.trackCount = (ushort)editAnim.tracks.Count;
-                anims.Add(anim);
-
-                // Now add tracks
-                for (int j = 0; j < editAnim.tracks.Count; ++j)
+                if (animIndex >= 0)
                 {
-                    var editTrack = editAnim.tracks[j];
-                    var track = new AnimationTrack();
-                    track.ledIndex = (byte)editTrack.ledIndex;
+                    var editAnim = animations[animIndex];
+                    var anim = new Animation();
+                    anim.duration = (ushort)(editAnim.duration * 1000.0f);
+                    anim.tracksOffset = (ushort)currentTrackOffset;
+                    anim.trackCount = (ushort)editAnim.tracks.Count;
+                    anims.Add(anim);
 
-                    var rgbTrack = new RGBTrack();
-                    rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
-                    rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
-                    track.trackOffset = (ushort)rgbTracks.Count;
-                    rgbTracks.Add(rgbTrack);
-
-                    tracks.Add(track);
-
-                    // Now add keyframes
-                    for (int k = 0; k < editTrack.keyframes.Count; ++k)
+                    // Now add tracks
+                    for (int j = 0; j < editAnim.tracks.Count; ++j)
                     {
-                        var editKeyframe = editTrack.keyframes[k];
-                        int colorIndex = colors[editKeyframe.color];
-                        var keyframe = new RGBKeyframe();
-                        keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
-                        keyframes.Add(keyframe);
+                        var editTrack = editAnim.tracks[j];
+                        var track = new AnimationTrack();
+                        track.ledIndex = (byte)editTrack.ledIndex;
+
+                        var rgbTrack = new RGBTrack();
+                        rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
+                        rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
+                        track.trackOffset = (ushort)rgbTracks.Count;
+                        rgbTracks.Add(rgbTrack);
+
+                        tracks.Add(track);
+
+                        // Now add keyframes
+                        for (int k = 0; k < editTrack.keyframes.Count; ++k)
+                        {
+                            var editKeyframe = editTrack.keyframes[k];
+                            int colorIndex = colors[editKeyframe.color];
+                            var keyframe = new RGBKeyframe();
+                            keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
+                            keyframes.Add(keyframe);
+                        }
+                        currentKeyframeOffset += editTrack.keyframes.Count;
                     }
-                    currentKeyframeOffset += editTrack.keyframes.Count;
+                    currentTrackOffset += editAnim.tracks.Count;
                 }
-                currentTrackOffset += editAnim.tracks.Count;
             }
 
             set.keyframes = keyframes.ToArray();

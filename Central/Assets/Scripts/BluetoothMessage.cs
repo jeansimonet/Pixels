@@ -106,6 +106,9 @@ public static class DieMessages
                 case DieMessageType.PlayAnim:
                     ret = FromByteArray<DieMessagePlayAnim>(data);
                     break;
+                case DieMessageType.RequestState:
+                    ret = FromByteArray<DieMessageRequestState>(data);
+                    break;
                 case DieMessageType.RequestAnimSet:
                     ret = FromByteArray<DieMessageRequestAnimSet>(data);
                     break;
@@ -128,6 +131,7 @@ public static class DieMessages
                     ret = FromByteArray<DieMessageBatteryLevel>(data);
                     break;
                 default:
+                    throw new System.Exception("Unhandled Message type for marshalling");
                     break;
             }
         }

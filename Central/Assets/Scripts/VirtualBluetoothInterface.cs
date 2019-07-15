@@ -16,7 +16,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
     IEnumerator currentCoroutine;
     bool scanning = false;
 
-    string dieServiceGUID = "4DCCA9E1-B5A3-F393-E0A9-E50E24DCCA9E";
+    string dieServiceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
@@ -54,16 +54,16 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
 
     }
 
-    public void AddDie()
+    public void AddDie(Die.DieType type)
     {
-        VirtualDie newDie = new VirtualDie("VDie" + virtualDice.Count, "@VDie" + globalAddressCounter, this);
+        VirtualDie newDie = new VirtualDie("VDie" + virtualDice.Count, "@VDie" + globalAddressCounter, type, this);
         virtualDice.Add(newDie);
         globalAddressCounter++;
     }
 
     public void RemoveDie(VirtualDie die)
     {
-        die.Die();
+        die.GoAway();
         virtualDice.Remove(die);
     }
 
@@ -128,7 +128,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
         //}
         foreach (var die in virtualDice)
         {
-            die.Die();
+            die.GoAway();
         }
     }
 
@@ -165,37 +165,36 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
             if (!scanning)
                 break;
             // Todo: Handle long GUIDS!!!
-            if (serviceUUIDs.Any(uuid => uuid.ToLower() == dieServiceGUID))
+            if (serviceUUIDs.Any(uuid =>
+            {
+                return uuid.ToLower() == dieServiceGUID.ToLower();
+            }))
             {
                 yield return new WaitForSecondsRealtime(Random.Range(0, 0.25f));
-                if (action != null)
+                if (die.advertising)
                 {
-                    action(die.address, die.name);
+                    Debug.Log("Discovering " + die.address + " " + die.name);
+                    action?.Invoke(die.address, die.name);
                 }
             }
         }
 
-        // No we wait for new dice maybe
-        int currentListSize = shuffledDice.Count;
+        // Now we wait for new dice maybe
+        var newListCopy = new List<VirtualDie>(virtualDice);
         while (scanning)
         {
-            if (virtualDice.Count > currentListSize)
+            if (virtualDice.Count > newListCopy.Count)
             {
-                var newListCopy = new List<VirtualDie>(virtualDice.Where(d => !shuffledDice.Contains(d)));
-                foreach (var die in newListCopy)
+                foreach (var die in virtualDice.Where(d => !newListCopy.Contains(d)))
                 {
-                    if (serviceUUIDs.Any(uuid => uuid.ToLower() == dieServiceGUID))
+                    if (die.advertising && serviceUUIDs.Any(uuid => uuid.ToLower() == dieServiceGUID.ToLower()))
                     {
-                        yield return new WaitForSecondsRealtime(Random.Range(0, 0.25f));
-                        if (action != null)
-                        {
-                            action(die.address, die.name);
-                        }
+                        Debug.Log("Discovering " + die.address + " " + die.name);
+                        action?.Invoke(die.address, die.name);
                     }
                 }
 
-                shuffledDice.AddRange(newListCopy);
-                currentListSize = shuffledDice.Count;
+                newListCopy = new List<VirtualDie>(virtualDice);
             }
             else
             {
@@ -262,7 +261,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
     IEnumerator SubscribeCharacteristicCr(string name, string service, string characteristic, System.Action<string> notificationAction, System.Action<string, byte[]> action)
     {
         var die = virtualDice.First(d => d.address == name);
-        if (die != null && service == dieServiceGUID && characteristic == subscribeCharacteristic)
+        if (die != null && service.ToLower() == dieServiceGUID.ToLower() && characteristic.ToLower() == subscribeCharacteristic.ToLower())
         {
             // Pretend it take a little bit to register
             yield return new WaitForSecondsRealtime(Random.Range(0, 0.05f));
@@ -270,15 +269,18 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
             // Hook up to the die!
             die.Subscribe((data) =>
             {
-                if (notificationAction != null)
-                {
-                    notificationAction(die.address);
-                }
                 if (action != null)
                 {
                     action(die.address, data);
                 }
             });
+
+            yield return new WaitForSecondsRealtime(Random.Range(0, 0.05f));
+
+            if (notificationAction != null)
+            {
+                notificationAction(die.address);
+            }
         }
     }
 
@@ -288,7 +290,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
         if (die != null)
         {
             yield return new WaitForSecondsRealtime(Random.Range(0, 0.05f));
-            die.Die();
+            die.GoAway();
             if (action != null)
             {
                 action(die.name);
@@ -299,7 +301,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
     IEnumerator ReadCharacteristicCr(string name, string service, string characteristic, System.Action<string, byte[]> action)
     {
         var die = virtualDice.First(d => d.address == name);
-        if (die != null && service == dieServiceGUID && characteristic == subscribeCharacteristic)
+        if (die != null && service.ToLower() == dieServiceGUID.ToLower() && characteristic.ToLower() == subscribeCharacteristic.ToLower())
         {
             yield return new WaitForSecondsRealtime(Random.Range(0, 0.05f));
             if (action != null)
@@ -312,7 +314,7 @@ public class VirtualBluetoothInterface : MonoBehaviour, ICoroutineManager
     IEnumerator WriteCharacteristicCr(string name, string service, string characteristic, byte[] data, int length, bool withResponse, System.Action<string> action)
     {
         var die = virtualDice.First(d => d.address == name);
-        if (die != null && service == dieServiceGUID && characteristic == writeCharacteristic)
+        if (die != null && service.ToLower() == dieServiceGUID.ToLower() && characteristic.ToLower() == writeCharacteristic.ToLower())
         {
             yield return new WaitForSecondsRealtime(Random.Range(0, 0.05f));
             die.Write(data, length);
