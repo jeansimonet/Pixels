@@ -8,7 +8,7 @@
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
 
-#define SETTINGS_ADDRESS 0x27000
+#define SETTINGS_ADDRESS 0x26000
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
 #define SETTINGS_PAGE_COUNT 1
 
@@ -27,6 +27,8 @@ namespace SettingsManager
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
 			programDefaults();
 		}
+
+	programDefaults();
 
 		// Register as a handler to program settings
 		MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
@@ -86,8 +88,8 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
-		outSettings.sigmaDecayFast = 0.95f;
-		outSettings.sigmaDecaySlow = 0.05f;
+		outSettings.sigmaDecayFast = 0.15f;
+		outSettings.sigmaDecaySlow = 0.95f;
 		outSettings.minRollTime = 300;
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}

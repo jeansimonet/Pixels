@@ -32,7 +32,6 @@
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
-#include "modules/die_state.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -76,10 +75,14 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        Watchdog::init();
+        //Watchdog::init();
 
         // Then the log system
         Log::init();
+
+        // Print the unique Id of this dice
+        NRF_LOG_INFO("DEVICEID0: %08X", NRF_FICR->DEVICEID[0]);
+        NRF_LOG_INFO("DEVICEID1: %08X", NRF_FICR->DEVICEID[1]);
 
         // Then the timers
         Scheduler::init();
@@ -167,8 +170,8 @@ namespace Die
         // Battery controller relies on the battery driver
         BatteryController::init();
 
-        // Register state message handler
-        DieState::init();
+        // Initialize main logic manager
+        initMainLogic();
 
         // Start advertising!
         Stack::startAdvertising();
@@ -177,7 +180,7 @@ namespace Die
     // Main loop!
     void update() {
         Scheduler::update();
-        Watchdog::feed();
+        //Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
     }

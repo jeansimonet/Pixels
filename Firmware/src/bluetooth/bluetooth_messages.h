@@ -18,7 +18,6 @@ struct Message
 		MessageType_WhoAreYou,
 		MessageType_IAmADie,
 		MessageType_State,
-		MessageType_Face,
 		MessageType_Telemetry,
 		MessageType_BulkSetup,
 		MessageType_BulkSetupAck,
@@ -68,19 +67,9 @@ struct MessageDieState
 	: public Message
 {
 	uint8_t state;
-
-	inline MessageDieState() : Message(Message::MessageType_State) {}
-};
-
-/// <summary>
-/// Describes a change in the current die face
-/// </summary>
-struct MessageDieFace
-	: public Message
-{
 	uint8_t face;
 
-	inline MessageDieFace() : Message(Message::MessageType_Face) {}
+	inline MessageDieState() : Message(Message::MessageType_State) {}
 };
 
 /// <summary>
@@ -201,7 +190,7 @@ struct MessageBatteryLevel
 };
 
 struct MessageIAmADie
-:public Message
+: public Message
 {
 	uint8_t id;
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) {}

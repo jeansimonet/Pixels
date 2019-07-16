@@ -120,13 +120,21 @@ public class VirtualDie
     void SetCurrentState(Die.State newState)
     {
         currentState = newState;
-        SendMessage(new DieMessageState() { state = (byte)currentState });
+        SendMessage(new DieMessageState()
+        {
+            state = (byte)currentState,
+            face = (byte)currentFace,
+        });
     }
 
     void SetCurrentFace(int newFace)
     {
         currentFace = newFace;
-        SendMessage(new DieMessageFace() { face = (byte)currentFace });
+        SendMessage(new DieMessageState()
+        {
+            state = (byte)currentState,
+            face = (byte)currentFace,
+        });
     }
 
     void OnMessageReceived(byte[] data)

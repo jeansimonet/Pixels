@@ -192,6 +192,7 @@ namespace APA102
 
 	#if DICE_SELFTEST && APA102_SELFTEST
 	void selfTest() {
+
         NRF_LOG_INFO("Turning LEDs On, press any key to stop");
 		for (int i = 0; i < numLEDs; ++i) {
 			int phase = 255 * i / numLEDs;
@@ -199,10 +200,20 @@ namespace APA102
 			setPixelColor(i, color);
 		}
 		show();
-        while (!Log::hasKey()) {
-            Log::process();
-			PowerManager::feed();
-            PowerManager::update();
+		int loop = 0;
+        while (true) {
+			// PowerManager::feed();
+            // PowerManager::update();
+
+			for (int i = 0; i < numLEDs; ++i) {
+				int phase = ((int)(255 * i / numLEDs) + loop) % 256;
+				uint32_t color = Rainbow::wheel(phase);
+				setPixelColor(i, color);
+			}
+			show();
+
+			loop++;
+			nrf_delay_ms(100);
         }
 		Log::getKey();
         NRF_LOG_INFO("Turning LEDs Off!");

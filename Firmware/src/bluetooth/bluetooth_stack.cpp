@@ -51,6 +51,8 @@ namespace Stack
 
     BLE_ADVERTISING_DEF(m_advertising); /**< Advertising module instance. */
 
+    bool notificationPending = false;
+
     /**< Universally unique service identifiers. */
     ble_uuid_t m_adv_uuids[] = 
     {
@@ -120,6 +122,12 @@ namespace Stack
                 NRF_LOG_DEBUG("System Attributes Missing!");
                 err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
                 APP_ERROR_CHECK(err_code);
+                break;
+
+            case BLE_GATTS_EVT_HVN_TX_COMPLETE:
+                // Last notification was cleared!
+                NRF_LOG_DEBUG("Notification Complete!");
+                notificationPending = false;
                 break;
 
             default:
@@ -365,17 +373,31 @@ namespace Stack
         ble_advertising_modes_config_set(&m_advertising, &config);
     }
 
-    bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
-        ble_gatts_hvx_params_t     hvx_params;
-        memset(&hvx_params, 0, sizeof(hvx_params));
+    bool canSend() {
+        return !notificationPending;
+    }
 
-        hvx_params.handle = handle;
-        hvx_params.p_data = data;
-        hvx_params.p_len = &len;
-        hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
-        ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
-        APP_ERROR_CHECK(err_code);
-        return err_code == NRF_SUCCESS;
+    bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
+
+        bool ret = !notificationPending;
+        if (ret) {
+            ble_gatts_hvx_params_t     hvx_params;
+            memset(&hvx_params, 0, sizeof(hvx_params));
+
+            hvx_params.handle = handle;
+            hvx_params.p_data = data;
+            hvx_params.p_len = &len;
+            hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+            notificationPending = true;
+            ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+            APP_ERROR_CHECK(err_code);
+            ret = err_code == NRF_SUCCESS;
+            if (!ret) {
+                // Reset flag, since we won't be getting an event back
+                notificationPending = false;
+            }
+        }
+        return ret;
     }
 
     void slowAdvertising() {

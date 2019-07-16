@@ -116,9 +116,6 @@ public class Die
     public delegate void ConnectionStateChangedEvent(Die die, ConnectionState newConnectionState);
     public ConnectionStateChangedEvent OnConnectionStateChanged;
 
-    public delegate void FaceChangedEvent(Die die, int newFace);
-    public FaceChangedEvent OnFaceChanged;
-
     public delegate void SettingsChangedEvent(Die die);
     public SettingsChangedEvent OnSettingsChanged;
 
@@ -148,7 +145,6 @@ public class Die
 
         // Setup delegates for face and telemetry
         messageDelegates.Add(DieMessageType.State, OnStateMessage);
-        messageDelegates.Add(DieMessageType.Face, OnNewFaceMessage);
         messageDelegates.Add(DieMessageType.Telemetry, OnTelemetryMessage);
         messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
     }
@@ -427,24 +423,14 @@ public class Die
         var stateMsg = (DieMessageState)message;
 
         var newState = (State)stateMsg.state;
-        if (newState != state)
+        var newFace = stateMsg.face;
+        if (newState != state || newFace != face)
         {
             state = newState;
+            face = newFace;
 
             // Notify anyone who cares
             OnStateChanged?.Invoke(this, state);
-        }
-    }
-
-    void OnNewFaceMessage(DieMessage message)
-    {
-        var faceMsg = (DieMessageFace)message;
-        if (faceMsg.face != face)
-        {
-            face = faceMsg.face;
-
-            // Notify anyone who cares
-            OnFaceChanged?.Invoke(this, face);
         }
     }
 

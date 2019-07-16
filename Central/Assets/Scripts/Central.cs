@@ -180,7 +180,7 @@ public class Central
     {
         dice.Remove(die);
         DisconnectDie(die);
-        Destroy(die);
+        DestroyDie(die);
     }
 
     Die CreateDie(string name, string address)

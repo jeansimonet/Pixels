@@ -9,6 +9,18 @@ namespace Animations
 
 namespace Modules
 {
+    enum AnimationEvent
+    {
+        AnimationEvent_PickUp = 0,
+        AnimationEvent_Error,
+        AnimationEvent_LowBattery,
+        AnimationEvent_ChargingStart,
+        AnimationEvent_ChargingDone,
+        AnimationEvent_ChargingError,
+        // Etc...
+        AnimationEvent_Count
+    };
+
 	/// <summary>
 	/// Manages a set of running animations, talking to the LED controller
 	/// to tell it what LEDs must have what intensity at what time.
@@ -22,6 +34,7 @@ namespace Modules
 
 		void init();
 		void stop();
+		void play(AnimationEvent evt);
 		void play(const Animations::Animation* anim);
 		void stop(const Animations::Animation* anim);
 		void stopAll();

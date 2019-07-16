@@ -15,7 +15,7 @@ using namespace DriversHW;
 using namespace Config;
 
 // This defines how frequently we try to read the accelerometer
-#define TIMER2_RESOLUTION (50)	// ms
+#define TIMER2_RESOLUTION (20)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
 
 namespace Modules
@@ -62,11 +62,11 @@ namespace Accelerometer
 	/// </summary>
 	void update(void* context) {
 		LIS2DE12::read();
-		int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-		if (newFace != face) {
-			NRF_LOG_INFO("NewFace: %d", (newFace + 1));
-			face = newFace;
-		}
+		// int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		// if (newFace != face) {
+		// 	NRF_LOG_INFO("NewFace: %d", (newFace + 1));
+		// 	face = newFace;
+		// }
 
 		AccelFrame newFrame;
 		newFrame.X = LIS2DE12::x;
@@ -76,6 +76,8 @@ namespace Accelerometer
 
 		// Compute delta!
 		auto& lastFrame = buffer.last();
+		// NRF_LOG_INFO("lastFrame: %d: %d,%d,%d", lastFrame.Time, lastFrame.X, lastFrame.Y, lastFrame.Z);
+		// NRF_LOG_INFO("newFrame: %d: %d,%d,%d", newFrame.Time, newFrame.X, newFrame.Y, newFrame.Z);
 
 		short deltaX = newFrame.X - lastFrame.X;
 		short deltaY = newFrame.Y - lastFrame.Y;
@@ -98,7 +100,7 @@ namespace Accelerometer
 		float jerk2 = jerkX * jerkX + jerkY * jerkY + jerkZ * jerkZ;
 		auto settings = SettingsManager::getSettings();
 		slowSigma = slowSigma * settings->sigmaDecaySlow + jerk2 * (1.0f - settings->sigmaDecaySlow);
-		fastSigma = slowSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
+		fastSigma = fastSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
 
 		buffer.push(newFrame);
 

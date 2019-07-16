@@ -3,6 +3,7 @@
 #include "board_config.h"
 #include "nrf_gpio.h"
 #include "nrf_delay.h"
+#include "../drivers_nrf/gpiote.h"
 #include "../drivers_nrf/a2d.h"
 #include "../drivers_nrf/log.h"
 #include "../drivers_nrf/timers.h"
@@ -11,11 +12,16 @@
 using namespace DriversNRF;
 using namespace Config;
 
+#define MAX_BATTERY_CLIENTS 2
+
 namespace DriversHW
 {
 namespace Battery
 {
     const float vBatMult = 1.4f; // Voltage divider 10M over 4M
+	DelegateArray<ClientMethod, MAX_BATTERY_CLIENTS> clients;
+
+    void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action);
 
     void init() {
         // Set charger and fault pins as input
@@ -34,6 +40,19 @@ namespace Battery
         float vbattery = checkVBat();
         int charging = checkCharging() ? 1 : 0;
         int coil = checkCoil() ? 1 : 0;
+
+		// Set interrupt pin
+		GPIOTE::enableInterrupt(
+			statePin,
+			NRF_GPIO_PIN_NOPULL,
+			NRF_GPIOTE_POLARITY_TOGGLE,
+			batteryInterruptHandler);
+
+		GPIOTE::enableInterrupt(
+			coilPin,
+			NRF_GPIO_PIN_NOPULL,
+			NRF_GPIOTE_POLARITY_TOGGLE,
+			batteryInterruptHandler);
 
         NRF_LOG_INFO("Battery initialized, Charging=%d, Coil=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
 
@@ -62,6 +81,41 @@ namespace Battery
         nrf_gpio_cfg_default(coilPin);
         return ret;
     }
+
+	void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+		// Notify clients
+		for (int i = 0; i < clients.Count(); ++i)
+		{
+			clients[i].handler(clients[i].token);
+		}
+	}
+
+	/// <summary>
+	/// Method used by clients to request timer callbacks when accelerometer readings are in
+	/// </summary>
+	void hook(ClientMethod callback, void* parameter)
+	{
+		if (!clients.Register(parameter, callback))
+		{
+			NRF_LOG_ERROR("Too many accelerometer hooks registered.");
+		}
+	}
+
+	/// <summary>
+	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// </summary>
+	void unHook(ClientMethod callback)
+	{
+		clients.UnregisterWithHandler(callback);
+	}
+
+	/// <summary>
+	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// </summary>
+	void unHookWithParam(void* param)
+	{
+		clients.UnregisterWithToken(param);
+	}
 
     #if DICE_SELFTEST && BATTERY_SELFTEST
     APP_TIMER_DEF(readBatTimer);

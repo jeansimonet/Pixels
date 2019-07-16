@@ -15,6 +15,10 @@ namespace Config
 		float sigmaDecayFast;
 		float sigmaDecaySlow;
 		int minRollTime; // ms
+
+		// Battery
+		float batteryLow;
+		float batteryHigh;
 		
 		// Indicates whether there is valid data
 		uint32_t tailMarker;

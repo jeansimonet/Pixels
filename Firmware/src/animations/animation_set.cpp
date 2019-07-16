@@ -16,7 +16,7 @@
 // So the animation set is at the top of the page
 #define MAX_PALETTE_SIZE (COLOR_MAP_SIZE * 3)
 
-#define ANIMATION_SET_ADDRESS (0x28000)
+#define ANIMATION_SET_ADDRESS (0x27000)
 
 using namespace Utils;
 using namespace DriversNRF;

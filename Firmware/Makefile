@@ -65,6 +65,7 @@ SRC_FILES += \
 	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
 	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
 	$(PROJ_DIR)/src/die.cpp \
+	$(PROJ_DIR)/src/die_mainlogic.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
 	$(PROJ_DIR)/src/animations/animation_set.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
@@ -91,7 +92,6 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/modules/anim_controller.cpp \
 	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/modules/battery_controller.cpp \
-	$(PROJ_DIR)/src/modules/die_state.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \

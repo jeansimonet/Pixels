@@ -1,5 +1,6 @@
 #include "anim_controller.h"
 #include "animations/animation.h"
+#include "animations/animation_set.h"
 #include "drivers_nrf/timers.h"
 #include "utils/utils.h"
 #include "config/board_config.h"
@@ -98,6 +99,17 @@ namespace AnimController
 	void stop()
 	{
 		Timers::stopTimer(animControllerTimer);
+	}
+
+	/// <summary>
+	/// Add an animation to the list of running animations
+	/// </summary>
+	void play(AnimationEvent evt) {
+		int evtIndex = (uint16_t)evt;
+		if (evtIndex < AnimationSet::getAnimationCount()) {
+			auto& anim = AnimationSet::getAnimation(evtIndex);
+			play(&anim);
+		}
 	}
 
 	/// <summary>
