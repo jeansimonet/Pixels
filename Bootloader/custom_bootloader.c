@@ -343,10 +343,7 @@ ret_code_t custom_bootloader_app_valid() {
     nrf_dfu_settings_backup(flash_write_callback);
     ASSERT(m_flash_write_done);
 
-    nrf_bootloader_app_start();
-    NRF_LOG_ERROR("Unreachable");
-
-    return NRF_ERROR_INTERNAL;
+    return NRF_SUCCESS;
 }
 
 ret_code_t custom_bootloader_enter_dfu() {
