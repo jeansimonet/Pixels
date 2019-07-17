@@ -60,6 +60,7 @@
 #include "app_error_weak.h"
 #include "nrf_bootloader_info.h"
 #include "nrf_delay.h"
+#include "nrf_gpio.h"
 
 static void on_error(void)
 {
@@ -123,6 +124,17 @@ static void dfu_observer(nrf_dfu_evt_type_t evt_type)
 /**@brief Function for application main entry. */
 int main(void)
 {
+    uint32_t dataPin =  1;
+    uint32_t clockPin = 4;
+    uint32_t powerPin = 0;
+
+    nrf_gpio_cfg_output(dataPin);
+    nrf_gpio_cfg_output(clockPin);
+    nrf_gpio_cfg_output(powerPin);
+    nrf_gpio_pin_clear(dataPin);
+    nrf_gpio_pin_clear(clockPin);
+    nrf_gpio_pin_clear(powerPin);
+
     uint32_t ret_val;
 
     // Protect MBR and bootloader code from being overwritten.
