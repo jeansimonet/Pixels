@@ -162,7 +162,7 @@ public class D20Normals : MonoBehaviour
         Debug.Log(builder.ToString());
 
     }
-
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         // Create a rotation from face 1 to face i+1
@@ -176,4 +176,5 @@ public class D20Normals : MonoBehaviour
             UnityEditor.Handles.Label(n, (i + 1).ToString());
         }
     }
+#endif
 }

@@ -63,7 +63,7 @@ public class Central
             onBluetoothError?.Invoke(err);
         });
         #else
-        _state = CentralState.Idle;
+        _state = State.Idle;
         #endif
 	}
 

@@ -61,6 +61,9 @@ public class Die
         Connecting,
         Connected,
         Subscribing,
+        Subscribed,
+        FetchingId,
+        FetchingState,
         Ready
     }
 
@@ -204,6 +207,10 @@ public class Die
                     connectionState = ConnectionState.Unavailable;
                     central.UnresponsiveDie(this);
                 }
+                else
+                {
+                    connectionState = ConnectionState.Subscribed;
+                }
             }
         }
         finally
@@ -214,11 +221,15 @@ public class Die
 
         if (!errorOccurred)
         {
+            connectionState = ConnectionState.FetchingId;
+
             // Ask the die who it is!
-            yield return StartCoroutine(GetDieTypeCr());
+            yield return GetDieType();
+
+            connectionState = ConnectionState.FetchingState;
 
             // Ping the die so we know its initial state
-            yield return StartCoroutine(PingCr());
+            yield return Ping();
 
             // All good!
             connectionState = ConnectionState.Ready;
@@ -525,12 +536,7 @@ public class Die
 
     public Coroutine Ping()
     {
-        return PerformBluetoothOperation(PingCr());
-    }
-
-    IEnumerator PingCr()
-    {
-        yield return StartCoroutine(SendMessageCr(new DieMessageRequestState()));
+        return PerformBluetoothOperation(() => PostMessage(new DieMessageRequestState()));
     }
 
     public Coroutine GetDieType()
