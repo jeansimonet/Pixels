@@ -16,3 +16,4 @@ Build.app/
 *.ipch
 Firmware/.vscode/ipch/
 Bootloader/.vscode/ipch/
+Central/LEDAnimatorBuild

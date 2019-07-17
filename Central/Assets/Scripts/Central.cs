@@ -63,7 +63,7 @@ public class Central
             onBluetoothError?.Invoke(err);
         });
         #else
-        _state = CentralState.Idle;
+        _state = State.Idle;
         #endif
 	}
 
@@ -94,7 +94,8 @@ public class Central
 
             _state = State.Scanning;
             var services = new string[] { serviceGUID };
-            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
+            //BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
+            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(null, dieDiscovered, null, false, false);
 
             // Also notify virtual dice that we're trying to connect
             if (virtualBluetooth != null)

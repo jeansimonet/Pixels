@@ -61,6 +61,9 @@ public class Die
         Connecting,
         Connected,
         Subscribing,
+        Subscribed,
+        FetchingId,
+        FetchingState,
         Ready
     }
 
@@ -204,6 +207,10 @@ public class Die
                     connectionState = ConnectionState.Unavailable;
                     central.UnresponsiveDie(this);
                 }
+                else
+                {
+                    connectionState = ConnectionState.Subscribed;
+                }
             }
         }
         finally
@@ -214,11 +221,15 @@ public class Die
 
         if (!errorOccurred)
         {
-            // Ask the die who it is!
-            yield return StartCoroutine(GetDieTypeCr());
+            connectionState = ConnectionState.FetchingId;
+
+            // Ask the die who it is!Upload
+            yield return GetDieType();
+
+            connectionState = ConnectionState.FetchingState;
 
             // Ping the die so we know its initial state
-            yield return StartCoroutine(PingCr());
+            yield return Ping();
 
             // All good!
             connectionState = ConnectionState.Ready;
@@ -334,15 +345,6 @@ public class Die
     {
         byte[] msgBytes = DieMessages.ToByteArray(message);
         central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
-    }
-
-    IEnumerator SendMessageCr<T>(T message)
-        where T : DieMessage
-    {
-        bool msgReceived = false;
-        byte[] msgBytes = DieMessages.ToByteArray(message);
-        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, () => msgReceived = true);
-        yield return new WaitUntil(() => msgReceived);
     }
 
     IEnumerator WaitForMessageCr(DieMessageType msgType, System.Action<DieMessage> msgReceivedCallback)
@@ -484,7 +486,7 @@ public class Die
 
     IEnumerator PerformBluetoothOperationCr(IEnumerator operationCr)
     {
-        if (connectionState == ConnectionState.Connected || connectionState == ConnectionState.Ready)
+        if (connectionState >= ConnectionState.Connected)
         {
             while (bluetoothOperationInProgress)
             {
@@ -520,17 +522,12 @@ public class Die
 
     public Coroutine PlayAnimation(int animationIndex)
     {
-        return PerformBluetoothOperation(SendMessageCr(new DieMessagePlayAnim() { index = (byte)animationIndex }));
+        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
     }
 
     public Coroutine Ping()
     {
-        return PerformBluetoothOperation(PingCr());
-    }
-
-    IEnumerator PingCr()
-    {
-        yield return StartCoroutine(SendMessageCr(new DieMessageRequestState()));
+        return PerformBluetoothOperation(() => PostMessage(new DieMessageRequestState()));
     }
 
     public Coroutine GetDieType()
@@ -573,7 +570,7 @@ public class Die
             var data = new DieMessageBulkData();
             data.offset = offset;
             data.size = (byte)Mathf.Min(remainingSize, 16);
-            data.data = new byte[data.size];
+            data.data = new byte[16];
             System.Array.Copy(bytes, offset, data.data, 0, data.size);
             yield return StartCoroutine(SendMessageWithAckCr(data, DieMessageType.BulkDataAck));
             remainingSize -= data.size;
@@ -617,12 +614,12 @@ public class Die
             totalDataReceived += bulkMsg.size;
 
             // Send acknowledgment (no need to do it synchronously)
-            StartCoroutine(SendMessageCr(msgAck));
+            PostMessage(msgAck);
         };
         AddMessageHandler(DieMessageType.BulkData, bulkReceived);
 
         // Send acknowledgement to the die, so it may transfer bulk data immediately
-        StartCoroutine(SendMessageCr(new DieMessageBulkSetupAck()));
+        PostMessage(new DieMessageBulkSetupAck());
 
         // Wait for all the bulk data to be received
         yield return new WaitUntil(() => totalDataReceived == size);
@@ -720,13 +717,10 @@ public class Die
     IEnumerator DownloadSettingsCr(System.Action<DieSettings> settingsReadCallback)
     {
         // Request the settings from the die
-        SendMessageCr(new DieMessageRequestSettings());
-
-        // Now wait for the setup message back
-        yield return StartCoroutine(WaitForMessageCr(DieMessageType.TransferSettings, null));
+        yield return StartCoroutine(SendMessageWithAckCr(new DieMessageRequestSettings(), DieMessageType.TransferSettings));
 
         // Got the message, acknowledge it
-        StartCoroutine(SendMessageCr(new DieMessageTransferSettingsAck()));
+        PostMessage(new DieMessageTransferSettingsAck());
 
         byte[] settingsBytes = null;
         yield return StartCoroutine(DownloadBulkDataCr((buf) => settingsBytes = buf));
@@ -788,34 +782,6 @@ public class Die
         //{
         //    OnSettingsChanged(this);
         //}
-    }
-
-    public Coroutine GetDefaultAnimSetColor(System.Action<Color> retColor)
-    {
-        return PerformBluetoothOperation(GetDefaultAnimSetColorCr(retColor));
-    }
-
-    IEnumerator GetDefaultAnimSetColorCr(System.Action<Color> retColor)
-    {
-        // Setup message handler
-        MessageReceivedDelegate defaultAnimSetColorHandler = (msg) =>
-        {
-            var bulkMsg = (DieMessageDefaultAnimSetColor)msg;
-            Color32 msgColor = new Color32(
-                (byte)((bulkMsg.color >> 16) & 0xFF),
-                (byte)((bulkMsg.color >> 8) & 0xFF),
-                (byte)((bulkMsg.color >> 0) & 0xFF),
-                0xFF);
-            float h, s, v;
-            Color.RGBToHSV(msgColor, out h, out s, out v);
-            retColor(Color.HSVToRGB(h, 1, 1));
-        };
-        AddMessageHandler(DieMessageType.DefaultAnimSetColor, defaultAnimSetColorHandler);
-
-        yield return StartCoroutine(SendMessageCr(new DieMessageRequestDefaultAnimSetColor()));
-
-        // We're done
-        RemoveMessageHandler(DieMessageType.DefaultAnimSetColor, defaultAnimSetColorHandler);
     }
 
     public Coroutine RequestBulkData()
