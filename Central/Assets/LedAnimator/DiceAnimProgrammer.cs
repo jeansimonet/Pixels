@@ -8,6 +8,7 @@ public class DiceAnimProgrammer
 {
     public Central central;
     public TimelineView timeline;
+    public PleaseWaitDialogBox pleaseWait;
     public string JsonFilePath = "animation_set.json";
 
     Die die = null;
@@ -96,6 +97,7 @@ public class DiceAnimProgrammer
 
     IEnumerator UploadAnimationSetCr()
     {
+        pleaseWait.Show("Uploading Animation Set to Dice");
         timeline.ApplyChanges();
         var rawAnim = animationSet.ToAnimationSet();
         var newByteArray = rawAnim.ToByteArray();
@@ -114,6 +116,7 @@ public class DiceAnimProgrammer
                 yield return die.UploadAnimationSet(rawAnim);
             }
         }
+        pleaseWait.Hide();
     }
 
     public void DownloadAnimationSet()
@@ -134,7 +137,11 @@ public class DiceAnimProgrammer
         if (die != null)
         {
             yield return StartCoroutine(UploadAnimationSetCr());
-            die.PlayAnimation(0);
+            die.PlayAnimation(timeline.CurrentAnimationIndex);
+            pleaseWait.Show("Uploading Animation Set to Dice");
+            yield return new WaitForSeconds(timeline.CurrentAnimation.duration);
+            pleaseWait.Hide();
+
         }
     }
 }

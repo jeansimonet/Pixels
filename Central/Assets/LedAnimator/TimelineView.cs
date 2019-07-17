@@ -49,7 +49,8 @@ public class TimelineView : MonoBehaviour
 	public float Unit =>_unitWidth * Zoom;
 	public bool IsMoveStretchOn => _moveStrechToogle?.isOn ?? true;
 	public int TracksCount => _colorAnimsRoot.childCount - 1;
-	public Animations.EditAnimation CurrentAnimation => (_animIndex < 0 ? null : _animationSet.animations[_animIndex]);
+    public int CurrentAnimationIndex => _animIndex;
+    public Animations.EditAnimation CurrentAnimation => (_animIndex < 0 ? null : _animationSet.animations[_animIndex]);
 	public bool PlayAnimations => _playAnims;
 	public ColorAnimator ActiveColorAnimator { get; private set; }
 	public ColorAnimator[] ColorAnimators => _colorAnimsRoot.GetComponentsInChildren<ColorAnimator>();
