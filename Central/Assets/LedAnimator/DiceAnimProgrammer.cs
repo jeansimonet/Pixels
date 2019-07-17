@@ -138,7 +138,7 @@ public class DiceAnimProgrammer
         {
             yield return StartCoroutine(UploadAnimationSetCr());
             die.PlayAnimation(timeline.CurrentAnimationIndex);
-            pleaseWait.Show("Uploading Animation Set to Dice");
+            pleaseWait.Show("Playing Animation on Dice");
             yield return new WaitForSeconds(timeline.CurrentAnimation.duration);
             pleaseWait.Hide();
 
