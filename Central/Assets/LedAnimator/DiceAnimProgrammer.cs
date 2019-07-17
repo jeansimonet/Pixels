@@ -106,7 +106,7 @@ public class DiceAnimProgrammer
 
             // Write to file (why not?)
             string jsonText = JsonUtility.ToJson(animationSet, true);
-            File.WriteAllText(JsonFilePath, jsonText);
+            File.WriteAllText(System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath), jsonText);
 
             // Upload!
             if (die != null)

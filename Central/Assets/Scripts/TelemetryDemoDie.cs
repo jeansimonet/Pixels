@@ -71,7 +71,7 @@ public class TelemetryDemoDie : MonoBehaviour
         this.die.OnSettingsChanged += OnDieSettingsChanged;
  
         // Update the ui color
-        die.GetDefaultAnimSetColor((col) => UpdateUIColor(col));
+        //die.GetDefaultAnimSetColor((col) => UpdateUIColor(col));
     }
 
     public void OnTelemetryReceived(Vector3 acc, int millis)
