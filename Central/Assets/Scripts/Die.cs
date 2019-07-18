@@ -812,5 +812,27 @@ public class Die
         return PerformBluetoothOperation(() => PostMessage(msg));
     }
 
+    public Coroutine GetBatteryLevel(System.Action<float?> outLevelAction)
+    {
+        return PerformBluetoothOperation(GetBatteryLevelCr(outLevelAction));
+    }
+
+    IEnumerator GetBatteryLevelCr(System.Action<float?> outLevelAction)
+    {
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+            new DieMessageRequestBatteryLevel(),
+            DieMessageType.BatteryLevel,
+            5.0f,
+            (msg) =>
+            {
+                var lvlMsg = (DieMessageBatteryLevel)msg;
+                outLevelAction?.Invoke(lvlMsg.level);
+            },
+            () =>
+            {
+                outLevelAction?.Invoke(null);
+            }));
+    }
+
     #endregion
 }

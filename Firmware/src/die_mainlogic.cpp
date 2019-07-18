@@ -1,9 +1,11 @@
 #include "die.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
+#include "bluetooth/bluetooth_stack.h"
 #include "config/board_config.h"
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
+#include "modules/battery_controller.h"
 #include "nrf_log.h"
 
 using namespace Modules;
@@ -25,9 +27,10 @@ namespace Die
     enum TopLevelState
     {
         TopLevel_Unknown = 0,
-        TopLevel_SoloPlay,  // Playing animations as a result of landing on faces
+        TopLevel_SoloPlay,      // Playing animations as a result of landing on faces
         TopLevel_PairedPlay,    // Some kind of battle play
         TopLevel_LowPower,      // Die is low on power
+        TopLevel_Charging,      // Die is now charging
     };
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
@@ -47,9 +50,9 @@ namespace Die
 
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);
+    void onBatteryStateChange(void* token, BatteryController::BatteryState newState);
 
-    void initMainLogic()
-    {
+    void initMainLogic() {
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
 
         switch (BoardManager::getBoard()->ledCount)
@@ -66,81 +69,55 @@ namespace Die
 
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
 
+        BatteryController::hook(onBatteryStateChange, nullptr);
+
         // Register with the accelerometer
         //Accelerometer::hook(onAccelData)
 
 		NRF_LOG_INFO("Die State initialized");
     }
 
-    void RequestStateHandler(void* token, const Message* message)
-    {
+    void RequestStateHandler(void* token, const Message* message) {
         // Central asked for the die state, return it!
         Bluetooth::MessageDieState currentStateMsg;
         currentStateMsg.state = (uint8_t)currentRollState;
         Bluetooth::MessageService::SendMessage(&currentStateMsg);
     }
 
-    void WhoAreYouHandler(void* token, const Message* message)
-    {
+    void WhoAreYouHandler(void* token, const Message* message) {
         // Central asked for the die state, return it!
         Bluetooth::MessageIAmADie identityMessage;
         identityMessage.id = (uint8_t)dieType;
         Bluetooth::MessageService::SendMessage(&identityMessage);
     }
 
-    void EnterLowPowerMode() {
-        currentTopLevelState = TopLevel_LowPower;
-    }
-
-    void LeaveLowPowerMode() {
-        currentTopLevelState = TopLevel_Unknown;
-    }
-
-    void EnterSoloPlay() {
-        currentTopLevelState = TopLevel_SoloPlay;
-    }
-
-    void LeaveSoloPlay() {
-        currentTopLevelState = TopLevel_Unknown;
-    }
-
-    void EnterPairedPlay() {
-        currentTopLevelState = TopLevel_PairedPlay;
-    }
-
-    void LeavePairedPlay() {
-        currentTopLevelState = TopLevel_Unknown;
-    }
-
-	void onChargingNeeded() {
-        switch (currentTopLevelState) {
-            case TopLevel_SoloPlay:
-                LeaveSoloPlay();
-                EnterLowPowerMode();
+    void onBatteryStateChange(void* token, BatteryController::BatteryState newState) {
+        switch (newState) {
+            case BatteryController::BatteryState_Charging:
+                // Die is now charging, disconnect from Bluetooth etc...
+                if (Bluetooth::Stack::isConnected()) {
+                    Bluetooth::Stack::disableAdvertisingOnDisconnect();
+                    Bluetooth::Stack::disconnect();
+                } else {
+                    Bluetooth::Stack::stopAdvertising();
+                }
+                currentTopLevelState = TopLevel_Charging;
                 break;
-            case TopLevel_PairedPlay:
-                LeavePairedPlay();
-                EnterLowPowerMode();
+            case BatteryController::BatteryState_Low:
+                if (Bluetooth::Stack::isConnected()) {
+                    Bluetooth::Stack::disableAdvertisingOnDisconnect();
+                    Bluetooth::Stack::disconnect();
+                } else {
+                    Bluetooth::Stack::stopAdvertising();
+                }
+                currentTopLevelState = TopLevel_LowPower;
+                break;
+            case BatteryController::BatteryState_Ok:
+                currentTopLevelState = TopLevel_SoloPlay;
+                Bluetooth::Stack::startAdvertising();
+                break;
+            default:
                 break;
         }
-        // Trigger an AnimationEvent
-        AnimController::play(AnimationEvent_LowBattery);
     }
-
-	void onChargingComplete() {
-        LeaveLowPowerMode();
-        // Trigger an AnimationEvent
-        AnimController::play(AnimationEvent_ChargingDone);
-    }
-
-	void onChargingInterrupted() {
-        // Trigger an AnimationEvent
-        AnimController::play(AnimationEvent_ChargingError);
-    }
-
-	void onChargingStarted() {
-        // Trigger an AnimationEvent
-        AnimController::play(AnimationEvent_ChargingStart);
-    }
-
 }

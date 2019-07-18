@@ -9,6 +9,7 @@ public class CurrentDicePoolDice
 {
     public Text nameText;
     public Text statusText;
+    public Text voltageText;
     public Image diceImage;
     public Button diceButton;
     public CanvasGroup commandGroup;
@@ -57,6 +58,11 @@ public class CurrentDicePoolDice
 
         this.die.OnSettingsChanged += OnDieSettingsChanged;
         this.die.OnConnectionStateChanged += UpdateConnectionState;
+
+        if (die.connectionState >= Die.ConnectionState.Connected)
+        {
+            MonitorBatteryLevel(true);
+        }
     }
 
     private void OnDestroy()
@@ -120,6 +126,45 @@ public class CurrentDicePoolDice
         Debug.Log("Telemetry Message Received");
     }
 
+    Coroutine updateBatteryLevelCoroutine = null;
+    void MonitorBatteryLevel(bool monitor)
+    {
+        if (monitor)
+        {
+            if (updateBatteryLevelCoroutine == null)
+            {
+                updateBatteryLevelCoroutine = StartCoroutine(UpdateBatteryLevelCr());
+            }
+        }
+        else
+        {
+            if (updateBatteryLevelCoroutine != null)
+            {
+                StopCoroutine(updateBatteryLevelCoroutine);
+            }
+        }
+    }
+
+    IEnumerator UpdateBatteryLevelCr()
+    {
+        while (true)
+        {
+            UpdateBatteryLevel();
+            yield return new WaitForSeconds(10.0f);
+        }
+    }
+
+    void UpdateBatteryLevel()
+    {
+        this.die.GetBatteryLevel((lvl) =>
+        {
+            if (lvl.HasValue)
+            {
+                voltageText.text = "Batt: " + lvl.Value.ToString("0.00") + "V";
+            }
+        });
+    }
+
     void RenameDie()
     {
         StartCoroutine(telemetryCoroutine());
@@ -169,5 +214,6 @@ public class CurrentDicePoolDice
     void UpdateConnectionState(Die die, Die.ConnectionState newState)
     {
         statusText.text = newState.ToString();
+        MonitorBatteryLevel(die.connectionState >= Die.ConnectionState.Connected);
     }
 }

@@ -14,5 +14,6 @@ namespace Bluetooth
         bool send(uint16_t handle, const uint8_t* data, uint16_t len);
         void slowAdvertising();
         void stopAdvertising();
+        bool isConnected();
     }
 }

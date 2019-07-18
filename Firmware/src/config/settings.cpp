@@ -28,8 +28,6 @@ namespace SettingsManager
 			programDefaults();
 		}
 
-	programDefaults();
-
 		// Register as a handler to program settings
 		MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
 
@@ -88,6 +86,10 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
+		outSettings.name[0] = '\0';
+		strcpy(outSettings.name, "Dice");
+		NRF_LOG_INFO("Setting new name to");
+		NRF_LOG_INFO(outSettings.name);
 		outSettings.sigmaDecayFast = 0.15f;
 		outSettings.sigmaDecaySlow = 0.95f;
 		outSettings.minRollTime = 300;

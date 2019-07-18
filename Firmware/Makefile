@@ -286,8 +286,8 @@ flash: settings zip
 	nrfjprog -f nrf52 -s 801001366 --reset
 
 flash_ble: zip
-	@echo Flashing: $(OUTPUT_DIRECTORY)/nrf52810_xxaa_s112.hex over BLE DFU
-	nrfutil dfu ble -ic NRF51 -p COM5 -snr 680120179 -n DiceDfuTarg -pkg _build/firmware.zip
+	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware.hex over BLE DFU
+	nrfutil dfu ble -ic NRF51 -p COM5 -snr 680120179 -f -n DiceDfuTarg -pkg _build/firmware.zip
 
 # Flash softdevice
 flash_softdevice:

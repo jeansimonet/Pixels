@@ -75,14 +75,10 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        //Watchdog::init();
+        Watchdog::init();
 
         // Then the log system
         Log::init();
-
-        // Print the unique Id of this dice
-        NRF_LOG_INFO("DEVICEID0: %08X", NRF_FICR->DEVICEID[0]);
-        NRF_LOG_INFO("DEVICEID1: %08X", NRF_FICR->DEVICEID[1]);
 
         // Then the timers
         Scheduler::init();
@@ -180,7 +176,7 @@ namespace Die
     // Main loop!
     void update() {
         Scheduler::update();
-        //Watchdog::feed();
+        Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
     }

@@ -43,7 +43,7 @@ namespace Flash
         * You must set these manually, even at runtime, before nrf_fstorage_init() is called.
         * The function nrf5_flash_end_addr_get() can be used to retrieve the last address on the
         * last page of flash available to write data. */
-        fstorage.start_addr = 0x23000;
+        fstorage.start_addr = 0x26000;
         fstorage.end_addr   = nrf5_flash_end_addr_get();
 
         ret_code_t rc = nrf_fstorage_init(&fstorage, &nrf_fstorage_sd, NULL);

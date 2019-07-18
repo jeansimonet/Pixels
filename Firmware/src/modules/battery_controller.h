@@ -10,6 +10,21 @@ namespace Modules
 	namespace BatteryController
 	{
         void init();
+
+		enum BatteryState
+		{
+			BatteryState_Unknown,
+			BatteryState_Ok,
+			BatteryState_Low,
+			BatteryState_Charging
+		};
+
+		typedef void(*BatteryStateChangeHandler)(void* param, BatteryState newState);
+
+		// Notification management
+		void hook(BatteryStateChangeHandler method, void* param);
+		void unHook(BatteryStateChangeHandler client);
+		void unHookWithParam(void* param);
     }
 }
 

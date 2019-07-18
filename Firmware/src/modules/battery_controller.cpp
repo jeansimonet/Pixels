@@ -13,23 +13,28 @@ using namespace Bluetooth;
 using namespace Config;
 
 #define BATTERY_TIMER_MS (5000)	// ms
+#define MAX_BATTERY_CLIENTS 2
 
 namespace Modules
 {
 namespace BatteryController
 {
-    void GetBatteryLevel(void* context, const Message* msg);
+    void getBatteryLevel(void* context, const Message* msg);
     void update(void* context);
     void onBatteryEventHandler(void* context);
+    BatteryState computeCurrentState();
 
     bool onCharger = false;
     bool charging = false;
     float vBat = 0.0f;
+    BatteryState currentBatteryState = BatteryState_Unknown;
+
+	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
 
 	_APP_TIMER_DEF(batteryControllerTimer);
 
     void init() {
-        MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, GetBatteryLevel);
+        MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);
 
         onCharger = Battery::checkCoil();
         charging = Battery::checkCharging();
@@ -44,10 +49,31 @@ namespace BatteryController
 		ret_code = app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
 		APP_ERROR_CHECK(ret_code);
 
+        // Set initial battery state
+        currentBatteryState = computeCurrentState();
+
         NRF_LOG_INFO("Battery controller initialized");
     }
 
-    void GetBatteryLevel(void* context, const Message* msg) {
+    BatteryState computeCurrentState() {
+        BatteryState ret = BatteryState_Unknown;
+        if (onCharger) {
+            if (charging) {
+                ret = BatteryState_Charging;
+            } else {
+                // Either we're done, or we haven't started
+                if (vBat < SettingsManager::getSettings()->batteryLow) {
+                    // Not started
+                    ret = BatteryState_Low;
+                } else {
+                    ret = BatteryState_Ok;
+                }
+            }
+        }
+        return ret;
+    }
+
+    void getBatteryLevel(void* context, const Message* msg) {
         // Fetch battery level
         float level = Battery::checkVBat();
         MessageBatteryLevel lvl;
@@ -56,50 +82,45 @@ namespace BatteryController
     }
 
     void update(void* context) {
-        bool currentlyChargingState = charging && onCharger;
-        if (!currentlyChargingState) {
-            // If the battery is not on the coil, check its level
-            float level = Battery::checkVBat();
-            if (level < SettingsManager::getSettings()->batteryLow) {
-                // Notify the die that battery is low
-                Die::onChargingNeeded();
+        auto newState = computeCurrentState();
+        if (newState != currentBatteryState) {
+            currentBatteryState = newState;
+            for (int i = 0; i < clients.Count(); ++i) {
+    			clients[i].handler(clients[i].token, newState);
             }
         }
     }
 
     void onBatteryEventHandler(void* context) {
-        bool newCoil = Battery::checkCoil();
-        bool newCharging = Battery::checkCharging();
-        bool newVBat = Battery::checkVBat();
-
-        bool currentlyChargingState = charging && onCharger;
-        bool newChargingState = newCharging && newCoil;
-
-        if (currentlyChargingState) {
-            if (newChargingState) {
-                // No change!
-            } else {
-                // Are we charged enough
-                if (newVBat > SettingsManager::getSettings()->batteryHigh) {
-                    // Yes
-                    Die::onChargingComplete();
-                } else {
-                    // Notify die
-                    Die::onChargingInterrupted();
-                }
-            }
-        } else {
-            if (newChargingState) {
-                Die::onChargingStarted();
-            } else {
-                // No change!
-            }
-        }
-
-        onCharger = newCoil;
-        charging = newCharging;
-        vBat = newVBat;
+        update(nullptr);
     }
+
+	/// <summary>
+	/// Method used by clients to request timer callbacks when accelerometer readings are in
+	/// </summary>
+	void hook(BatteryStateChangeHandler callback, void* parameter)
+	{
+		if (!clients.Register(parameter, callback))
+		{
+			NRF_LOG_ERROR("Too many battery state hooks registered.");
+		}
+	}
+
+	/// <summary>
+	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// </summary>
+	void unHook(BatteryStateChangeHandler callback)
+	{
+		clients.UnregisterWithHandler(callback);
+	}
+
+	/// <summary>
+	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// </summary>
+	void unHookWithParam(void* param)
+	{
+		clients.UnregisterWithToken(param);
+	}
 
 }
 }

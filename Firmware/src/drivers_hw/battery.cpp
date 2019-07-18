@@ -97,7 +97,7 @@ namespace Battery
 	{
 		if (!clients.Register(parameter, callback))
 		{
-			NRF_LOG_ERROR("Too many accelerometer hooks registered.");
+			NRF_LOG_ERROR("Too many battery hooks registered.");
 		}
 	}
 

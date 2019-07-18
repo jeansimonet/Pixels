@@ -13,12 +13,15 @@
 #include "app_timer.h"
 #include "peer_manager.h"
 #include "peer_manager_handler.h"
+#include "config/settings.h"
+
+using namespace Config;
 
 namespace Bluetooth
 {
 namespace Stack
 {
-    #define DEVICE_NAME                     "Dice"                       /**< Name of device. Will be included in the advertising data. */
+    #define DEVICE_NAME                     "Dice"
     #define MANUFACTURER_NAME               "Systemic Games, LLC"                   /**< Manufacturer. Will be passed to Device Information Service. */
 
     #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
@@ -52,6 +55,9 @@ namespace Stack
     BLE_ADVERTISING_DEF(m_advertising); /**< Advertising module instance. */
 
     bool notificationPending = false;
+    bool connected = false;
+
+    char advertisingName[16];
 
     /**< Universally unique service identifiers. */
     ble_uuid_t m_adv_uuids[] = 
@@ -72,6 +78,7 @@ namespace Stack
         {
             case BLE_GAP_EVT_DISCONNECTED:
                 NRF_LOG_INFO("Disconnected.");
+                connected = false;
                 // LED indication will be changed when advertising starts.
                 break;
 
@@ -80,6 +87,7 @@ namespace Stack
                 m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
                 err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
                 APP_ERROR_CHECK(err_code);
+                connected = true;
                 break;
 
             case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -230,6 +238,16 @@ namespace Stack
         // Register a handler for BLE events.
         NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 
+        // Generate our name
+        advertisingName[0] = '\0';
+        strcpy(advertisingName, "Dice_");
+		uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
+        for (int i = 0; i < 8; ++i) {
+            advertisingName[5+i] = '0' + uniqueId % 10;
+            uniqueId /= 10;
+        }
+        advertisingName[5+8] = '\0';
+
         //  GAP Params
         ble_gap_conn_params_t   gap_conn_params;
         ble_gap_conn_sec_mode_t sec_mode;
@@ -237,8 +255,8 @@ namespace Stack
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
         err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                            (const uint8_t *)DEVICE_NAME,
-                                            strlen(DEVICE_NAME));
+                                            (const uint8_t *)advertisingName,
+                                            strlen(advertisingName));
         APP_ERROR_CHECK(err_code);
 
 
@@ -356,8 +374,8 @@ namespace Stack
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
         ret_code_t err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                            (const uint8_t *)DEVICE_NAME,
-                                            strlen(DEVICE_NAME));
+                                            (const uint8_t *)advertisingName,
+                                            strlen(advertisingName));
         APP_ERROR_CHECK(err_code);
 
         err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
@@ -408,5 +426,8 @@ namespace Stack
         ble_advertising_start(&m_advertising, BLE_ADV_MODE_IDLE);
     }
 
+    bool isConnected() {
+        return connected;
+    }
 }
 }
