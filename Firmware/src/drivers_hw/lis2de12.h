@@ -82,6 +82,9 @@ namespace DriversHW
 
 		void powerDown();
 
+		bool checkWhoAMI();
+		bool checkIntPin();
+
 		void selfTest();
 		void selfTestInterrupt();
 	}

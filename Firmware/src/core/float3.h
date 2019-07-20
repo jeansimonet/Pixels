@@ -68,6 +68,14 @@ namespace Core
 		{
 			return left.x * right.x + left.y * right.y + left.z * right.z;
 		}
+		static float3 cross(const float3& left, const float3& right)
+		{
+			return float3(
+				left.y * right.z - left.z * right.y,
+				left.z * right.x - left.x * right.z,
+				left.x * right.y - left.y * right.y
+			);
+		}
 
 		static float3 zero() { return float3(0, 0, 0); }
 	};

@@ -2,18 +2,20 @@
 #include "drivers_nrf/flash.h"
 #include "nrf_log.h"
 #include "app_error.h"
+#include "config/board_config.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_stack.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
 
-#define SETTINGS_ADDRESS 0x26000
+#define SETTINGS_ADDRESS 0x28000
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
 #define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
 using namespace Bluetooth;
+using namespace Config;
 
 namespace Config
 {
@@ -23,6 +25,7 @@ namespace SettingsManager
 
 	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void init() {
+		programDefaults();
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
 			programDefaults();
@@ -86,13 +89,15 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
-		outSettings.name[0] = '\0';
-		strcpy(outSettings.name, "Dice");
-		NRF_LOG_INFO("Setting new name to");
-		NRF_LOG_INFO(outSettings.name);
 		outSettings.sigmaDecayFast = 0.15f;
 		outSettings.sigmaDecaySlow = 0.95f;
 		outSettings.minRollTime = 300;
+
+		// Copy normals from defaults
+		const Core::float3* defaultNormals = BoardManager::getBoard()->faceNormals;
+		for (int i = 0; i < BoardManager::getBoard()->ledCount; ++i) {
+			outSettings.faceNormals[i] = defaultNormals[i];
+		}
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}
 
@@ -102,6 +107,21 @@ namespace SettingsManager
 		setDefaults(defaults);
 		Flash::writeSynchronous(SETTINGS_ADDRESS, &defaults, sizeof(Settings));
 		NRF_LOG_INFO("Settings written to flash");
+	}
+
+	void programNormals(const Core::float3* newNormals, int count) {
+
+		// Grab current settings
+		Settings settingsCopy;
+		memcpy(&settingsCopy, &settings, sizeof(Settings));
+
+		// Change normals
+		memcpy(&settingsCopy.faceNormals, newNormals, count * sizeof(Core::float3));
+
+		// Reprogram settings
+		Flash::eraseSynchronous(SETTINGS_ADDRESS, SETTINGS_PAGE_COUNT);
+		Flash::writeSynchronous(SETTINGS_ADDRESS, &settingsCopy, sizeof(Settings));
+		NRF_LOG_INFO("Settings written to flash with new noramls");
 	}
 }
 }

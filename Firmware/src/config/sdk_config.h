@@ -235,7 +235,7 @@
 // <i> in the system, how often timers are started and overall
 // <i> system latency. If queue size is too small app_timer calls
 // <i> will fail.
-#define APP_TIMER_CONFIG_OP_QUEUE_SIZE 10
+#define APP_TIMER_CONFIG_OP_QUEUE_SIZE 20
 
 // <q> APP_TIMER_CONFIG_USE_SCHEDULER  - Enable scheduling app_timer events to app_scheduler
 #define APP_TIMER_CONFIG_USE_SCHEDULER 0

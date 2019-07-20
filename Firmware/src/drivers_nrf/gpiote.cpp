@@ -30,7 +30,7 @@ namespace GPIOTE
     }
 
     void disableInterrupt(uint32_t pin) {
-        nrf_drv_gpiote_in_event_enable(pin, false);
+        nrf_drv_gpiote_in_event_disable(pin);
     }
 }
 }

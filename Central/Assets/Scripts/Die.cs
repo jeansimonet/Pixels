@@ -150,6 +150,7 @@ public class Die
         messageDelegates.Add(DieMessageType.State, OnStateMessage);
         messageDelegates.Add(DieMessageType.Telemetry, OnTelemetryMessage);
         messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
+        messageDelegates.Add(DieMessageType.NotifyUser, OnNotifuUserMessage);
     }
 
     public void Setup(string name, string address, ConnectionState connectionState, Central central)
@@ -407,7 +408,7 @@ public class Die
             // Retry every half second if necessary
             yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 0.5f, msgAction, null));
         }
-        ackAction(msgReceived);
+        ackAction?.Invoke(msgReceived);
     }
 
     #endregion
@@ -458,6 +459,21 @@ public class Die
         var dlm = (DieMessageDebugLog)message;
         string text = System.Text.Encoding.UTF8.GetString(dlm.data, 0, dlm.data.Length);
         Debug.Log(name + ": " + text);
+    }
+
+    void OnNotifuUserMessage(DieMessage message)
+    {
+        var notifyUserMsg = (DieMessageNotifyUser)message;
+        string text = System.Text.Encoding.UTF8.GetString(notifyUserMsg.data, 0, notifyUserMsg.data.Length);
+        var uiInstance = NotificationUI.instance;
+        if (uiInstance != null)
+        {
+            // Show the message and tell the die when user clicks Ok!
+            uiInstance.Show(text, () =>
+            {
+                PostMessage(new DieMessageNotifyUserAck());
+            });
+        }
     }
     #endregion
 
@@ -654,12 +670,12 @@ public class Die
 
             // We're done!
             Debug.Log("Done!");
-            callBack(true);
+            callBack?.Invoke(true);
         }
         else
         {
             Debug.Log("TimedOut");
-            callBack(false);
+            callBack?.Invoke(false);
         }
     }
 
@@ -786,6 +802,11 @@ public class Die
             {
                 outLevelAction?.Invoke(null);
             }));
+    }
+
+    public void StartHardwareTest()
+    {
+        PostMessage(new DieMessageTestHardware());
     }
 
     #endregion

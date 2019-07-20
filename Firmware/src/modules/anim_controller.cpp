@@ -54,6 +54,7 @@ namespace AnimController
 		animationCount = 0;
 		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
 		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
+		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
 	/// <summary>

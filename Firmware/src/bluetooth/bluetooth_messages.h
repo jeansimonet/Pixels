@@ -42,6 +42,10 @@ struct Message
 		MessageType_DefaultAnimSetColor,
 		MessageType_RequestBatteryLevel,
 		MessageType_BatteryLevel,
+		MessageType_Calibrate,
+		MessageType_NotifyUser,
+		MessageType_NotifyUserAck,
+		MessageType_TestHardware,
 
 		// TESTING 
 		MessageType_TestBulkSend,
@@ -195,6 +199,15 @@ struct MessageIAmADie
 	uint8_t id;
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) {}
 };
+
+struct MessageNotifyUser
+: public Message
+{
+	char text[19];
+	inline MessageNotifyUser() : Message(Message::MessageType_NotifyUser) { text[0] = '\0'; }
+};
+
+
 }
 
 #pragma pack(pop)

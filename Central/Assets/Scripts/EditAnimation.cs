@@ -13,7 +13,7 @@ namespace Animations
     public class EditKeyframe
     {
         public float time = -1;
-        public Color color;
+        public Color32 color;
 
         public EditKeyframe Duplicate()
         {
@@ -143,7 +143,7 @@ namespace Animations
             AnimationSet set = new AnimationSet();
 
             // Collect all colors used and stuff them in the palette
-            var colors = new Dictionary<Color, int>();
+            var colors = new Dictionary<Color32, int>();
             int index = 0;
             foreach (var anim in animations)
             {
@@ -165,11 +165,11 @@ namespace Animations
             set.palette = new byte[colors.Count * 3];
             foreach (var ci in colors)
             {
-                Color color = ci.Key;
+                Color32 color = ci.Key;
                 int i = ci.Value;
-                set.palette[i * 3 + 0] = (byte)(color.r * 255.0f);
-                set.palette[i * 3 + 1] = (byte)(color.g * 255.0f);
-                set.palette[i * 3 + 2] = (byte)(color.b * 255.0f);
+                set.palette[i * 3 + 0] = color.r;
+                set.palette[i * 3 + 1] = color.g;
+                set.palette[i * 3 + 2] = color.b;
             }
 
             int currentTrackOffset = 0;

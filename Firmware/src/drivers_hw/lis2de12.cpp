@@ -342,6 +342,18 @@ namespace LIS2DE12
 		I2C::read(DEV_ADDRESS, buffer, len);
 	}
 
+	bool checkWhoAMI() {
+		uint8_t c = readRegister(WHO_AM_I);  // Read WHO_AM_I register
+		return c == 0x33;
+	}
+
+	bool checkIntPin() {
+        nrf_gpio_cfg_input(BoardManager::getBoard()->accInterruptPin, NRF_GPIO_PIN_NOPULL);
+        bool ret = nrf_gpio_pin_read(BoardManager::getBoard()->accInterruptPin) == 0;
+        nrf_gpio_cfg_default(BoardManager::getBoard()->accInterruptPin);
+		return ret;
+	}
+
 	#if DICE_SELFTEST && LIS2DE12_SELFTEST
     APP_TIMER_DEF(readAccTimer);
     void readAcc(void* context) {

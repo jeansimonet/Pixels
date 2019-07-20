@@ -69,6 +69,11 @@ namespace Animations
             timeAndColor = (ushort)(((((uint)timeInMS / 20) & 0b111111111) << 7) |
                            ((uint)colorIndex & 0b1111111));
         }
+
+        public bool Equals(RGBKeyframe other)
+        {
+            return timeAndColor == other.timeAndColor;
+        }
     }
 
     /// <summary>
@@ -132,6 +137,12 @@ namespace Animations
                 return Utils.toColor((byte)(scaledRed / scaler), (byte)(scaledGreen / scaler), (byte)(scaledBlue / scaler));
             }
         }
+
+        public bool Equals(RGBTrack other)
+        {
+            return keyframesOffset == other.keyframesOffset && keyFrameCount == other.keyFrameCount;
+        }
+
     }
 
 
@@ -156,6 +167,11 @@ namespace Animations
         {
             return GetTrack(set).evaluate(set, time);
         }
+
+        public bool Equals(AnimationTrack other)
+        {
+            return trackOffset == other.trackOffset && ledIndex == other.ledIndex;
+        }
     }
 
     /// <summary>
@@ -175,6 +191,11 @@ namespace Animations
         {
             Debug.Assert(index < trackCount);
             return ref set.getTrack((ushort)(tracksOffset + index));
+        }
+
+        public bool Equals(Animation other)
+        {
+            return duration == other.duration && tracksOffset == other.tracksOffset && trackCount == other.trackCount;
         }
     };
 
@@ -307,6 +328,111 @@ namespace Animations
             Marshal.Copy(ptr, ret, 0, size);
             Marshal.FreeHGlobal(ptr);
             return ret;
+        }
+
+        public void Compress()
+        {
+            // First try to find identical sets of keyframes in tracks
+            for (int t = 0; t < rgbTracks.Length; ++t)
+            {
+                RGBTrack trackT = rgbTracks[t];
+                for (int r = t + 1; r < rgbTracks.Length; ++r)
+                {
+                    RGBTrack trackR = rgbTracks[r];
+
+                    // Only try to collapse tracks that are not exactly the same
+                    if (!trackT.Equals(trackR))
+                    {
+                        if (trackR.keyFrameCount == trackT.keyFrameCount)
+                        {
+                            // Compare actual keyframes
+                            bool kfEquals = true;
+                            for (int k = 0; k < trackR.keyFrameCount; ++k)
+                            {
+                                var kfRk = trackR.GetKeyframe(this, (ushort)k);
+                                var kfTk = trackT.GetKeyframe(this, (ushort)k);
+                                if (!kfRk.Equals(kfTk))
+                                {
+                                    kfEquals = false;
+                                    break;
+                                }
+                            }
+
+                            if (kfEquals)
+                            {
+                                // Sweet, we can compress the keyframes
+                                // Fix up any other tracks
+                                for (int i = 0; i < rgbTracks.Length; ++i)
+                                {
+                                    RGBTrack tr = rgbTracks[i];
+                                    if (tr.keyframesOffset > trackR.keyframesOffset)
+                                    {
+                                        tr.keyframesOffset -= trackR.keyFrameCount;
+                                        rgbTracks[i] = tr;
+                                    }
+                                }
+
+                                // Remove the duplicate keyframes
+                                var newKeyframes = new RGBKeyframe[keyframes.Length - trackR.keyFrameCount];
+                                for (int i = 0; i < trackR.keyframesOffset; ++i)
+                                {
+                                    newKeyframes[i] = keyframes[i];
+                                }
+                                for (int i = trackR.keyframesOffset + trackR.keyFrameCount; i < keyframes.Length; ++i)
+                                {
+                                    newKeyframes[i - trackR.keyFrameCount] = keyframes[i];
+                                }
+                                keyframes = newKeyframes;
+
+                                // And make R point to the keyframes of T
+                                trackR.keyframesOffset = trackT.keyframesOffset;
+                                rgbTracks[r] = trackR;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Then remove duplicate RGB tracks
+            for (int t = 0; t < rgbTracks.Length; ++t)
+            {
+                ref RGBTrack trackT = ref rgbTracks[t];
+                for (int r = t + 1; r < rgbTracks.Length; ++r)
+                {
+                    ref RGBTrack trackR = ref rgbTracks[r];
+                    if (trackR.Equals(trackT))
+                    {
+                        // Remove track R and fix anim tracks
+                        // Fix up other animation tracks
+                        for (int j = 0; j < tracks.Length; ++j)
+                        {
+                            ref AnimationTrack trj = ref tracks[j];
+                            if (trj.trackOffset == r)
+                            {
+                                trj.trackOffset = (ushort)t;
+                            }
+                            else if (trj.trackOffset > r)
+                            {
+                                trj.trackOffset--;
+                            }
+                        }
+
+                        // Remove the duplicate RGBTrack
+                        var newRGBTracks = new RGBTrack[rgbTracks.Length - 1];
+                        for (int j = 0; j < r; ++j)
+                        {
+                            newRGBTracks[j] = rgbTracks[j];
+                        }
+                        for (int j = r + 1; j < rgbTracks.Length; ++j)
+                        {
+                            newRGBTracks[j - 1] = rgbTracks[j];
+                        }
+                        rgbTracks = newRGBTracks;
+                    }
+                }
+            }
+
+            // We should also remove duplicate anim tracks and animation
         }
     }
 }

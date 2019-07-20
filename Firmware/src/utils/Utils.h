@@ -3,6 +3,11 @@
 #include <stdint.h>
 #include <algorithm>
 
+namespace Core
+{
+	struct float3;
+}
+
 namespace Utils
 {
 	int parseWord(char*& text, int& len, char* outWord, int outWordLen);
@@ -19,5 +24,10 @@ namespace Utils
 	uint8_t sine8(uint8_t x);
 	uint8_t gamma8(uint8_t x);
 	uint32_t gamma(uint32_t color);
+
+	void CalibrateNormals(
+		int face1Index, Core::float3 face1Normal,
+		int face2Index, Core::float3 face2Normal,
+		Core::float3* inOutNormals, int count);
 }
 

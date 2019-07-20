@@ -125,26 +125,26 @@ namespace BoardManager
         .ledCount = 20,
         .faceToLedLookup = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }, // This is not the correct data
         .faceNormals = {
-            {0, 0, 1},  // This is not the correct data
-            {0, 0, -1}, // This is not the correct data
-            {0, 1, 0},  // This is not the correct data
-            {0, -1, 0}, // This is not the correct data
-            {1, 0, 0},  // This is not the correct data
-            {-1, 0, 0}, // This is not the correct data
-            {0, 0, 1},  // This is not the correct data
-            {0, 0, -1}, // This is not the correct data
-            {0, 1, 0},  // This is not the correct data
-            {0, -1, 0}, // This is not the correct data
-            {1, 0, 0},  // This is not the correct data
-            {-1, 0, 0}, // This is not the correct data
-            {0, 0, 1},  // This is not the correct data
-            {0, 0, -1}, // This is not the correct data
-            {0, 1, 0},  // This is not the correct data
-            {0, -1, 0}, // This is not the correct data
-            {1, 0, 0},  // This is not the correct data
-            {-1, 0, 0}, // This is not the correct data
-            {1, 0, 0},  // This is not the correct data
-            {-1, 0, 0}  // This is not the correct data
+            {-0.1273862f,  0.3333025f,  0.9341605f},
+            { 0.6667246f, -0.7453931f, -0.0000000f},
+            { 0.8726854f,  0.3333218f, -0.3568645f},
+            {-0.3333083f, -0.7453408f, -0.5773069f},
+            { 0.0000000f, -1.0000000f, -0.0000000f},
+            {-0.7453963f,  0.3333219f,  0.5773357f},
+            { 0.3333614f,  0.7453930f, -0.5774010f},
+            {-0.7453431f,  0.3333741f, -0.5773722f},
+            { 0.8726999f,  0.3333025f,  0.3567604f},
+            { 0.1273475f, -0.3333741f,  0.9341723f},
+            {-0.1273475f,  0.3333741f, -0.9341723f},
+            {-0.8726999f, -0.3333025f, -0.3567604f},
+            { 0.7453431f, -0.3333741f,  0.5773722f},
+            {-0.3331230f, -0.7450288f,  0.5778139f},
+            { 0.7453963f, -0.3333219f, -0.5773357f},
+            { 0.0000000f,  1.0000000f, -0.0000000f},
+            { 0.3333083f,  0.7453408f,  0.5773069f},
+            {-0.8726854f, -0.3333218f,  0.3568645f},
+            {-0.6667246f,  0.7453931f, -0.0000000f},
+            { 0.1273862f, -0.3333025f, -0.9341605f},
         }
     };
 

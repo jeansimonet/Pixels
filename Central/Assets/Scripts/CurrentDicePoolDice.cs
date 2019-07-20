@@ -14,6 +14,7 @@ public class CurrentDicePoolDice
     public Button diceButton;
     public CanvasGroup commandGroup;
     public Button forgetButton;
+    public Button testButton;
 
     public Die die { get; private set; }
     public Central central;
@@ -85,6 +86,9 @@ public class CurrentDicePoolDice
         // Register commands
         forgetButton.onClick.RemoveAllListeners();
         forgetButton.onClick.AddListener(ForgetDie);
+
+        testButton.onClick.RemoveAllListeners();
+        testButton.onClick.AddListener(TestDie);
     }
 
     void HideCommands()
@@ -98,6 +102,12 @@ public class CurrentDicePoolDice
     {
         // Tell central to forget about this die
         central.ForgetDie(die);
+        HideCommands();
+    }
+
+    void TestDie()
+    {
+        die.StartHardwareTest();
         HideCommands();
     }
 

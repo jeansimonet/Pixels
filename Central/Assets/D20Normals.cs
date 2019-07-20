@@ -12,7 +12,8 @@ public class D20Normals : MonoBehaviour
     void Start()
     {
         PositionAccelerometer();
-//        GenerateD20FaceMapping();
+        //        GenerateD20FaceMapping();
+        TransformNormals();
     }
 
     // Update is called once per frame
@@ -98,6 +99,31 @@ public class D20Normals : MonoBehaviour
     // real acc Z => AccEuler Y
     // real acc X => AccEuler -Z
     // real acc Y => AccEuler X
+
+    Vector3[] rotatedD20Normals =
+    {        new Vector3(-0.9341605f, -0.1273862f,  0.3333025f),        new Vector3( 0.0000000f,  0.6667246f, -0.7453931f),        new Vector3( 0.3568645f,  0.8726854f,  0.3333218f),        new Vector3( 0.5773069f, -0.3333083f, -0.7453408f),        new Vector3( 0.0000000f,  0.0000000f, -1.0000000f),        new Vector3(-0.5773357f, -0.7453963f,  0.3333219f),        new Vector3( 0.5774010f,  0.3333614f,  0.7453930f),        new Vector3( 0.5773722f, -0.7453431f,  0.3333741f),        new Vector3(-0.3567604f,  0.8726999f,  0.3333025f),        new Vector3(-0.9341723f,  0.1273475f, -0.3333741f),        new Vector3( 0.9341723f, -0.1273475f,  0.3333741f),        new Vector3( 0.3567604f, -0.8726999f, -0.3333025f),        new Vector3(-0.5773722f,  0.7453431f, -0.3333741f),        new Vector3(-0.5778139f, -0.3331230f, -0.7450288f),        new Vector3( 0.5773357f,  0.7453963f, -0.3333219f),        new Vector3( 0.0000000f,  0.0000000f,  1.0000000f),        new Vector3(-0.5773069f,  0.3333083f,  0.7453408f),        new Vector3(-0.3568645f, -0.8726854f, -0.3333218f),        new Vector3( 0.0000000f, -0.6667246f,  0.7453931f),        new Vector3( 0.9341605f,  0.1273862f, -0.3333025f),    };
+    Vector3[] rotatedD20NormalsAccRF =
+    {        new Vector3(-0.1273862f,  0.3333025f,  0.9341605f),        new Vector3( 0.6667246f, -0.7453931f, -0.0000000f),        new Vector3( 0.8726854f,  0.3333218f, -0.3568645f),        new Vector3(-0.3333083f, -0.7453408f, -0.5773069f),        new Vector3( 0.0000000f, -1.0000000f, -0.0000000f),        new Vector3(-0.7453963f,  0.3333219f,  0.5773357f),        new Vector3( 0.3333614f,  0.7453930f, -0.5774010f),        new Vector3(-0.7453431f,  0.3333741f, -0.5773722f),        new Vector3( 0.8726999f,  0.3333025f,  0.3567604f),        new Vector3( 0.1273475f, -0.3333741f,  0.9341723f),        new Vector3(-0.1273475f,  0.3333741f, -0.9341723f),        new Vector3(-0.8726999f, -0.3333025f, -0.3567604f),        new Vector3( 0.7453431f, -0.3333741f,  0.5773722f),        new Vector3(-0.3331230f, -0.7450288f,  0.5778139f),        new Vector3( 0.7453963f, -0.3333219f, -0.5773357f),        new Vector3( 0.0000000f,  1.0000000f, -0.0000000f),        new Vector3( 0.3333083f,  0.7453408f,  0.5773069f),        new Vector3(-0.8726854f, -0.3333218f,  0.3568645f),        new Vector3(-0.6667246f,  0.7453931f, -0.0000000f),        new Vector3( 0.1273862f, -0.3333025f, -0.9341605f),    };
+
+    void TransformNormals()
+    {
+        var rotAcc = Quaternion.Inverse(Quaternion.Euler(-52.622f, -90.0f, 120.0f));
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("{");
+        for (int i = 0; i < 20; ++i)
+        {
+            Vector3 rotated = rotAcc * d20normals[i];
+            builder.Append("new Vector3(");
+            builder.Append(rotated.x);
+            builder.Append("f, ");
+            builder.Append(rotated.y);
+            builder.Append("f, ");
+            builder.Append(rotated.z);
+            builder.AppendLine("f),");
+        }
+        builder.AppendLine("}");
+        Debug.Log(builder.ToString());
+    }
 
     void PositionAccelerometer()
     {

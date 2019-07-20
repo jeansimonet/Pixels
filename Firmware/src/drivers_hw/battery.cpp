@@ -69,7 +69,7 @@ namespace Battery
         // Status pin needs a pull-up, and is pulled low when charging
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
         nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_NOPULL);
-        bool ret = nrf_gpio_pin_read(BoardManager::getBoard()->chargingStatePin) == 0;
+        bool ret = nrf_gpio_pin_read(statePin) == 0;
         nrf_gpio_cfg_default(statePin);
         return ret;
     }
@@ -77,7 +77,7 @@ namespace Battery
     bool checkCoil() {
         uint32_t coilPin = BoardManager::getBoard()->CoilStatePin;
         nrf_gpio_cfg_input(coilPin, NRF_GPIO_PIN_NOPULL);
-        bool ret = nrf_gpio_pin_read(BoardManager::getBoard()->CoilStatePin) != 0;
+        bool ret = nrf_gpio_pin_read(coilPin) != 0;
         nrf_gpio_cfg_default(coilPin);
         return ret;
     }

@@ -32,6 +32,7 @@
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
+#include "modules/hardware_test.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -75,7 +76,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        Watchdog::init();
+        //5Watchdog::init();
 
         // Then the log system
         Log::init();
@@ -166,6 +167,8 @@ namespace Die
         // Battery controller relies on the battery driver
         BatteryController::init();
 
+        HardwareTest::init();
+
         // Initialize main logic manager
         initMainLogic();
 
@@ -176,7 +179,7 @@ namespace Die
     // Main loop!
     void update() {
         Scheduler::update();
-        Watchdog::feed();
+        //Watchdog::feed();
         PowerManager::feed();
         PowerManager::update();
     }

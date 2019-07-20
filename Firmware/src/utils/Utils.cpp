@@ -1,6 +1,12 @@
 #include "utils.h"
 #include <nrf_delay.h>
 #include <app_timer.h>
+#include "core/float3.h"
+#include "core/matrix3x3.h"
+#include "config/settings.h"
+
+using namespace Core;
+using namespace Config;
 
 namespace Utils
 {
@@ -113,4 +119,36 @@ namespace Utils
         return toColor(r, g, b);
 	}
 
+	void CalibrateNormals(
+		int face1Index, float3 face1Normal,
+		int face2Index, float3 face2Normal,
+		float3* inOutNormals, int count) {
+		// We need to build a rotation matrix that turns canonical face normals into the reference frame
+		// of the accelerator, as defined by the measured coordinates of the 2 passed in face normals.
+		float3 canonFace1Normal = SettingsManager::getSettings()->faceNormals[face1Index];
+		float3 canonFace2Normal = SettingsManager::getSettings()->faceNormals[face2Index];
+
+		// Create our intermediate reference frame in both spaces
+		// Canonical space
+		float3 intX_Canon = canonFace1Normal; intX_Canon.normalize();
+		float3 intZ_Canon = float3::cross(intX_Canon, canonFace2Normal).normalize();
+		float3 intY_Canon = float3::cross(intZ_Canon, intX_Canon);
+		matrix3x3 int_Canon(intX_Canon, intY_Canon, intZ_Canon);
+
+		// Accelerometer space
+		float3 intX_Acc = face1Normal; intX_Acc.normalize();
+		float3 intZ_Acc = float3::cross(intX_Acc, face2Normal).normalize();
+		float3 intY_Acc = float3::cross(intZ_Acc, intX_Acc);
+		matrix3x3 int_Acc(intX_Acc, intY_Acc, intZ_Acc);
+
+		// This is the matrix that rotates canonical normals into accelerometer reference frame
+		matrix3x3 rot = matrix3x3::mul(int_Acc, matrix3x3::transpose(int_Canon));
+
+		// Now transform all the normals
+		for (int i = 0; i < count; ++i) {
+			float3 canonNormal = inOutNormals[i];
+			float3 newNormal = matrix3x3::mul(rot, canonNormal);
+			inOutNormals[i] = newNormal;
+		}
+	}
 }

@@ -31,7 +31,7 @@ namespace BatteryController
 
 	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
 
-	_APP_TIMER_DEF(batteryControllerTimer);
+	APP_TIMER_DEF(batteryControllerTimer);
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);

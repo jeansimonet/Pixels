@@ -39,6 +39,10 @@ public enum DieMessageType : byte
     DefaultAnimSetColor,
     RequestBatteryLevel,
     BatteryLevel,
+    Calibrate,
+    NotifyUser,
+    NotifyUserAck,
+    TestHardware,
 
     TestBulkSend,
     TestBulkReceive,
@@ -126,6 +130,19 @@ public static class DieMessages
                 case DieMessageType.BatteryLevel:
                     ret = FromByteArray<DieMessageBatteryLevel>(data);
                     break;
+                case DieMessageType.Calibrate:
+                    ret = FromByteArray<DieMessageCalibrate>(data);
+                    break;
+                case DieMessageType.NotifyUser:
+                    ret = FromByteArray<DieMessageNotifyUser>(data);
+                    break;
+                case DieMessageType.NotifyUserAck:
+                    ret = FromByteArray<DieMessageNotifyUserAck>(data);
+                    break;
+                case DieMessageType.TestHardware:
+                    ret = FromByteArray<DieMessageTestHardware>(data);
+                    break;
+
                 default:
                     throw new System.Exception("Unhandled Message type for marshalling");
                     break;
@@ -395,3 +412,32 @@ public class DieMessageRequestBatteryLevel
     public DieMessageType type { get; set; } = DieMessageType.RequestBatteryLevel;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageCalibrate
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.Calibrate;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageNotifyUser
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.NotifyUser;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 19)]
+    public byte[] data;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageNotifyUserAck
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.NotifyUserAck;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTestHardware
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TestHardware;
+}

@@ -183,5 +183,17 @@ namespace MessageService
             NRF_LOG_ERROR("Bad Message Length %d", len);
         }
     }
+
+    void NotifyUser(const char* text, NotifyUserCallback callback) {
+		MessageNotifyUser notifyMsg;
+		strcpy(notifyMsg.text, text);
+		MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* ackMsg)
+		{
+			MessageService::UnregisterMessageHandler(Message::MessageType_NotifyUserAck);
+            ((NotifyUserCallback)ctx)();
+        });
+		MessageService::SendMessage(&notifyMsg);
+    }
+
 }
 }

@@ -100,6 +100,7 @@ public class DiceAnimProgrammer
         pleaseWait.Show("Uploading Animation Set to Dice");
         timeline.ApplyChanges();
         var rawAnim = animationSet.ToAnimationSet();
+        rawAnim.Compress();
         var newByteArray = rawAnim.ToByteArray();
         if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
         {

@@ -8,11 +8,14 @@
 #include "app_error.h"
 #include "nrf_log.h"
 #include "config/settings.h"
+#include "bluetooth/bluetooth_message_service.h"
+#include "bluetooth/bluetooth_messages.h"
 
 using namespace Modules;
 using namespace Core;
 using namespace DriversHW;
 using namespace Config;
+using namespace Bluetooth;
 
 // This defines how frequently we try to read the accelerometer
 #define TIMER2_RESOLUTION (20)	// ms
@@ -38,7 +41,7 @@ namespace Accelerometer
 		return float3(LIS2DE12::convert(jerkX), LIS2DE12::convert(jerkY), LIS2DE12::convert(jerkZ));
 	}
 
-	_APP_TIMER_DEF(accelControllerTimer);
+	APP_TIMER_DEF(accelControllerTimer);
 
 	int face;
 	float slowSigma;
@@ -51,7 +54,11 @@ namespace Accelerometer
 
 	void updateState();
 
-	void init()	{
+    void CalibrateHandler(void* context, const Message* msg);
+
+    void init() {
+        MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
+
 		face = 0;
 		start();
 		NRF_LOG_INFO("Accelerometer initialized");
@@ -151,7 +158,7 @@ namespace Accelerometer
 	{
 		// Compare against face normals stored in board manager
 		int faceCount = BoardManager::getBoard()->ledCount;
-		auto& normals = BoardManager::getBoard()->faceNormals;
+		auto& normals = SettingsManager::getSettings()->faceNormals;
 		float3 acc(x, y, z);
 		acc.normalize();
 		float bestDot = -1000.0f;
@@ -196,6 +203,43 @@ namespace Accelerometer
 		clients.UnregisterWithToken(param);
 	}
 
+	struct CalibrationNormals
+	{
+		float3 face1;
+		float3 face5;
+	};
+	CalibrationNormals* measuredNormals = nullptr;
 
+    void CalibrateHandler(void* context, const Message* msg) {
+		// Start calibration!
+		measuredNormals = (CalibrationNormals*)malloc(sizeof(CalibrationNormals));
+
+		// Ask user to place die on face 1
+		MessageService::NotifyUser("Place face 1 up", [] ()
+		{
+			// Die is on face 1
+			// Read the normals
+			LIS2DE12::read();
+			measuredNormals->face1 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+
+			// Place on face 5
+			MessageService::NotifyUser("Place face 5 up", [] ()
+			{
+				// Die is on face 5
+				// Read the normals
+				LIS2DE12::read();
+				measuredNormals->face5 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+
+				// Now we can calibrate
+				int normalCount = BoardManager::getBoard()->ledCount;
+				float3 canonNormalsCopy[normalCount];
+				memcpy(canonNormalsCopy, BoardManager::getBoard()->faceNormals, normalCount * sizeof(float3));
+				Utils::CalibrateNormals(0, measuredNormals->face1, 4, measuredNormals->face5, canonNormalsCopy, normalCount);
+
+				// And flash the new normals
+				SettingsManager::programNormals(canonNormalsCopy, normalCount);
+			});
+		});
+	}
 }
 }
