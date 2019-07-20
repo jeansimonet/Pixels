@@ -113,7 +113,7 @@ public class DiceAnimProgrammer
             // Upload!
             if (die != null)
             {
-                yield return die.UploadAnimationSet(rawAnim);
+                yield return die.UploadAnimationSet(rawAnim, null);
             }
         }
         pleaseWait.Hide();

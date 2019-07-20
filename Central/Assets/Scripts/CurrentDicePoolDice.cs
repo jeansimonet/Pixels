@@ -13,11 +13,7 @@ public class CurrentDicePoolDice
     public Image diceImage;
     public Button diceButton;
     public CanvasGroup commandGroup;
-    public Button renameButton;
     public Button forgetButton;
-    public Button flashButton;
-    public Button setColorButton;
-    public RenameDieDialog renameDieDialog;
 
     public Die die { get; private set; }
     public Central central;
@@ -41,11 +37,6 @@ public class CurrentDicePoolDice
 
     public void Setup(Die die, Central central)
     {
-        if (this.die != null)
-        {
-            die.OnSettingsChanged -= OnDieSettingsChanged;
-        }
-
         this.die = die;
         this.central = central;
         nameText.text = die.name;
@@ -56,9 +47,9 @@ public class CurrentDicePoolDice
         diceButton.onClick.RemoveAllListeners();
         diceButton.onClick.AddListener(ShowHideCommands);
 
-        this.die.OnSettingsChanged += OnDieSettingsChanged;
         this.die.OnConnectionStateChanged += UpdateConnectionState;
 
+        voltageText.text = "Batt: Unknown";
         if (die.connectionState >= Die.ConnectionState.Connected)
         {
             MonitorBatteryLevel(true);
@@ -69,7 +60,6 @@ public class CurrentDicePoolDice
     {
         if (this.die != null)
         {
-            this.die.OnSettingsChanged -= OnDieSettingsChanged;
             this.die.OnConnectionStateChanged -= UpdateConnectionState;
         }
     }
@@ -95,16 +85,6 @@ public class CurrentDicePoolDice
         // Register commands
         forgetButton.onClick.RemoveAllListeners();
         forgetButton.onClick.AddListener(ForgetDie);
-
-        renameButton.onClick.RemoveAllListeners();
-        renameButton.onClick.AddListener(RenameDie);
-
-        flashButton.onClick.RemoveAllListeners();
-        flashButton.onClick.AddListener(FlashDie);
-
-        setColorButton.onClick.RemoveAllListeners();
-        setColorButton.onClick.AddListener(SetNewDieColor);
-
     }
 
     void HideCommands()
@@ -150,7 +130,7 @@ public class CurrentDicePoolDice
         while (true)
         {
             UpdateBatteryLevel();
-            yield return new WaitForSeconds(10.0f);
+            yield return new WaitForSeconds(5.0f);
         }
     }
 
@@ -161,6 +141,10 @@ public class CurrentDicePoolDice
             if (lvl.HasValue)
             {
                 voltageText.text = "Batt: " + lvl.Value.ToString("0.00") + "V";
+            }
+            else
+            {
+                voltageText.text = "Batt: Unknown";
             }
         });
     }
@@ -187,28 +171,6 @@ public class CurrentDicePoolDice
             "6E401002-B5A3-F393-E0A9-E50E24DCCA9E",
             new byte[1] { 1 },
             1, false, null);
-    }
-
-    void FlashDie()
-    {
-        HideCommands();
-        die.Flash(0);
-    }
-
-    void SetNewDieColor()
-    {
-        HideCommands();
-        die.SetNewColor(null);
-    }
-
-    void UpdateDieName()
-    {
-        nameText.text = die.name;
-    }
-
-    void OnDieSettingsChanged(Die die)
-    {
-        UpdateDieName();
     }
 
     void UpdateConnectionState(Die die, Die.ConnectionState newState)

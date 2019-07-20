@@ -34,7 +34,8 @@ public class Central
     public delegate void OnBluetoothErrorEvent(string message);
     public OnBluetoothErrorEvent onBluetoothError;
 
-    List<Die> dice;
+    List<Die> discoveredDice;
+    List<Die> connectedDice;
 
     public State state
     {
@@ -45,7 +46,8 @@ public class Central
 
     void Awake()
     {
-        dice = new List<Die>();
+        discoveredDice = new List<Die>();
+        connectedDice = new List<Die>();
         virtualBluetooth = GetComponent<VirtualBluetoothInterface>();
     }
 
@@ -76,20 +78,25 @@ public class Central
                 {
                     // Do we already know about this die?
                     Die die = null;
-                    if (!dice.Any(dc => dc.address == address))
+                    if (connectedDice.Any(dc => dc.address == address))
                     {
-                        // We do not, create a new die
+                        // We were previously connected to the die, reconnect
+                        die = discoveredDice.Find(dc => dc.address == address);
+                        Debug.Log("Reconnecting to " + die.name);
+                        die.Connect();
+                    }
+                    else if (!discoveredDice.Any(dc => dc.address == address))
+                    {
+                        // We didn't know this die before
                         die = CreateDie(name, address);
-                        dice.Add(die);
-                    }
-                    else
-                    {
-                        die = dice.Find(dc => dc.address == address);
-                    }
-                    die.OnAdvertising();
+                        Debug.Log("New die " + die.name);
+                        discoveredDice.Add(die);
+                        die.OnAdvertising();
 
-                    if (onDieDiscovered != null)
-                        onDieDiscovered(die);
+                        if (onDieDiscovered != null)
+                            onDieDiscovered(die);
+                    }
+                    // Else we know about the die but are not interested
                 };
 
             _state = State.Scanning;
@@ -128,7 +135,17 @@ public class Central
 
     public void ConnectToDie(Die die)
     {
-        System.Action<string> onConnected = (ignore) => { die.OnConnected(); onDieConnected?.Invoke(die); };
+        System.Action<string> onConnected = (ignore) =>
+            {
+                if (discoveredDice.Contains(die))
+                {
+                    discoveredDice.Remove(die);
+                    connectedDice.Add(die);
+                }
+                die.OnConnected();
+                onDieConnected?.Invoke(die);
+            };
+
         System.Action<string> onDisconnected = (ignore) => { die.OnLostConnection(); onDieDisconnected?.Invoke(die); };
         System.Action<string, string> onService = (ignore, service) => die.OnServiceDiscovered(service);
         System.Action<string, string, string> onCharacteristic = (ignore, service, charact) => die.OnCharacterisicDiscovered(service, charact);
@@ -179,8 +196,9 @@ public class Central
 
     public void ForgetDie(Die die)
     {
-        dice.Remove(die);
+        discoveredDice.Remove(die);
         DisconnectDie(die);
+        onDieForgotten?.Invoke(die);
         DestroyDie(die);
     }
 
@@ -203,7 +221,7 @@ public class Central
 
     public IEnumerable<Die> diceList
     {
-        get { return dice; }
+        get { return discoveredDice; }
     }
 
     void OnApplicationQuit()

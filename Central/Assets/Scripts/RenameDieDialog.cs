@@ -40,16 +40,6 @@ public class RenameDieDialog : MonoBehaviour
         {
             Hide();
         });
-
-        renameButton.onClick.RemoveAllListeners();
-        renameButton.onClick.AddListener(() =>
-        {
-            if (nameField.text != null && nameField.text.Length > 0)
-            {
-                selectedDice.Rename(nameField.text);
-                Hide();
-            }
-        });
     }
 
     public void Hide()

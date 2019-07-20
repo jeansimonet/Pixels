@@ -78,6 +78,7 @@ namespace BatteryController
         float level = Battery::checkVBat();
         MessageBatteryLevel lvl;
         lvl.level = level;
+        NRF_LOG_INFO("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(level));
         MessageService::SendMessage(&lvl);
     }
 

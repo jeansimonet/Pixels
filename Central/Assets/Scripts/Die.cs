@@ -366,29 +366,6 @@ public class Die
         }
     }
 
-    IEnumerator SendMessageWithAckCr<T>(T message, DieMessageType ackType)
-        where T : DieMessage
-    {
-        bool msgReceived = false;
-        MessageReceivedDelegate callback = (ackMsg) =>
-        {
-            msgReceived = true;
-        };
-
-        AddMessageHandler(ackType, callback);
-        byte[] msgBytes = DieMessages.ToByteArray(message);
-        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
-
-        yield return new WaitUntil(() => msgReceived);
-        RemoveMessageHandler(ackType, callback);
-    }
-
-    IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut)
-        where T : DieMessage
-    {
-        return SendMessageWithAckOrTimeoutCr(message, ackType, timeOut, null, null);
-    }
-
     IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut, System.Action<DieMessage> ackAction, System.Action timeoutAction)
         where T : DieMessage
     {
@@ -416,9 +393,26 @@ public class Die
             timeoutAction?.Invoke();
         }
     }
+
+    IEnumerator SendMessageWithAckRetryCr<T>(T message, DieMessageType ackType, System.Action<DieMessage> ackAction)
+        where T : DieMessage
+    {
+        DieMessage msgReceived = null;
+        System.Action<DieMessage> msgAction = (msg) =>
+        {
+            msgReceived = msg;
+        };
+        while (msgReceived == null)
+        {
+            // Retry every half second if necessary
+            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 0.5f, msgAction, null));
+        }
+        ackAction(msgReceived);
+    }
+
     #endregion
 
-    #region MessageHandlers
+        #region MessageHandlers
     void OnStateMessage(DieMessage message)
     {
         // Handle the message
@@ -559,7 +553,7 @@ public class Die
         // Send setup message
         var setup = new DieMessageBulkSetup();
         setup.size = remainingSize;
-        yield return StartCoroutine(SendMessageWithAckCr(setup, DieMessageType.BulkSetupAck));
+        yield return StartCoroutine(SendMessageWithAckRetryCr(setup, DieMessageType.BulkSetupAck, null));
 
         Debug.Log("Die is ready, sending data");
 
@@ -572,7 +566,7 @@ public class Die
             data.size = (byte)Mathf.Min(remainingSize, 16);
             data.data = new byte[16];
             System.Array.Copy(bytes, offset, data.data, 0, data.size);
-            yield return StartCoroutine(SendMessageWithAckCr(data, DieMessageType.BulkDataAck));
+            yield return StartCoroutine(SendMessageWithAckRetryCr(data, DieMessageType.BulkDataAck, null));
             remainingSize -= data.size;
             offset += data.size;
         }
@@ -629,12 +623,12 @@ public class Die
         onBufferReady.Invoke(buffer);
     }
 
-    public Coroutine UploadAnimationSet(AnimationSet set)
+    public Coroutine UploadAnimationSet(AnimationSet set, System.Action<bool> callBack)
     {
-        return PerformBluetoothOperation(UploadAnimationSetCr(set));
+        return PerformBluetoothOperation(UploadAnimationSetCr(set, callBack));
     }
 
-    IEnumerator UploadAnimationSetCr(AnimationSet set)
+    IEnumerator UploadAnimationSetCr(AnimationSet set, System.Action<bool> callBack)
     {
         // Prepare the die
         var prepareDie = new DieMessageTransferAnimSet();
@@ -649,15 +643,24 @@ public class Die
         Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
         Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.AnimationTrack>());
         Debug.Log("animations: " + prepareDie.animationCount + " * " + Marshal.SizeOf<Animations.Animation>());
-        yield return StartCoroutine(SendMessageWithAckCr(prepareDie, DieMessageType.TransferAnimSetAck));
+        bool timeout = false;
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(prepareDie, DieMessageType.TransferAnimSetAck, 3.0f, null, () => timeout = true));
+        if (!timeout)
+        {
+            Debug.Log("die is ready, sending animations");
+            Debug.Log("byte array should be: " + set.ComputeAnimationDataSize());
+            var setData = set.ToByteArray();
+            yield return StartCoroutine(UploadBulkDataCr(setData));
 
-        Debug.Log("die is ready, sending animations");
-        Debug.Log("byte array should be: " + set.ComputeAnimationDataSize());
-        var setData = set.ToByteArray();
-        yield return StartCoroutine(UploadBulkDataCr(setData));
-
-        // We're done!
-        Debug.Log("Done!");
+            // We're done!
+            Debug.Log("Done!");
+            callBack(true);
+        }
+        else
+        {
+            Debug.Log("TimedOut");
+            callBack(false);
+        }
     }
 
     //public IEnumerator DownloadAnimationSet(AnimationSet outSet)
@@ -700,7 +703,7 @@ public class Die
     {
         // Prepare the die
         var prepareDie = new DieMessageTransferSettings();
-        yield return StartCoroutine(SendMessageWithAckCr(prepareDie, DieMessageType.TransferSettingsAck));
+        yield return StartCoroutine(SendMessageWithAckRetryCr(prepareDie, DieMessageType.TransferSettingsAck, null));
 
         // Die is ready, perform bulk transfer of the settings
         byte[] settingsBytes = DieSettings.ToByteArray(settings);
@@ -717,7 +720,7 @@ public class Die
     IEnumerator DownloadSettingsCr(System.Action<DieSettings> settingsReadCallback)
     {
         // Request the settings from the die
-        yield return StartCoroutine(SendMessageWithAckCr(new DieMessageRequestSettings(), DieMessageType.TransferSettings));
+        yield return StartCoroutine(SendMessageWithAckRetryCr(new DieMessageRequestSettings(), DieMessageType.TransferSettings, null));
 
         // Got the message, acknowledge it
         PostMessage(new DieMessageTransferSettingsAck());
@@ -733,55 +736,6 @@ public class Die
     public Coroutine RequestTelemetry(bool on)
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessageRequestTelemetry() { telemetry = on ? (byte)1 : (byte)0 }));
-    }
-
-    public Coroutine SetNewColor(System.Action<Color> displayColor)
-    {
-        return PerformBluetoothOperation(SetNewColorCr(displayColor));
-    }
-
-    IEnumerator SetNewColorCr(System.Action<Color> displayColor)
-    {
-        float hue = Random.Range(0.0f, 1.0f);
-        Color newDisplayColor = Color.HSVToRGB(hue, 1.0f, 1.0f);
-        Color newColor = Color.HSVToRGB(hue, 1.0f, 0.5f);
-
-        Color32 color32 = newColor;
-        int colorRGB = color32.r << 16 | color32.g << 8 | color32.b;
-
-        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(new DieMessageProgramDefaultAnimSet() { color = (uint)colorRGB }, DieMessageType.ProgramDefaultAnimSetFinished, 5.0f));
-
-        if (OnSettingsChanged != null)
-        {
-            OnSettingsChanged(this);
-        }
-
-        if (displayColor != null)
-        {
-            displayColor(newDisplayColor);
-        }
-    }
-
-    public Coroutine Flash(int index)
-    {
-        return PerformBluetoothOperation(SendMessageWithAckOrTimeoutCr(new DieMessageFlash() { animIndex = (byte)index }, DieMessageType.FlashFinished, 5.0f));
-    }
-
-    public Coroutine Rename(string newName)
-    {
-        return PerformBluetoothOperation(RenameCr(newName));
-    }
-
-    IEnumerator RenameCr(string newName)
-    {
-        gameObject.name = newName;
-        name = newName;
-        yield return null;
-        //yield return StartCoroutine(SendMessageWithAckOrTimeout(new DieMessageRename() { newName = newName }, DieMessageType.RenameFinished, 5.0f));
-        //if (OnSettingsChanged != null)
-        //{
-        //    OnSettingsChanged(this);
-        //}
     }
 
     public Coroutine RequestBulkData()
