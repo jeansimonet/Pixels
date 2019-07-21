@@ -9,7 +9,16 @@ public class BattleGameDieUI : MonoBehaviour
     public Die die { get; set; }
 
     [SerializeField]
-    Text _NameField;
+    Text _NameField = null;
+
+    [SerializeField]
+    Image _VisibleFace = null;
+
+    [SerializeField]
+    Sprite[] _AllFaces = null;
+
+    [SerializeField]
+    Sprite _NotSettled = null;
 
     public void Setup(Die die)
     {
@@ -25,6 +34,6 @@ public class BattleGameDieUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        _VisibleFace.sprite = die?.state == Die.State.Idle ? _AllFaces[die.face] : _NotSettled;
     }
 }
