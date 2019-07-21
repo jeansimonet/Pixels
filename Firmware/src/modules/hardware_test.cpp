@@ -44,6 +44,10 @@ namespace HardwareTest
 
     void HardwareTestHandler(void* context, const Message* msg) {
         NRF_LOG_INFO("Starting Hardware Test");
+
+        // Reprogram default anim settings
+        AnimationSet::ProgramDefaultAnimationSet();
+
         // Check Accelerometer WHOAMI
         if (LIS2DE12::checkWhoAMI()) {
             NRF_LOG_INFO("Good WHOAMI");

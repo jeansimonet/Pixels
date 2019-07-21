@@ -309,3 +309,10 @@ flash_softdevice:
 	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
 	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
+
+flash_bootloader:
+	@echo Flashing: $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex
+	nrfjprog -f nrf52 -s 801001366 --program $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --reset
+
+reflash:  erase  flash  flash_softdevice
