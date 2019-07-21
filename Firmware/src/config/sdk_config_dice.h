@@ -2,7 +2,9 @@
 //==========================================================
 // HARDWARE TESTING
 //==========================================================
+#ifndef DICE_SELFTEST
 #define DICE_SELFTEST 0
+#endif
 
 #define WATCHDOG_SELFTEST 0
 #define TIMERS_SELFTEST 0

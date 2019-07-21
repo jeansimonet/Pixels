@@ -43,7 +43,7 @@ namespace Flash
         * You must set these manually, even at runtime, before nrf_fstorage_init() is called.
         * The function nrf5_flash_end_addr_get() can be used to retrieve the last address on the
         * last page of flash available to write data. */
-        fstorage.start_addr = 0x26000;
+        fstorage.start_addr = FSTORAGE_START;
         fstorage.end_addr   = nrf5_flash_end_addr_get();
 
         ret_code_t rc = nrf_fstorage_init(&fstorage, &nrf_fstorage_sd, NULL);
@@ -170,6 +170,14 @@ namespace Flash
     uint32_t bytesToPages(uint32_t size) {
         uint32_t pageSize = fstorage.p_flash_info->erase_unit;
         return (size + pageSize - 1) / pageSize;
+    }
+
+    uint32_t getFlashStartAddress() {
+        return fstorage.start_addr;
+    }
+
+    uint32_t getFlashEndAddress() {
+        return fstorage.end_addr;
     }
 
     uint32_t getPageSize() {

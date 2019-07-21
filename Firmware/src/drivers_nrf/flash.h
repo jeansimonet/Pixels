@@ -20,6 +20,8 @@ namespace DriversNRF
         void writeSynchronous(uint32_t flashAddress, const void* data, uint32_t size);
         void eraseSynchronous(uint32_t flashAddress, uint32_t pages);
 
+        uint32_t getFlashStartAddress();
+        uint32_t getFlashEndAddress();
         uint32_t getPageSize();
         uint32_t bytesToPages(uint32_t size);
 

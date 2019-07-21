@@ -21,7 +21,8 @@
                 "NRF_SD_BLE_API_VERSION",
                 "S112",
                 "SOFTDEVICE_PRESENT",
-                "RGB_LED"
+                "RGB_LED",
+                "FSTORAGE_START"
             ],
             "intelliSenseMode": "gcc-x64",
             "compilerPath": "C:/Program Files (x86)/GNU Tools Arm Embedded/7 2018-q2-update/bin/arm-none-eabi-gcc",

@@ -205,9 +205,21 @@ COMMON_FLAGS += -mthumb -mabi=aapcs
 COMMON_FLAGS += -mfloat-abi=soft
 COMMON_FLAGS += -DNRF52_PAN_74
 
-COMMON_FLAGS += -DDEBUG
-COMMON_FLAGS += -DDEBUG_NRF
 # COMMON_FLAGS += -DDEVELOP_IN_NRF52832
+DEBUG_FLAGS = -DNRF_LOG_ENABLED=0
+DEBUG_FLAGS += -DDICE_SELFTEST=0
+
+firmware_debug: DEBUG_FLAGS = -DDEBUG
+firmware_debug: DEBUG_FLAGS += -DDEBUG_NRF
+firmware_debug: DEBUG_FLAGS += -DNRF_LOG_ENABLED=1
+
+COMMON_FLAGS += $(DEBUG_FLAGS)
+
+FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x28000
+
+firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x24000
+
+COMMON_FLAGS += $(FSTORAGE_ADDR_DEFINES)
 
 # C flags common to all targets
 CFLAGS += $(OPT)
@@ -250,11 +262,13 @@ firmware: ASMFLAGS += -D__STACK_SIZE=2048
 # that may need symbols provided by these libraries.
 LIB_FILES += -lc -lnosys -lm
 
+firmware_debug: firmware
+firmware_release: firmware
 
 .PHONY: default
 
 # Default target - first one defined
-default: firmware
+default: firmware_debug
  
 TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
@@ -273,14 +287,14 @@ hardreset:
 erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
-zip: default
+zip: firmware_release
 	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware.zip
 
-settings: default
+settings:
 	nrfutil settings generate --family NRF52810 --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --bootloader-version 0xff --bl-settings-version 1 $(OUTPUT_DIRECTORY)/firmware_settings.hex
 
 # Flash the program
-flash: settings zip
+flash: firmware_debug settings
 	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware.hex
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware_settings.hex --sectorerase

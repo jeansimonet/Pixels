@@ -14,8 +14,10 @@
 #include "peer_manager.h"
 #include "peer_manager_handler.h"
 #include "config/settings.h"
+#include "drivers_nrf/power_manager.h"
 
 using namespace Config;
+using namespace DriversNRF;
 
 namespace Bluetooth
 {
@@ -142,6 +144,8 @@ namespace Stack
                 // No implementation needed.
                 break;
         }
+
+        PowerManager::feed();
     }
 
     // Function for handling advertising events.
@@ -396,6 +400,8 @@ namespace Stack
     }
 
     bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
+
+        PowerManager::feed();
 
         bool ret = !notificationPending;
         if (ret) {

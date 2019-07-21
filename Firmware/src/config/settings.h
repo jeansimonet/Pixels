@@ -33,6 +33,8 @@ namespace Config
 	{
 		void init();
 		bool checkValid();
+		uint32_t getSettingsStartAddress();
+		uint32_t getSettingsEndAddress();
 		Config::Settings const * const getSettings();
 
 		void writeToFlash(Settings* sourceSettings);

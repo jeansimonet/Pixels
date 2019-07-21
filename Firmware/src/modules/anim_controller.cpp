@@ -2,6 +2,7 @@
 #include "animations/animation.h"
 #include "animations/animation_set.h"
 #include "drivers_nrf/timers.h"
+#include "drivers_nrf/power_manager.h"
 #include "utils/utils.h"
 #include "config/board_config.h"
 #include "drivers_hw/apa102.h"
@@ -63,6 +64,9 @@ namespace AnimController
 	/// <param name="ms">Current global time in milliseconds</param>
 	void update(int ms)
 	{
+		if (animationCount > 0) {
+	        PowerManager::feed();
+		}
 		for (int i = 0; i < animationCount; ++i)
 		{
 			auto& anim = animations[i];

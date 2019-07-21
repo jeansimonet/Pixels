@@ -3,6 +3,7 @@
 #include "drivers_nrf/flash.h"
 #include "drivers_nrf/scheduler.h"
 #include "config/board_config.h"
+#include "config/settings.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
@@ -16,11 +17,10 @@
 // So the animation set is at the top of the page
 #define MAX_PALETTE_SIZE (COLOR_MAP_SIZE * 3)
 
-#define ANIMATION_SET_ADDRESS (0x27000)
-
 using namespace Utils;
 using namespace DriversNRF;
 using namespace Bluetooth;
+using namespace Config;
 
 namespace Animations
 {
@@ -57,13 +57,20 @@ namespace AnimationSet
 		uint32_t tailMarker;
 	};
 
-	#define ANIMATION_SET_DATA_ADDRESS (ANIMATION_SET_ADDRESS + sizeof(Data))
+	uint32_t getAnimationSetAddress() {
+		return SettingsManager::getSettingsEndAddress();
+	}
+
+	uint32_t getAnimationSetDataAddress() {
+		return getAnimationSetAddress() + sizeof(Data);
+	}
 
 	// The animation set always points at a specific address in memory
-	const Data* data = (const Data*)ANIMATION_SET_ADDRESS;
+	Data const * data = nullptr;
 
 	void init()
 	{
+		data = (Data const *)SettingsManager::getSettingsEndAddress();
 		if (!CheckValid()) {
 			NRF_LOG_INFO("Animation Set not valid, programming default");
 			ProgramDefaultAnimationSet();
@@ -189,8 +196,8 @@ namespace AnimationSet
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
-		uint32_t pageAddress = ANIMATION_SET_ADDRESS;
-		uint32_t dataAddress = ANIMATION_SET_DATA_ADDRESS;
+		uint32_t pageAddress = getAnimationSetAddress();
+		uint32_t dataAddress = getAnimationSetDataAddress();
 		uint32_t pageCount = Flash::bytesToPages(flashSize);
 
 		NRF_LOG_DEBUG("totalSize: 0x%04x", totalSize);
@@ -248,7 +255,7 @@ namespace AnimationSet
 							newData->tailMarker = ANIMATION_SET_VALID_KEY;
 							NRF_LOG_DEBUG("Writing set");
 
-							Flash::write(ANIMATION_SET_ADDRESS, newData, sizeof(Data),
+							Flash::write(getAnimationSetAddress(), newData, sizeof(Data),
 								[](bool result, uint32_t address, uint16_t size) {
 									NRF_LOG_INFO("Animation Set written to flash!");
 									free(newData);
@@ -366,8 +373,8 @@ namespace AnimationSet
 
 		uint32_t totalSize = buffersSize + sizeof(Data);
 		uint32_t flashSize = getFlashByteSize(totalSize);
-		uint32_t pageAddress = ANIMATION_SET_ADDRESS;
-		uint32_t dataAddress = ANIMATION_SET_DATA_ADDRESS;
+		uint32_t pageAddress = getAnimationSetAddress();
+		uint32_t dataAddress = getAnimationSetDataAddress();
 		uint32_t pageCount = Flash::bytesToPages(flashSize);
 
 		// Start by erasing the flash
@@ -408,7 +415,7 @@ namespace AnimationSet
 		newData.tailMarker = ANIMATION_SET_VALID_KEY;
 
 		// And write it!
-		Flash::writeSynchronous(ANIMATION_SET_ADDRESS, &newData, sizeof(Data));
+		Flash::writeSynchronous(getAnimationSetAddress(), &newData, sizeof(Data));
 		NRF_LOG_INFO("Done");
 	}
 

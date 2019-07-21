@@ -9,7 +9,6 @@
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
 
-#define SETTINGS_ADDRESS 0x28000
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
 #define SETTINGS_PAGE_COUNT 1
 
@@ -21,11 +20,12 @@ namespace Config
 {
 namespace SettingsManager
 {
-	Settings const * const settings = (Settings const * const)SETTINGS_ADDRESS;
+	Settings const * settings = nullptr;
 
 	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void init() {
-		programDefaults();
+		settings = (Settings const * const)Flash::getFlashStartAddress();
+
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
 			programDefaults();
@@ -42,11 +42,20 @@ namespace SettingsManager
 			settings->tailMarker == SETTINGS_VALID_KEY);
 	}
 
+	uint32_t getSettingsStartAddress() {
+		return (uint32_t)settings;
+	}
+	uint32_t getSettingsEndAddress() {
+		return (uint32_t)settings + Flash::getPageSize() * SETTINGS_PAGE_COUNT;
+	}
+
+
 	Settings const * const getSettings() {
 		if (!checkValid()) {
-			programDefaults();
+			return nullptr;
+		} else {
+			return settings;
 		}
-		return settings;
 	}
 
 	void ReceiveSettingsHandler(void* context, const Message* msg) {
@@ -54,7 +63,7 @@ namespace SettingsManager
 		NRF_LOG_INFO("Received Request to download new settings");
 
 		// Start by erasing the flash
-		Flash::erase(SETTINGS_ADDRESS, 1,
+		Flash::erase((uint32_t)settings, 1,
 			[](bool result, uint32_t address, uint16_t size) {
 				NRF_LOG_DEBUG("done Erasing %d page", size);
 
@@ -80,8 +89,7 @@ namespace SettingsManager
 	}
 
 	void writeToFlash(Settings* sourceSettings) {
-		Settings* dest = (Settings*)SETTINGS_ADDRESS;
-		Flash::write((uint32_t)&(dest), sourceSettings, sizeof(Settings),
+		Flash::write((uint32_t)settings, sourceSettings, sizeof(Settings),
 			[](bool result, uint32_t address, uint16_t size) {
 				NRF_LOG_INFO("Settings written to flash");
 		});
@@ -102,10 +110,10 @@ namespace SettingsManager
 	}
 
 	void programDefaults() {
-		Flash::eraseSynchronous(SETTINGS_ADDRESS, SETTINGS_PAGE_COUNT);
+		Flash::eraseSynchronous((uint32_t)settings, SETTINGS_PAGE_COUNT);
 		Settings defaults;
 		setDefaults(defaults);
-		Flash::writeSynchronous(SETTINGS_ADDRESS, &defaults, sizeof(Settings));
+		Flash::writeSynchronous((uint32_t)settings, &defaults, sizeof(Settings));
 		NRF_LOG_INFO("Settings written to flash");
 	}
 
@@ -119,8 +127,8 @@ namespace SettingsManager
 		memcpy(&settingsCopy.faceNormals, newNormals, count * sizeof(Core::float3));
 
 		// Reprogram settings
-		Flash::eraseSynchronous(SETTINGS_ADDRESS, SETTINGS_PAGE_COUNT);
-		Flash::writeSynchronous(SETTINGS_ADDRESS, &settingsCopy, sizeof(Settings));
+		Flash::eraseSynchronous((uint32_t)settings, SETTINGS_PAGE_COUNT);
+		Flash::writeSynchronous((uint32_t)settings, &settingsCopy, sizeof(Settings));
 		NRF_LOG_INFO("Settings written to flash with new noramls");
 	}
 }

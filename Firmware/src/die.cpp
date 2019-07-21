@@ -76,7 +76,7 @@ namespace Die
 
         // Very first thing we want to init is the watchdog so we don't brick
         // later on if something bad happens.
-        //5Watchdog::init();
+        Watchdog::init();
 
         // Then the log system
         Log::init();
@@ -179,8 +179,7 @@ namespace Die
     // Main loop!
     void update() {
         Scheduler::update();
-        //Watchdog::feed();
-        PowerManager::feed();
+        Watchdog::feed();
         PowerManager::update();
     }
 }
