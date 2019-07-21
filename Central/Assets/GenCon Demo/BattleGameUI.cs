@@ -27,12 +27,13 @@ public class BattleGameUI : MonoBehaviour
         
     }
 
-    public void AddDie(Die die)
+    public BattleGameDieUI AddDie(Die die)
     {
         BattleGameDieUI dieUI = GameObject.Instantiate<BattleGameDieUI>(_DiePrefab);
         dieUI.transform.SetParent(transform);
         dieUI.Setup(die);
         dice.Add(die, dieUI);
+        return dieUI;
     }
 
     public void RemoveDie(Die die)
