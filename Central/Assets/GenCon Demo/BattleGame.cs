@@ -54,7 +54,7 @@ public class BattleGame : MonoBehaviour
             {
                 _anim = anim;
                 _dieUI.AnimationName = _anim.ToString();
-                Debug.Log(Die.name + anim);
+                Debug.Log(Die.name + " |> " + anim);
             }
         }
         public void OnStateChanged(Die die, Die.State newState)
@@ -67,7 +67,7 @@ public class BattleGame : MonoBehaviour
             {
                 _isRolling = false;
                 _hasRolled = true;
-                Debug.Log(die.name + " has rolled");
+                Debug.Log(die.name + " => rolled");
             }
         }
     }
@@ -278,7 +278,7 @@ public class BattleGame : MonoBehaviour
         if (team.Dice.Count < _teamSize)
         {
             team.Dice.Add(new BattleDie(die, team == _team1 ? 1 : 2, dieUI));
-            Debug.Log($"team {team.Name} has a new member ({team.Dice.Count})");
+            Debug.Log($"{team.Name} has a new member ({team.Dice.Count})");
         }
     }
 
