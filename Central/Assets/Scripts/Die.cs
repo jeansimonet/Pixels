@@ -579,8 +579,8 @@ public class Die
         {
             var data = new DieMessageBulkData();
             data.offset = offset;
-            data.size = (byte)Mathf.Min(remainingSize, 16);
-            data.data = new byte[16];
+            data.size = (byte)Mathf.Min(remainingSize, DieMessages.maxDataSize);
+            data.data = new byte[DieMessages.maxDataSize];
             System.Array.Copy(bytes, offset, data.data, 0, data.size);
             yield return StartCoroutine(SendMessageWithAckRetryCr(data, DieMessageType.BulkDataAck, null));
             remainingSize -= data.size;

@@ -81,7 +81,7 @@ public class Central
                     if (connectedDice.Any(dc => dc.address == address))
                     {
                         // We were previously connected to the die, reconnect
-                        die = discoveredDice.Find(dc => dc.address == address);
+                        die = connectedDice.Find(dc => dc.address == address);
                         Debug.Log("Reconnecting to " + die.name);
                         die.Connect();
                     }
@@ -197,6 +197,7 @@ public class Central
     public void ForgetDie(Die die)
     {
         discoveredDice.Remove(die);
+        connectedDice.Remove(die);
         DisconnectDie(die);
         onDieForgotten?.Invoke(die);
         DestroyDie(die);

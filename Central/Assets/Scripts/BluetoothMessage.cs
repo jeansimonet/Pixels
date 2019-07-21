@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
+
 /// <summary>
 /// These message identifiers have to match up with the ones on the firmware of course!
 /// </summary>
@@ -56,6 +57,8 @@ public interface DieMessage
 
 public static class DieMessages
 {
+    public const int maxDataSize = 100;
+
     public static DieMessage FromByteArray(byte[] data)
     {
         DieMessage ret = null;
@@ -232,7 +235,7 @@ public class DieMessageBulkData
     public DieMessageType type { get; set; } = DieMessageType.BulkData;
     public byte size;
     public ushort offset;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.maxDataSize)]
     public byte[] data;
 }
 
@@ -307,7 +310,7 @@ public class DieMessageDebugLog
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.DebugLog;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 19)]
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.maxDataSize)]
     public byte[] data;
 }
 
@@ -424,7 +427,7 @@ public class DieMessageNotifyUser
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.NotifyUser;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 19)]
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.maxDataSize)]
     public byte[] data;
 }
 

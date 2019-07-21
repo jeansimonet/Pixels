@@ -3,8 +3,8 @@
 #include "app_timer.h"
 #include "log.h"
 
-#define SCHED_MAX_EVENT_DATA_SIZE      32        /**< Maximum size of scheduler events. */
-#define SCHED_QUEUE_SIZE               10        /**< Maximum number of events in the scheduler queue. */
+#define SCHED_MAX_EVENT_DATA_SIZE      132        /**< Maximum size of scheduler events. */
+#define SCHED_QUEUE_SIZE               2        /**< Maximum number of events in the scheduler queue. */
 
 namespace DriversNRF
 {

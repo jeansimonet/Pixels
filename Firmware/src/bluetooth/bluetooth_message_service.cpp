@@ -25,7 +25,7 @@ namespace MessageService
     uint16_t service_handle;
     ble_gatts_char_handles_t rx_handles;
     ble_gatts_char_handles_t tx_handles;
-    uint8_t sendMessageBuffer[32];
+    uint8_t sendMessageBuffer[MAX_DATA_SIZE];
 
 	struct HandlerAndToken
 	{

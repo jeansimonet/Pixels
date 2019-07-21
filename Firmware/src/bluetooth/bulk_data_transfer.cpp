@@ -7,7 +7,7 @@
 
 #define RETRY_MS (300) // ms
 #define TIMEOUT_MS (3000) // ms
-#define BLOCK_SIZE (16)
+#define BLOCK_SIZE (MAX_DATA_SIZE)
 #define MAX_RETRY_COUNT (5)
 
 using namespace DriversNRF;
@@ -207,7 +207,7 @@ namespace Bluetooth
 		void* context;
 
 		#pragma pack(push, 4)
-		uint8_t dataBuffer[32]; // data is 20 bytes so this should be enough
+		uint8_t dataBuffer[132]; // data is 100 bytes so this should be enough
 		#pragma pack(pop)
 
 		APP_TIMER_DEF(timeoutTimer);

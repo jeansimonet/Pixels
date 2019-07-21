@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "config/sdk_config.h"
 
+#define MAX_DATA_SIZE 100
+
 #pragma pack(push, 1)
 
 namespace Bluetooth
@@ -108,7 +110,7 @@ struct MessageBulkData
 {
 	uint8_t size;
 	uint16_t offset;
-	uint8_t data[16];
+	uint8_t data[MAX_DATA_SIZE];
 
 	inline MessageBulkData() : Message(Message::MessageType_BulkData) {}
 };
@@ -135,7 +137,7 @@ struct MessageTransferAnimSet
 struct MessageDebugLog
 	: public Message
 {
-	char text[19];
+	char text[MAX_DATA_SIZE];
 
 	inline MessageDebugLog() : Message(Message::MessageType_DebugLog) {}
 };
@@ -203,7 +205,7 @@ struct MessageIAmADie
 struct MessageNotifyUser
 : public Message
 {
-	char text[19];
+	char text[MAX_DATA_SIZE];
 	inline MessageNotifyUser() : Message(Message::MessageType_NotifyUser) { text[0] = '\0'; }
 };
 
