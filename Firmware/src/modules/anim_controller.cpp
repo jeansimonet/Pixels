@@ -66,36 +66,36 @@ namespace AnimController
 	{
 		if (animationCount > 0) {
 	        PowerManager::feed();
-		}
-		for (int i = 0; i < animationCount; ++i)
-		{
-			auto& anim = animations[i];
-			int animTime = ms - anim.startTime;
-			if (animTime > anim.animation->duration)
+			for (int i = 0; i < animationCount; ++i)
 			{
-				// The animation is over, get rid of it!
-				removeAtIndex(i);
+				auto& anim = animations[i];
+				int animTime = ms - anim.startTime;
+				if (animTime > anim.animation->duration)
+				{
+					// The animation is over, get rid of it!
+					removeAtIndex(i);
 
-				// Decrement loop counter since we just replaced the current anim
-				i--;
-			}
-			else
-			{
-				// Update the leds
-				int ledIndices[MAX_LED_COUNT];
-				uint32_t colors[MAX_LED_COUNT];
-				int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
-
-				// Gamma correct...
-				for (int j = 0; j < ledCount; ++j) {
-					colors[j] = Utils::gamma(colors[j]);
+					// Decrement loop counter since we just replaced the current anim
+					i--;
 				}
+				else
+				{
+					// Update the leds
+					int ledIndices[MAX_LED_COUNT];
+					uint32_t colors[MAX_LED_COUNT];
+					int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
 
-				// And light up!
-				APA102::setPixelColors(ledIndices, colors, ledCount);
+					// Gamma correct...
+					for (int j = 0; j < ledCount; ++j) {
+						colors[j] = Utils::gamma(colors[j]);
+					}
+
+					// And light up!
+					APA102::setPixelColors(ledIndices, colors, ledCount);
+				}
 			}
+			APA102::show();
 		}
-		APA102::show();
 	}
 
 	/// <summary>

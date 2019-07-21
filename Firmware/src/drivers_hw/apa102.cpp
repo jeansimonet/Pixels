@@ -58,6 +58,8 @@ namespace APA102
 		#if DICE_SELFTEST && APA102_SELFTEST
 		selfTest();
 		#endif
+
+		NRF_LOG_INFO("APA102 Initialized");
 	}
 
 	void clear() {

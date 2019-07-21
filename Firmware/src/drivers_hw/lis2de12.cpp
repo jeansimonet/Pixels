@@ -134,6 +134,7 @@ namespace LIS2DE12
 		#if DICE_SELFTEST && LIS2DE12_SELFTEST_INT
 		selfTestInterrupt();
 		#endif
+		NRF_LOG_INFO("LIS2DE12 Initialized");
 	}
 
 	// Helper method to convert register readings to signed integers
