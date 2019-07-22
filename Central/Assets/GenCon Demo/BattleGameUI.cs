@@ -38,11 +38,16 @@ public class BattleGameUI : MonoBehaviour
 
     public void RemoveDie(Die die)
     {
-        BattleGameDieUI dieUI = null;
-        if (dice.TryGetValue(die, out dieUI))
+        if (dice.TryGetValue(die, out BattleGameDieUI dieUI))
         {
             dice.Remove(die);
             GameObject.Destroy(dieUI.gameObject);
         }
+    }
+    public BattleGameDieUI FindDie(Die die)
+    {
+        BattleGameDieUI dieUI = null;
+        dice.TryGetValue(die, out dieUI);
+        return dieUI;
     }
 }
