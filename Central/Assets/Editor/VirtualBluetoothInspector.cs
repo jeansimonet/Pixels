@@ -44,7 +44,7 @@ public class VirtualBluetoothInspector : Editor
                 GUILayout.Box("", GUILayout.Height(1.0f), GUILayout.ExpandWidth(true));
             }
 
-            // Draw buttons to add / remove dice
+            // Draw buttons to add 1 dice
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Add 6 Sided Die"))
             {
@@ -52,6 +52,22 @@ public class VirtualBluetoothInspector : Editor
             }
             if (GUILayout.Button("Add 20 Sided Die"))
             {
+                vbi.AddDie(Die.DieType.TwentySided);
+            }
+            GUILayout.EndHorizontal();
+
+            // Draw buttons to add 3 dice at a time
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Add 3x 6 Sided Die"))
+            {
+                vbi.AddDie(Die.DieType.SixSided);
+                vbi.AddDie(Die.DieType.SixSided);
+                vbi.AddDie(Die.DieType.SixSided);
+            }
+            if (GUILayout.Button("Add 3x 20 Sided Die"))
+            {
+                vbi.AddDie(Die.DieType.TwentySided);
+                vbi.AddDie(Die.DieType.TwentySided);
                 vbi.AddDie(Die.DieType.TwentySided);
             }
             GUILayout.EndHorizontal();
