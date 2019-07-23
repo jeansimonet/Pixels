@@ -81,8 +81,6 @@ public class Central
         _state = State.Scanning;
         var services = new string[] { serviceGUID };
 
-        Debug.Log("Beginning internal scan");
-
         discoveredDice.Clear();
 
         System.Action<string, string> dieDiscovered =
@@ -124,7 +122,6 @@ public class Central
 
     void StopScanInternal()
     {
-        Debug.Log("Stopping internal scan");
         BluetoothLEHardwareInterface.StopScan();
         if (virtualBluetooth != null)
         {
@@ -152,7 +149,6 @@ public class Central
 	{
         if (_state == State.Idle || (_state == State.Scanning && !userScan))
         {
-            Debug.Log("Beginning user scan");
             userScan = true;
             if (_state == State.Idle)
             {
@@ -179,7 +175,6 @@ public class Central
     {
         if (_state == State.Scanning)
         {
-            Debug.Log("Stopping user scan");
             if (reconnectCoroutine == null)
             {
                 StopScanInternal();

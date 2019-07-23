@@ -11,7 +11,8 @@ namespace Modules
 {
     enum AnimationEvent
     {
-        AnimationEvent_PickUp = 0,
+		AnimationEvent_None = 0,
+        AnimationEvent_PickUp,
         AnimationEvent_Error,
         AnimationEvent_LowBattery,
         AnimationEvent_ChargingStart,

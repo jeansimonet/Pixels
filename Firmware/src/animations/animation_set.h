@@ -6,6 +6,7 @@
 #include "../bluetooth/bulk_data_transfer.h"
 
 #define MAX_COLOR_MAP_SIZE (1 << 7) // 128 colors!
+#define SPECIAL_COLOR_INDEX (MAX_COLOR_MAP_SIZE - 1)
 #define MAX_ANIMATIONS (64)
 
 namespace Animations

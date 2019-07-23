@@ -41,6 +41,8 @@ namespace AnimController
 	AnimInstance animations[MAX_ANIMS];
 	int animationCount;
 
+	int animationLookupByEvent[AnimationEvent_Count];
+
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
 	void animationControllerUpdate(void* param)
@@ -56,6 +58,18 @@ namespace AnimController
 		animationCount = 0;
 		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
 		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
+
+		// Initialize the lookup table
+		for (int i = 0; i < AnimationEvent_Count; ++i) {
+			animationLookupByEvent[i] = -1;
+		}
+		for (int i = 0; i < AnimationSet::getAnimationCount(); ++i) {
+			auto& anim = AnimationSet::getAnimation(i);
+			if (anim.animationEvent > AnimationEvent_None && anim.animationEvent < AnimationEvent_Count) {
+				animationLookupByEvent[anim.animationEvent] = i;
+			}
+		}
+
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
@@ -114,8 +128,9 @@ namespace AnimController
 	/// </summary>
 	void play(AnimationEvent evt) {
 		int evtIndex = (uint16_t)evt;
-		if (evtIndex < AnimationSet::getAnimationCount()) {
-			auto& anim = AnimationSet::getAnimation(evtIndex);
+		int animIndex = animationLookupByEvent[evtIndex];
+		if (animIndex != -1) {
+			auto& anim = AnimationSet::getAnimation(animIndex);
 			play(&anim);
 		}
 	}

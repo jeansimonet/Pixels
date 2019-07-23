@@ -185,7 +185,7 @@ namespace Animations
 		public ushort duration; // in ms
         public ushort tracksOffset; // offset into a global buffer of tracks
         public ushort trackCount;
-        public ushort padding;
+        public ushort animationEvent; // Die.AnimationEvent
 
         public ref AnimationTrack GetTrack(AnimationSet set, ushort index)
         {
@@ -195,7 +195,10 @@ namespace Animations
 
         public bool Equals(Animation other)
         {
-            return duration == other.duration && tracksOffset == other.tracksOffset && trackCount == other.trackCount;
+            return duration == other.duration &&
+                tracksOffset == other.tracksOffset &&
+                trackCount == other.trackCount &&
+                animationEvent == other.animationEvent;
         }
     };
 
@@ -209,7 +212,9 @@ namespace Animations
     [System.Serializable]
     public class AnimationSet
     {
-        public const int MAX_PALETTE_SIZE = 128 * 3;
+        public const int MAX_COLOR_MAP_SIZE = (1 << 7);
+        public const int MAX_PALETTE_SIZE = MAX_COLOR_MAP_SIZE * 3;
+        public const int SPECIAL_COLOR_INDEX = (MAX_COLOR_MAP_SIZE - 1);
 
         public byte[] palette;
         public RGBKeyframe[] keyframes;

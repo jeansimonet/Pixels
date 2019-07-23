@@ -123,15 +123,15 @@ namespace Animations
                         var kf = rgbTrack.GetKeyframe(set, (ushort)k);
                         var editKf = new EditKeyframe();
                         editKf.time = (float)kf.time() / 1000.0f;
-                        editKf.color = set.getColor(kf.colorIndex());
+                        if (kf.colorIndex() == AnimationSet.SPECIAL_COLOR_INDEX)
+                            editKf.color = new Color32(255,255,255,0); // Important part is alpha
+                        else
+                            editKf.color = set.getColor(kf.colorIndex());
                         editTrack.keyframes.Add(editKf);
                     }
                     editAnim.tracks.Add(editTrack);
                 }
-                if (i < (int)Die.AnimationEvent.Count)
-                {
-                    editAnim.@event = (Die.AnimationEvent)i;
-                }
+                editAnim.@event = (Die.AnimationEvent)anim.animationEvent;
                 animations.Add(editAnim);
             }
         }
@@ -149,12 +149,17 @@ namespace Animations
                 {
                     foreach (var keyframe in animTrack.keyframes)
                     {
-                        int ignore = 0;
-                        if (!colors.TryGetValue(keyframe.color, out ignore))
+                        var color = keyframe.color;
+                        if (color.a != 0)
                         {
-                            colors.Add(keyframe.color, index);
-                            index++;
+                            int ignore = 0;
+                            if (!colors.TryGetValue(keyframe.color, out ignore))
+                            {
+                                colors.Add(keyframe.color, index);
+                                index++;
+                            }
                         }
+                        // else its a special color
                     }
                 }
             }
@@ -186,6 +191,7 @@ namespace Animations
                 anim.duration = (ushort)(editAnim.duration * 1000.0f);
                 anim.tracksOffset = (ushort)currentTrackOffset;
                 anim.trackCount = (ushort)editAnim.tracks.Count;
+                anim.animationEvent = (ushort)editAnim.@event;
                 anims.Add(anim);
 
                 // Now add tracks
@@ -207,7 +213,9 @@ namespace Animations
                     for (int k = 0; k < editTrack.keyframes.Count; ++k)
                     {
                         var editKeyframe = editTrack.keyframes[k];
-                        int colorIndex = colors[editKeyframe.color];
+                        int colorIndex = AnimationSet.SPECIAL_COLOR_INDEX;
+                        if (editKeyframe.color.a != 0)
+                            colorIndex = colors[editKeyframe.color];
                         var keyframe = new RGBKeyframe();
                         keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
                         keyframes.Add(keyframe);

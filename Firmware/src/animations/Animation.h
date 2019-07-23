@@ -65,7 +65,7 @@ namespace Animations
 		uint16_t duration; // in ms
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
-		uint16_t padding;
+		uint16_t animationEvent;
 
 	public:
 		const AnimationTrack& GetTrack(int index) const;
