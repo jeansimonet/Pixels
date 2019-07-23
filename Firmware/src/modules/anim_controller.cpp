@@ -11,6 +11,7 @@
 
 using namespace Animations;
 using namespace Modules;
+using namespace Config;
 using namespace DriversNRF;
 using namespace DriversHW;
 
@@ -66,6 +67,7 @@ namespace AnimController
 	{
 		if (animationCount > 0) {
 	        PowerManager::feed();
+			auto& faceToLEDs = BoardManager::getBoard()->faceToLedLookup;
 			for (int i = 0; i < animationCount; ++i)
 			{
 				auto& anim = animations[i];
@@ -85,9 +87,10 @@ namespace AnimController
 					uint32_t colors[MAX_LED_COUNT];
 					int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
 
-					// Gamma correct...
+					// Gamma correct and map face index to led index
 					for (int j = 0; j < ledCount; ++j) {
 						colors[j] = Utils::gamma(colors[j]);
+						ledIndices[j] = faceToLEDs[ledIndices[j]];
 					}
 
 					// And light up!
