@@ -48,6 +48,8 @@ public class CurrentDicePool
         addDiceButton.onClick.AddListener(() => addDiceDialog.Show());
 
         dice = new List<CurrentDicePoolDice>();
+
+        central.onDieForgotten += RemoveDie;
     }
 
     // Update is called once per frame
@@ -61,7 +63,6 @@ public class CurrentDicePool
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1.0f;
-        central.onDieForgotten += RemoveDie;
     }
 
     public void Hide()
@@ -69,7 +70,6 @@ public class CurrentDicePool
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
-        central.onDieForgotten -= RemoveDie;
     }
 
     public void AddDie(Die die)

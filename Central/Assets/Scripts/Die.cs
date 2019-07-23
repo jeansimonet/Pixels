@@ -58,6 +58,7 @@ public class Die
     public enum ConnectionState
     {
         Unavailable = 0,
+        Disconnecting,
         Disconnected,
         Advertising,
         Connecting,
@@ -190,7 +191,7 @@ public class Die
                 // Notify central
                 Debug.LogError("Die " + name + " error while connecting");
                 connectionState = ConnectionState.Unavailable;
-                central.DisconnectDie(this);
+                central.ForgetDie(this);
             }
             else
             {
@@ -198,7 +199,9 @@ public class Die
                 connectionState = ConnectionState.Subscribing;
                 bool messageSub = false;
                 central.SubscribeCharacteristic(this, messageServiceGUID, messageSubscribeCharacteristic, () => messageSub = true);
-                while (!messageSub && !errorOccurred)
+                float subscribeTimeStart = Time.time;
+                float timeout = 5.0f;
+                while (!messageSub && !errorOccurred && Time.time < subscribeTimeStart + timeout)
                 {
                     yield return null;
                 }
@@ -208,7 +211,14 @@ public class Die
                     // Notify central
                     Debug.LogError("Die " + name + " error while subscribing");
                     connectionState = ConnectionState.Unavailable;
-                    central.DisconnectDie(this);
+                    central.ForgetDie(this);
+                }
+                else if (!messageSub)
+                {
+                    // Timeout trying to subscribe
+                    Debug.LogError("Die " + name + " timeout while subscribing");
+                    connectionState = ConnectionState.Unavailable;
+                    central.ForgetDie(this);
                 }
                 else
                 {
@@ -269,14 +279,31 @@ public class Die
     {
     }
 
+    public void Disconnect()
+    {
+        if (connectionState >= ConnectionState.Connected)
+        {
+            connectionState = ConnectionState.Disconnecting;
+            central.DisconnectDie(this);
+        }
+    }
+
     public void OnDisconnected()
     {
-        connectionState = ConnectionState.Disconnected;
+        if (connectionState != ConnectionState.Unavailable)
+        {
+            connectionState = ConnectionState.Disconnected;
+        }
     }
 
     public void OnLostConnection()
     {
-        connectionState = ConnectionState.Unavailable;
+        if (connectionState == ConnectionState.Ready)
+        {
+            // Unplanned disconnection, tell central!
+            connectionState = ConnectionState.Unavailable;
+            central.TryReconnectDie(this);
+        }
     }
 
     System.Action<string> onErrorAction;
@@ -525,7 +552,7 @@ public class Die
                 {
                     Debug.LogError("Die " + name + " error while performing action");
                     connectionState = ConnectionState.Unavailable;
-                    central.UnresponsiveDie(this);
+                    central.TryReconnectDie(this);
                 }
             }
             finally
