@@ -23,13 +23,16 @@ public class BattleGame : MonoBehaviour
     {
         BattleGameDieUI _dieUI;
         Animations _anim;
-        bool _hasRolled;
-        bool _isRolling;
         public Die Die { get; }
         public int Value => Die.state != Die.State.Idle ? 0 : Die.face + 1;
-        public bool HasRolled => _hasRolled;
+        public bool IsRolling { get; private set; }
+        public bool HasRolled { get; private set; }
+        public bool IsBattling { get; private set; }
         public BattleDie(Die die, int team, BattleGameDieUI dieUI)
         {
+            if (die == null) throw new System.ArgumentNullException(nameof(die));
+            if (team < 0) throw new System.ArgumentException(nameof(team));
+            if (dieUI == null) throw new System.ArgumentNullException(nameof(dieUI));
             Die = die;
             _dieUI = dieUI;
             _dieUI.Team = team;
@@ -40,9 +43,18 @@ public class BattleGame : MonoBehaviour
         {
             _PlayAnimation(anim);
         }
-        public void TakeRoll()
+        public void EnterBattle()
         {
-            _hasRolled = false;
+            if (IsBattling)
+            {
+                throw new System.InvalidOperationException(Die.name + " already battling");
+            }
+            HasRolled = false;
+            IsBattling = true;
+        }
+        public void ExitBattle()
+        {
+            IsBattling = false;
         }
         public void Dispose()
         {
@@ -61,12 +73,12 @@ public class BattleGame : MonoBehaviour
         {
             if ((newState != Die.State.Idle) && (newState != Die.State.Unknown))
             {
-                _isRolling = true;
+                IsRolling = true;
             }
-            else if (_isRolling)
+            else if (IsRolling)
             {
-                _isRolling = false;
-                _hasRolled = true;
+                IsRolling = false;
+                HasRolled = true;
                 Debug.Log(die.name + " => rolled");
             }
         }
@@ -92,52 +104,88 @@ public class BattleGame : MonoBehaviour
     BattleTeam _team1 = new BattleTeam("team1");
     BattleTeam _team2 = new BattleTeam("team2");
 
-    const int _teamSize = 2;
+    const int _teamSize = 3;
+    Coroutine _battleCr;
 
     // Start is called before the first frame update
     void Start()
     {
         StartCoroutine(PeriodicScanAndConnectCr());
-        StartCoroutine(UpdateStateCr());
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (_battleCr == null)
+        {
+            bool team1EnterBattle = CheckTeamEnterBattle(_team1);
+            bool team2EnterBattle = false;
+            if (!team1EnterBattle)
+            {
+                team2EnterBattle = CheckTeamEnterBattle(_team2);
+            }
+            if (team1EnterBattle || team2EnterBattle)
+            {
+                _battleCr = StartCoroutine(BattleCr());
+            }
+        }
+        else if ((_team1.Dice.Any(d => d.IsBattling) && _team1.Dice.Any(d => d.IsRolling || d.HasRolled))
+              || (_team2.Dice.Any(d => d.IsBattling) && _team2.Dice.Any(d => d.IsRolling || d.HasRolled)))
+        {
+            CancelBattle("die roll");
+        }
     }
 
-    IEnumerator UpdateStateCr()
+    void CancelBattle(string reason)
+    {
+        if (_battleCr != null)
+        {
+            StopCoroutine(_battleCr);
+            _battleCr = null;
+            Debug.Log($"BATTLE CANCELLED ({reason})");
+        }
+        foreach (var d in _team1.Dice)
+        {
+            d.ExitBattle();
+        }
+        foreach (var d in _team1.Dice)
+        {
+            d.ExitBattle();
+        }
+    }
+
+    bool CheckTeamEnterBattle(BattleTeam team, bool otherTeamInBattle = false)
+    {
+        bool enterBattle = team.Dice.Count(d => d.HasRolled) >= _teamSize;
+        if (enterBattle)
+        {
+            foreach (var d in team.Dice)
+            {
+                d.EnterBattle();
+            }
+            team.PlayAnimation(Animations.FaceUp);
+        }
+        else
+        {
+            team.PlayAnimation(otherTeamInBattle ? Animations.WaitingForBattle : Animations.ShowTeam);
+        }
+        return enterBattle;
+    }
+
+    IEnumerator BattleCr()
     {
         //TODO LIST
-        // vsync? (would save battery)
         // Alternate ShowTeam and something else when not in battle?
         // Stop show team has soon as not idle
-        // Die re-roll during battle
-        // Die lost (timeout, check for already booted die, wait for new die)
+        // Stop show fqce up when duel starts
+        // On die lost, allow delay to re-integrate same die
 
         //
         // Wait for both teams to enter battle
         //
 
-        bool CheckTeamEnterBattle(BattleTeam team, bool otherTeamInBattle)
-        {
-            bool enterBattle = team.Dice.Count(d => d.HasRolled) >= _teamSize;
-            if (enterBattle)
-            {
-                foreach (var d in team.Dice)
-                {
-                    d.TakeRoll();
-                }
-                team.PlayAnimation(Animations.FaceUp);
-            }
-            else
-            {
-                team.PlayAnimation(otherTeamInBattle ? Animations.WaitingForBattle : Animations.ShowTeam);
-            }
-            return enterBattle;
-        }
-
-        bool team1EnterBattle = false, team2EnterBattle = false;
+        bool team1EnterBattle = _team1.Dice.Any(d => d.IsBattling);
+        bool team2EnterBattle = _team2.Dice.Any(d => d.IsBattling);
         while ((!team1EnterBattle) || (!team2EnterBattle))
         {
             yield return null;
@@ -272,19 +320,49 @@ public class BattleGame : MonoBehaviour
     void AddDieToGame(Die die)
     {
         _dice.Add(die);
-        var dieUI = _UI.AddDie(die);
+        _UI.AddDie(die);
 
         var team = _team1.Dice.Count <= _team2.Dice.Count ? _team1 : _team2;
-        if (team.Dice.Count < _teamSize)
-        {
-            team.Dice.Add(new BattleDie(die, team == _team1 ? 1 : 2, dieUI));
-            Debug.Log($"{team.Name} has a new member ({team.Dice.Count})");
-        }
+        AddDieToTeam(team, die);
     }
 
     void RemoveDieFromGame(Die die)
     {
+        Debug.Log("Removing die " + die.name);
         _UI.RemoveDie(die);
         _dice.Remove(die);
+
+        RemoveDieFromTeam(_team1, die);
+        RemoveDieFromTeam(_team2, die);
+    }
+
+    void AddDieToTeam(BattleTeam team, Die die)
+    {
+        if (team.Dice.Count < _teamSize)
+        {
+            team.Dice.Add(new BattleDie(die, team == _team1 ? 1 : 2, _UI.FindDie(die)));
+            Debug.Log($">> {team.Name} has a new member: {die.name} ({team.Dice.Count}/{_teamSize})");
+            CancelBattle("die joined");
+        }
+    }
+
+    void RemoveDieFromTeam(BattleTeam team, Die die)
+    {
+        foreach (var battleDie in team.Dice)
+        {
+            if (battleDie.Die == die)
+            {
+                Debug.Log($">> {team.Name} lost a member: {die.name} ({team.Dice.Count}/{_teamSize})");
+                team.Dice.Remove(battleDie);
+                CancelBattle("die left");
+
+                var pendingDie = _dice.FirstOrDefault(d => _team1.Dice.Concat(_team2.Dice).All(bd => bd.Die != d));
+                if (pendingDie != null)
+                {
+                    AddDieToTeam(team, pendingDie);
+                }
+                break;
+            }
+        }
     }
 }
