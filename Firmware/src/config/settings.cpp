@@ -100,6 +100,8 @@ namespace SettingsManager
 		outSettings.sigmaDecayFast = 0.15f;
 		outSettings.sigmaDecaySlow = 0.95f;
 		outSettings.minRollTime = 300;
+		outSettings.batteryLow = 3.0f;
+		outSettings.batteryHigh = 4.0f;
 
 		// Copy normals from defaults
 		const Core::float3* defaultNormals = BoardManager::getBoard()->faceNormals;

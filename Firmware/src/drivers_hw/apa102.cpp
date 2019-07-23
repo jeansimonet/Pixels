@@ -80,15 +80,25 @@ namespace APA102
 		}
 	}
 
+	void prepare(void) {
+		// Sets the power pin on, but doesn't write any data
+		// Turn power on so we display something!!!
+		if (nrf_gpio_pin_out_read(powerPin) == 0) {
+			nrf_gpio_pin_set(powerPin);
+			nrf_gpio_pin_clear(clockPin);
+			nrf_gpio_pin_clear(dataPin);
+		}
+	}
+
 	void show(void) {
 
 		if (!pixels) return;
 
 		// Turn power on so we display something!!!
-		nrf_gpio_pin_set(powerPin);
+		prepare();
 
 		// May need a delay here...
-		nrf_delay_ms(10);
+		// nrf_delay_ms(30);
 
 		uint8_t *ptr = pixels;            // -> LED data
 		uint16_t n = numLEDs;              // Counter

@@ -12,8 +12,11 @@ using namespace DriversHW;
 using namespace Bluetooth;
 using namespace Config;
 
-#define BATTERY_TIMER_MS (5000)	// ms
+#define BATTERY_TIMER_MS (3000)	// ms
 #define MAX_BATTERY_CLIENTS 2
+#define LAZY_CHARGE_DETECT
+#define CHARGE_START_DETECTION_THRESHOLD (0.1f) // 0.1V
+#define CHARGE_FULL (4.0f) // 4.0V
 
 namespace Modules
 {
@@ -27,6 +30,7 @@ namespace BatteryController
     bool onCharger = false;
     bool charging = false;
     float vBat = 0.0f;
+    float lowestVBat = 0.0f;
     BatteryState currentBatteryState = BatteryState_Unknown;
 
 	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
@@ -39,9 +43,13 @@ namespace BatteryController
         onCharger = Battery::checkCoil();
         charging = Battery::checkCharging();
         vBat = Battery::checkVBat();
+        lowestVBat = vBat;
 
         // Register for battery events
         Battery::hook(onBatteryEventHandler, nullptr);
+
+        // Set initial battery state
+        currentBatteryState = computeCurrentState();
 
 		ret_code_t ret_code = app_timer_create(&batteryControllerTimer, APP_TIMER_MODE_REPEATED, update);
 		APP_ERROR_CHECK(ret_code);
@@ -49,14 +57,63 @@ namespace BatteryController
 		ret_code = app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
 		APP_ERROR_CHECK(ret_code);
 
-        // Set initial battery state
-        currentBatteryState = computeCurrentState();
-
         NRF_LOG_INFO("Battery controller initialized");
     }
 
     BatteryState computeCurrentState() {
         BatteryState ret = BatteryState_Unknown;
+        #if defined(LAZY_CHARGE_DETECT)
+            // We need to do everything based on vbat
+            // Measure new vBat
+            float level = Battery::checkVBat();
+            ret = currentBatteryState;
+            switch (currentBatteryState)
+            {
+    			case BatteryState_Ok:
+                    if (level < SettingsManager::getSettings()->batteryLow) {
+                        ret = BatteryState_Low;
+                    } else if (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD) {
+                        // Battery level going up, we must be charging
+                        ret = BatteryState_Charging;
+                    } else {
+                        // Update stored lowest level
+                        if (level < lowestVBat) {
+                            lowestVBat = level;
+                        }
+                    }
+                    // Else still BatteryState_Ok
+                    break;
+                case BatteryState_Charging:
+                    if (level > SettingsManager::getSettings()->batteryHigh) {
+                        // Reset lowest level
+                        ret = BatteryState_Ok;
+                    }
+                    // Else still not charged enough
+                    lowestVBat = level;
+                    break;
+                case BatteryState_Low:
+                    if (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD) {
+                        // Battery level going up, we must be charging
+                        ret = BatteryState_Charging;
+                    } else {
+                        // Update stored lowest level
+                        if (level < lowestVBat) {
+                            lowestVBat = level;
+                        }
+                    }
+                    break;
+                default:
+                    if (level > SettingsManager::getSettings()->batteryLow) {
+                        ret = BatteryState_Ok;
+                    } else {
+                        ret = BatteryState_Low;
+                    }
+                    break;
+            }
+
+            // Always update the stored battery voltage
+            vBat = level;
+        #else
         if (onCharger) {
             if (charging) {
                 ret = BatteryState_Charging;
@@ -70,6 +127,7 @@ namespace BatteryController
                 }
             }
         }
+        #endif
         return ret;
     }
 
@@ -85,6 +143,20 @@ namespace BatteryController
     void update(void* context) {
         auto newState = computeCurrentState();
         if (newState != currentBatteryState) {
+            switch (newState) {
+    			case BatteryState_Ok:
+                    NRF_LOG_INFO(">>> Battery is now Ok!");
+                    break;
+                case BatteryState_Charging:
+                    NRF_LOG_INFO(">>> Battery is now Charging!");
+                    break;
+                case BatteryState_Low:
+                    NRF_LOG_INFO(">>> Battery is Low!");
+                    break;
+                default:
+                    NRF_LOG_INFO(">>> Battery is Unknown!");
+                    break;
+            }
             currentBatteryState = newState;
             for (int i = 0; i < clients.Count(); ++i) {
     			clients[i].handler(clients[i].token, newState);
