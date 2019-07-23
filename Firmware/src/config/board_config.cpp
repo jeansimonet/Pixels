@@ -123,7 +123,7 @@ namespace BoardManager
 
         // LED config
         .ledCount = 20,
-        .faceToLedLookup = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }, // This is not the correct data
+        .faceToLedLookup = { 15, 4, 7, 1, 0, 19, 8, 10, 6, 14, 9, 11, 5, 13, 3, 17, 16, 12, 18, 2 },
         .faceNormals = {
             {-0.1273862f,  0.3333025f,  0.9341605f},
             { 0.6667246f, -0.7453931f, -0.0000000f},

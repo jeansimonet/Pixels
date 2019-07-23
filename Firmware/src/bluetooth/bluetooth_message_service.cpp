@@ -184,14 +184,20 @@ namespace MessageService
         }
     }
 
-    void NotifyUser(const char* text, NotifyUserCallback callback) {
+    void NotifyUser(const char* text, bool ok, bool cancel, uint8_t timeout_s, NotifyUserCallback callback) {
 		MessageNotifyUser notifyMsg;
+        notifyMsg.ok = ok ? 1 : 0;
+        notifyMsg.cancel = cancel ? 1 : 0;
+        notifyMsg.timeout_s = timeout_s;
 		strcpy(notifyMsg.text, text);
-		MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* ackMsg)
-		{
-			MessageService::UnregisterMessageHandler(Message::MessageType_NotifyUserAck);
-            ((NotifyUserCallback)ctx)();
-        });
+        if ((ok || cancel) && callback != nullptr) {
+            MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* msg)
+            {
+                MessageService::UnregisterMessageHandler(Message::MessageType_NotifyUserAck);
+                MessageNotifyUserAck* ackMsg = (MessageNotifyUserAck*)msg;
+                ((NotifyUserCallback)ctx)(ackMsg->okCancel != 0);
+            });
+        }
 		MessageService::SendMessage(&notifyMsg);
     }
 

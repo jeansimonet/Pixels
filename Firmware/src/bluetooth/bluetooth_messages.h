@@ -205,10 +205,24 @@ struct MessageIAmADie
 struct MessageNotifyUser
 : public Message
 {
-	char text[MAX_DATA_SIZE];
-	inline MessageNotifyUser() : Message(Message::MessageType_NotifyUser) { text[0] = '\0'; }
+	uint8_t timeout_s;
+	uint8_t ok; // Boolean
+	uint8_t cancel; // Boolean
+	char text[MAX_DATA_SIZE - 4];
+	inline MessageNotifyUser() : Message(Message::MessageType_NotifyUser) {
+		timeout_s = 30;
+		ok = 1;
+		cancel = 0;
+		text[0] = '\0';
+	}
 };
 
+struct MessageNotifyUserAck
+: public Message
+{
+	uint8_t okCancel; // Boolean
+	inline MessageNotifyUserAck() : Message(Message::MessageType_NotifyUserAck) {}
+};
 
 }
 

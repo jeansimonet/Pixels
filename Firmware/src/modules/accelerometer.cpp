@@ -215,30 +215,48 @@ namespace Accelerometer
 		measuredNormals = (CalibrationNormals*)malloc(sizeof(CalibrationNormals));
 
 		// Ask user to place die on face 1
-		MessageService::NotifyUser("Place face 1 up", [] ()
+		MessageService::NotifyUser("Place face 1 up", true, true, 30, [] (bool okCancel)
 		{
-			// Die is on face 1
-			// Read the normals
-			LIS2DE12::read();
-			measuredNormals->face1 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-
-			// Place on face 5
-			MessageService::NotifyUser("Place face 5 up", [] ()
-			{
-				// Die is on face 5
+			if (okCancel) {
+				// Die is on face 1
 				// Read the normals
 				LIS2DE12::read();
-				measuredNormals->face5 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+				measuredNormals->face1 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
-				// Now we can calibrate
-				int normalCount = BoardManager::getBoard()->ledCount;
-				float3 canonNormalsCopy[normalCount];
-				memcpy(canonNormalsCopy, BoardManager::getBoard()->faceNormals, normalCount * sizeof(float3));
-				Utils::CalibrateNormals(0, measuredNormals->face1, 4, measuredNormals->face5, canonNormalsCopy, normalCount);
+				// Place on face 5
+				MessageService::NotifyUser("Place face 5 up", true, true, 30, [] (bool okCancel)
+				{
+					if (okCancel) {
+						// Die is on face 5
+						// Read the normals
+						LIS2DE12::read();
+						measuredNormals->face5 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
-				// And flash the new normals
-				SettingsManager::programNormals(canonNormalsCopy, normalCount);
-			});
+						// Now we can calibrate
+						int normalCount = BoardManager::getBoard()->ledCount;
+						float3 canonNormalsCopy[normalCount];
+						memcpy(canonNormalsCopy, BoardManager::getBoard()->faceNormals, normalCount * sizeof(float3));
+
+						float3 canonFace1Normal = canonNormalsCopy[0];
+						float3 canonFace2Normal = canonNormalsCopy[4];
+						char buffer[96]; buffer[0] = '\0';
+						sprintf(buffer, "Face1: %d, %d, %d\nMeasured: %d, %d, %d",
+							(int)(canonFace1Normal.x * 1000.f), (int)(canonFace1Normal.y * 1000.f), (int)(canonFace1Normal.z * 1000.f),
+							(int)(measuredNormals->face1.x * 1000.f), (int)(measuredNormals->face1.y * 1000.f), (int)(measuredNormals->face1.z * 1000.f));
+
+						Utils::CalibrateNormals(0, measuredNormals->face1, 4, measuredNormals->face5, canonNormalsCopy, normalCount);
+
+						// And flash the new normals
+						SettingsManager::programNormals(canonNormalsCopy, normalCount);
+
+//						MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
+						MessageService::NotifyUser(buffer, true, false, 30, [](bool okCancel) {
+
+						});
+
+					}
+				});
+			}
 		});
 	}
 }

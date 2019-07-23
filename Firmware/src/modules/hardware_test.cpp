@@ -52,15 +52,17 @@ namespace HardwareTest
         if (LIS2DE12::checkWhoAMI()) {
             NRF_LOG_INFO("Good WHOAMI");
             // Good, move onto the next test
-            MessageService::NotifyUser("Put die down!", []()
+            MessageService::NotifyUser("Put the die down!", true, true, 30, [](bool okCancel)
             {
-                // Check that interrupt pin is low
-                if (LIS2DE12::checkIntPin()) {
-                    NRF_LOG_INFO("Good int pin");
-                    // Good, try interrupt
-                    MessageService::NotifyUser("Pick it up!", []()
-                    {
+                if (okCancel) {
+                    // Check that interrupt pin is low
+                    if (LIS2DE12::checkIntPin()) {
+                        NRF_LOG_INFO("Good int pin");
+                        // Good, try interrupt
+                        MessageService::NotifyUser("Now pick the die up!", false, false, 10, nullptr);
+
                         NRF_LOG_INFO("Setting up interrupt");
+
                         // Set interrupt pin
                         GPIOTE::enableInterrupt(
                             BoardManager::getBoard()->accInterruptPin,
@@ -83,7 +85,7 @@ namespace HardwareTest
                                     });
                                     Timers::startTimer(ledsTimer, 1000, nullptr);
 
-                                    MessageService::NotifyUser("Check all leds", []()
+                                    MessageService::NotifyUser("Check all leds", true, true, 30, [](bool okCancel)
                                     {
                                         NRF_LOG_INFO("Done");
                                         Timers::stopTimer(ledsTimer);
@@ -95,15 +97,15 @@ namespace HardwareTest
                             });
 
                         LIS2DE12::enableTransientInterrupt();
-                    });
-                } else {
-                    NRF_LOG_INFO("Bad int pin");
-                    MessageService::NotifyUser("Bad Int. pin.", [](){});
+                    } else {
+                        NRF_LOG_INFO("Bad int pin");
+                        MessageService::NotifyUser("Bad Int. pin.", true, false, 10, nullptr);
+                    }
                 }
             });
         } else {
             NRF_LOG_INFO("Bad WHOAMI");
-            MessageService::NotifyUser("Bad I2C conn.", [](){});
+            MessageService::NotifyUser("Bad I2C conn.", true, false, 10, nullptr);
         }
     }
 

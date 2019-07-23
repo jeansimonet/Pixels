@@ -21,7 +21,7 @@ namespace Bluetooth
         void RegisterMessageHandler(Message::MessageType msgType, void* token, MessageHandler handler);
         void UnregisterMessageHandler(Message::MessageType msgType);
 
-        typedef void (*NotifyUserCallback)();
-        void NotifyUser(const char* text, NotifyUserCallback callback);
+        typedef void (*NotifyUserCallback)(bool result);
+        void NotifyUser(const char* text, bool ok, bool cancel, uint8_t timeout_s, NotifyUserCallback callback);
     }
 }
