@@ -6,11 +6,13 @@ using UnityEngine.UI;
 public class NotificationUI : MonoBehaviour
 {
     public Text notificationField;
-    public Button notificationButton;
+    public Button okButton;
+    public Button cancelButton;
 
     public static NotificationUI instance { get; private set; }
 
     CanvasGroup cg;
+    Coroutine timeoutCoroutine;
 
     void Awake()
     {
@@ -34,21 +36,48 @@ public class NotificationUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
     }
 
-    public void Show(string message, System.Action callback)
+    public void Show(string message, bool ok, bool cancel, float timeout, System.Action<bool> callback)
     {
         notificationField.text = message;
         cg.alpha = 1.0f;
         cg.interactable = true;
         cg.blocksRaycasts = true;
-        notificationButton.onClick.RemoveAllListeners();
-        notificationButton.onClick.AddListener(() =>
+        if (ok)
         {
-            Hide();
-            callback?.Invoke();
-        });
+            okButton.gameObject.SetActive(true);
+            okButton.onClick.RemoveAllListeners();
+            okButton.onClick.AddListener(() =>
+            {
+                StopCoroutine(timeoutCoroutine);
+                Hide();
+                callback?.Invoke(true);
+            });
+        }
+        else
+        {
+            okButton.gameObject.SetActive(false);
+        }
+
+        if (cancel)
+        {
+            cancelButton.gameObject.SetActive(true);
+            cancelButton.onClick.RemoveAllListeners();
+            cancelButton.onClick.AddListener(() =>
+            {
+                StopCoroutine(timeoutCoroutine);
+                Hide();
+                callback?.Invoke(false);
+            });
+        }
+        else
+        {
+            cancelButton.gameObject.SetActive(false);
+        }
+
+        // Start timeout
+        timeoutCoroutine = StartCoroutine(TimeoutCr(timeout, callback));
     }
 
     public void Hide()
@@ -56,5 +85,16 @@ public class NotificationUI : MonoBehaviour
         cg.alpha = 0.0f;
         cg.interactable = false;
         cg.blocksRaycasts = false;
+    }
+
+    IEnumerator TimeoutCr(float timeout, System.Action<bool> callback)
+    {
+        float startTime = Time.time;
+        while (Time.time < startTime + timeout)
+        {
+            yield return null;
+        }
+        Hide();
+        callback(false);
     }
 }

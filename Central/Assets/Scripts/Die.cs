@@ -35,7 +35,8 @@ public class Die
 
     public enum AnimationEvent
     {
-        PickUp = 0,
+        None = 0,
+        PickUp,
         Error,
         LowBattery,
         ChargingStart,
@@ -57,6 +58,7 @@ public class Die
     public enum ConnectionState
     {
         Unavailable = 0,
+        Disconnected,
         Advertising,
         Connecting,
         Connected,
@@ -188,7 +190,7 @@ public class Die
                 // Notify central
                 Debug.LogError("Die " + name + " error while connecting");
                 connectionState = ConnectionState.Unavailable;
-                central.UnresponsiveDie(this);
+                central.DisconnectDie(this);
             }
             else
             {
@@ -206,7 +208,7 @@ public class Die
                     // Notify central
                     Debug.LogError("Die " + name + " error while subscribing");
                     connectionState = ConnectionState.Unavailable;
-                    central.UnresponsiveDie(this);
+                    central.DisconnectDie(this);
                 }
                 else
                 {
@@ -265,6 +267,11 @@ public class Die
 
     public void OnCharacterisicSubscribed(string service, string characteristic)
     {
+    }
+
+    public void OnDisconnected()
+    {
+        connectionState = ConnectionState.Disconnected;
     }
 
     public void OnLostConnection()
@@ -464,14 +471,17 @@ public class Die
     void OnNotifuUserMessage(DieMessage message)
     {
         var notifyUserMsg = (DieMessageNotifyUser)message;
+        bool ok = notifyUserMsg.ok != 0;
+        bool cancel = notifyUserMsg.cancel != 0;
+        float timeout = (float)notifyUserMsg.timeout_s;
         string text = System.Text.Encoding.UTF8.GetString(notifyUserMsg.data, 0, notifyUserMsg.data.Length);
         var uiInstance = NotificationUI.instance;
         if (uiInstance != null)
         {
             // Show the message and tell the die when user clicks Ok!
-            uiInstance.Show(text, () =>
+            uiInstance.Show(text, ok, cancel, timeout, (res) =>
             {
-                PostMessage(new DieMessageNotifyUserAck());
+                PostMessage(new DieMessageNotifyUserAck() { okCancel = (byte)(res ? 1 : 0) });
             });
         }
     }
@@ -807,6 +817,11 @@ public class Die
     public void StartHardwareTest()
     {
         PostMessage(new DieMessageTestHardware());
+    }
+
+    public void StartCalibration()
+    {
+        PostMessage(new DieMessageCalibrate());
     }
 
     #endregion

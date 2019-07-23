@@ -105,20 +105,6 @@ public class TimelineView : MonoBehaviour
 			animationSet.animations.Add(new Animations.EditAnimation());
 		}
 
-		if (animationSet.animationMapping != null)
-		{
-			int roleIndex = 0;
-			foreach (var index in animationSet.animationMapping)
-			{
-				if ((index >= 0) && (index < animationSet.animations.Count)
-					&& (!animationSet.animations[index].@event.HasValue))
-				{
-					animationSet.animations[index].@event = _animRoles[roleIndex];
-				}
-				++roleIndex;
-			}
-		}
-
 		// Drop current animation
 		_animIndex = -1;
 
@@ -163,7 +149,7 @@ public class TimelineView : MonoBehaviour
 		var anim = CurrentAnimation.Duplicate();
 
 		anim.name = null;
-		anim.@event = null;
+		anim.@event = Die.AnimationEvent.None;
 		_animIndex = -1;
 
 		AddAnimation(anim);
@@ -186,7 +172,7 @@ public class TimelineView : MonoBehaviour
 		void ChangeAnimName(string name, string role)
 		{
 			CurrentAnimation.name = name;
-			CurrentAnimation.@event = null;
+			CurrentAnimation.@event = Die.AnimationEvent.None;
 			if (role != null)
 			{
 				CurrentAnimation.@event = _animRoles.First(r => r.ToString() == role);
@@ -194,7 +180,7 @@ public class TimelineView : MonoBehaviour
 				{
 					if ((anim != CurrentAnimation) && (anim.@event == CurrentAnimation.@event))
 					{
-						anim.@event = null;
+						anim.@event = Die.AnimationEvent.None;
 					}
 				}
 			}
@@ -220,7 +206,7 @@ public class TimelineView : MonoBehaviour
 			}
 		}
 
-		bool hasRole = CurrentAnimation.@event.HasValue;
+		bool hasRole = CurrentAnimation.@event != Die.AnimationEvent.None;
 		string selectRole;
 		if (hasRole)
 		{
@@ -254,7 +240,7 @@ public class TimelineView : MonoBehaviour
 	{
 		string GetAnimDisplayName(Animations.EditAnimation anim)
 		{
-			string name = anim.@event.HasValue ? anim.@event.ToString() : string.Empty;
+			string name = anim.@event != Die.AnimationEvent.None ? anim.@event.ToString() : string.Empty;
 			if (!string.IsNullOrWhiteSpace(anim.name))
 			{
 				if (name.Length > 0)
@@ -275,7 +261,7 @@ public class TimelineView : MonoBehaviour
 		_namesDropdown.options = options;
 	}
 
-	void ShowAnimation(int animIndex)
+	public void ShowAnimation(int animIndex)
 	{
 		// Make sure to use a valid index
 		animIndex = (int)Mathf.Clamp(animIndex, 0, _animationSet.animations.Count - 1);
@@ -334,15 +320,6 @@ public class TimelineView : MonoBehaviour
         {
             CurrentAnimation.tracks.Add(t.ToAnimationTrack(Unit));
         }
-
-		//TODO Update mapping
-		int index = 0;
-		foreach (var role in _animRoles)
-		{
-			var anim = _animationSet.animations.FirstOrDefault(a => a.@event == role);
-			_animationSet.animationMapping[index] = _animationSet.animations.IndexOf(anim);
-			++index;
-		}
 	}
 
 	void DeserializeAnimation()

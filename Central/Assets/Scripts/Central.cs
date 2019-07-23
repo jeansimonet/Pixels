@@ -29,25 +29,32 @@ public class Central
     public OnDieConnectionEvent onDieDiscovered;
     public OnDieConnectionEvent onDieConnected;
     public OnDieConnectionEvent onDieDisconnected;
+    public OnDieConnectionEvent onDieLostConnection;
     public OnDieConnectionEvent onDieForgotten;
     public OnDieConnectionEvent onDieReady;
+
     public delegate void OnBluetoothErrorEvent(string message);
     public OnBluetoothErrorEvent onBluetoothError;
 
-    List<Die> discoveredDice;
-    List<Die> connectedDice;
+    Dictionary<string, Die> _dicePool;
+    Dictionary<string, Die> _lostDice;
 
     public State state
     {
         get { return _state; }
     }
 
+    bool userScan = false;
     float connectingStartTime;
+    Coroutine reconnectCoroutine;
+    const float ReconnectDelay = 15.0f;
+    List<KeyValuePair<string, string>> discoveredDice; // This is cleared at the begining of a scan
 
     void Awake()
     {
-        discoveredDice = new List<Die>();
-        connectedDice = new List<Die>();
+        _dicePool = new Dictionary<string, Die>();
+        _lostDice = new Dictionary<string, Die>();
+        discoveredDice = new List<KeyValuePair<string, string>>();
         virtualBluetooth = GetComponent<VirtualBluetoothInterface>();
     }
 
@@ -69,45 +76,97 @@ public class Central
         #endif
 	}
 
-	public void BeginScanForDice()
-	{
-        if (_state == State.Idle)
-        {
-            System.Action<string, string> dieDiscovered =
-                (address, name) =>
-                {
-                    // Do we already know about this die?
-                    Die die = null;
-                    if (connectedDice.Any(dc => dc.address == address))
-                    {
-                        // We were previously connected to the die, reconnect
-                        die = connectedDice.Find(dc => dc.address == address);
-                        Debug.Log("Reconnecting to " + die.name);
-                        die.Connect();
-                    }
-                    else if (!discoveredDice.Any(dc => dc.address == address))
-                    {
-                        // We didn't know this die before
-                        die = CreateDie(name, address);
-                        Debug.Log("New die " + die.name);
-                        discoveredDice.Add(die);
-                        die.OnAdvertising();
+    void BeginScanInternal()
+    {
+        _state = State.Scanning;
+        var services = new string[] { serviceGUID };
 
-                        if (onDieDiscovered != null)
-                            onDieDiscovered(die);
-                    }
-                    // Else we know about the die but are not interested
-                };
+        Debug.Log("Beginning internal scan");
 
-            _state = State.Scanning;
-            var services = new string[] { serviceGUID };
-            //BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
-            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(null, dieDiscovered, null, false, false);
+        discoveredDice.Clear();
 
-            // Also notify virtual dice that we're trying to connect
-            if (virtualBluetooth != null)
+        System.Action<string, string> dieDiscovered =
+            (address, name) =>
             {
-                virtualBluetooth.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
+                // Do we already know about this die?
+                Die die = null;
+                if (_lostDice.TryGetValue(address, out die))
+                {
+                    // Yes, we should reconnect automatically
+                    ReconnectDie(address, die);
+                }
+                else if (!_dicePool.TryGetValue(address, out die))
+                {
+                    // No, is this a scan triggered by the user?
+                    if (userScan)
+                    {
+                        // Yes, notify!
+                        NewDie(address, name);
+                    }
+                    else
+                    {
+                        Debug.Log("Remembering die " + name + " for user scan");
+                        discoveredDice.Add(new KeyValuePair<string, string>(address, name));
+                    }
+                    // Else ignore
+                }
+            };
+
+        //BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
+        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(null, dieDiscovered, null, false, false);
+
+        // Also notify virtual dice that we're trying to connect
+        if (virtualBluetooth != null)
+        {
+            virtualBluetooth.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, false);
+        }
+    }
+
+    void StopScanInternal()
+    {
+        Debug.Log("Stopping internal scan");
+        BluetoothLEHardwareInterface.StopScan();
+        if (virtualBluetooth != null)
+        {
+            virtualBluetooth.StopScan();
+        }
+        _state = State.Idle;
+        discoveredDice.Clear();
+    }
+
+    void NewDie(string address, string name)
+    {
+        Debug.Log("New die " + name + " discovered");
+        var die = CreateDie(name, address);
+        die.OnAdvertising();
+        onDieDiscovered?.Invoke(die);
+    }
+
+    void ReconnectDie(string address, Die die)
+    {
+        Debug.Log("Reconnecting die " + die.name);
+        die.Connect();
+    }
+
+    public void BeginScanForDice()
+	{
+        if (_state == State.Idle || (_state == State.Scanning && !userScan))
+        {
+            Debug.Log("Beginning user scan");
+            userScan = true;
+            if (_state == State.Idle)
+            {
+                BeginScanInternal();
+            }
+            else
+            {
+                // Process the internal list first
+                Debug.Log("User scan while reconnect scan in progress");
+                foreach (var kv in discoveredDice)
+                {
+                    NewDie(kv.Key, kv.Value);
+                }
+                // Then let the discover action do its thing
             }
         }
         else
@@ -120,12 +179,12 @@ public class Central
     {
         if (_state == State.Scanning)
         {
-            BluetoothLEHardwareInterface.StopScan();
-            if (virtualBluetooth != null)
+            Debug.Log("Stopping user scan");
+            if (reconnectCoroutine == null)
             {
-                virtualBluetooth.StopScan();
+                StopScanInternal();
             }
-            _state = State.Idle;
+            userScan = false;
         }
         else
         {
@@ -133,22 +192,68 @@ public class Central
         }
     }
 
+    IEnumerator ReconnectCr(System.Action reconnectFinished)
+    {
+        // Start a scan
+        if (_state != State.Scanning)
+        {
+            Debug.Log("Triggering scan to reconnect");
+            userScan = false;
+            BeginScanInternal();
+        }
+
+        float startTime = Time.time;
+        while (_lostDice.Count > 0 && Time.time < startTime + ReconnectDelay)
+        {
+            yield return null;
+        }
+
+        if (!userScan)
+        {
+            StopScanInternal();
+        }
+
+        if (_lostDice.Count > 0)
+        {
+            List<Die> lostCopy = new List<Die>(_lostDice.Values);
+            foreach (var d in lostCopy)
+            {
+                ForgetDie(d);
+            }
+            _lostDice.Clear();
+        }
+
+        reconnectFinished?.Invoke();
+    }
+
     public void ConnectToDie(Die die)
     {
         System.Action<string> onConnected = (ignore) =>
             {
-                if (discoveredDice.Contains(die))
-                {
-                    discoveredDice.Remove(die);
-                    connectedDice.Add(die);
-                }
+                Debug.Log("Die " + die.name + "connected");
+                _dicePool.Add(die.address, die);
                 die.OnConnected();
                 onDieConnected?.Invoke(die);
             };
 
-        System.Action<string> onDisconnected = (ignore) => { die.OnLostConnection(); onDieDisconnected?.Invoke(die); };
-        System.Action<string, string> onService = (ignore, service) => die.OnServiceDiscovered(service);
-        System.Action<string, string, string> onCharacteristic = (ignore, service, charact) => die.OnCharacterisicDiscovered(service, charact);
+        System.Action<string> onDisconnected = (ignore) =>
+            {
+                Debug.Log("Die " + die.name + "lost connection");
+                _dicePool.Remove(die.address);
+                _lostDice.Add(die.address, die);
+                die.OnLostConnection();
+                onDieLostConnection?.Invoke(die);
+            };
+
+        System.Action<string, string> onService = (ignore, service) =>
+            {
+                die.OnServiceDiscovered(service);
+            };
+
+        System.Action<string, string, string> onCharacteristic = (ignore, service, charact) =>
+            {
+                die.OnCharacterisicDiscovered(service, charact);
+            };
 
         if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
             BluetoothLEHardwareInterface.ConnectToPeripheral(die.address, onConnected, onService, onCharacteristic, onDisconnected);
@@ -158,7 +263,13 @@ public class Central
 
     public void DisconnectDie(Die die)
     {
-        System.Action<string> onDisconnected = (ignore) => { die.OnLostConnection(); onDieDisconnected?.Invoke(die); };
+        Debug.Log("Disconnecting die " + die.name);
+        System.Action<string> onDisconnected = (ignore) =>
+            {
+                Debug.Log("Die " + die.name + " disconnected");
+                die.OnDisconnected();
+                onDieDisconnected?.Invoke(die);
+            };
         if (virtualBluetooth == null || !virtualBluetooth.IsVirtualDie(die.address))
             BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, onDisconnected);
         else
@@ -186,19 +297,27 @@ public class Central
 
     public void DieReady(Die die)
     {
+        Debug.Log("Die " + die.name + " ready");
         onDieReady?.Invoke(die);
     }
 
     public void UnresponsiveDie(Die die)
     {
-        ForgetDie(die);
+        Debug.Log("Die " + die.name + " unresponsive, attempting to reconnect");
+        _dicePool.Remove(die.address);
+        _lostDice.Add(die.address, die);
+        reconnectCoroutine = StartCoroutine(ReconnectCr(() => reconnectCoroutine = null));
     }
 
     public void ForgetDie(Die die)
     {
-        discoveredDice.Remove(die);
-        connectedDice.Remove(die);
-        DisconnectDie(die);
+        Debug.Log("Forgetting die " + die.name);
+        if (die.connectionState >= Die.ConnectionState.Connected)
+        {
+            DisconnectDie(die);
+        }
+        _dicePool.Remove(die.address);
+        _lostDice.Remove(die.address);
         onDieForgotten?.Invoke(die);
         DestroyDie(die);
     }
@@ -220,9 +339,9 @@ public class Central
         GameObject.Destroy(die.gameObject);
     }
 
-    public IEnumerable<Die> diceList
+    public IEnumerable<Die> dicePool
     {
-        get { return discoveredDice; }
+        get { return _dicePool.Values; }
     }
 
     void OnApplicationQuit()

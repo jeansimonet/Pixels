@@ -148,7 +148,6 @@ public static class DieMessages
 
                 default:
                     throw new System.Exception("Unhandled Message type for marshalling");
-                    break;
             }
         }
         return ret;
@@ -427,7 +426,10 @@ public class DieMessageNotifyUser
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.NotifyUser;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.maxDataSize)]
+    public byte timeout_s;
+    public byte ok; // Boolean
+    public byte cancel; // Boolean
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.maxDataSize - 4)]
     public byte[] data;
 }
 
@@ -436,6 +438,7 @@ public class DieMessageNotifyUserAck
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.NotifyUserAck;
+    public byte okCancel; // Boolean
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -33,12 +33,15 @@ public class DiceAnimProgrammer
         central.onDieReady += OnNewDie;
 
         // Create empty anim if needed
-        animationSet = new Animations.EditAnimationSet();
-        animationSet.animations = new List<Animations.EditAnimation>();
-        var anim = new Animations.EditAnimation();
-        anim.Reset();
-        animationSet.animations.Add(anim);
-        timeline.SetAnimations(animationSet);
+        if (!LoadFromJson())
+        {
+            animationSet = new Animations.EditAnimationSet();
+            animationSet.animations = new List<Animations.EditAnimation>();
+            var anim = new Animations.EditAnimation();
+            anim.Reset();
+            animationSet.animations.Add(anim);
+            timeline.SetAnimations(animationSet);
+        }
     }
 
     private void OnDisable()
@@ -71,9 +74,20 @@ public class DiceAnimProgrammer
 
     public void LoadFromJsonFile()
     {
-        string jsonText = File.ReadAllText(System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath));
-        animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
-        timeline.SetAnimations(animationSet);
+        LoadFromJson();
+    }
+
+    public bool LoadFromJson()
+    {
+        var path = System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath);
+        bool ret = File.Exists(path);
+        if (ret)
+        {
+            string jsonText = File.ReadAllText(path);
+            animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
+            timeline.SetAnimations(animationSet);
+        }
+        return ret;
     }
 
     bool ByteArraysEquals(byte[] array1, byte[] array2)
@@ -100,7 +114,6 @@ public class DiceAnimProgrammer
         pleaseWait.Show("Uploading Animation Set to Dice");
         timeline.ApplyChanges();
         var rawAnim = animationSet.ToAnimationSet();
-        rawAnim.Compress();
         var newByteArray = rawAnim.ToByteArray();
         if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
         {

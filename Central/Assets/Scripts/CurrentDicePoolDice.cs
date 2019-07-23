@@ -15,6 +15,7 @@ public class CurrentDicePoolDice
     public CanvasGroup commandGroup;
     public Button forgetButton;
     public Button testButton;
+    public Button calibrateButton;
 
     public Die die { get; private set; }
     public Central central;
@@ -51,7 +52,7 @@ public class CurrentDicePoolDice
         this.die.OnConnectionStateChanged += UpdateConnectionState;
 
         voltageText.text = "Batt: Unknown";
-        if (die.connectionState >= Die.ConnectionState.Connected)
+        if (die.connectionState >= Die.ConnectionState.Ready)
         {
             MonitorBatteryLevel(true);
         }
@@ -89,6 +90,9 @@ public class CurrentDicePoolDice
 
         testButton.onClick.RemoveAllListeners();
         testButton.onClick.AddListener(TestDie);
+
+        calibrateButton.onClick.RemoveAllListeners();
+        calibrateButton.onClick.AddListener(CalibrateDie);
     }
 
     void HideCommands()
@@ -108,6 +112,12 @@ public class CurrentDicePoolDice
     void TestDie()
     {
         die.StartHardwareTest();
+        HideCommands();
+    }
+
+    void CalibrateDie()
+    {
+        die.StartCalibration();
         HideCommands();
     }
 
@@ -186,6 +196,6 @@ public class CurrentDicePoolDice
     void UpdateConnectionState(Die die, Die.ConnectionState newState)
     {
         statusText.text = newState.ToString();
-        MonitorBatteryLevel(die.connectionState >= Die.ConnectionState.Connected);
+        MonitorBatteryLevel(die.connectionState >= Die.ConnectionState.Ready);
     }
 }

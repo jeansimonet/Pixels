@@ -61,7 +61,7 @@ namespace Animations
     public class EditAnimation
     {
         public string name;
-        public Die.AnimationEvent? @event;
+        public Die.AnimationEvent @event;
         public float duration => empty ? 0 : tracks.Max(t => t.duration);
         public bool empty => tracks?.Count == 0;
 
@@ -70,7 +70,7 @@ namespace Animations
         public void Reset()
         {
             name = null;
-            @event = null;
+            @event = Die.AnimationEvent.None;
             tracks.Clear();
             tracks.Capacity = 20;
             for (int i = 0; i < 20; ++i)
@@ -104,11 +104,6 @@ namespace Animations
     {
         public List<EditAnimation> animations = new List<EditAnimation>();
 
-        /// <summary>
-        /// Maps from an animation event to the animation index to use
-        /// </summary>
-        public int[] animationMapping = new int[(int)Die.AnimationEvent.Count];
-
         public void FromAnimationSet(AnimationSet set)
         {
             // Reset the animations, and read them in!
@@ -133,8 +128,11 @@ namespace Animations
                     }
                     editAnim.tracks.Add(editTrack);
                 }
+                if (i < (int)Die.AnimationEvent.Count)
+                {
+                    editAnim.@event = (Die.AnimationEvent)i;
+                }
                 animations.Add(editAnim);
-                animationMapping[i] = i;
             }
         }
 
@@ -181,46 +179,42 @@ namespace Animations
             var keyframes = new List<RGBKeyframe>();
 
             // Add animations
-            for (int m = 0; m < animationMapping.Length; ++m)
+            for (int animIndex = 0; animIndex < animations.Count; ++animIndex)
             {
-                int animIndex = animationMapping[m];
-                if (animIndex >= 0)
+                var editAnim = animations[animIndex];
+                var anim = new Animation();
+                anim.duration = (ushort)(editAnim.duration * 1000.0f);
+                anim.tracksOffset = (ushort)currentTrackOffset;
+                anim.trackCount = (ushort)editAnim.tracks.Count;
+                anims.Add(anim);
+
+                // Now add tracks
+                for (int j = 0; j < editAnim.tracks.Count; ++j)
                 {
-                    var editAnim = animations[animIndex];
-                    var anim = new Animation();
-                    anim.duration = (ushort)(editAnim.duration * 1000.0f);
-                    anim.tracksOffset = (ushort)currentTrackOffset;
-                    anim.trackCount = (ushort)editAnim.tracks.Count;
-                    anims.Add(anim);
+                    var editTrack = editAnim.tracks[j];
+                    var track = new AnimationTrack();
+                    track.ledIndex = (byte)editTrack.ledIndex;
 
-                    // Now add tracks
-                    for (int j = 0; j < editAnim.tracks.Count; ++j)
+                    var rgbTrack = new RGBTrack();
+                    rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
+                    rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
+                    track.trackOffset = (ushort)rgbTracks.Count;
+                    rgbTracks.Add(rgbTrack);
+
+                    tracks.Add(track);
+
+                    // Now add keyframes
+                    for (int k = 0; k < editTrack.keyframes.Count; ++k)
                     {
-                        var editTrack = editAnim.tracks[j];
-                        var track = new AnimationTrack();
-                        track.ledIndex = (byte)editTrack.ledIndex;
-
-                        var rgbTrack = new RGBTrack();
-                        rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
-                        rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
-                        track.trackOffset = (ushort)rgbTracks.Count;
-                        rgbTracks.Add(rgbTrack);
-
-                        tracks.Add(track);
-
-                        // Now add keyframes
-                        for (int k = 0; k < editTrack.keyframes.Count; ++k)
-                        {
-                            var editKeyframe = editTrack.keyframes[k];
-                            int colorIndex = colors[editKeyframe.color];
-                            var keyframe = new RGBKeyframe();
-                            keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
-                            keyframes.Add(keyframe);
-                        }
-                        currentKeyframeOffset += editTrack.keyframes.Count;
+                        var editKeyframe = editTrack.keyframes[k];
+                        int colorIndex = colors[editKeyframe.color];
+                        var keyframe = new RGBKeyframe();
+                        keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
+                        keyframes.Add(keyframe);
                     }
-                    currentTrackOffset += editAnim.tracks.Count;
+                    currentKeyframeOffset += editTrack.keyframes.Count;
                 }
+                currentTrackOffset += editAnim.tracks.Count;
             }
 
             set.keyframes = keyframes.ToArray();
@@ -228,6 +222,7 @@ namespace Animations
             set.tracks = tracks.ToArray();
             set.animations = anims.ToArray();
 
+            set.Compress();
             return set;
         }
 
