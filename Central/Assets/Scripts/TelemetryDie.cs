@@ -20,7 +20,7 @@ class GraphInstance
     public string name;
     public GraphUI instance;
     public Samples samples;
-    public System.Func<Vector3, float, float> extractValueFunc;
+    public System.Func<AccelFrame, float> extractValueFunc;
 }
 
 public class TelemetryDie : MonoBehaviour
@@ -55,9 +55,14 @@ public class TelemetryDie : MonoBehaviour
         graphs = new List<GraphInstance>();
 
         // Graph the magnitude and euler angles
-        AddGraph((acc, dt) => acc.x, -4, 4, Color.red, "X");
-        AddGraph((acc, dt) => acc.y, -4, 4, Color.green, "Y");
-        AddGraph((acc, dt) => acc.z, -4, 4, Color.blue, "Z");
+        AddGraph(frame => frame.acc.x, -4, 4, Color.red, "AccX");
+        AddGraph(frame => frame.acc.y, -4, 4, Color.green, "AccY");
+        AddGraph(frame => frame.acc.z, -4, 4, Color.blue, "AccZ");
+        AddGraph(frame => frame.jerk.x, -4, 4, Color.red, "JerkX");
+        AddGraph(frame => frame.jerk.y, -4, 4, Color.green, "JerkY");
+        AddGraph(frame => frame.jerk.z, -4, 4, Color.blue, "JerkZ");
+        AddGraph(frame => frame.slowSigma, -4, 4, Color.yellow, "SlowSigma");
+        AddGraph(frame => frame.fastSigma, -4, 4, Color.cyan, "FastSigma");
         //AddGraph((acc, dt) => acc.magnitude, -4, 4, Color.yellow, "Mag");
     }
 
@@ -72,17 +77,16 @@ public class TelemetryDie : MonoBehaviour
         }
     }
 
-    public void OnTelemetryReceived(Vector3 acc, int millis)
+    public void OnTelemetryReceived(AccelFrame frame)
     {
-        float deltaTime = (float)(millis - lastSampleTime) / 1000.0f;
         // Update the graphs
         foreach (var graph in graphs)
         {
-            float val = graph.extractValueFunc(acc, deltaTime);
-            graph.samples.samples.Add(new Sample() { millis = millis, value = val });
+            float val = graph.extractValueFunc(frame);
+            graph.samples.samples.Add(new Sample() { millis = (int)frame.time, value = val });
             graph.instance.UpdateGraph();
         }
-        lastSampleTime = millis;
+        lastSampleTime = (int)frame.time;
     }
 
     public void SaveToFile(string namePrefix)
@@ -127,7 +131,7 @@ public class TelemetryDie : MonoBehaviour
         }
     }
 
-    void AddGraph(System.Func<Vector3, float, float> func, float minY, float maxY, Color color, string graphName)
+    void AddGraph(System.Func<AccelFrame, float> func, float minY, float maxY, Color color, string graphName)
     {
         // Create the samples
         var samples = new Samples();

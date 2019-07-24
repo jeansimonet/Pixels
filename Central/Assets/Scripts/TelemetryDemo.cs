@@ -79,9 +79,9 @@ public class TelemetryDemo
     {
     }
 
-    void OnDieTelemetry(Die die, Vector3 acc, int millis)
+    void OnDieTelemetry(Die die, AccelFrame frame)
     {
-        trackedDice[die].OnTelemetryReceived(acc, millis);
+        trackedDice[die].OnTelemetryReceived(frame);
     }
 
     void OnDieConnectionStateChanged(Die die, Die.ConnectionState newConnected)

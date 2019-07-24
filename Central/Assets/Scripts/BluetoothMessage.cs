@@ -208,8 +208,7 @@ public class DieMessageAcc
 {
     public DieMessageType type { get; set; } = DieMessageType.Telemetry;
 
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-    public AccelFrame[] data;
+    public AccelFrame data;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -384,6 +384,7 @@ namespace Stack
 
         err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
         APP_ERROR_CHECK(err_code);
+        NRF_LOG_INFO("Starting advertising as %s", advertisingName);
     }
 
     void disableAdvertisingOnDisconnect() {
@@ -414,7 +415,6 @@ namespace Stack
             hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
             notificationPending = true;
             ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
-            APP_ERROR_CHECK(err_code);
             ret = err_code == NRF_SUCCESS;
             if (!ret) {
                 // Reset flag, since we won't be getting an event back

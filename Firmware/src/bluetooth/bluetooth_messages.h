@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "config/sdk_config.h"
+#include "modules/accelerometer.h"
 
 #define MAX_DATA_SIZE 100
 
@@ -84,15 +85,7 @@ struct MessageDieState
 struct MessageAcc
 	: public Message
 {
-	struct AccelFrame
-	{
-		int16_t x;
-		int16_t y;
-		int16_t z;
-		int16_t deltaTime;
-	};
-
-	AccelFrame data[2];
+	Modules::Accelerometer::AccelFrame data;
 
 	inline MessageAcc() : Message(Message::MessageType_Telemetry) {}
 };

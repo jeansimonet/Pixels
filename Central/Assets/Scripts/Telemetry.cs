@@ -132,9 +132,9 @@ public class Telemetry : MonoBehaviour
         }
     }
 
-    void OnDieTelemetryReceived(Die die, Vector3 acc, int millis)
+    void OnDieTelemetryReceived(Die die, AccelFrame frame)
     {
-        trackedDice[die].OnTelemetryReceived(acc, millis);
+        trackedDice[die].OnTelemetryReceived(frame);
     }
 
     public void StartRecording()

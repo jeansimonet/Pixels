@@ -89,8 +89,9 @@ public class Die
     public string address { get; private set; } = "";
     public int face { get; private set; } = -1;
 
-	public delegate void TelemetryEvent(Die die, Vector3 acc, int millis);
-	public event TelemetryEvent OnTelemetry
+	public delegate void TelemetryEvent(Die die, AccelFrame frame);
+    public TelemetryEvent _OnTelemetry;
+    public event TelemetryEvent OnTelemetry
     {
         add
         {
@@ -125,10 +126,8 @@ public class Die
     public delegate void SettingsChangedEvent(Die die);
     public SettingsChangedEvent OnSettingsChanged;
 
-	// For telemetry
-	int lastSampleTime; // ms
-	Central central;
-    TelemetryEvent _OnTelemetry;
+    // For telemetry
+    Central central;
 
     const string messageServiceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     const string messageSubscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
@@ -471,20 +470,9 @@ public class Die
         // anybody interested in telemetry data.
         if (_OnTelemetry != null)
         {
+            // Notify anyone who cares
             var telem = (DieMessageAcc)message;
-
-            for (int i = 0; i < 2; ++i)
-            {
-                // Compute actual accelerometer readings (in Gs)
-                float cx = (float)telem.data[i].X / (float)(1 << 7) * (float)(scale);
-                float cy = (float)telem.data[i].Y / (float)(1 << 7) * (float)(scale);
-                float cz = (float)telem.data[i].Z / (float)(1 << 7) * (float)(scale);
-                Vector3 acc = new Vector3(cx, cy, cz);
-                lastSampleTime += telem.data[i].DeltaTime; 
-
-                // Notify anyone who cares
-                _OnTelemetry.Invoke(this, acc, lastSampleTime);
-            }
+            _OnTelemetry.Invoke(this, telem.data);
         }
     }
 

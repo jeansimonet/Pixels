@@ -74,10 +74,10 @@ public class TelemetryDemoDie : MonoBehaviour
         //die.GetDefaultAnimSetColor((col) => UpdateUIColor(col));
     }
 
-    public void OnTelemetryReceived(Vector3 acc, int millis)
+    public void OnTelemetryReceived(AccelFrame frame)
     {
-        graphs.OnTelemetryReceived(acc, millis);
-        die3D.UpdateAcceleration(acc);
+        graphs.OnTelemetryReceived(frame);
+        die3D.UpdateAcceleration(frame.acc);
 
     }
 
