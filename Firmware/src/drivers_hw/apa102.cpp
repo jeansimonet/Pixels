@@ -85,8 +85,22 @@ namespace APA102
 		// Turn power on so we display something!!!
 		if (nrf_gpio_pin_out_read(powerPin) == 0) {
 			nrf_gpio_pin_set(powerPin);
-			nrf_gpio_pin_clear(clockPin);
-			nrf_gpio_pin_clear(dataPin);
+
+			for (int j = 0; j < 10; ++j) {
+				nrf_delay_ms(1);
+				for (int i = 0; i < 4; i++) {
+					swSpiOut(0);    // Start-frame marker
+				}
+				for (int i = 0; i < numLEDs; ++i) {
+					swSpiOut(0xFF); // start
+					swSpiOut(0x00); // r
+					swSpiOut(0x00); // g
+					swSpiOut(0x00); // b
+				}
+				for (int i = 0; i < ((numLEDs + 15) / 16); i++) {
+					swSpiOut(0xFF); // End-frame marker
+				}
+			}
 		}
 	}
 
@@ -96,9 +110,6 @@ namespace APA102
 
 		// Turn power on so we display something!!!
 		prepare();
-
-		// May need a delay here...
-		// nrf_delay_ms(30);
 
 		uint8_t *ptr = pixels;            // -> LED data
 		uint16_t n = numLEDs;              // Counter
@@ -123,13 +134,12 @@ namespace APA102
 			swSpiOut(0xFF); // End-frame marker (see note above)
 		}
 
-		// Drop lines low again, reduces power consumption
-		nrf_gpio_pin_clear(dataPin);
-		nrf_gpio_pin_clear(clockPin);
-
 		if (allOff) {
 			// Turn power off too
+			nrf_delay_ms(1);
 			nrf_gpio_pin_clear(powerPin);
+			nrf_gpio_pin_clear(dataPin);
+			nrf_gpio_pin_clear(clockPin);
 		}
 	}
 
