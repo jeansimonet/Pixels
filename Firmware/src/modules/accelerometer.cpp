@@ -18,29 +18,13 @@ using namespace Config;
 using namespace Bluetooth;
 
 // This defines how frequently we try to read the accelerometer
-#define TIMER2_RESOLUTION (20)	// ms
+#define TIMER2_RESOLUTION (10)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
 
 namespace Modules
 {
 namespace Accelerometer
 {
-	/// <summary>
-	/// Retrieves the acceleration value stored in the frame of data
-	/// </summary>
-	float3 AccelFrame::getAcc() const
-	{
-		return float3(LIS2DE12::convert(X), LIS2DE12::convert(Y), LIS2DE12::convert(Z));
-	}
-
-	/// <summary>
-	/// Retrieves the jerk
-	/// </summary>
-	float3 AccelFrame::getJerk() const
-	{
-		return float3(LIS2DE12::convert(jerkX), LIS2DE12::convert(jerkY), LIS2DE12::convert(jerkZ));
-	}
-
 	APP_TIMER_DEF(accelControllerTimer);
 
 	int face;
@@ -69,45 +53,38 @@ namespace Accelerometer
 	/// </summary>
 	void update(void* context) {
 		LIS2DE12::read();
-		// int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-		// if (newFace != face) {
-		// 	NRF_LOG_INFO("NewFace: %d", (newFace + 1));
-		// 	face = newFace;
-		// }
+		int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		if (newFace != face) {
+			NRF_LOG_INFO("NewFace: %d", (newFace + 1));
+			face = newFace;
+		}
 
 		AccelFrame newFrame;
-		newFrame.X = LIS2DE12::x;
-		newFrame.Y = LIS2DE12::y;
-		newFrame.Z = LIS2DE12::z;
-		newFrame.Time = Utils::millis();
+		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		newFrame.time = Utils::millis();
 
 		// Compute delta!
 		auto& lastFrame = buffer.last();
 		// NRF_LOG_INFO("lastFrame: %d: %d,%d,%d", lastFrame.Time, lastFrame.X, lastFrame.Y, lastFrame.Z);
 		// NRF_LOG_INFO("newFrame: %d: %d,%d,%d", newFrame.Time, newFrame.X, newFrame.Y, newFrame.Z);
 
-		short deltaX = newFrame.X - lastFrame.X;
-		short deltaY = newFrame.Y - lastFrame.Y;
-		short deltaZ = newFrame.Z - lastFrame.Z;
+		float3 delta = newFrame.acc - lastFrame.acc;
 
 		// deltaTime should be roughly 10ms because that's how frequently we asked to be updated!
-		short deltaTime = (short)(newFrame.Time - lastFrame.Time); 
+		short deltaTime = (short)(newFrame.time - lastFrame.time); 
 
 		// Compute jerk
 		// deltas are stored in the same unit (over time) as accelerometer readings
 		// i.e. if readings are 8g scaled to a signed 12 bit integer (which they are)
 		// then jerk is 8g/s scaled to a signed 12 bit integer
-		newFrame.jerkX = deltaX * JERK_SCALE / deltaTime;
-		newFrame.jerkY = deltaY * JERK_SCALE / deltaTime;
-		newFrame.jerkZ = deltaZ * JERK_SCALE / deltaTime;
+		newFrame.jerk = delta / deltaTime;
 
-		float jerkX = LIS2DE12::convert(newFrame.jerkX);
-		float jerkY = LIS2DE12::convert(newFrame.jerkY);
-		float jerkZ = LIS2DE12::convert(newFrame.jerkZ);
-		float jerk2 = jerkX * jerkX + jerkY * jerkY + jerkZ * jerkZ;
+		float jerk2 = newFrame.jerk.x * newFrame.jerk.x + newFrame.jerk.y * newFrame.jerk.y + newFrame.jerk.z * newFrame.jerk.z;
 		auto settings = SettingsManager::getSettings();
 		slowSigma = slowSigma * settings->sigmaDecaySlow + jerk2 * (1.0f - settings->sigmaDecaySlow);
 		fastSigma = fastSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
+		newFrame.slowSigma = slowSigma;
+		newFrame.fastSigma = fastSigma;
 
 		buffer.push(newFrame);
 
@@ -237,23 +214,12 @@ namespace Accelerometer
 						float3 canonNormalsCopy[normalCount];
 						memcpy(canonNormalsCopy, BoardManager::getBoard()->faceNormals, normalCount * sizeof(float3));
 
-						float3 canonFace1Normal = canonNormalsCopy[0];
-						float3 canonFace2Normal = canonNormalsCopy[4];
-						char buffer[96]; buffer[0] = '\0';
-						sprintf(buffer, "Face1: %d, %d, %d\nMeasured: %d, %d, %d",
-							(int)(canonFace1Normal.x * 1000.f), (int)(canonFace1Normal.y * 1000.f), (int)(canonFace1Normal.z * 1000.f),
-							(int)(measuredNormals->face1.x * 1000.f), (int)(measuredNormals->face1.y * 1000.f), (int)(measuredNormals->face1.z * 1000.f));
-
 						Utils::CalibrateNormals(0, measuredNormals->face1, 4, measuredNormals->face5, canonNormalsCopy, normalCount);
 
 						// And flash the new normals
 						SettingsManager::programNormals(canonNormalsCopy, normalCount);
 
-//						MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
-						MessageService::NotifyUser(buffer, true, false, 30, [](bool okCancel) {
-
-						});
-
+						MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
 					}
 				});
 			}

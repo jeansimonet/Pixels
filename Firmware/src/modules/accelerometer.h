@@ -19,19 +19,15 @@ namespace Modules
 		/// <summary>
 		/// Small struct holding a single frame of accelerometer data
 		/// used for both face detection (not that kind) and telemetry
+		// size is 36
 		/// </summary>
 		struct AccelFrame
 		{
-			short X;
-			short Y;
-			short Z;
-			short jerkX;
-			short jerkY;
-			short jerkZ;
-			unsigned long Time;
-
-			Core::float3 getAcc() const;
-			Core::float3 getJerk() const;
+			Core::float3 acc;
+			Core::float3 jerk;
+			float slowSigma;
+			float fastSigma;
+			uint32_t time;
 		};
 
 		typedef void(*ClientMethod)(void* param, const AccelFrame& accelFrame);

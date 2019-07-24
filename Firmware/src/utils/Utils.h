@@ -26,8 +26,8 @@ namespace Utils
 	uint32_t gamma(uint32_t color);
 
 	void CalibrateNormals(
-		int face1Index, Core::float3 face1Normal,
-		int face2Index, Core::float3 face2Normal,
+		int face1Index, const Core::float3& face1Normal,
+		int face2Index, const Core::float3& face2Normal,
 		Core::float3* inOutNormals, int count);
 }
 
