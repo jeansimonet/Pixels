@@ -46,7 +46,9 @@ namespace A2D
     int16_t readConfigPin() {
         int16_t ret;
         ret_code_t err_code = nrf_drv_saadc_sample_convert(0, &ret);
-        APP_ERROR_CHECK(err_code);
+        if (err_code != NRF_SUCCESS) {
+            ret = -1;
+        }
         return ret;
     }
 
@@ -80,7 +82,9 @@ namespace A2D
     int16_t readBatteryPin() {
         int16_t ret;
         ret_code_t err_code = nrf_drv_saadc_sample_convert(1, &ret);
-        APP_ERROR_CHECK(err_code);
+        if (err_code != NRF_SUCCESS) {
+            ret = -1;
+        }
         return ret;
     }
 
@@ -98,7 +102,11 @@ namespace A2D
         // => V(p) = val * 0.003515625
 
         int16_t val = readBatteryPin();
-        return (float)val * 0.003515625f;
+        if (val != -1) {
+            return (float)val * 0.003515625f;
+        } else {
+            return 0.0f;
+        }
     }
     
     float readVBoard() {
@@ -114,7 +122,11 @@ namespace A2D
         // => V(p) = val * 0.003515625
 
         int16_t val = readConfigPin();
-        return (float)val * 0.003515625f;
+        if (val != -1) {
+            return (float)val * 0.003515625f;
+        } else {
+            return 0.0f;
+        }
     }
 
 #if DICE_SELFTEST && A2D_SELFTEST
