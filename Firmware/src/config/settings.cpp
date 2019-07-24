@@ -123,15 +123,15 @@ namespace SettingsManager
 
 		// Grab current settings
 		Settings settingsCopy;
-		memcpy(&settingsCopy, &settings, sizeof(Settings));
+		memcpy(&settingsCopy, settings, sizeof(Settings));
 
 		// Change normals
-		memcpy(&settingsCopy.faceNormals, newNormals, count * sizeof(Core::float3));
+		memcpy(&(settingsCopy.faceNormals[0]), newNormals, count * sizeof(Core::float3));
 
 		// Reprogram settings
 		Flash::eraseSynchronous((uint32_t)settings, SETTINGS_PAGE_COUNT);
 		Flash::writeSynchronous((uint32_t)settings, &settingsCopy, sizeof(Settings));
-		NRF_LOG_INFO("Settings written to flash with new noramls");
+		NRF_LOG_INFO("Settings written to flash with new normals");
 	}
 }
 }
