@@ -62,13 +62,13 @@ namespace Telemetry
 
         // Ask the acceleration controller to be notified when
         // new acceleration data comes in!
-        Accelerometer::hook(onAccDataReceived, nullptr);
+        Accelerometer::hookFrameData(onAccDataReceived, nullptr);
         telemetryActive = true;
     }
 
     void stop() {
         // Stop being notified!
-        Accelerometer::unHook(onAccDataReceived);
+        Accelerometer::unHookFrameData(onAccDataReceived);
         telemetryActive = false;
     }
 }

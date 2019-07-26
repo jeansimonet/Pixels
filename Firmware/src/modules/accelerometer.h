@@ -4,9 +4,8 @@
 #include "core/float3.h"
 #include "core/delegate_array.h"
 
-#define ACCEL_BUFFER_SIZE 100 // 10ms * 100 = 1 seconds of buffer
+#define ACCEL_BUFFER_SIZE 10 // 10ms * 10 = 100ms seconds of buffer
 							  // 16 bytes * 128 = 2k of RAM
-#define MAX_ACC_CLIENTS 4
 
 namespace Modules
 {
@@ -27,25 +26,40 @@ namespace Modules
 			Core::float3 jerk;
 			float slowSigma;
 			float fastSigma;
+			float faceConfidence;
+			int face;
 			uint32_t time;
 		};
 
-		typedef void(*ClientMethod)(void* param, const AccelFrame& accelFrame);
+	    enum RollState
+		{
+			RollState_Unknown = 0,
+			RollState_OnFace,
+			RollState_Handling,
+			RollState_Rolling,
+			RollState_Crooked,
+		};
 
-		int determineFace(float x, float y, float z, float* outConfidence = nullptr);
+		int determineFace(Core::float3 acc, float* outConfidence = nullptr);
 
 		void init();
 		void start();
 		void stop();
 
 		int currentFace();
-
-		//const Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE>& getBuffer() { return buffer; }
+		float currentFaceConfidence();
+		RollState currentRollState();
 
 		// Notification management
-		void hook(ClientMethod method, void* param);
-		void unHook(ClientMethod client);
-		void unHookWithParam(void* param);
+		typedef void(*FrameDataClientMethod)(void* param, const AccelFrame& accelFrame);
+		void hookFrameData(FrameDataClientMethod method, void* param);
+		void unHookFrameData(FrameDataClientMethod client);
+		void unHookFrameDataWithParam(void* param);
+
+		typedef void(*RollStateClientMethod)(void* param, RollState newState, int newFace);
+		void hookRollState(RollStateClientMethod method, void* param);
+		void unHookRollState(RollStateClientMethod client);
+		void unHookRollStateWithParam(void* param);
 	}
 }
 

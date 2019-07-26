@@ -15,7 +15,7 @@ using namespace Config;
 #define BATTERY_TIMER_MS (3000)	// ms
 #define MAX_BATTERY_CLIENTS 2
 #define LAZY_CHARGE_DETECT
-#define CHARGE_START_DETECTION_THRESHOLD (0.1f) // 0.1V
+#define CHARGE_START_DETECTION_THRESHOLD (0.05f) // 0.1V
 #define CHARGE_FULL (4.0f) // 4.0V
 
 namespace Modules
@@ -58,6 +58,24 @@ namespace BatteryController
 		APP_ERROR_CHECK(ret_code);
 
         NRF_LOG_INFO("Battery controller initialized");
+    }
+
+	BatteryState getCurrentChargeState() {
+        return currentBatteryState;
+    }
+
+    const char* getChargeStateString(BatteryState state) {
+        switch (currentBatteryState) {
+			case BatteryState_Ok:
+                return "Ok";
+			case BatteryState_Low:
+                return "Low";
+			case BatteryState_Charging:
+                return "Charging";
+			case BatteryState_Unknown:
+            default:
+                return "Unknown";
+        }
     }
 
     BatteryState computeCurrentState() {

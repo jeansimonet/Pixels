@@ -16,6 +16,11 @@ namespace Config
 		// Face detector
 		float sigmaDecayFast;
 		float sigmaDecaySlow;
+		float fastMovingThreshold;
+		float slowMovingThreshold;
+		float faceThreshold;
+		float fallingThreshold;
+		float shockThreshold;
 		int minRollTime; // ms
 
 		// Battery

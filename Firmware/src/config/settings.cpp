@@ -26,6 +26,8 @@ namespace SettingsManager
 	void init() {
 		settings = (Settings const * const)Flash::getFlashStartAddress();
 
+		programDefaults();
+
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
 			programDefaults();
@@ -97,8 +99,13 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
-		outSettings.sigmaDecayFast = 0.15f;
-		outSettings.sigmaDecaySlow = 0.95f;
+		outSettings.sigmaDecayFast = 0.1f;
+		outSettings.sigmaDecaySlow = 0.8f;
+		outSettings.fastMovingThreshold = 0.5f;
+		outSettings.slowMovingThreshold = 0.25f;
+		outSettings.faceThreshold = 0.9f;
+		outSettings.fallingThreshold = 0.1f;
+		outSettings.shockThreshold = 7.5f;
 		outSettings.minRollTime = 300;
 		outSettings.batteryLow = 3.0f;
 		outSettings.batteryHigh = 4.0f;

@@ -19,6 +19,10 @@ namespace Modules
 			BatteryState_Charging
 		};
 
+		BatteryState getCurrentChargeState();
+
+		const char* getChargeStateString(BatteryState state);
+
 		typedef void(*BatteryStateChangeHandler)(void* param, BatteryState newState);
 
 		// Notification management

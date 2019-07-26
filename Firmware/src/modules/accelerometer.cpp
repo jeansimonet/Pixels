@@ -20,6 +20,7 @@ using namespace Bluetooth;
 // This defines how frequently we try to read the accelerometer
 #define TIMER2_RESOLUTION (10)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
+#define MAX_ACC_CLIENTS 4
 
 namespace Modules
 {
@@ -28,13 +29,16 @@ namespace Accelerometer
 	APP_TIMER_DEF(accelControllerTimer);
 
 	int face;
+	float confidence;
 	float slowSigma;
 	float fastSigma;
+	RollState rollState = RollState_Unknown;
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
 
-	DelegateArray<ClientMethod, MAX_ACC_CLIENTS> clients;
+	DelegateArray<FrameDataClientMethod, MAX_ACC_CLIENTS> frameDataClients;
+	DelegateArray<RollStateClientMethod, MAX_ACC_CLIENTS> rollStateClients;
 
 	void updateState();
 
@@ -53,11 +57,6 @@ namespace Accelerometer
 	/// </summary>
 	void update(void* context) {
 		LIS2DE12::read();
-		int newFace = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-		if (newFace != face) {
-			NRF_LOG_INFO("NewFace: %d", (newFace + 1));
-			face = newFace;
-		}
 
 		AccelFrame newFrame;
 		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
@@ -86,13 +85,70 @@ namespace Accelerometer
 		newFrame.slowSigma = slowSigma;
 		newFrame.fastSigma = fastSigma;
 
+		newFrame.face = determineFace(newFrame.acc, &newFrame.faceConfidence);
+
 		buffer.push(newFrame);
 
 		// Notify clients
-		for (int i = 0; i < clients.Count(); ++i)
+		for (int i = 0; i < frameDataClients.Count(); ++i)
 		{
-			clients[i].handler(clients[i].token, newFrame);
+			frameDataClients[i].handler(frameDataClients[i].token, newFrame);
 		}
+
+		bool movingFast = newFrame.fastSigma > settings->fastMovingThreshold;
+		bool movingSlow = newFrame.slowSigma > settings->slowMovingThreshold;
+		bool onFace = newFrame.faceConfidence > settings->faceThreshold;
+		bool zeroG = newFrame.acc.sqrMagnitude() < (settings->fallingThreshold * settings->fallingThreshold);
+        bool shock = newFrame.acc.sqrMagnitude() > (settings->shockThreshold * settings->shockThreshold);
+
+        RollState newRollState = rollState;
+        switch (rollState) {
+            case RollState_Unknown:
+            case RollState_OnFace:
+            case RollState_Crooked:
+                // We start rolling if we detect enough motion
+                if (movingSlow) {
+                    // We're at least being handled
+                    newRollState = RollState_Handling;
+                }
+                break;
+            case RollState_Handling:
+				if (shock || zeroG || newFrame.face != face) {
+					// Stuff is happening that we are most likely rolling now
+					newRollState = RollState_Rolling;
+				}
+				break;
+			case RollState_Rolling:
+                // If we stop moving we may be on a face
+                if (!movingFast) {
+                    // We may be at rest
+                    if (onFace) {
+                        // We're at rest
+                        newRollState = RollState_OnFace;
+                    } else {
+                        newRollState = RollState_Crooked;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+		if (newFrame.face != face) {
+			face = newFrame.face;
+			confidence = newFrame.faceConfidence;
+		}
+
+        if (newRollState != rollState) {
+            rollState = newRollState;
+            NRF_LOG_INFO("State: %d, Face %d", rollState, currentFace);
+
+			// Notify clients
+			for (int i = 0; i < rollStateClients.Count(); ++i)
+			{
+				rollStateClients[i].handler(rollStateClients[i].token, rollState, face);
+			}
+        }
 	}
 
 	/// <summary>
@@ -101,7 +157,17 @@ namespace Accelerometer
 	void start()
 	{
 		LIS2DE12::read();
-		face = determineFace(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		float3 acc(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		face = determineFace(acc, &confidence);
+
+		// Determine what state we're in to begin with
+		auto settings = SettingsManager::getSettings();
+		bool onFace = confidence > settings->faceThreshold;
+        if (onFace) {
+            rollState = RollState_OnFace;
+        } else {
+            rollState = RollState_Crooked;
+        }
 
 		ret_code_t ret_code = app_timer_create(&accelControllerTimer, APP_TIMER_MODE_REPEATED, Accelerometer::update);
 		APP_ERROR_CHECK(ret_code);
@@ -122,43 +188,58 @@ namespace Accelerometer
 	/// <summary>
 	/// Returns the currently stored up face!
 	/// </summary>
-	int currentFace()
-	{
+	int currentFace() {
 		return face;
+	}
+
+	float currentFaceConfidence() {
+		return confidence;
+	}
+
+	RollState currentRollState() {
+		return rollState;
 	}
 
 	/// <summary>
 	/// Crudely compares accelerometer readings passed in to determine the current face up
 	/// </summary>
 	/// <returns>The face number, starting at 0</returns>
-	int determineFace(float x, float y, float z, float* outConfidence)
+	int determineFace(float3 acc, float* outConfidence)
 	{
 		// Compare against face normals stored in board manager
 		int faceCount = BoardManager::getBoard()->ledCount;
-		auto& normals = SettingsManager::getSettings()->faceNormals;
-		float3 acc(x, y, z);
-		acc.normalize();
-		float bestDot = -1000.0f;
-		int bestFace = -1;
-		for (int i = 0; i < faceCount; ++i) {
-			float dot = float3::dot(acc, normals[i]);
-			if (dot > bestDot) {
-				bestDot = dot;
-				bestFace = i;
+		auto settings = SettingsManager::getSettings();
+		auto& normals = settings->faceNormals;
+		float accMag = acc.magnitude();
+		if (accMag < settings->fallingThreshold) {
+			if (outConfidence != nullptr) {
+				*outConfidence = 0.0f;
 			}
+			return face;
+		} else {
+			acc  = acc / sqrt(accMag); // normalize
+			float bestDot = -1000.0f;
+			int bestFace = -1;
+			for (int i = 0; i < faceCount; ++i) {
+				float dot = float3::dot(acc, normals[i]);
+				if (dot > bestDot) {
+					bestDot = dot;
+					bestFace = i;
+				}
+			}
+			if (outConfidence != nullptr) {
+				*outConfidence = bestDot;
+			}
+			return bestFace;
 		}
-		if (outConfidence != nullptr) {
-			*outConfidence = bestDot;
-		}
-		return bestFace;
 	}
 
 	/// <summary>
 	/// Method used by clients to request timer callbacks when accelerometer readings are in
 	/// </summary>
-	void hook(Accelerometer::ClientMethod callback, void* parameter)
+	void hookFrameData(Accelerometer::FrameDataClientMethod callback, void* parameter)
 	{
-		if (!clients.Register(parameter, callback))
+		if (!frameDataClients.Register(parameter, callback))
 		{
 			NRF_LOG_ERROR("Too many accelerometer hooks registered.");
 		}
@@ -167,17 +248,35 @@ namespace Accelerometer
 	/// <summary>
 	/// Method used by clients to stop getting accelerometer reading callbacks
 	/// </summary>
-	void unHook(Accelerometer::ClientMethod callback)
+	void unHookFrameData(Accelerometer::FrameDataClientMethod callback)
 	{
-		clients.UnregisterWithHandler(callback);
+		frameDataClients.UnregisterWithHandler(callback);
 	}
 
 	/// <summary>
 	/// Method used by clients to stop getting accelerometer reading callbacks
 	/// </summary>
-	void unHookWithParam(void* param)
+	void unHookFrameDataWithParam(void* param)
 	{
-		clients.UnregisterWithToken(param);
+		frameDataClients.UnregisterWithToken(param);
+	}
+
+	void hookRollState(RollStateClientMethod method, void* param)
+	{
+		if (!rollStateClients.Register(param, method))
+		{
+			NRF_LOG_ERROR("Too many accelerometer hooks registered.");
+		}
+	}
+
+	void unHookRollState(RollStateClientMethod client)
+	{
+		rollStateClients.UnregisterWithHandler(client);
+	}
+
+	void unHookRollStateWithParam(void* param)
+	{
+		rollStateClients.UnregisterWithToken(param);
 	}
 
 	struct CalibrationNormals

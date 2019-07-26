@@ -16,7 +16,9 @@
 #include "drivers_nrf/gpiote.h"
 #include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/timers.h"
+#include "drivers_hw/battery.h"
 #include "modules/anim_controller.h"
+#include "modules/battery_controller.h"
 #include "animations/animation_set.h"
 
 using namespace Modules;
@@ -41,6 +43,7 @@ namespace HardwareTest
 
 
     APP_TIMER_DEF(ledsTimer);
+    APP_TIMER_DEF(chargingTimer);
 
     void HardwareTestHandler(void* context, const Message* msg) {
         NRF_LOG_INFO("Starting Hardware Test");
@@ -87,11 +90,39 @@ namespace HardwareTest
 
                                     MessageService::NotifyUser("Check all leds", true, true, 30, [](bool okCancel)
                                     {
-                                        NRF_LOG_INFO("Done");
                                         Timers::stopTimer(ledsTimer);
 
                                         // LEDs seem good, test charging
+                                        if (okCancel) {
+                                            char buffer[100]; buffer[0] = '\0';
+                                            const char* stateString = BatteryController::getChargeStateString(BatteryController::getCurrentChargeState());
+                                            float vbat = Battery::checkVBat();
+                                            sprintf(buffer, "Battery %s, " SPRINTF_FLOAT_MARKER "V. place on charger!", stateString, SPRINTF_FLOAT(vbat));
+                                            MessageService::NotifyUser(buffer, false, false, 30, nullptr);
 
+                                            // Register a handler with the battery controller
+                                            BatteryController::hook([](void* ignore, BatteryController::BatteryState newState) {
+                                                if (newState == BatteryController::BatteryState_Charging) {
+
+                                                    // Good! unhook from the controller now
+                                                    BatteryController::unHookWithParam((void*)(0x12345678));
+                                                    Timers::stopTimer(chargingTimer);
+
+                                                    // Done!
+                                                    MessageService::NotifyUser("Test complete!", true, false, 10, nullptr);
+                                                }
+                                            }, (void*)(0x12345678));
+
+                                            // Turn all LEDs on repeatedly!
+                                            Timers::createTimer(&chargingTimer, APP_TIMER_MODE_SINGLE_SHOT, [](void* ctx)
+                                            {
+                                                BatteryController::unHookWithParam((void*)(0x12345678));
+                                                MessageService::NotifyUser("No charging detected!", true, false, 10, nullptr);
+
+                                                // Done!
+                                            });
+                                            Timers::startTimer(chargingTimer, 30000, nullptr);
+                                        }
                                     });
                                 });
                             });

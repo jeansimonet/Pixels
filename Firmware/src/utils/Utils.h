@@ -3,6 +3,23 @@
 #include <stdint.h>
 #include <algorithm>
 
+/**
+ * @brief Macro to be used in a formatted string to a pass float number to the log.
+ *
+ * Use this macro in a formatted string instead of the %f specifier together with
+ * @ref NRF_LOG_FLOAT macro.
+ * Example: NRF_LOG_INFO("My float number" NRF_LOG_FLOAT_MARKER "\r\n", NRF_LOG_FLOAT(f)))
+ */
+#define SPRINTF_FLOAT_MARKER "%s%d.%02d"
+
+/**
+ * @brief Macro for dissecting a float number into two numbers (integer and residuum).
+ */
+#define SPRINTF_FLOAT(val) (((val) < 0 && (val) > -1.0) ? "-" : ""),   \
+                           (int)(val),                                 \
+                           (int)((((val) > 0) ? (val) - (int)(val)     \
+                                              : (int)(val) - (val))*100)
+
 namespace Core
 {
 	struct float3;
