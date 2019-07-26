@@ -58,6 +58,7 @@ namespace Stack
 
     bool notificationPending = false;
     bool connected = false;
+    bool currentlyAdvertising = false;
 
     char advertisingName[16];
 
@@ -156,10 +157,12 @@ namespace Stack
         {
             case BLE_ADV_EVT_FAST:
                 NRF_LOG_INFO("Fast advertising.");
+                currentlyAdvertising = true;
                 break;
 
             case BLE_ADV_EVT_IDLE:
                 NRF_LOG_INFO("Advertising Idle.");
+                currentlyAdvertising = false;
                 //sleep_mode_enter();
                 break;
 
@@ -370,19 +373,12 @@ namespace Stack
         NRF_LOG_INFO("Disconnected %d links.", conn_count);
     }
 
+    bool isAdvertising() {
+        return currentlyAdvertising;
+    }
 
     void startAdvertising() {
-
-        ble_gap_conn_sec_mode_t sec_mode;
-
-        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
-
-        ret_code_t err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                            (const uint8_t *)advertisingName,
-                                            strlen(advertisingName));
-        APP_ERROR_CHECK(err_code);
-
-        err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
+        ret_code_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
         APP_ERROR_CHECK(err_code);
         NRF_LOG_INFO("Starting advertising as %s", advertisingName);
     }
