@@ -90,33 +90,35 @@ namespace Die
     }
 
     void onBatteryStateChange(void* token, BatteryController::BatteryState newState) {
-        switch (newState) {
-            case BatteryController::BatteryState_Charging:
-                // Die is now charging, disconnect from Bluetooth etc...
-                if (Bluetooth::Stack::isConnected()) {
-                    Bluetooth::Stack::disableAdvertisingOnDisconnect();
-                    Bluetooth::Stack::disconnect();
-                } else {
-                    Bluetooth::Stack::stopAdvertising();
-                }
-                currentTopLevelState = TopLevel_Charging;
-                break;
-            case BatteryController::BatteryState_Low:
-                if (Bluetooth::Stack::isConnected()) {
-                    Bluetooth::Stack::disableAdvertisingOnDisconnect();
-                    Bluetooth::Stack::disconnect();
-                } else {
-                    Bluetooth::Stack::stopAdvertising();
-                }
-                currentTopLevelState = TopLevel_LowPower;
-                break;
-            case BatteryController::BatteryState_Ok:
-                currentTopLevelState = TopLevel_SoloPlay;
-                Bluetooth::Stack::startAdvertising();
-                break;
-            default:
-                break;
-        }
+        // switch (newState) {
+        //     case BatteryController::BatteryState_Charging:
+        //         // Die is now charging, disconnect from Bluetooth etc...
+        //         if (Bluetooth::Stack::isConnected()) {
+        //             Bluetooth::Stack::disableAdvertisingOnDisconnect();
+        //             Bluetooth::Stack::disconnect();
+        //         } else {
+        //             Bluetooth::Stack::stopAdvertising();
+        //         }
+        //         currentTopLevelState = TopLevel_Charging;
+        //         break;
+        //     case BatteryController::BatteryState_Low:
+        //         if (Bluetooth::Stack::isConnected()) {
+        //             Bluetooth::Stack::disableAdvertisingOnDisconnect();
+        //             Bluetooth::Stack::disconnect();
+        //         } else {
+        //             Bluetooth::Stack::stopAdvertising();
+        //         }
+        //         currentTopLevelState = TopLevel_LowPower;
+        //         break;
+        //     case BatteryController::BatteryState_Ok:
+        //         currentTopLevelState = TopLevel_SoloPlay;
+        //         if (!Bluetooth::Stack::isAdvertising()) {
+        //             Bluetooth::Stack::startAdvertising();
+        //         }
+        //         break;
+        //     default:
+        //         break;
+        // }
     }
 
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {

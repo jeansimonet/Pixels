@@ -217,7 +217,7 @@ COMMON_FLAGS += $(DEBUG_FLAGS)
 
 FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x28000
 
-firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x23000
+firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x24000
 
 COMMON_FLAGS += $(FSTORAGE_ADDR_DEFINES)
 
@@ -314,5 +314,8 @@ flash_bootloader:
 	@echo Flashing: $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex
 	nrfjprog -f nrf52 -s 801001366 --program $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
+
+flash_board: erase flash_softdevice flash_bootloader
+
 
 reflash:  erase  flash  flash_softdevice
