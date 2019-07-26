@@ -87,6 +87,7 @@ namespace HardwareTest
                                         AnimController::play(&AnimationSet::getAnimation(AnimationSet::getAnimationCount() - 3));
                                     });
                                     Timers::startTimer(ledsTimer, 1000, nullptr);
+                                    AnimController::play(&AnimationSet::getAnimation(AnimationSet::getAnimationCount() - 3));
 
                                     MessageService::NotifyUser("Check all leds", true, true, 30, [](bool okCancel)
                                     {
