@@ -5,7 +5,7 @@ using UnityEngine;
 public class BattleGameUI : MonoBehaviour
 {
     [SerializeField]
-    BattleGameDieUI _DiePrefab;
+    BattleGameDieUI _DiePrefab = null;
 
     Dictionary<Die, BattleGameDieUI> dice;
 

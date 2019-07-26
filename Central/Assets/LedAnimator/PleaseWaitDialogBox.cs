@@ -6,20 +6,7 @@ using UnityEngine.UI;
 public class PleaseWaitDialogBox : MonoBehaviour
 {
     [SerializeField]
-    Text _messageField;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    Text _messageField = null;
 
     public void Show(string message)
     {

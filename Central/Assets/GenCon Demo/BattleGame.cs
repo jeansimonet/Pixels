@@ -6,10 +6,10 @@ using UnityEngine;
 public class BattleGame : MonoBehaviour
 {
     [SerializeField]
-    BattleGameUI _UI;
+    BattleGameUI _UI = null;
 
     [SerializeField]
-    Central _Central;
+    Central _Central = null;
 
     // The list of dice that are part of the game
     List<Die> _dice = new List<Die>();

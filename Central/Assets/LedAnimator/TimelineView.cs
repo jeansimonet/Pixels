@@ -4,6 +4,11 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum DiceType
+{
+	D6, D20,
+}
+
 public class TimelineView : MonoBehaviour
 {
 	[SerializeField]
@@ -43,6 +48,7 @@ public class TimelineView : MonoBehaviour
 	float _playTime;
 	Die.AnimationEvent[] _animRoles;
 
+	public DiceType DiceType { get; private set; } = DiceType.D20;
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
 	public float SnapInterval => _snapInterval;
@@ -73,7 +79,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddTrack()
 	{
-		LedSelectorPanel.Instance.Show(ledIndex =>
+		LedSelectorPanel.Instance.Show(DiceType, ledIndex =>
 		{
 			if (ledIndex != -1)
 			{
