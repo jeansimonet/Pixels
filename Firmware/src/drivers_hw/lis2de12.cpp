@@ -128,6 +128,12 @@ namespace LIS2DE12
 		disableTransientInterrupt();
 		clearTransientInterrupt();
 
+		if (!checkIntPin())
+		{
+			NRF_LOG_ERROR("Bad interrupt Pin");
+			return;
+		}
+
 		#if DICE_SELFTEST && LIS2DE12_SELFTEST
 		selfTest();
 		#endif

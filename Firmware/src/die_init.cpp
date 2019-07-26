@@ -175,20 +175,4 @@ namespace Die
         // Start advertising!
         Stack::startAdvertising();
     }
-
-    // Main loop!
-    void update() {
-        Scheduler::update();
-        Watchdog::feed();
-        PowerManager::update();
-    }
-}
-
-int main() {
-    Die::init();
-    for (;;)
-    {
-        Die::update();
-    }
-    return 0;
 }

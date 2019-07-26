@@ -1,13 +1,18 @@
 #include "die.h"
+#include "drivers_nrf/watchdog.h"
+#include "drivers_nrf/scheduler.h"
+#include "drivers_nrf/power_manager.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bluetooth_stack.h"
 #include "config/board_config.h"
+#include "config/settings.h"
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
 #include "nrf_log.h"
 
+using namespace DriversNRF;
 using namespace Modules;
 using namespace Bluetooth;
 using namespace Accelerometer;
@@ -35,22 +40,11 @@ namespace Die
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
 
-    enum RollState
-    {
-        RollState_Unknown = 0,
-        RollState_Idle,
-		RollState_Handling,
-		RollState_Falling,
-		RollState_Rolling,
-		RollState_Jerking,
-		RollState_Crooked,
-    };
-
-    RollState currentRollState = RollState_Idle;
-
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);
     void onBatteryStateChange(void* token, BatteryController::BatteryState newState);
+    void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace);
+    void SendRollState(Accelerometer::RollState rollState, int face);
 
     void initMainLogic() {
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
@@ -71,16 +65,20 @@ namespace Die
 
         BatteryController::hook(onBatteryStateChange, nullptr);
 
-        // Register with the accelerometer
-        //Accelerometer::hook(onAccelData)
+        Accelerometer::hookRollState(onRollStateChange, nullptr);
 
 		NRF_LOG_INFO("Die State initialized");
     }
 
     void RequestStateHandler(void* token, const Message* message) {
+        SendRollState(Accelerometer::currentRollState(), Accelerometer::currentFace());
+    }
+
+    void SendRollState(Accelerometer::RollState rollState, int face) {
         // Central asked for the die state, return it!
         Bluetooth::MessageDieState currentStateMsg;
-        currentStateMsg.state = (uint8_t)currentRollState;
+        currentStateMsg.state = (uint8_t)rollState;
+        currentStateMsg.face = (uint8_t)face;
         Bluetooth::MessageService::SendMessage(&currentStateMsg);
     }
 
@@ -120,4 +118,24 @@ namespace Die
                 break;
         }
     }
+
+    void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {
+        SendRollState(newRollState, newFace);
+    }
+
+    // Main loop!
+    void update() {
+        Scheduler::update();
+        Watchdog::feed();
+        PowerManager::update();
+    }
+}
+
+int main() {
+    Die::init();
+    for (;;)
+    {
+        Die::update();
+    }
+    return 0;
 }

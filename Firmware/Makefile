@@ -64,8 +64,8 @@ SRC_FILES += \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/prs/nrfx_prs.c \
 	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
 	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
-	$(PROJ_DIR)/src/die.cpp \
-	$(PROJ_DIR)/src/die_mainlogic.cpp \
+	$(PROJ_DIR)/src/die_init.cpp \
+	$(PROJ_DIR)/src/die_main.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
 	$(PROJ_DIR)/src/animations/animation_set.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
