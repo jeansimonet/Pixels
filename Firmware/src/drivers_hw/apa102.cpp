@@ -4,6 +4,7 @@
 #include "config/board_config.h"
 #include "string.h" // for memset
 #include "../utils/Rainbow.h"
+#include "core/delegate_array.h"
 #include "../drivers_nrf/log.h"
 #include "../drivers_nrf/power_manager.h"
 
@@ -14,6 +15,7 @@ using namespace DriversNRF;
 #define OFFSET_GREEN 1
 #define OFFSET_BLUE 0
 
+#define MAX_APA102_CLIENTS 2
 namespace DriversHW
 {
 namespace APA102
@@ -23,6 +25,8 @@ namespace APA102
 	static uint8_t dataPin;
 	static uint8_t clockPin;
 	static uint8_t powerPin;
+
+	DelegateArray<APA102ClientMethod, MAX_APA102_CLIENTS> ledPowerClients;
 
 	void init() {
 
@@ -84,6 +88,12 @@ namespace APA102
 		// Sets the power pin on, but doesn't write any data
 		// Turn power on so we display something!!!
 		if (nrf_gpio_pin_out_read(powerPin) == 0) {
+
+			// Notify clients we're turning led power on
+			for (int i = 0; i < ledPowerClients.Count(); ++i) {
+				ledPowerClients[i].handler(ledPowerClients[i].token, true);
+			}
+
 			nrf_gpio_pin_set(powerPin);
 
 			for (int j = 0; j < 10; ++j) {
@@ -140,6 +150,11 @@ namespace APA102
 			nrf_gpio_pin_clear(powerPin);
 			nrf_gpio_pin_clear(dataPin);
 			nrf_gpio_pin_clear(clockPin);
+
+			// Notify clients we're turning led power off
+			for (int i = 0; i < ledPowerClients.Count(); ++i) {
+				ledPowerClients[i].handler(ledPowerClients[i].token, false);
+			}
 		}
 	}
 
@@ -211,6 +226,19 @@ namespace APA102
 	uint8_t* getPixels() {
 		return pixels;
 	}
+
+	void hookPowerState(APA102ClientMethod method, void* param) {
+		ledPowerClients.Register(param, method);
+	}
+
+	void unHookPowerState(APA102ClientMethod method) {
+		ledPowerClients.UnregisterWithHandler(method);
+	}
+
+	void unHookPowerStateWithParam(void* param) {
+		ledPowerClients.UnregisterWithToken(param);
+	}
+
 
 	#if DICE_SELFTEST && APA102_SELFTEST
 	void selfTest() {

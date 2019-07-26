@@ -36,5 +36,10 @@ namespace DriversHW
     uint8_t *getPixels();
 
     void selfTest();
+
+		typedef void(*APA102ClientMethod)(void* param, bool powerOn);
+		void hookPowerState(APA102ClientMethod method, void* param);
+		void unHookPowerState(APA102ClientMethod client);
+		void unHookPowerStateWithParam(void* param);
   }
 }
