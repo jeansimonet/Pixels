@@ -58,11 +58,11 @@ public class TelemetryDie : MonoBehaviour
         AddGraph(frame => frame.acc.x, -4, 4, Color.red, "AccX");
         AddGraph(frame => frame.acc.y, -4, 4, Color.green, "AccY");
         AddGraph(frame => frame.acc.z, -4, 4, Color.blue, "AccZ");
-        AddGraph(frame => frame.jerk.x, -4, 4, Color.red, "JerkX");
-        AddGraph(frame => frame.jerk.y, -4, 4, Color.green, "JerkY");
-        AddGraph(frame => frame.jerk.z, -4, 4, Color.blue, "JerkZ");
-        AddGraph(frame => frame.slowSigma, -4, 4, Color.yellow, "SlowSigma");
-        AddGraph(frame => frame.fastSigma, -4, 4, Color.cyan, "FastSigma");
+        AddGraph(frame => frame.jerk.x, -1, 1, Color.red, "JerkX");
+        AddGraph(frame => frame.jerk.y, -1, 1, Color.green, "JerkY");
+        AddGraph(frame => frame.jerk.z, -1, 1, Color.blue, "JerkZ");
+        AddGraph(frame => frame.slowSigma, -1, 1, Color.yellow, "SlowSigma");
+        AddGraph(frame => frame.fastSigma, -1, 1, Color.cyan, "FastSigma");
         //AddGraph((acc, dt) => acc.magnitude, -4, 4, Color.yellow, "Mag");
     }
 
