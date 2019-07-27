@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public class BattleGame : MonoBehaviour
 {
     [SerializeField]
@@ -11,8 +12,17 @@ public class BattleGame : MonoBehaviour
     [SerializeField]
     Central _Central = null;
 
-    // The list of dice that are part of the game
-    List<Die> _dice = new List<Die>();
+    [SerializeField]
+    Sounds _Sounds;
+
+    [System.Serializable]
+    struct Sounds
+    {
+        public AudioClip[] NewPlayer;
+        public AudioClip[] DuelStarted;
+        public AudioClip[] GameCompleted;
+        public AudioClip[] GameCancelled;
+    }
 
     enum Animations
     {
@@ -101,6 +111,11 @@ public class BattleGame : MonoBehaviour
         }
     }
 
+    // The list of dice that are part of the game
+    List<Die> _dice = new List<Die>();
+
+    AudioSource _audioSource;
+
     BattleTeam _team1 = new BattleTeam("team1");
     BattleTeam _team2 = new BattleTeam("team2");
 
@@ -110,6 +125,7 @@ public class BattleGame : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        _audioSource = GetComponent<AudioSource>();
         StartCoroutine(PeriodicScanAndConnectCr());
     }
 
@@ -143,6 +159,8 @@ public class BattleGame : MonoBehaviour
             StopCoroutine(_battleCr);
             _battleCr = null;
             Debug.Log($"BATTLE CANCELLED ({reason})");
+
+            PlaySound(_Sounds.GameCancelled);
         }
         foreach (var d in _team1.Dice)
         {
@@ -177,12 +195,12 @@ public class BattleGame : MonoBehaviour
         //TODO LIST
         // Alternate ShowTeam and something else when not in battle?
         // Stop show team has soon as not idle
-        // Stop show fqce up when duel starts
-        // On die lost, allow delay to re-integrate same die
 
         //
         // Wait for both teams to enter battle
         //
+
+        PlaySound(_Sounds.NewPlayer);
 
         bool team1EnterBattle = _team1.Dice.Any(d => d.IsBattling);
         bool team2EnterBattle = _team2.Dice.Any(d => d.IsBattling);
@@ -193,6 +211,16 @@ public class BattleGame : MonoBehaviour
             team1EnterBattle = team1EnterBattle || CheckTeamEnterBattle(_team1, team2EnterBattle);
             team2EnterBattle = team2EnterBattle || CheckTeamEnterBattle(_team2, team1EnterBattle);
         }
+
+        PlaySound(_Sounds.NewPlayer);
+
+        // Show faces for a little while
+        yield return new WaitForSecondsRealtime(3);
+
+        // And then stop animations
+        _team1.PlayAnimation(Animations.None);
+        _team2.PlayAnimation(Animations.None);
+        yield return new WaitForSecondsRealtime(1);
 
         //
         // Pair dice for battle
@@ -224,6 +252,8 @@ public class BattleGame : MonoBehaviour
 
             pairs.Add((die1, die2));
 
+            PlaySound(_Sounds.DuelStarted);
+    
             yield return new WaitForSecondsRealtime(3);
 
             var winner = die1.Value > die2.Value ? die1 : (die2.Value > die1.Value ? die2 : null);
@@ -243,6 +273,15 @@ public class BattleGame : MonoBehaviour
             yield return new WaitForSecondsRealtime(3);
         }
 
+        //
+        // Battle results
+        //
+
+        // Stop animations
+        _team1.PlayAnimation(Animations.None);
+        _team2.PlayAnimation(Animations.None);
+        yield return new WaitForSecondsRealtime(1);
+
         if (pairs.Count >= numPairs)
         {
             if (battleScore != 0)
@@ -258,10 +297,22 @@ public class BattleGame : MonoBehaviour
                 _team2.PlayAnimation(Animations.TeamDraw);
             }
 
+            PlaySound(_Sounds.GameCompleted);
+
             yield return new WaitForSecondsRealtime(3);
         }
 
+        _battleCr = null;
         Debug.Log("BATTLE FINISHED");
+    }
+
+    void PlaySound(AudioClip[] clips)
+    {
+        if (clips != null)
+        {
+            int index = Random.Range(0, clips.Length - 1);
+            _audioSource.PlayOneShot(clips[index]);
+        }
     }
 
     IEnumerator PeriodicScanAndConnectCr()
