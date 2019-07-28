@@ -11,7 +11,6 @@ public class TelemetryDemoDie : MonoBehaviour
     public Die3D die3D;
     public Text faceNumberText;
     public ColorSelector selector;
-    public Button playAnimButton;
 
     Die die;
 
@@ -26,24 +25,6 @@ public class TelemetryDemoDie : MonoBehaviour
         {
             die.SetLEDsToColor(ColorSelector.GetColor());
         });
-
-        int count = 21;
-        Button[] buttons = new Button[count];
-        buttons[0] = playAnimButton;
-        playAnimButton.GetComponentInChildren<Text>().text = "0";
-        playAnimButton.onClick.AddListener(() => die.PlayAnimation(0));
-
-        var root = playAnimButton.transform.parent;
-        for (int i = 1; i < count; ++i)
-        {
-            var btn = GameObject.Instantiate<Button>(playAnimButton, root);
-            btn.GetComponentInChildren<Text>().text = i.ToString();
-            int animIndex = i;
-            btn.onClick.AddListener(() =>
-                {
-                    die.PlayAnimation(animIndex);
-                });
-        }
     }
 
     // Update is called once per frame
@@ -88,7 +69,6 @@ public class TelemetryDemoDie : MonoBehaviour
 
     void UpdateUIColor(Color uiColor)
     {
-        die3D.pipsColor = uiColor;
         faceNumberText.color = uiColor;
     }
 
