@@ -129,7 +129,10 @@ namespace AnimController
 	void play(AnimationEvent evt) {
 		int evtIndex = (uint16_t)evt;
 		int animIndex = animationLookupByEvent[evtIndex];
-		if (animIndex != -1) {
+		if (animIndex == -1) {
+			animIndex = 0;
+		}
+		if (animIndex < AnimationSet::getAnimationCount()) {
 			auto& anim = AnimationSet::getAnimation(animIndex);
 			play(&anim);
 		}

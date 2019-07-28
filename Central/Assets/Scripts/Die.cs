@@ -36,12 +36,26 @@ public class Die
     public enum AnimationEvent
     {
         None = 0,
-        PickUp,
-        Error,
+        Hello,
+        Connected,
+        Disconnected,
         LowBattery,
         ChargingStart,
         ChargingDone,
         ChargingError,
+        Handling,
+        Rolling,
+        OnFace,
+        Battle_ShowTeam,
+        Battle_FaceUp,
+        Battle_WaitingForBattle,
+        Battle_Duel,
+        Battle_DuelWin,
+        Battle_DuelLose,
+        Battle_DuelDraw,
+        Battle_TeamWin,
+        Battle_TeamLoose,
+        Battle_TeamDraw,
         // Etc...
         Count
     }
