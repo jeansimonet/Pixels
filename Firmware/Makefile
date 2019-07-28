@@ -302,7 +302,7 @@ flash: firmware_debug settings
 
 flash_ble: zip
 	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware.hex over BLE DFU
-	nrfutil dfu ble -ic NRF51 -p COM5 -snr 680120179 -f -n DiceDfuTarg -pkg _build/firmware.zip
+	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n DiceDfuTarg -pkg _build/firmware.zip
 
 # Flash softdevice
 flash_softdevice:
