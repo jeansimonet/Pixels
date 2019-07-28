@@ -14,6 +14,10 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	MovableArea _movableColorSlider = null;
 	[SerializeField]
 	RectTransform _confirmRemovePanel = null;
+	[SerializeField]
+	Sprite[] _led6Sprites = null;
+
+	TimelineView _timeline;
 
 	public event System.Action<ColorAnimator> GotFocus;
 	public bool HasFocus { get; private set; }
@@ -27,7 +31,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 
 	public void ChangeLed()
 	{
-		LedSelectorPanel.Instance.Show(number =>
+		LedSelectorPanel.Instance.Show(_timeline.DiceType, number =>
 		{
             if (number != -1)
             {
@@ -39,6 +43,11 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	public void SetLedNumber(int number)
 	{
 		_number.text = (number + 1).ToString();
+		if (_timeline.DiceType == DiceType.D6)
+		{
+			_number.gameObject.SetActive(false);
+			_image.sprite = _led6Sprites[number];
+		}
 	}
 
 	public void ShowColor(float cursorPos)
@@ -64,18 +73,16 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 
 	public void RemoveSelf()
 	{
-		var timeline = GetComponentInParent<TimelineView>();
 		gameObject.transform.SetParent(null);
 		GameObject.Destroy(gameObject);
 		//TODO ActiveColorAnimator = null;
-		timeline.Repaint(); //TODO
+		_timeline.Repaint(); //TODO
 	}
 
 	public void DuplicateSelf()
 	{
 		RemoveFocus();
-		var timeline = GetComponentInParent<TimelineView>();
-		timeline.AddTrack(ToAnimationTrack(timeline.Unit));
+		_timeline.AddTrack(ToAnimationTrack(_timeline.Unit));
 	}
 
 	public void GiveFocus()
@@ -113,7 +120,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		if (track.empty)
 		{
 			LeftBound = 0 * unitSize;
-			RightBound = GetComponentInParent<TimelineView>().Duration * unitSize; //TODO
+			RightBound = _timeline.Duration * unitSize; //TODO
 		}
 		else
 		{
@@ -151,6 +158,11 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	void ShowConfirmRemove(bool show = true)
 	{
 		_confirmRemovePanel.gameObject.SetActive(show);
+	}
+
+	void Awake()
+	{
+		_timeline = GetComponentInParent<TimelineView>(); //TODO
 	}
 
 	// Use this for initialization

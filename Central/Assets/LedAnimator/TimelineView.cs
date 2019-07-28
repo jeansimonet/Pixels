@@ -43,6 +43,7 @@ public class TimelineView : MonoBehaviour
 	float _playTime;
 	Die.AnimationEvent[] _animRoles;
 
+	public DiceType DiceType { get; private set; }
 	public float Duration { get; private set; }
 	public int Zoom { get; private set; }
 	public float SnapInterval => _snapInterval;
@@ -73,7 +74,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddTrack()
 	{
-		LedSelectorPanel.Instance.Show(ledIndex =>
+		LedSelectorPanel.Instance.Show(DiceType, ledIndex =>
 		{
 			if (ledIndex != -1)
 			{
@@ -94,7 +95,7 @@ public class TimelineView : MonoBehaviour
 		Repaint();
 	}
 
-	public void SetAnimations(Animations.EditAnimationSet animationSet)
+	public void SetAnimations(DiceType diceType, Animations.EditAnimationSet animationSet)
 	{
 		if (animationSet.animations == null)
 		{
@@ -109,6 +110,7 @@ public class TimelineView : MonoBehaviour
 		_animIndex = -1;
 
 		// Store animation set
+		DiceType = diceType;
 		_animationSet = animationSet;
 
 		RefreshNames();

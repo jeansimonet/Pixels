@@ -3,13 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
+public enum DiceType
+{
+	D6, D20,
+}
+
 public class DiceAnimProgrammer
     : MonoBehaviour
 {
     public Central central;
     public TimelineView timeline;
     public PleaseWaitDialogBox pleaseWait;
-    public string JsonFilePath = "animation_set.json";
+    public string JsonFileBaseName = "animation_set.json";
 
     Die die = null;
     Animations.EditAnimationSet animationSet;
@@ -33,15 +38,7 @@ public class DiceAnimProgrammer
         central.onDieReady += OnNewDie;
 
         // Create empty anim if needed
-        if (!LoadFromJson())
-        {
-            animationSet = new Animations.EditAnimationSet();
-            animationSet.animations = new List<Animations.EditAnimation>();
-            var anim = new Animations.EditAnimation();
-            anim.Reset();
-            animationSet.animations.Add(anim);
-            timeline.SetAnimations(animationSet);
-        }
+        LoadFromJson(DiceType.D20);
     }
 
     private void OnDisable()
@@ -67,27 +64,55 @@ public class DiceAnimProgrammer
 
     public void SaveToJsonFile()
     {
-        timeline.ApplyChanges();
-        string jsonText = JsonUtility.ToJson(animationSet, true);
-        File.WriteAllText(System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath), jsonText);
+        SaveToJson(timeline.DiceType);
     }
 
-    public void LoadFromJsonFile()
+    public void LoadD6FromJsonFile()
     {
-        LoadFromJson();
+        LoadFromJson(DiceType.D6);
     }
 
-    public bool LoadFromJson()
+    public void LoadD20FromJsonFile()
     {
-        var path = System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath);
+        LoadFromJson(DiceType.D20);
+    }
+
+    public bool LoadFromJson(DiceType diceType)
+    {
+        string path = GetJsonFilePathname(diceType);
         bool ret = File.Exists(path);
         if (ret)
         {
             string jsonText = File.ReadAllText(path);
             animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
-            timeline.SetAnimations(animationSet);
+            timeline.SetAnimations(diceType, animationSet);
+            Debug.Log($"Loaded {diceType} animations from {path}");
+        }
+        else
+        {
+            animationSet = new Animations.EditAnimationSet();
+            animationSet.animations = new List<Animations.EditAnimation>();
+            var anim = new Animations.EditAnimation();
+            anim.Reset();
+            animationSet.animations.Add(anim);
+            timeline.SetAnimations(diceType, animationSet);
+            Debug.Log($"Loaded empty {diceType} animation");
         }
         return ret;
+    }
+
+    public void SaveToJson(DiceType diceType)
+    {
+        timeline.ApplyChanges();
+        string jsonText = JsonUtility.ToJson(animationSet, true);
+        string path = GetJsonFilePathname(diceType);
+        File.WriteAllText(path, jsonText);
+        Debug.Log($"Saved {diceType} animations to {path}");
+    }
+
+    string GetJsonFilePathname(DiceType diceType)
+    {
+        return System.IO.Path.Combine(Application.persistentDataPath, $"{diceType}_{JsonFileBaseName}");
     }
 
     bool ByteArraysEquals(byte[] array1, byte[] array2)
@@ -122,7 +147,8 @@ public class DiceAnimProgrammer
 
             // Write to file (why not?)
             string jsonText = JsonUtility.ToJson(animationSet, true);
-            File.WriteAllText(System.IO.Path.Combine(Application.persistentDataPath, JsonFilePath), jsonText);
+            string path = GetJsonFilePathname(timeline.DiceType);
+            File.WriteAllText(path, jsonText);
 
             // Upload!
             if (die != null)
