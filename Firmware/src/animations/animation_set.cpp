@@ -104,11 +104,15 @@ namespace AnimationSet
 	}
 
 	uint32_t getColor(uint16_t colorIndex) {
-		assert(CheckValid() && colorIndex < (data->paletteSize / 3));
-		return toColor(
-				data->palette[colorIndex * 3 + 0],
-				data->palette[colorIndex * 3 + 1],
-				data->palette[colorIndex * 3 + 2]);
+		assert(CheckValid());
+		if (colorIndex < (data->paletteSize / 3)) {
+			return toColor(
+					data->palette[colorIndex * 3 + 0],
+					data->palette[colorIndex * 3 + 1],
+					data->palette[colorIndex * 3 + 2]);
+		} else {
+
+		}
 	}
 
 	const RGBKeyframe& getKeyframe(uint16_t keyFrameIndex) {
@@ -345,6 +349,19 @@ namespace AnimationSet
 				animations[animIndex].tracksOffset = c * ledCount + a;
 				animations[animIndex].trackCount = 1;
 				animations[animIndex].duration = 1000;
+				if (a == 0) {
+					switch (c) {
+						case 0:
+							animations[animIndex].animationEvent = Animations::AnimationEvent_Rolling;
+							break;
+						case 1:
+							animations[animIndex].animationEvent = Animations::AnimationEvent_OnFace;
+							break;
+						case 2:
+							animations[animIndex].animationEvent = Animations::AnimationEvent_Handling;
+							break;
+					}
+				}
 			}
 		}
 
@@ -354,6 +371,17 @@ namespace AnimationSet
 			animations[animIndex].tracksOffset = c * ledCount;
 			animations[animIndex].trackCount = ledCount;
 			animations[animIndex].duration = 1000;
+			switch (c) {
+				case 0:
+					animations[animIndex].animationEvent = Animations::AnimationEvent_Disconnected;
+					break;
+				case 1:
+					animations[animIndex].animationEvent = Animations::AnimationEvent_Hello;
+					break;
+				case 2:
+					animations[animIndex].animationEvent = Animations::AnimationEvent_Connected;
+					break;
+			}
 		}
 
 		// Program all this into flash

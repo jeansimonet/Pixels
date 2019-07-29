@@ -29,10 +29,14 @@ namespace AnimController
 	{
 		Animation const * animation;
 		int startTime; //ms
+		uint8_t remapFace;
+		bool loop;
 
 		AnimInstance()
 			: animation(nullptr)
 			, startTime(0)
+			, remapFace(0)
+			, loop(false)
 		{
 		}
 	};
@@ -81,11 +85,30 @@ namespace AnimController
 	{
 		if (animationCount > 0) {
 	        PowerManager::feed();
-			auto& faceToLEDs = BoardManager::getBoard()->faceToLedLookup;
+			auto board = BoardManager::getBoard();
+			auto& faceToLEDs = board->faceToLedLookup;
+
+			// clear the global color array
+			uint32_t allColors[MAX_LED_COUNT];
+			for (int j = 0; j < BoardManager::getBoard()->ledCount; ++j) {
+				allColors[j] = 0;
+			}
+
+			int canonIndices[MAX_LED_COUNT];
+			int faceIndices[MAX_LED_COUNT];
+			int ledIndices[MAX_LED_COUNT];
+			uint32_t colors[MAX_LED_COUNT];
+
 			for (int i = 0; i < animationCount; ++i)
 			{
 				auto& anim = animations[i];
 				int animTime = ms - anim.startTime;
+				if (anim.loop && animTime > anim.animation->duration) {
+					// Yes, update anim start time so next if statement updates the animation
+					anim.startTime += anim.animation->duration;
+					animTime = ms - anim.startTime;
+				}
+
 				if (animTime > anim.animation->duration)
 				{
 					// The animation is over, get rid of it!
@@ -97,18 +120,22 @@ namespace AnimController
 				else
 				{
 					// Update the leds
-					int ledIndices[MAX_LED_COUNT];
-					uint32_t colors[MAX_LED_COUNT];
-					int ledCount = anim.animation->updateLEDs(animTime, ledIndices, colors);
+					int ledCount = anim.animation->updateLEDs(animTime, canonIndices, colors);
 
 					// Gamma correct and map face index to led index
 					for (int j = 0; j < ledCount; ++j) {
 						colors[j] = Utils::gamma(colors[j]);
-						ledIndices[j] = faceToLEDs[ledIndices[j]];
+						faceIndices[j] = board->remapLed(anim.remapFace, canonIndices[j]);
+						ledIndices[j] = faceToLEDs[faceIndices[j]];
+					}
+
+					// Update color array
+					for (int j = 0; j < ledCount; ++j) {
+						allColors[ledIndices[j]] = Utils::addColors(allColors[ledIndices[j]], colors[j]);
 					}
 
 					// And light up!
-					APA102::setPixelColors(ledIndices, colors, ledCount);
+					APA102::setPixelColors(allColors);
 				}
 			}
 			APA102::show();
@@ -126,22 +153,23 @@ namespace AnimController
 	/// <summary>
 	/// Add an animation to the list of running animations
 	/// </summary>
-	void play(AnimationEvent evt) {
+	void play(AnimationEvent evt, uint8_t remapFace, bool loop) {
 		int evtIndex = (uint16_t)evt;
 		int animIndex = animationLookupByEvent[evtIndex];
 		if (animIndex == -1) {
 			animIndex = 0;
 		}
+		NRF_LOG_INFO("Playing anim event %s (%d) on Face %d", Animations::getEventName(evt), animIndex, remapFace);
 		if (animIndex < AnimationSet::getAnimationCount()) {
 			auto& anim = AnimationSet::getAnimation(animIndex);
-			play(&anim);
+			play(&anim, remapFace, loop);
 		}
 	}
 
 	/// <summary>
 	/// Add an animation to the list of running animations
 	/// </summary>
-	void play(const Animations::Animation* anim)
+	void play(const Animations::Animation* anim, uint8_t remapFace, bool loop)
 	{
 		#if (NRF_LOG_DEFAULT_LEVEL == 4)
 		NRF_LOG_DEBUG("Playing Anim!");
@@ -166,7 +194,8 @@ namespace AnimController
 		int prevAnimIndex = 0;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
-			if (animations[prevAnimIndex].animation == anim)
+			auto& prevAnim = animations[prevAnimIndex];
+			if (prevAnim.animation == anim && prevAnim.remapFace == remapFace)
 			{
 				break;
 			}
@@ -184,6 +213,8 @@ namespace AnimController
 			// Add a new animation
 			animations[animationCount].animation = anim;
 			animations[animationCount].startTime = ms;
+			animations[animationCount].remapFace = remapFace;
+			animations[animationCount].loop = loop;
 			animationCount++;
 		}
 		// Else there is no more room
@@ -192,12 +223,13 @@ namespace AnimController
 	/// <summary>
 	/// Forcibly stop a currently running animation
 	/// </summary>
-	void stop(const Animations::Animation* anim)
+	void stop(const Animations::Animation* anim, uint8_t remapFace)
 	{
 		int prevAnimIndex = 0;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
-			if (animations[prevAnimIndex].animation == anim)
+			auto& instance = animations[prevAnimIndex];
+			if (instance.animation == anim && instance.remapFace == remapFace)
 			{
 				break;
 			}

@@ -49,6 +49,9 @@ struct Message
 		MessageType_NotifyUser,
 		MessageType_NotifyUserAck,
 		MessageType_TestHardware,
+		MessageType_SetStandardState,
+		MessageType_SetLEDAnimState,
+		MessageType_SetBattleState,
 
 		// TESTING 
 		MessageType_TestBulkSend,
@@ -139,6 +142,8 @@ struct MessagePlayAnim
 	: public Message
 {
 	uint8_t animation;
+	uint8_t remapFace;  // Assumes that an animation was made for face 0
+	uint8_t loop; 		// 1 == loop, 0 == once
 
 	inline MessagePlayAnim() : Message(Message::MessageType_PlayAnim) {}
 };

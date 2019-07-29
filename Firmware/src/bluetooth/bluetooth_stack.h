@@ -16,5 +16,10 @@ namespace Bluetooth
         void stopAdvertising();
         bool isAdvertising();
         bool isConnected();
+
+		typedef void(*ConnectionEventMethod)(void* param, bool connected);
+		void hook(ConnectionEventMethod method, void* param);
+		void unHook(ConnectionEventMethod client);
+		void unHookWithParam(void* param);
     }
 }

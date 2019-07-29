@@ -30,6 +30,7 @@ namespace DriversHW
     void setPixelColor(uint16_t n, uint32_t c);
     void setAll(uint32_t c);
     void setPixelColors(int* indices, uint32_t* colors, int count);
+    void setPixelColors(uint32_t* colors);
     uint32_t color(uint8_t r, uint8_t g, uint8_t b);
     uint32_t getPixelColor(uint16_t n);
     uint16_t numPixels();

@@ -11,6 +11,13 @@ using namespace Config;
 
 namespace Utils
 {
+	uint32_t addColors(uint32_t a, uint32_t b) {
+		uint8_t red = MAX(getRed(a), getRed(b));
+		uint8_t green = MAX(getGreen(a), getGreen(b));
+		uint8_t blue = MAX(getBlue(a), getBlue(b));
+		return toColor(red,green,blue);
+	}
+
 	/// <summary>
 	/// Parses the first word out of a string (typically a command or parameter)
 	/// </summary>

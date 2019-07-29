@@ -215,10 +215,8 @@ namespace BatteryController
     void onLEDPowerEventHandler(void* context, bool powerOn) {
         if (powerOn) {
             app_timer_stop(batteryControllerTimer);
-            NRF_LOG_INFO("Suspending battery monitoring");
         } else {
             app_timer_stop(batteryControllerTimer);
-            NRF_LOG_INFO("Resuming battery monitoring");
 
             // If it's been too long since we checked, check right away
             uint32_t delay = BATTERY_TIMER_MS;

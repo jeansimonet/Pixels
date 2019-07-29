@@ -15,6 +15,7 @@
 #include "peer_manager_handler.h"
 #include "config/settings.h"
 #include "drivers_nrf/power_manager.h"
+#include "core/delegate_array.h"
 
 using namespace Config;
 using namespace DriversNRF;
@@ -50,6 +51,8 @@ namespace Stack
     #define SEC_PARAM_MIN_KEY_SIZE          7                                       /**< Minimum encryption key size. */
     #define SEC_PARAM_MAX_KEY_SIZE          16                                      /**< Maximum encryption key size. */
 
+    #define MAX_CLIENTS 2
+
     uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
     NRF_BLE_QWR_DEF(m_qwr);                                                  /**< Context for the Queued Write module.*/
     NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
@@ -68,6 +71,8 @@ namespace Stack
         {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
     };
 
+	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
+
     /**@brief Function for handling BLE events.
      *
      * @param[in]   p_ble_evt   Bluetooth stack event.
@@ -82,7 +87,9 @@ namespace Stack
             case BLE_GAP_EVT_DISCONNECTED:
                 NRF_LOG_INFO("Disconnected.");
                 connected = false;
-                // LED indication will be changed when advertising starts.
+                for (int i = 0; i < clients.Count(); ++i) {
+                    clients[i].handler(clients[i].token, false);
+                }
                 break;
 
             case BLE_GAP_EVT_CONNECTED:
@@ -91,6 +98,9 @@ namespace Stack
                 err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
                 APP_ERROR_CHECK(err_code);
                 connected = true;
+                for (int i = 0; i < clients.Count(); ++i) {
+                    clients[i].handler(clients[i].token, true);
+                }
                 break;
 
             case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -431,5 +441,17 @@ namespace Stack
     bool isConnected() {
         return connected;
     }
+
+	void hook(ConnectionEventMethod method, void* param) {
+		clients.Register(param, method);
+	}
+
+	void unHook(ConnectionEventMethod method) {
+		clients.UnregisterWithHandler(method);
+	}
+
+	void unHookWithParam(void* param) {
+		clients.UnregisterWithToken(param);
+	}
 }
 }

@@ -46,6 +46,7 @@ public class Die
         Handling,
         Rolling,
         OnFace,
+        Crooked,
         Battle_ShowTeam,
         Battle_FaceUp,
         Battle_WaitingForBattle,

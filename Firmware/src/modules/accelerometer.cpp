@@ -141,8 +141,6 @@ namespace Accelerometer
 
         if (newRollState != rollState) {
             rollState = newRollState;
-            NRF_LOG_INFO("State: %d, Face %d", rollState, currentFace());
-
 			// Notify clients
 			for (int i = 0; i < rollStateClients.Count(); ++i)
 			{
