@@ -10,11 +10,8 @@ public class SceneMenu : MonoBehaviour
     public Button battleGameButton;
     public Button telemetryButton;
 
-    CanvasGroup canvasGroup;
-
     private void Awake()
     {
-        canvasGroup = GetComponent<CanvasGroup>();
     }
     // Start is called before the first frame update
     void Start()
@@ -30,6 +27,8 @@ public class SceneMenu : MonoBehaviour
 
     public void Show()
     {
+        var canvasGroup = GetComponent<CanvasGroup>();
+
         ledAnimatorButton.onClick.RemoveAllListeners();
         ledAnimatorButton.onClick.AddListener(() =>
         {
@@ -49,6 +48,7 @@ public class SceneMenu : MonoBehaviour
             SceneManager.LoadScene(2);
         });
 
+        gameObject.SetActive(true);
         canvasGroup.alpha = 1.0f;
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
@@ -56,6 +56,7 @@ public class SceneMenu : MonoBehaviour
 
     public void Hide()
     {
+        var canvasGroup = GetComponent<CanvasGroup>();
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
