@@ -10,6 +10,7 @@
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
+#include "animations/animation_set.h"
 #include "nrf_log.h"
 
 using namespace DriversNRF;
@@ -17,6 +18,7 @@ using namespace Modules;
 using namespace Bluetooth;
 using namespace Accelerometer;
 using namespace Config;
+using namespace Animations;
 
 namespace Die
 {
@@ -33,9 +35,9 @@ namespace Die
     {
         TopLevel_Unknown = 0,
         TopLevel_SoloPlay,      // Playing animations as a result of landing on faces
-        TopLevel_PairedPlay,    // Some kind of battle play
+        TopLevel_BattlePlay,    // Some kind of battle play
+        TopLevel_Animator,      // LED Animator
         TopLevel_LowPower,      // Die is low on power
-        TopLevel_Charging,      // Die is now charging
     };
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
@@ -45,6 +47,11 @@ namespace Die
     void onBatteryStateChange(void* token, BatteryController::BatteryState newState);
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace);
     void SendRollState(Accelerometer::RollState rollState, int face);
+    void PlayLEDAnim(void* context, const Message* msg);
+	void EnterStandardState(void* context, const Message* msg);
+	void EnterLEDAnimState(void* context, const Message* msg);
+	void EnterBattleState(void* context, const Message* msg);
+    void onConnection(void* token, bool connected);
 
     void initMainLogic() {
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
@@ -62,12 +69,18 @@ namespace Die
         }
 
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
+		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
+		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
+		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
+
+        Bluetooth::Stack::hook(onConnection, nullptr);
 
         BatteryController::hook(onBatteryStateChange, nullptr);
 
         Accelerometer::hookRollState(onRollStateChange, nullptr);
 
-		NRF_LOG_INFO("Die State initialized");
+		NRF_LOG_INFO("Main Die Logic Initialized");
     }
 
     void RequestStateHandler(void* token, const Message* message) {
@@ -123,10 +136,93 @@ namespace Die
 
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {
         SendRollState(newRollState, newFace);
+
+        if (currentTopLevelState == TopLevel_SoloPlay) {
+            // Play animation
+            switch (newRollState) {
+                case Accelerometer::RollState_Handling:
+                case Accelerometer::RollState_Rolling:
+                    AnimController::play(AnimationEvent_Handling, newFace, false);
+                    break;
+                case Accelerometer::RollState_OnFace:
+                    AnimController::play(AnimationEvent_OnFace, newFace, false);
+                    break;
+                case Accelerometer::RollState_Crooked:
+                case Accelerometer::RollState_Unknown:
+                    AnimController::play(AnimationEvent_Crooked, newFace, false);
+                    break;
+            }
+        }
+    }
+
+    void onConnection(void* token, bool connected) {
+        if (connected) {
+            AnimController::play(AnimationEvent_Connected);
+        } else {
+            AnimController::play(AnimationEvent_Disconnected);
+            // Return to solo play
+            EnterStandardState(nullptr, nullptr);
+        }
+    }
+
+    void PlayLEDAnim(void* context, const Message* msg) {
+      auto playAnimMessage = (const MessagePlayAnim*)msg;
+      NRF_LOG_INFO("Playing animation %d", playAnimMessage->animation);
+      auto& animation = AnimationSet::getAnimation(playAnimMessage->animation);
+      AnimController::play(&animation, playAnimMessage->remapFace);
+    }
+
+	void EnterStandardState(void* context, const Message* msg) {
+        switch (currentTopLevelState) {
+            case TopLevel_Unknown:
+            case TopLevel_BattlePlay:
+            case TopLevel_Animator:
+            default:
+                // Reactivate playing animations based on face
+                currentTopLevelState = TopLevel_SoloPlay;
+                break;
+            case TopLevel_SoloPlay:
+            case TopLevel_LowPower:
+                // Nothing to do
+                break;
+       }
+    }
+
+	void EnterLEDAnimState(void* context, const Message* msg) {
+        switch (currentTopLevelState) {
+            case TopLevel_Unknown:
+            case TopLevel_BattlePlay:
+            case TopLevel_SoloPlay:
+            default:
+                // Reactivate playing animations based on face
+                currentTopLevelState = TopLevel_Animator;
+                break;
+            case TopLevel_Animator:
+            case TopLevel_LowPower:
+                // Nothing to do
+                break;
+       }
+    }
+    
+	void EnterBattleState(void* context, const Message* msg) {
+        switch (currentTopLevelState) {
+            case TopLevel_Animator:
+            case TopLevel_Unknown:
+            case TopLevel_SoloPlay:
+            default:
+                // Reactivate playing animations based on face
+                currentTopLevelState = TopLevel_BattlePlay;
+                break;
+            case TopLevel_BattlePlay:
+            case TopLevel_LowPower:
+                // Nothing to do
+                break;
+       }
     }
 
     // Main loop!
     void update() {
+
         Scheduler::update();
         Watchdog::feed();
         PowerManager::update();

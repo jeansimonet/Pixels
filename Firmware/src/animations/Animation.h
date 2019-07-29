@@ -6,6 +6,36 @@
 
 namespace Animations
 {
+    enum AnimationEvent
+    {
+		AnimationEvent_None = 0,
+		AnimationEvent_Hello,
+		AnimationEvent_Connected,
+		AnimationEvent_Disconnected,
+        AnimationEvent_LowBattery,
+        AnimationEvent_ChargingStart,
+        AnimationEvent_ChargingDone,
+        AnimationEvent_ChargingError,
+        AnimationEvent_Handling,
+		AnimationEvent_Rolling,
+		AnimationEvent_OnFace,
+		AnimationEvent_Crooked,
+		AnimationEvent_Battle_ShowTeam,
+		AnimationEvent_Battle_FaceUp,
+		AnimationEvent_Battle_WaitingForBattle,
+		AnimationEvent_Battle_Duel,
+		AnimationEvent_Battle_DuelWin,
+		AnimationEvent_Battle_DuelLose,
+		AnimationEvent_Battle_DuelDraw,
+		AnimationEvent_Battle_TeamWin,
+		AnimationEvent_Battle_TeamLoose,
+		AnimationEvent_Battle_TeamDraw,
+        // Etc...
+        AnimationEvent_Count
+    };
+
+	const char* getEventName(AnimationEvent event);
+
 	/// <summary>
 	/// Stores a single keyframe of an LED animation
 	/// size: 2 bytes, split this way:
@@ -65,7 +95,7 @@ namespace Animations
 		uint16_t duration; // in ms
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
-		uint16_t animationEvent;
+		uint16_t animationEvent; // is really AnimationEvent
 
 	public:
 		const AnimationTrack& GetTrack(int index) const;

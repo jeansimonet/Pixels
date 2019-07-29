@@ -23,7 +23,6 @@ namespace LEDColorTester
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_SetAllLEDsToColor, nullptr, SetAllLEDsToColorHandler);
-        MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
         NRF_LOG_INFO("LED Color tester initialized");
     }
 
@@ -36,13 +35,6 @@ namespace LEDColorTester
         NRF_LOG_INFO("Setting All LEDs to %06x -> %06x", colorMsg->color, color);
         APA102::setAll(color);
         APA102::show();
-    }
-
-    void PlayLEDAnim(void* context, const Message* msg) {
-      auto playAnimMessage = (const MessagePlayAnim*)msg;
-      NRF_LOG_INFO("Playing animation %d", playAnimMessage->animation);
-      auto& animation = AnimationSet::getAnimation(playAnimMessage->animation);
-      AnimController::play(&animation);
     }
 }
 }

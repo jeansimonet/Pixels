@@ -174,5 +174,9 @@ namespace Die
 
         // Start advertising!
         Stack::startAdvertising();
+
+        // Entering the main loop! Play Hello! anim
+        AnimController::play(AnimationEvent_Hello, Accelerometer::currentFace());
+
     }
 }

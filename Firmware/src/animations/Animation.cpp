@@ -10,7 +10,57 @@ using namespace Utils;
 
 namespace Animations
 {
-	/// <summary>
+	const char* getEventName(AnimationEvent event) {
+		switch (event) {
+			case AnimationEvent_None:
+				return "None";
+			case AnimationEvent_Hello:
+				return "Hello";
+			case AnimationEvent_Connected:
+				return "Connected";
+			case AnimationEvent_Disconnected:
+				return "Disconnected";
+			case AnimationEvent_LowBattery:
+				return "LowBattery";
+			case AnimationEvent_ChargingStart:
+				return "ChargingStart";
+			case AnimationEvent_ChargingDone:
+				return "ChargingDone";
+			case AnimationEvent_ChargingError:
+				return "ChargingError";
+			case AnimationEvent_Handling:
+				return "Handling";
+			case AnimationEvent_Rolling:
+				return "Rolling";
+			case AnimationEvent_OnFace:
+				return "OnFace";
+			case AnimationEvent_Crooked:
+				return "Crooked";
+			case AnimationEvent_Battle_ShowTeam:
+				return "Battle_ShowTeam";
+			case AnimationEvent_Battle_FaceUp:
+				return "Battle_FaceUp";
+			case AnimationEvent_Battle_WaitingForBattle:
+				return "Battle_WaitingForBattle";
+			case AnimationEvent_Battle_Duel:
+				return "Battle_Duel";
+			case AnimationEvent_Battle_DuelWin:
+				return "Battle_DuelWin";
+			case AnimationEvent_Battle_DuelLose:
+				return "Battle_DuelLose";
+			case AnimationEvent_Battle_DuelDraw:
+				return "Battle_DuelDraw";
+			case AnimationEvent_Battle_TeamWin:
+				return "Battle_TeamWin";
+			case AnimationEvent_Battle_TeamLoose:
+				return "Battle_TeamLoose";
+			case AnimationEvent_Battle_TeamDraw:
+				return "Battle_TeamDraw";
+			default:
+				return "Unknown";
+		}
+	}
+
 	/// Dims the passed in color by the passed in intensity (normalized 0 - 255)
 	/// </summary>
 	uint32_t scaleColor(uint32_t refColor, uint8_t intensity)

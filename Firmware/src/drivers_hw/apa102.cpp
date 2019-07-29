@@ -202,6 +202,17 @@ namespace APA102
 		}
 	}
 
+    void setPixelColors(uint32_t* colors) {
+		for (int i = 0; i < numLEDs; ++i) {
+			uint32_t c = colors[i];
+			uint8_t *p = &pixels[i * 3];
+			p[OFFSET_RED] = (uint8_t)(c >> 16);
+			p[OFFSET_GREEN] = (uint8_t)(c >> 8);
+			p[OFFSET_BLUE] = (uint8_t)c;
+		}
+	}
+
+
 	// Convert separate R,G,B to packed value
 	uint32_t color(uint8_t r, uint8_t g, uint8_t b) {
 		return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;

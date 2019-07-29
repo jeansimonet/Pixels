@@ -37,6 +37,8 @@ namespace Utils
 		return std::max(getRed(color), std::max(getGreen(color), getBlue(color)));
 	}
 
+	uint32_t addColors(uint32_t a, uint32_t b);
+
 	uint32_t millis( void );
 	uint8_t sine8(uint8_t x);
 	uint8_t gamma8(uint8_t x);
