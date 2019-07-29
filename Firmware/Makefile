@@ -315,7 +315,7 @@ flash_bootloader:
 	nrfjprog -f nrf52 -s 801001366 --program $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
-flash_board: erase flash_softdevice flash_bootloader
+flash_board: erase flash_softdevice flash_bootloader flash_ble
 
 
 reflash:  erase  flash  flash_softdevice

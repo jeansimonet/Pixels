@@ -185,7 +185,9 @@ namespace Animations
 		public ushort duration; // in ms
         public ushort tracksOffset; // offset into a global buffer of tracks
         public ushort trackCount;
-        public ushort animationEvent; // Die.AnimationEvent
+        public byte animationEvent; // Die.AnimationEvent
+        public byte specialColorType; // is really SpecialColor
+
 
         public ref AnimationTrack GetTrack(AnimationSet set, ushort index)
         {
@@ -198,7 +200,8 @@ namespace Animations
             return duration == other.duration &&
                 tracksOffset == other.tracksOffset &&
                 trackCount == other.trackCount &&
-                animationEvent == other.animationEvent;
+                animationEvent == other.animationEvent &&
+                specialColorType == other.specialColorType;
         }
     };
 

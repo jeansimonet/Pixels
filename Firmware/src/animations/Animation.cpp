@@ -77,10 +77,10 @@ namespace Animations
 		return time50th * 20;
 	}
 	
-	uint32_t RGBKeyframe::color() const {
+	uint32_t RGBKeyframe::color(void* token) const {
 		// Unpack
 		uint16_t index = timeAndColor & 0b01111111;
-		return AnimationSet::getColor(index);
+		return AnimationSet::getColor(token, index);
 	}
 
 	void RGBKeyframe::setTimeAndColorIndex(uint16_t timeInMS, uint16_t colorIndex) {
@@ -98,7 +98,7 @@ namespace Animations
 	/// Evaluate an animation track's for a given time, in milliseconds.
 	/// Values outside the track's range are clamped to first or last keyframe value.
 	/// </summary>
-	uint32_t RGBTrack::evaluate(int time) const {
+	uint32_t RGBTrack::evaluate(void* token, int time) const {
 		if (keyFrameCount == 0)
 			return 0;
 
@@ -110,19 +110,19 @@ namespace Animations
 
 		if (nextIndex == 0) {
 			// The first keyframe is already after the requested time, clamp to first value
-			return getKeyframe(nextIndex).color();
+			return getKeyframe(nextIndex).color(token);
 		} else if (nextIndex == keyFrameCount) {
 			// The last keyframe is still before the requested time, clamp to the last value
-			return getKeyframe(nextIndex- 1).color();
+			return getKeyframe(nextIndex- 1).color(token);
 		} else {
 			// Grab the prev and next keyframes
 			auto nextKeyframe = getKeyframe(nextIndex);
 			uint16_t nextKeyframeTime = nextKeyframe.time();
-			uint32_t nextKeyframeColor = nextKeyframe.color();
+			uint32_t nextKeyframeColor = nextKeyframe.color(token);
 
 			auto prevKeyframe = getKeyframe(nextIndex - 1);
 			uint16_t prevKeyframeTime = prevKeyframe.time();
-			uint32_t prevKeyframeColor = prevKeyframe.color();
+			uint32_t prevKeyframeColor = prevKeyframe.color(token);
 
 			// Compute the interpolation parameter
 			// To stick to integer math, we'll scale the values
@@ -139,8 +139,8 @@ namespace Animations
 		return AnimationSet::getRGBTrack(trackOffset);
 	}
 
-	uint32_t AnimationTrack::evaluate(int time) const {
-		return getTrack().evaluate(time);
+	uint32_t AnimationTrack::evaluate(void* token, int time) const {
+		return getTrack().evaluate(token, time);
 	}
 
 	/// <summary>
@@ -151,14 +151,14 @@ namespace Animations
 	/// <param name="retIndices">the return list of LED indices to fill, max size should be at least 21, the total number of leds</param>
 	/// <param name="retColors">the return list of LED color to fill, max size should be at least 21, the total number of leds</param>
 	/// <returns>The number of leds/intensities added to the return array</returns>
-	int Animation::updateLEDs(int time, int retIndices[], uint32_t retColors[]) const
+	int Animation::updateLEDs(void* token, int time, int retIndices[], uint32_t retColors[]) const
 	{
 		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
 		for (int i = 0; i < trackCount; ++i)
 		{
 			const RGBTrack& rgbTrack = tracks[i].getTrack();
 			retIndices[i] = tracks[i].ledIndex;
-			retColors[i] = rgbTrack.evaluate(time);
+			retColors[i] = rgbTrack.evaluate(token, time);
 		}
 		return trackCount;
 	}

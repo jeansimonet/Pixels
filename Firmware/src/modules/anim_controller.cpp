@@ -4,6 +4,7 @@
 #include "drivers_nrf/timers.h"
 #include "drivers_nrf/power_manager.h"
 #include "utils/utils.h"
+#include "utils/rainbow.h"
 #include "config/board_config.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
@@ -28,12 +29,14 @@ namespace AnimController
 	struct AnimInstance
 	{
 		Animation const * animation;
+		uint32_t specialColorPayload; // meaning varies
 		int startTime; //ms
 		uint8_t remapFace;
 		bool loop;
 
 		AnimInstance()
 			: animation(nullptr)
+			, specialColorPayload(0)
 			, startTime(0)
 			, remapFace(0)
 			, loop(false)
@@ -46,6 +49,8 @@ namespace AnimController
 	int animationCount;
 
 	int animationLookupByEvent[AnimationEvent_Count];
+
+	uint32_t getColorForAnim(void* token, uint32_t colorIndex);
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -120,7 +125,7 @@ namespace AnimController
 				else
 				{
 					// Update the leds
-					int ledCount = anim.animation->updateLEDs(animTime, canonIndices, colors);
+					int ledCount = anim.animation->updateLEDs(&anim, animTime, canonIndices, colors);
 
 					// Gamma correct and map face index to led index
 					for (int j = 0; j < ledCount; ++j) {
@@ -215,6 +220,18 @@ namespace AnimController
 			animations[animationCount].startTime = ms;
 			animations[animationCount].remapFace = remapFace;
 			animations[animationCount].loop = loop;
+
+			switch (anim->specialColorType) {
+				case SpecialColor_Face:
+					// Store a color based on the face
+					animations[animationCount].specialColorPayload = Rainbow::faceWheel(remapFace, BoardManager::getBoard()->ledCount);
+				default:
+					// Other cases don't need any per-instance payload
+					animations[animationCount].specialColorPayload = 0;
+					break;
+			}
+
+
 			animationCount++;
 		}
 		// Else there is no more room
@@ -288,6 +305,23 @@ namespace AnimController
 		animationCount--;
 	}
 
+	uint32_t getColorForAnim(void* token, uint32_t colorIndex) {
+		if (token != nullptr) {
+			const AnimInstance* instance = (const AnimInstance*)token;
+			switch (instance->animation->specialColorType) {
+				case SpecialColor_Face:
+					// The payload is the color
+					return instance->specialColorPayload;
+				case SpecialColor_Heat:
+					// TODO!!
+					return 0x12345678;
+				default:
+					return AnimationSet::getPaletteColor(colorIndex);
+			}
+		} else {
+			return AnimationSet::getPaletteColor(colorIndex);
+		}
+	}
 }
 }
 

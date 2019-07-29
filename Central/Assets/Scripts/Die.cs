@@ -61,6 +61,13 @@ public class Die
         Count
     }
 
+    public enum SpecialColor
+    {
+        None = 0,
+        Face,   // Uses the color of the face (based on a rainbow)
+        Heat    // Uses how hot the die is (based on how much its being shaken)
+    }
+
     [System.Serializable]
     public struct Settings
     {

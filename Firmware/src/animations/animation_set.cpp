@@ -16,6 +16,7 @@
 // We place animation set and animations in descending addresses
 // So the animation set is at the top of the page
 #define MAX_PALETTE_SIZE (COLOR_MAP_SIZE * 3)
+#define SPECIAL_COLOR_INDEX (MAX_COLOR_MAP_SIZE - 1)
 
 using namespace Utils;
 using namespace DriversNRF;
@@ -56,6 +57,21 @@ namespace AnimationSet
 		// Indicates whether there is valid data
 		uint32_t tailMarker;
 	};
+
+	// This is called for special colors
+	getColorHandler handler = nullptr;
+
+	void setGetColorHandler(getColorHandler the_handler) {
+		handler = the_handler;
+	}
+
+	void unsetGetColorHandler(getColorHandler the_handler) {
+		if (handler == the_handler) {
+			handler = nullptr;
+		} else {
+			NRF_LOG_ERROR("Trying to unset wrong Color handler");
+		}
+	}
 
 	uint32_t getAnimationSetAddress() {
 		return SettingsManager::getSettingsEndAddress();
@@ -103,15 +119,24 @@ namespace AnimationSet
 			sizeof(Animation) * data-> animationCount;
 	}
 
-	uint32_t getColor(uint16_t colorIndex) {
+	uint32_t getColor(void* token, uint16_t colorIndex) {
 		assert(CheckValid());
+
+		if (colorIndex == SPECIAL_COLOR_INDEX && token != nullptr && handler != nullptr) {
+			return handler(token, colorIndex);
+		} else {
+			return getPaletteColor(colorIndex);
+		}
+	}
+
+	uint32_t getPaletteColor(uint16_t colorIndex) {
 		if (colorIndex < (data->paletteSize / 3)) {
 			return toColor(
 					data->palette[colorIndex * 3 + 0],
 					data->palette[colorIndex * 3 + 1],
 					data->palette[colorIndex * 3 + 2]);
 		} else {
-
+			return 0xFFFFFFFF;
 		}
 	}
 
@@ -450,7 +475,7 @@ namespace AnimationSet
 	void printAnimationInfo() {
 		NRF_LOG_INFO("Palette size: %d bytes", getPaletteSize());
 		for (int p = 0; p < getPaletteSize() / 3; ++p) {
-			NRF_LOG_INFO("  Color %d: %08x", p, getColor(p));
+			NRF_LOG_INFO("  Color %d: %08x", p, getPaletteColor(p));
 		}
 		NRF_LOG_INFO("Animation Count: %d", getAnimationCount());
 		for (int a = 0; a < getAnimationCount(); ++a) {
@@ -467,7 +492,7 @@ namespace AnimationSet
 				for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
 					auto& keyframe = rgbTrack.getKeyframe(k);
 					int time = keyframe.time();
-					uint32_t color = keyframe.color();
+					uint32_t color = keyframe.color(nullptr);
 					NRF_LOG_INFO("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
 				}
 			}

@@ -17,7 +17,8 @@ namespace Animations
 		bool CheckValid();
 		int ComputeAnimationDataSize();
 
-		uint32_t getColor(uint16_t colorIndex);
+		uint32_t getPaletteColor(uint16_t colorIndex);
+		uint32_t getColor(void* token, uint16_t colorIndex);
 		const RGBKeyframe& getKeyframe(uint16_t keyFrameIndex);
 		uint16_t getKeyframeCount();
 		const RGBTrack& getRGBTrack(uint16_t trackIndex);
@@ -30,6 +31,10 @@ namespace Animations
 		void printAnimationInfo();
 
 		void ReceiveAnimationSetHandler(void* context, const Bluetooth::Message* msg);
+
+		typedef uint32_t (*getColorHandler)(void* token, uint32_t colorIndex);
+		void setGetColorHandler(getColorHandler handler);
+		void unsetGetColorHandler(getColorHandler handler);
 	}
 }
 

@@ -42,6 +42,7 @@ public class TimelineView : MonoBehaviour
 	bool _playAnims;
 	float _playTime;
 	Die.AnimationEvent[] _animRoles;
+    Die.SpecialColor[] _specialColors;
 
 	public DiceType DiceType { get; private set; }
 	public float Duration { get; private set; }
@@ -171,7 +172,7 @@ public class TimelineView : MonoBehaviour
 
 	public void EditAnimationName()
 	{
-		void ChangeAnimName(string name, string role)
+		void ChangeAnimName(string name, string role, Die.SpecialColor specialColor)
 		{
 			CurrentAnimation.name = name;
 			CurrentAnimation.@event = Die.AnimationEvent.None;
@@ -185,8 +186,10 @@ public class TimelineView : MonoBehaviour
 						anim.@event = Die.AnimationEvent.None;
 					}
 				}
-			}
-			RefreshNames();
+            }
+            CurrentAnimation.specialColorType = specialColor;
+
+            RefreshNames();
 		}
 
 		void UserAction(AnimationPropertiesPanel.UserAction action)
@@ -219,7 +222,8 @@ public class TimelineView : MonoBehaviour
 			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
 		}
 		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
-		AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, ChangeAnimName, UserAction);
+
+        AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, CurrentAnimation.specialColorType, ChangeAnimName, UserAction);
 	}
 
 	public void TogglePlayAnimations()
@@ -443,7 +447,10 @@ public class TimelineView : MonoBehaviour
 		var enumValues = (Die.AnimationEvent[])System.Enum.GetValues(typeof(Die.AnimationEvent));
 		_animRoles = enumValues.Take(enumValues.Length - 1).ToArray();
 
-		_widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
+        var colorEnumValues = (Die.SpecialColor[])System.Enum.GetValues(typeof(Die.SpecialColor));
+        _specialColors = colorEnumValues.Take(colorEnumValues.Length).ToArray();
+
+        _widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
 		_animPosX0 = _colorAnimsRoot.GetComponentInChildren<MovableArea>().transform.localPosition.x;
 		Clear();
 	}

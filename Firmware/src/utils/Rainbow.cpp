@@ -28,3 +28,6 @@ uint32_t Rainbow::wheel(uint8_t WheelPos, uint8_t intensity)
 	}
 }
 
+uint32_t Rainbow::faceWheel(uint8_t face, uint8_t count) {
+	return wheel((face * 256) / count);
+}

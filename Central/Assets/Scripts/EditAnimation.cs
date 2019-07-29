@@ -62,6 +62,7 @@ namespace Animations
     {
         public string name;
         public Die.AnimationEvent @event;
+        public Die.SpecialColor @specialColorType;
         public float duration => empty ? 0 : tracks.Max(t => t.duration);
         public bool empty => tracks?.Count == 0;
 
@@ -71,6 +72,7 @@ namespace Animations
         {
             name = null;
             @event = Die.AnimationEvent.None;
+            @specialColorType = Die.SpecialColor.None;
             tracks.Clear();
             tracks.Capacity = 20;
             for (int i = 0; i < 20; ++i)
@@ -83,6 +85,7 @@ namespace Animations
         {
             var anim = new EditAnimation();
             anim.name = name;
+            anim.specialColorType = specialColorType;
             if (tracks != null)
             {
                 anim.tracks = new List<EditTrack>(tracks.Count);
@@ -132,6 +135,7 @@ namespace Animations
                     editAnim.tracks.Add(editTrack);
                 }
                 editAnim.@event = (Die.AnimationEvent)anim.animationEvent;
+                editAnim.@specialColorType = (Die.SpecialColor)anim.specialColorType;
                 animations.Add(editAnim);
             }
         }
@@ -191,7 +195,8 @@ namespace Animations
                 anim.duration = (ushort)(editAnim.duration * 1000.0f);
                 anim.tracksOffset = (ushort)currentTrackOffset;
                 anim.trackCount = (ushort)editAnim.tracks.Count;
-                anim.animationEvent = (ushort)editAnim.@event;
+                anim.animationEvent = (byte)editAnim.@event;
+                anim.specialColorType = (byte)editAnim.@specialColorType;
                 anims.Add(anim);
 
                 // Now add tracks

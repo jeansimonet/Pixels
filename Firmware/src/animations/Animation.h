@@ -34,6 +34,13 @@ namespace Animations
         AnimationEvent_Count
     };
 
+	enum SpecialColor
+	{
+		SpecialColor_None = 0,
+		SpecialColor_Face,
+		SpecialColor_Heat
+	};
+
 	const char* getEventName(AnimationEvent event);
 
 	/// <summary>
@@ -50,7 +57,7 @@ namespace Animations
 		uint16_t timeAndColor;
 
 		uint16_t time() const; // unpack the time in ms
-		uint32_t color() const;// unpack the color using the lookup table from the animation set
+		uint32_t color(void* token) const;// unpack the color using the lookup table from the animation set
 
 		void setTimeAndColorIndex(uint16_t timeInMS, uint16_t colorIndex);
 	};
@@ -67,7 +74,7 @@ namespace Animations
 		uint8_t padding;
 
 		const RGBKeyframe& getKeyframe(uint16_t keyframeIndex) const;
-		uint32_t evaluate(int time) const;
+		uint32_t evaluate(void* token, int time) const;
 	};
 
 	/// <summary>
@@ -82,7 +89,7 @@ namespace Animations
 		uint8_t padding;
 
 		const RGBTrack& getTrack() const;
-		uint32_t evaluate(int time) const;
+		uint32_t evaluate(void* token, int time) const;
 	};
 
 	/// <summary>
@@ -95,11 +102,12 @@ namespace Animations
 		uint16_t duration; // in ms
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
-		uint16_t animationEvent; // is really AnimationEvent
+		uint8_t animationEvent; // is really AnimationEvent
+		uint8_t specialColorType; // is really SpecialColor
 
 	public:
 		const AnimationTrack& GetTrack(int index) const;
-		int updateLEDs(int time, int retIndices[], uint32_t retColors[]) const;
+		int updateLEDs(void* token, int time, int retIndices[], uint32_t retColors[]) const;
 		int stop(int retIndices[]) const;
 	};
 
