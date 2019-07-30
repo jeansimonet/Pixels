@@ -861,5 +861,15 @@ public class Die
         PostMessage(new DieMessageCalibrate());
     }
 
+    public void SetLEDAnimatorMode()
+    {
+        PostMessage(new DieMessageSetLEDAnimState());
+    }
+
+    public void SetBattleMode()
+    {
+        PostMessage(new DieMessageSetBattleState());
+    }
+
     #endregion
 }

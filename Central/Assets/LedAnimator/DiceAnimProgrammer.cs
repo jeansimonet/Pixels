@@ -52,6 +52,7 @@ public class DiceAnimProgrammer
         {
             this.die = die;
             Debug.Log("Led animator connected to " + die.name);
+            die.SetLEDAnimatorMode();
         }
     }
 
@@ -140,21 +141,19 @@ public class DiceAnimProgrammer
         timeline.ApplyChanges();
         var rawAnim = animationSet.ToAnimationSet();
         var newByteArray = rawAnim.ToByteArray();
-        if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
+
+        // Update stored array
+        animationSetByteArray = newByteArray;
+
+        // Write to file (why not?)
+        string jsonText = JsonUtility.ToJson(animationSet, true);
+        string path = GetJsonFilePathname(timeline.DiceType);
+        File.WriteAllText(path, jsonText);
+
+        // Upload!
+        if (die != null)
         {
-            // Update stored array
-            animationSetByteArray = newByteArray;
-
-            // Write to file (why not?)
-            string jsonText = JsonUtility.ToJson(animationSet, true);
-            string path = GetJsonFilePathname(timeline.DiceType);
-            File.WriteAllText(path, jsonText);
-
-            // Upload!
-            if (die != null)
-            {
-                yield return die.UploadAnimationSet(rawAnim, null);
-            }
+            yield return die.UploadAnimationSet(rawAnim, null);
         }
         pleaseWait.Hide();
     }
@@ -176,7 +175,14 @@ public class DiceAnimProgrammer
     {
         if (die != null)
         {
-            yield return StartCoroutine(UploadAnimationSetCr());
+            timeline.ApplyChanges();
+            var rawAnim = animationSet.ToAnimationSet();
+            var newByteArray = rawAnim.ToByteArray();
+            if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
+            {
+                yield return StartCoroutine(UploadAnimationSetCr());
+            }
+
             die.PlayAnimation(timeline.CurrentAnimationIndex);
             pleaseWait.Show("Playing Animation on Dice");
             yield return new WaitForSeconds(timeline.CurrentAnimation.duration);

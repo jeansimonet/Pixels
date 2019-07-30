@@ -44,6 +44,9 @@ public enum DieMessageType : byte
     NotifyUser,
     NotifyUserAck,
     TestHardware,
+    SetStandardState,
+    SetLEDAnimState,
+    SetBattleState,
 
     TestBulkSend,
     TestBulkReceive,
@@ -144,6 +147,15 @@ public static class DieMessages
                     break;
                 case DieMessageType.TestHardware:
                     ret = FromByteArray<DieMessageTestHardware>(data);
+                    break;
+                case DieMessageType.SetStandardState:
+                    ret = FromByteArray<DieMessageSetStandardState>(data);
+                    break;
+                case DieMessageType.SetLEDAnimState:
+                    ret = FromByteArray<DieMessageSetLEDAnimState>(data);
+                    break;
+                case DieMessageType.SetBattleState:
+                    ret = FromByteArray<DieMessageSetBattleState>(data);
                     break;
 
                 default:
@@ -445,4 +457,25 @@ public class DieMessageTestHardware
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TestHardware;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetStandardState
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetStandardState;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetLEDAnimState
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetLEDAnimState;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetBattleState
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetBattleState;
 }
