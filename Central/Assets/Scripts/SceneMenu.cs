@@ -33,18 +33,21 @@ public class SceneMenu : MonoBehaviour
         ledAnimatorButton.onClick.AddListener(() =>
         {
             Hide();
+            Central.Instance.Deinitialize();
             SceneManager.LoadScene(0);
         });
 
         battleGameButton.onClick.RemoveAllListeners();
         battleGameButton.onClick.AddListener(() => {
             Hide();
+            Central.Instance.Deinitialize();
             SceneManager.LoadScene(1);
         });
 
         telemetryButton.onClick.RemoveAllListeners();
         telemetryButton.onClick.AddListener(() => {
             Hide();
+            Central.Instance.Deinitialize();
             SceneManager.LoadScene(2);
         });
 

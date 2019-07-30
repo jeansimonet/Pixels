@@ -12,6 +12,12 @@ public class Central
 	public string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 	public string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
+    public static Central Instance
+    {
+        get { return _Instance; }
+    }
+    static Central _Instance;
+
     public enum State
     {
         Uninitialized = 0,
@@ -56,6 +62,7 @@ public class Central
         _lostDice = new Dictionary<string, Die>();
         discoveredDice = new List<KeyValuePair<string, string>>();
         virtualBluetooth = GetComponent<VirtualBluetoothInterface>();
+        _Instance = this;
     }
 
     void Start()
@@ -350,6 +357,11 @@ public class Central
     public IEnumerable<Die> dicePool
     {
         get { return _dicePool.Values; }
+    }
+
+    public void Deinitialize()
+    {
+        BluetoothLEHardwareInterface.DeInitialize(null);
     }
 
     void OnApplicationQuit()
