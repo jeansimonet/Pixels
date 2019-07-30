@@ -473,6 +473,7 @@ namespace AnimationSet
 	}
 
 	void printAnimationInfo() {
+		auto board = BoardManager::getBoard();
 		NRF_LOG_INFO("Palette size: %d bytes", getPaletteSize());
 		for (int p = 0; p < getPaletteSize() / 3; ++p) {
 			NRF_LOG_INFO("  Color %d: %08x", p, getPaletteColor(p));
@@ -486,6 +487,8 @@ namespace AnimationSet
 				auto& track = anim.GetTrack(t);
 				auto& rgbTrack = track.getTrack();
 				NRF_LOG_INFO("  Track %d:", t);
+				NRF_LOG_INFO("  Face %d:", track.ledIndex);
+				NRF_LOG_INFO("  LED %d:", board->faceToLedLookup[track.ledIndex]);
 				NRF_LOG_INFO("  Track Offset %d:", anim.tracksOffset + t);
 				NRF_LOG_INFO("  RGBTrack Offset %d:", track.trackOffset);
 				NRF_LOG_INFO("  Keyframe count: %d", rgbTrack.keyFrameCount);

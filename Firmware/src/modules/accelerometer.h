@@ -49,6 +49,7 @@ namespace Modules
 		int currentFace();
 		float currentFaceConfidence();
 		RollState currentRollState();
+		const char* getRollStateString(RollState state);
 
 		// Notification management
 		typedef void(*FrameDataClientMethod)(void* param, const AccelFrame& accelFrame);

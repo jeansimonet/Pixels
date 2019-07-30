@@ -79,6 +79,8 @@ namespace AnimController
 			}
 		}
 
+		AnimationSet::setGetColorHandler(getColorForAnim);
+
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
@@ -129,7 +131,7 @@ namespace AnimController
 
 					// Gamma correct and map face index to led index
 					for (int j = 0; j < ledCount; ++j) {
-						colors[j] = Utils::gamma(colors[j]);
+						colors[j] = Utils::gamma(colors[j]); // turn off gamma for now...
 						faceIndices[j] = board->remapLed(anim.remapFace, canonIndices[j]);
 						ledIndices[j] = faceToLEDs[faceIndices[j]];
 					}
@@ -225,6 +227,7 @@ namespace AnimController
 				case SpecialColor_Face:
 					// Store a color based on the face
 					animations[animationCount].specialColorPayload = Rainbow::faceWheel(remapFace, BoardManager::getBoard()->ledCount);
+					break;
 				default:
 					// Other cases don't need any per-instance payload
 					animations[animationCount].specialColorPayload = 0;
@@ -280,10 +283,19 @@ namespace AnimController
 	void stopAtIndex(int animIndex)
 	{
 		// Found the animation, start by killing the leds it controls
+		auto board = BoardManager::getBoard();
+		auto& faceToLEDs = board->faceToLedLookup;
+		int canonIndices[MAX_LED_COUNT];
+		int faceIndices[MAX_LED_COUNT];
 		int ledIndices[MAX_LED_COUNT];
 		uint32_t zeros[MAX_LED_COUNT];
 		memset(zeros, 0, sizeof(uint32_t) * MAX_LED_COUNT);
-		int ledCount = animations[animIndex].animation->stop(ledIndices);
+		auto& anim = animations[animIndex];
+		int ledCount = anim.animation->stop(canonIndices);
+		for (int i = 0; i < ledCount; ++i) {
+			faceIndices[i] = board->remapLed(anim.remapFace, canonIndices[i]);
+			ledIndices[i] = faceToLEDs[faceIndices[i]];
+		}
 		APA102::setPixelColors(ledIndices, zeros, ledCount);
 		APA102::show();
 	}

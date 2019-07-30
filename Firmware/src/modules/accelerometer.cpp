@@ -10,6 +10,7 @@
 #include "config/settings.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bluetooth_messages.h"
+#include "bluetooth/bluetooth_stack.h"
 
 using namespace Modules;
 using namespace Core;
@@ -32,7 +33,9 @@ namespace Accelerometer
 	float confidence;
 	float slowSigma;
 	float fastSigma;
+	float3 smoothAcc;
 	RollState rollState = RollState_Unknown;
+	bool moving = false;
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
@@ -48,6 +51,10 @@ namespace Accelerometer
         MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
 
 		face = 0;
+		confidence = 0.0f;
+		slowSigma = 0.0f;
+		fastSigma = 0.0f;
+		smoothAcc = float3::zero();
 		start();
 		NRF_LOG_INFO("Accelerometer initialized");
 	}
@@ -79,13 +86,17 @@ namespace Accelerometer
 		newFrame.jerk = delta / deltaTime;
 
 		float jerk2 = newFrame.jerk.x * newFrame.jerk.x + newFrame.jerk.y * newFrame.jerk.y + newFrame.jerk.z * newFrame.jerk.z;
+		float acc2 = newFrame.acc.x * newFrame.acc.x + newFrame.acc.y * newFrame.acc.y + newFrame.acc.z * newFrame.acc.z;
 		auto settings = SettingsManager::getSettings();
+
+		smoothAcc = smoothAcc * settings->accDecay + newFrame.acc * (1.0f - settings->accDecay);
+
 		slowSigma = slowSigma * settings->sigmaDecaySlow + jerk2 * (1.0f - settings->sigmaDecaySlow);
 		fastSigma = fastSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
 		newFrame.slowSigma = slowSigma;
 		newFrame.fastSigma = fastSigma;
 
-		newFrame.face = determineFace(newFrame.acc, &newFrame.faceConfidence);
+		newFrame.face = determineFace(smoothAcc, &newFrame.faceConfidence);
 
 		buffer.push(newFrame);
 
@@ -120,7 +131,7 @@ namespace Accelerometer
 				break;
 			case RollState_Rolling:
                 // If we stop moving we may be on a face
-                if (!movingFast) {
+                if (!movingSlow) {
                     // We may be at rest
                     if (onFace) {
                         // We're at rest
@@ -134,19 +145,24 @@ namespace Accelerometer
                 break;
         }
 
-		if (newFrame.face != face) {
-			face = newFrame.face;
-			confidence = newFrame.faceConfidence;
-		}
+		if (newFrame.face != face || newRollState != rollState) {
+			if (newFrame.face != face) {
+				face = newFrame.face;
+				confidence = newFrame.faceConfidence;
 
-        if (newRollState != rollState) {
-            rollState = newRollState;
+				NRF_LOG_INFO("Face %d, confidence " NRF_LOG_FLOAT_MARKER, face, NRF_LOG_FLOAT(confidence));
+			}
+
+			if (newRollState != rollState) {
+				rollState = newRollState;
+			}
+
 			// Notify clients
 			for (int i = 0; i < rollStateClients.Count(); ++i)
 			{
 				rollStateClients[i].handler(rollStateClients[i].token, rollState, face);
 			}
-        }
+		}
 	}
 
 	/// <summary>
@@ -198,6 +214,22 @@ namespace Accelerometer
 		return rollState;
 	}
 
+	const char* getRollStateString(RollState state) {
+		switch (state) {
+			case RollState_Unknown:
+			default:
+				return "Unknown";
+			case RollState_OnFace:
+				return "OnFace";
+			case RollState_Handling:
+				return "Handling";
+			case RollState_Rolling:
+				return "Rolling";
+			case RollState_Crooked:
+				return "Crooked";
+		}
+	}
+
 	/// <summary>
 	/// Crudely compares accelerometer readings passed in to determine the current face up
 	/// </summary>
@@ -215,11 +247,11 @@ namespace Accelerometer
 			}
 			return face;
 		} else {
-			acc  = acc / sqrt(accMag); // normalize
+			float3 nacc  = acc / accMag; // normalize
 			float bestDot = -1000.0f;
 			int bestFace = -1;
 			for (int i = 0; i < faceCount; ++i) {
-				float dot = float3::dot(acc, normals[i]);
+				float dot = float3::dot(nacc, normals[i]);
 				if (dot > bestDot) {
 					bestDot = dot;
 					bestFace = i;

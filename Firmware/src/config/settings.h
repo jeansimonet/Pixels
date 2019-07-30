@@ -21,6 +21,7 @@ namespace Config
 		float faceThreshold;
 		float fallingThreshold;
 		float shockThreshold;
+		float accDecay;
 		int minRollTime; // ms
 
 		// Battery

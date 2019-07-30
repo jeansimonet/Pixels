@@ -41,6 +41,7 @@ namespace Die
     };
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
+    int currentFace = 0;
 
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);
@@ -79,6 +80,8 @@ namespace Die
         BatteryController::hook(onBatteryStateChange, nullptr);
 
         Accelerometer::hookRollState(onRollStateChange, nullptr);
+
+        currentFace = Accelerometer::currentFace();
 
 		NRF_LOG_INFO("Main Die Logic Initialized");
     }
@@ -139,18 +142,9 @@ namespace Die
 
         if (currentTopLevelState == TopLevel_SoloPlay) {
             // Play animation
-            switch (newRollState) {
-                case Accelerometer::RollState_Handling:
-                case Accelerometer::RollState_Rolling:
-                    AnimController::play(AnimationEvent_Handling, newFace, false);
-                    break;
-                case Accelerometer::RollState_OnFace:
-                    AnimController::play(AnimationEvent_OnFace, newFace, false);
-                    break;
-                case Accelerometer::RollState_Crooked:
-                case Accelerometer::RollState_Unknown:
-                    AnimController::play(AnimationEvent_Crooked, newFace, false);
-                    break;
+            if (newFace != currentFace) {
+                AnimController::play(AnimationEvent_Handling, newFace, false);
+                currentFace = newFace;
             }
         }
     }
@@ -166,10 +160,14 @@ namespace Die
     }
 
     void PlayLEDAnim(void* context, const Message* msg) {
-      auto playAnimMessage = (const MessagePlayAnim*)msg;
-      NRF_LOG_INFO("Playing animation %d", playAnimMessage->animation);
-      auto& animation = AnimationSet::getAnimation(playAnimMessage->animation);
-      AnimController::play(&animation, playAnimMessage->remapFace);
+        auto playAnimMessage = (const MessagePlayAnim*)msg;
+        NRF_LOG_INFO("Playing animation %d", playAnimMessage->animation);
+        auto& animation = AnimationSet::getAnimation(playAnimMessage->animation);
+        uint8_t remapFace = 0;
+        if (animation.specialColorType == SpecialColor_Face) {
+            remapFace = Accelerometer::currentFace();
+        }
+        AnimController::play(&animation, remapFace);
     }
 
 	void EnterStandardState(void* context, const Message* msg) {
