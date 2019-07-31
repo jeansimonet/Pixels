@@ -7,6 +7,7 @@ namespace Bluetooth
     namespace Stack
     {
         void init();
+        void initAdvertising();
         void disconnect();
         void startAdvertising();
         void disableAdvertisingOnDisconnect();

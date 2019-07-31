@@ -46,6 +46,7 @@ struct Message
 		MessageType_RequestBatteryLevel,
 		MessageType_BatteryLevel,
 		MessageType_Calibrate,
+		MessageType_CalibrateFace,
 		MessageType_NotifyUser,
 		MessageType_NotifyUserAck,
 		MessageType_TestHardware,
@@ -222,6 +223,12 @@ struct MessageNotifyUserAck
 	inline MessageNotifyUserAck() : Message(Message::MessageType_NotifyUserAck) {}
 };
 
+struct MessageCalibrateFace
+: public Message
+{
+	uint8_t face;
+	inline MessageCalibrateFace() : Message(MessageType_CalibrateFace) {}
+};
 }
 
 #pragma pack(pop)

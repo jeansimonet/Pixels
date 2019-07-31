@@ -41,6 +41,7 @@ public enum DieMessageType : byte
     RequestBatteryLevel,
     BatteryLevel,
     Calibrate,
+    CalibrateFace,
     NotifyUser,
     NotifyUserAck,
     TestHardware,
@@ -136,8 +137,14 @@ public static class DieMessages
                 case DieMessageType.BatteryLevel:
                     ret = FromByteArray<DieMessageBatteryLevel>(data);
                     break;
+                case DieMessageType.RequestBatteryLevel:
+                    ret = FromByteArray<DieMessageRequestBatteryLevel>(data);
+                    break;
                 case DieMessageType.Calibrate:
                     ret = FromByteArray<DieMessageCalibrate>(data);
+                    break;
+                case DieMessageType.CalibrateFace:
+                    ret = FromByteArray<DieMessageCalibrateFace>(data);
                     break;
                 case DieMessageType.NotifyUser:
                     ret = FromByteArray<DieMessageNotifyUser>(data);
@@ -159,7 +166,7 @@ public static class DieMessages
                     break;
 
                 default:
-                    throw new System.Exception("Unhandled Message type for marshalling");
+                    throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
             }
         }
         return ret;
@@ -430,6 +437,14 @@ public class DieMessageCalibrate
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.Calibrate;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageCalibrateFace
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.CalibrateFace;
+    public byte face;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

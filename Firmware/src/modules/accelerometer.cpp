@@ -46,9 +46,11 @@ namespace Accelerometer
 	void updateState();
 
     void CalibrateHandler(void* context, const Message* msg);
+	void CalibrateFaceHandler(void* context, const Message* msg);
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
+        MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
 
 		face = 0;
 		confidence = 0.0f;
@@ -353,6 +355,25 @@ namespace Accelerometer
 				});
 			}
 		});
+	}
+
+	void CalibrateFaceHandler(void* context, const Message* msg) {
+		const MessageCalibrateFace* faceMsg = (const MessageCalibrateFace*)msg;
+		uint8_t face = faceMsg->face;
+
+		// Copy current calibration normals
+		int normalCount = BoardManager::getBoard()->ledCount;
+		float3 calibratedNormalsCopy[normalCount];
+		memcpy(calibratedNormalsCopy, SettingsManager::getSettings()->faceNormals, normalCount * sizeof(float3));
+
+		// Replace the face's normal with what we measured
+		LIS2DE12::read();
+		calibratedNormalsCopy[face] = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+
+		// And flash the new normals
+		SettingsManager::programNormals(calibratedNormalsCopy, normalCount);
+
+		MessageService::NotifyUser("Face is calibrated.", true, false, 5, nullptr);
 	}
 }
 }

@@ -123,8 +123,8 @@ public class Central
                 }
             };
 
-        //BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, true);
-        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(null, dieDiscovered, null, false, true);
+        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(services, dieDiscovered, null, false, true);
+        //BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(null, dieDiscovered, null, false, true);
 
         // Also notify virtual dice that we're trying to connect
         if (virtualBluetooth != null)

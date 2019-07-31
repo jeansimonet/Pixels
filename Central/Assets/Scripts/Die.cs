@@ -861,6 +861,11 @@ public class Die
         PostMessage(new DieMessageCalibrate());
     }
 
+    public void CalibrateFace(int face)
+    {
+        PostMessage(new DieMessageCalibrateFace() {face = (byte)face});
+    }
+
     public void SetLEDAnimatorMode()
     {
         PostMessage(new DieMessageSetLEDAnimState());

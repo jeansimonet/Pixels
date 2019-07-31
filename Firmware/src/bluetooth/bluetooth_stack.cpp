@@ -1,4 +1,5 @@
 #include "bluetooth_stack.h"
+#include "bluetooth_message_service.h"
 #include "app_error.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -68,7 +69,8 @@ namespace Stack
     /**< Universally unique service identifiers. */
     ble_uuid_t m_adv_uuids[] = 
     {
-        {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
+        //{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
+        {GENERIC_DATA_SERVICE_UUID_SHORT, BLE_UUID_TYPE_VENDOR_BEGIN}
     };
 
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
@@ -257,13 +259,13 @@ namespace Stack
 
         // Generate our name
         advertisingName[0] = '\0';
-        strcpy(advertisingName, "Dice_");
+        strcpy(advertisingName, "D_");
 		uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
         for (int i = 0; i < 8; ++i) {
-            advertisingName[5+i] = '0' + uniqueId % 10;
+            advertisingName[2+i] = '0' + uniqueId % 10;
             uniqueId /= 10;
         }
-        advertisingName[5+8] = '\0';
+        advertisingName[2+8] = '\0';
 
         //  GAP Params
         ble_gap_conn_params_t   gap_conn_params;
@@ -290,7 +292,11 @@ namespace Stack
         err_code = nrf_ble_gatt_init(&m_gatt, NULL);
         APP_ERROR_CHECK(err_code);
 
-        ble_advertising_init_t init;
+        NRF_LOG_INFO("Bluetooth Stack Initialized");
+    }
+
+    void initAdvertising() {
+       ble_advertising_init_t init;
         memset(&init, 0, sizeof(init));
 
         init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
@@ -303,7 +309,7 @@ namespace Stack
 
         init.evt_handler = on_adv_evt;
 
-        err_code = ble_advertising_init(&m_advertising, &init);
+        ret_code_t err_code = ble_advertising_init(&m_advertising, &init);
         APP_ERROR_CHECK(err_code);
 
         ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);

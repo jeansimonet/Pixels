@@ -16,6 +16,8 @@ public class CurrentDicePoolDice
     public Button forgetButton;
     public Button testButton;
     public Button calibrateButton;
+    public Button calibrateFaceButton;
+    public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
     public Central central;
@@ -93,10 +95,14 @@ public class CurrentDicePoolDice
 
         calibrateButton.onClick.RemoveAllListeners();
         calibrateButton.onClick.AddListener(CalibrateDie);
+
+        calibrateFaceButton.onClick.RemoveAllListeners();
+        calibrateFaceButton.onClick.AddListener(() => ShowFaceSelection());
     }
 
     void HideCommands()
     {
+        HideFaceSelection();
         commandGroup.interactable = false;
         commandGroup.blocksRaycasts = false;
         commandGroup.alpha = 0.0f;
@@ -197,5 +203,29 @@ public class CurrentDicePoolDice
     {
         statusText.text = newState.ToString();
         MonitorBatteryLevel(die.connectionState >= Die.ConnectionState.Ready);
+    }
+
+    void ShowFaceSelection()
+    {
+        faceSelectionRoot.gameObject.SetActive(true);
+        for (int i = 0; i < faceSelectionRoot.GetChildCount(); ++i)
+        {
+            var childButton = faceSelectionRoot.GetChild(i).GetComponent<Button>();
+            childButton.onClick.RemoveAllListeners();
+            int face = i;
+            childButton.onClick.AddListener(() => CalibrateFace(face));
+        }
+    }
+
+    void HideFaceSelection()
+    {
+        faceSelectionRoot.gameObject.SetActive(false);
+    }
+
+    void CalibrateFace(int face)
+    {
+        HideFaceSelection();
+        HideCommands();
+        die.CalibrateFace(face);
     }
 }
