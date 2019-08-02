@@ -603,6 +603,11 @@ public class Die
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
     }
 
+    public Coroutine PlayAnimationEvent(AnimationEvent evt)
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnimEvent() { evt = (byte)evt }));
+    }
+
     public Coroutine PlayAnimation(int animationIndex, int remapFace, bool loop)
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim()

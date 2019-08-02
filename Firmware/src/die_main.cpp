@@ -51,6 +51,7 @@ namespace Die
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace);
     void SendRollState(Accelerometer::RollState rollState, int face);
     void PlayLEDAnim(void* context, const Message* msg);
+    void PlayAnimEvent(void* context, const Message* msg);
 	void EnterStandardState(void* context, const Message* msg);
 	void EnterLEDAnimState(void* context, const Message* msg);
 	void EnterBattleState(void* context, const Message* msg);
@@ -180,6 +181,11 @@ namespace Die
             remapFace = Accelerometer::currentFace();
         }
         AnimController::play(&animation, remapFace);
+    }
+
+    void PlayAnimEvent(void* context, const Message* msg) {
+        auto playAnimMessage = (const MessagePlayAnimEvent*)msg;
+        AnimController::play((AnimationEvent)playAnimMessage->evt, playAnimMessage->remapFace, playAnimMessage->loop != 0);
     }
 
 	void EnterStandardState(void* context, const Message* msg) {

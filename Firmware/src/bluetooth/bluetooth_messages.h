@@ -33,6 +33,7 @@ struct Message
 		MessageType_DebugLog,
 
 		MessageType_PlayAnim,
+		MessageType_PlayAnimEvent,
 		MessageType_RequestState,
 		MessageType_RequestAnimSet,
 		MessageType_RequestSettings,
@@ -148,6 +149,16 @@ struct MessagePlayAnim
 	uint8_t loop; 		// 1 == loop, 0 == once
 
 	inline MessagePlayAnim() : Message(Message::MessageType_PlayAnim) {}
+};
+
+struct MessagePlayAnimEvent
+	: public Message
+{
+	uint8_t evt;
+	uint8_t remapFace;
+	uint8_t loop;
+
+	inline MessagePlayAnimEvent() : Message(Message::MessageType_PlayAnimEvent) {}
 };
 
 struct MessageRequestTelemetry
