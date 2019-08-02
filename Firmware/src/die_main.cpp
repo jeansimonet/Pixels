@@ -38,6 +38,7 @@ namespace Die
         TopLevel_BattlePlay,    // Some kind of battle play
         TopLevel_Animator,      // LED Animator
         TopLevel_LowPower,      // Die is low on power
+        TopLevel_Attract,
     };
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
@@ -53,6 +54,7 @@ namespace Die
 	void EnterStandardState(void* context, const Message* msg);
 	void EnterLEDAnimState(void* context, const Message* msg);
 	void EnterBattleState(void* context, const Message* msg);
+    void StartAttractMode(void* context, const Message* msg);
     void onConnection(void* token, bool connected);
 
     void initMainLogic() {
@@ -75,6 +77,7 @@ namespace Die
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
+		Bluetooth::MessageService::RegisterMessageHandler(Message::DieMessageType_AttractMode, nullptr, StartAttractMode);
 
         Bluetooth::Stack::hook(onConnection, nullptr);
 
@@ -226,6 +229,12 @@ namespace Die
                 break;
        }
     }
+
+    void StartAttractMode(void* context, const Message* msg) {
+        currentTopLevelState = TopLevel_Attract;
+        AnimController::play(AnimationEvent_AttractMode, 0, true);
+    }
+
 
     // Main loop!
     void update() {

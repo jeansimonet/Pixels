@@ -77,6 +77,7 @@ public class Die
         Battle_TeamWin,
         Battle_TeamLoose,
         Battle_TeamDraw,
+        AttractMode,
         // Etc...
         Count
     }
@@ -600,6 +601,19 @@ public class Die
     public Coroutine PlayAnimation(int animationIndex)
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
+    }
+
+    public Coroutine PlayAnimation(int animationIndex, int remapFace, bool loop)
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim()
+        {
+            index = (byte)animationIndex, remapFace = (byte)remapFace, loop = loop ? (byte)1 : (byte)0
+        }));
+    }
+
+    public Coroutine StartAttractMode()
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessageAttractMode()));
     }
 
     public Coroutine Ping()

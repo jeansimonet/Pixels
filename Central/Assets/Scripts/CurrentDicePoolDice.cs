@@ -17,6 +17,7 @@ public class CurrentDicePoolDice
     public Button testButton;
     public Button calibrateButton;
     public Button calibrateFaceButton;
+    public Button AttractModeButton;
     public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
@@ -98,6 +99,9 @@ public class CurrentDicePoolDice
 
         calibrateFaceButton.onClick.RemoveAllListeners();
         calibrateFaceButton.onClick.AddListener(() => ShowFaceSelection());
+
+        AttractModeButton.onClick.RemoveAllListeners();
+        AttractModeButton.onClick.AddListener(() => StartAttrackMode());
     }
 
     void HideCommands()
@@ -215,6 +219,11 @@ public class CurrentDicePoolDice
             int face = i;
             childButton.onClick.AddListener(() => CalibrateFace(face));
         }
+    }
+
+    void StartAttrackMode()
+    {
+        die.StartAttractMode();
     }
 
     void HideFaceSelection()

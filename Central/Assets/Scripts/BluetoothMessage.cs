@@ -52,6 +52,7 @@ public enum DieMessageType : byte
     TestBulkSend,
     TestBulkReceive,
     SetAllLEDsToColor,
+    AttractMode,
 }
 
 public interface DieMessage
@@ -164,7 +165,9 @@ public static class DieMessages
                 case DieMessageType.SetBattleState:
                     ret = FromByteArray<DieMessageSetBattleState>(data);
                     break;
-
+                case DieMessageType.AttractMode:
+                    ret = FromByteArray<DieMessageAttractMode>(data);
+                    break;
                 default:
                     throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
             }
@@ -337,6 +340,8 @@ public class DieMessagePlayAnim
 {
     public DieMessageType type { get; set; } = DieMessageType.PlayAnim;
     public byte index;
+    public byte remapFace;
+    public byte loop;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -494,3 +499,11 @@ public class DieMessageSetBattleState
 {
     public DieMessageType type { get; set; } = DieMessageType.SetBattleState;
 }
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageAttractMode
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.AttractMode;
+}
+

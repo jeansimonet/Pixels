@@ -50,6 +50,7 @@ namespace Animations
 		AnimationEvent_Battle_TeamWin,
 		AnimationEvent_Battle_TeamLoose,
 		AnimationEvent_Battle_TeamDraw,
+		AnimationEvent_AttractMode,
         // Etc...
         AnimationEvent_Count
     };

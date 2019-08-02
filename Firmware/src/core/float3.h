@@ -64,6 +64,12 @@ namespace Core
 			z /= mag;
 			return *this;
 		}
+		float3 normalized() const
+		{
+			float3 ret = *this;
+			ret.normalize();
+			return ret;
+		}
 		static float dot(const float3& left, const float3& right)
 		{
 			return left.x * right.x + left.y * right.y + left.z * right.z;

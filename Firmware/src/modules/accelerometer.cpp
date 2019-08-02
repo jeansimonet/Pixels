@@ -35,6 +35,7 @@ namespace Accelerometer
 	float3 smoothAcc;
 	RollState rollState = RollState_Unknown;
 	bool moving = false;
+	float3 handleStateNormal; // The normal when we entered the handled state, so we can determine if we've moved enough
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
@@ -116,25 +117,30 @@ namespace Accelerometer
                 if (startMoving) {
                     // We're at least being handled
                     newRollState = RollState_Handling;
+					handleStateNormal = newFrame.acc.normalized();
                 }
                 break;
             case RollState_Handling:
-				if (shock || zeroG || newFrame.face != face) {
-					// Stuff is happening that we are most likely rolling now
-					newRollState = RollState_Rolling;
-				} else if (stopMoving) {
-					// Just slid the dice around?
-					if (stopMoving) {
-						if (BoardManager::getBoard()->ledCount == 6) {
-							// We may be at rest
-							if (onFace) {
-								// We're at rest
-								newRollState = RollState_OnFace;
+				// Did we move ennough?
+				{
+					bool rotatedEnough = float3::dot(newFrame.acc.normalized(), handleStateNormal) < 0.5f;
+					if (shock || zeroG || rotatedEnough) {
+						// Stuff is happening that we are most likely rolling now
+						newRollState = RollState_Rolling;
+					} else if (stopMoving) {
+						// Just slid the dice around?
+						if (stopMoving) {
+							if (BoardManager::getBoard()->ledCount == 6) {
+								// We may be at rest
+								if (onFace) {
+									// We're at rest
+									newRollState = RollState_OnFace;
+								} else {
+									newRollState = RollState_Crooked;
+								}
 							} else {
-								newRollState = RollState_Crooked;
+								newRollState = RollState_OnFace;
 							}
-						} else {
-							newRollState = RollState_OnFace;
 						}
 					}
 				}

@@ -58,6 +58,7 @@ struct Message
 		MessageType_TestBulkSend,
 		MessageType_TestBulkReceive,
 		MessageType_SetAllLEDsToColor,
+		DieMessageType_AttractMode,
 
 		MessageType_Count
 	};
