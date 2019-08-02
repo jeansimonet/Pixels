@@ -47,7 +47,7 @@ public class BattleGameDieUI : MonoBehaviour
     public void Setup(Die die)
     {
         this.die = die;
-        _FaceText.gameObject.SetActive(die.dieType == Die.DieType.TwentySided);
+        _FaceText.gameObject.SetActive(die.dieType != Die.DieType.SixSided);
     }
 
     void _SetTeam(int team)
@@ -70,9 +70,9 @@ public class BattleGameDieUI : MonoBehaviour
         {
             _VisibleFace.sprite = die?.state == Die.State.Idle ? _AllFaces[die.face] : _NotSettled;
         }
-        if (die.dieType == Die.DieType. TwentySided)
+        else
         {
-            _FaceText.text = die?.state == Die.State.Idle ? die.face.ToString() : "?";
+            _FaceText.text = die?.state == Die.State.Idle ? (die.face + 1).ToString() : "?";
         }
     }
 }

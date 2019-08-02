@@ -22,6 +22,10 @@ public class CurrentDicePool
     [Header("Prefabs")]
     public CurrentDicePoolDice diceUIPrefab;
 
+    public delegate void DiceEventHandler(Die die);
+    public event DiceEventHandler DiceAdded;
+    public event DiceEventHandler DiceRemoved;
+
     List<CurrentDicePoolDice> dice;
 
 	// Use this for initialization
@@ -93,6 +97,8 @@ public class CurrentDicePool
         {
             die.Connect();
         }
+
+        DiceAdded?.Invoke(die);
     }
 
     public void RemoveDie(Die die)
@@ -108,6 +114,8 @@ public class CurrentDicePool
                 diceListRoot.SetActive(false);
                 noDiceIndicator.SetActive(true);
             }
+
+            DiceRemoved?.Invoke(die);
         }
     }
 
