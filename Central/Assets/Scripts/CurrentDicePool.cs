@@ -6,8 +6,6 @@ using UnityEngine.UI;
 public class CurrentDicePool
     : MonoBehaviour
 {
-    public Central central;
-
     [Header("Fields")]
     public Button doneButton;
     public Button addDiceButton;
@@ -15,6 +13,7 @@ public class CurrentDicePool
     public GameObject diceListRoot;
     public GameObject noDiceIndicator;
     public CanvasGroup canvasGroup;
+    public Canvas parentCanvas;
 
     [Header("References")]
     public AddDiceToPool addDiceDialog;
@@ -54,7 +53,7 @@ public class CurrentDicePool
 
         dice = new List<CurrentDicePoolDice>();
 
-        central.onDieForgotten += RemoveDie;
+        Central.Instance.onDieForgotten += RemoveDie;
     }
 
     // Update is called once per frame
@@ -64,6 +63,8 @@ public class CurrentDicePool
 
     public void Show()
     {
+        parentCanvas.gameObject.SetActive(true); // Unity WTF? Got to call this twice with 2019.1.10
+        parentCanvas.gameObject.SetActive(true);
         canvasGroup.gameObject.SetActive(true);
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
@@ -72,9 +73,10 @@ public class CurrentDicePool
 
     public void Hide()
     {
-        canvasGroup.interactable = false;
-        canvasGroup.blocksRaycasts = false;
-        canvasGroup.alpha = 0.0f;
+        // canvasGroup.interactable = false;
+        // canvasGroup.blocksRaycasts = false;
+        // canvasGroup.alpha = 0.0f;
+        parentCanvas.gameObject.SetActive(false);
     }
 
     public void AddDie(Die die)
@@ -84,7 +86,7 @@ public class CurrentDicePool
 
         // Add the newly created ui to our list
         var cmp = GameObject.Instantiate<CurrentDicePoolDice>(diceUIPrefab, diceListRoot.transform);
-        cmp.Setup(die, central);
+        cmp.Setup(die);
         dice.Add(cmp);
 
         if (die.connectionState == Die.ConnectionState.Advertising)

@@ -6,17 +6,11 @@ using System.Text;
 
 
 public class Central
-	: MonoBehaviour
+	: SingletonMonoBehaviour<Central>
 {
     public string serviceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 	public string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 	public string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
-
-    public static Central Instance
-    {
-        get { return _Instance; }
-    }
-    static Central _Instance;
 
     public enum State
     {
@@ -62,7 +56,6 @@ public class Central
         _lostDice = new Dictionary<string, Die>();
         discoveredDice = new List<KeyValuePair<string, string>>();
         virtualBluetooth = GetComponent<VirtualBluetoothInterface>();
-        _Instance = this;
     }
 
     void Start()
@@ -345,7 +338,7 @@ public class Central
 
         // Add the Die component and return it!
         var ret = dieGO.AddComponent<Die>();
-        ret.Setup(name, address, Die.ConnectionState.Advertising, this);
+        ret.Setup(name, address, Die.ConnectionState.Advertising);
         return ret;
     }
 

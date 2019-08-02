@@ -198,12 +198,12 @@ public class Die
         messageDelegates.Add(DieMessageType.NotifyUser, OnNotifuUserMessage);
     }
 
-    public void Setup(string name, string address, ConnectionState connectionState, Central central)
+    public void Setup(string name, string address, ConnectionState connectionState)
     {
         this.name = name;
         this.address = address;
         this.connectionState = connectionState;
-        this.central = central;
+        this.central = Central.Instance;
     }
 
     public void Connect()

@@ -40,6 +40,8 @@ public class NotificationUI : MonoBehaviour
 
     public void Show(string message, bool ok, bool cancel, float timeout, System.Action<bool> callback)
     {
+        gameObject.SetActive(true); // Unity WTF? Got to call this twice with 2019.1.10
+        gameObject.SetActive(true);
         notificationField.text = message;
         cg.alpha = 1.0f;
         cg.interactable = true;
@@ -82,9 +84,10 @@ public class NotificationUI : MonoBehaviour
 
     public void Hide()
     {
-        cg.alpha = 0.0f;
-        cg.interactable = false;
-        cg.blocksRaycasts = false;
+        // cg.alpha = 0.0f;
+        // cg.interactable = false;
+        // cg.blocksRaycasts = false;
+        gameObject.SetActive(false);
     }
 
     IEnumerator TimeoutCr(float timeout, System.Action<bool> callback)

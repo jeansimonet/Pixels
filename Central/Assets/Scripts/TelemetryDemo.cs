@@ -11,7 +11,6 @@ using UnityEngine.UI.Extensions;
 public class TelemetryDemo
     : MonoBehaviour
 {
-    public Central central;
     public GameObject diceRoot;
     public GameObject noDiceIndicator;
 
@@ -42,15 +41,15 @@ public class TelemetryDemo
     IEnumerator Start()
 	{
         // Until we can properly record data, disable
-        yield return new WaitUntil(() => central.state == Central.State.Idle);
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        central.onDieReady += OnNewDie;
+        Central.Instance.onDieReady += OnNewDie;
     }
 
     private void OnDisable()
     {
-        central.onDieConnected -= OnNewDie;
+        Central.Instance.onDieConnected -= OnNewDie;
     }
 
     public void OnNewDie(Die die)
