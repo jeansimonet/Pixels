@@ -5,16 +5,17 @@ using UnityEngine.UI;
 
 public class BattleGameDieUI : MonoBehaviour
 {
-    public Die die { get; set; }
-
     [SerializeField]
     Text _NameField = null;
+
+    [SerializeField]
+    Image _Background = null;
 
     [SerializeField]
     Image _VisibleFace = null;
 
     [SerializeField]
-    Image _Background = null;
+    Text _FaceText = null;
 
     [SerializeField]
     Text _AnimationName = null;
@@ -28,6 +29,8 @@ public class BattleGameDieUI : MonoBehaviour
     Color[] _TeamColors = null;
 
     int _Team;
+
+    public Die die { get; private set; }
 
     public int Team
     {
@@ -44,6 +47,7 @@ public class BattleGameDieUI : MonoBehaviour
     public void Setup(Die die)
     {
         this.die = die;
+        _FaceText.gameObject.SetActive(die.dieType == Die.DieType.TwentySided);
     }
 
     void _SetTeam(int team)
@@ -62,6 +66,13 @@ public class BattleGameDieUI : MonoBehaviour
     void Update()
     {
         _NameField.text = $"{die?.name}\n{die.state}";
-        _VisibleFace.sprite = die?.state == Die.State.Idle ? _AllFaces[die.face] : _NotSettled;
+        if (die.dieType == Die.DieType.SixSided)
+        {
+            _VisibleFace.sprite = die?.state == Die.State.Idle ? _AllFaces[die.face] : _NotSettled;
+        }
+        if (die.dieType == Die.DieType. TwentySided)
+        {
+            _FaceText.text = die?.state == Die.State.Idle ? die.face.ToString() : "?";
+        }
     }
 }

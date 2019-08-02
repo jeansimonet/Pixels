@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
@@ -69,6 +70,24 @@ public class VirtualBluetoothInspector : Editor
                 vbi.AddDie(Die.DieType.TwentySided);
                 vbi.AddDie(Die.DieType.TwentySided);
                 vbi.AddDie(Die.DieType.TwentySided);
+            }
+            GUILayout.EndHorizontal();
+
+            // Draw buttons to rools all dices of same type
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Roll All"))
+            {
+                foreach (var vd in vbi.virtualDice.Where(d => d.dieType == Die.DieType.SixSided))
+                {
+                    vd.Roll();
+                }
+            }
+            if (GUILayout.Button("Roll All"))
+            {
+                foreach (var vd in vbi.virtualDice.Where(d => d.dieType == Die.DieType.TwentySided))
+                {
+                    vd.Roll();
+                }
             }
             GUILayout.EndHorizontal();
         }
