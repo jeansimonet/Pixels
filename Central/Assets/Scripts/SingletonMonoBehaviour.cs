@@ -8,6 +8,8 @@ public class SingletonMonoBehaviour<T> : MonoBehaviour where T: MonoBehaviour
 
 	public static T Instance => GetInstance();
 
+	public static bool HasInstance => _instance != null;
+
 	static T GetInstance()
 	{
         if (_instance == null)

@@ -43,7 +43,10 @@ public class DiceAnimProgrammer
 
     private void OnDisable()
     {
-        Central.Instance.onDieReady -= OnNewDie;
+        if (Central.HasInstance)
+        {
+            Central.Instance.onDieReady -= OnNewDie;
+        }
     }
 
     public void OnNewDie(Die die)
