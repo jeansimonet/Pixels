@@ -14,10 +14,10 @@ namespace Config
 		uint32_t headMarker;
 
 		// Face detector
-		float sigmaDecayFast;
-		float sigmaDecaySlow;
-		float fastMovingThreshold;
-		float slowMovingThreshold;
+		float jerkClamp;
+		float sigmaDecay;
+		float startMovingThreshold;
+		float stopMovingThreshold;
 		float faceThreshold;
 		float fallingThreshold;
 		float shockThreshold;

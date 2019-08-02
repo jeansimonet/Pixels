@@ -97,10 +97,10 @@ namespace SettingsManager
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
-		outSettings.sigmaDecayFast = 0.1f;
-		outSettings.sigmaDecaySlow = 0.5f;
-		outSettings.fastMovingThreshold = 0.5f;
-		outSettings.slowMovingThreshold = 0.5f;
+		outSettings.jerkClamp = 10.f;
+		outSettings.sigmaDecay = 0.5f;
+		outSettings.startMovingThreshold = 5.0f;
+		outSettings.stopMovingThreshold = 0.5f;
 		outSettings.faceThreshold = 0.98f;
 		outSettings.fallingThreshold = 0.1f;
 		outSettings.shockThreshold = 7.5f;
@@ -129,7 +129,9 @@ namespace SettingsManager
 
 		// Grab current settings
 		Settings settingsCopy;
-		memcpy(&settingsCopy, settings, sizeof(Settings));
+		// Hack to reset other settings for now
+		setDefaults(settingsCopy);
+		//memcpy(&settingsCopy, settings, sizeof(Settings));
 
 		// Change normals
 		memcpy(&(settingsCopy.faceNormals[0]), newNormals, count * sizeof(Core::float3));

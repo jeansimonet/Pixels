@@ -45,7 +45,27 @@ public class Die
         ChargingError,
         Handling,
         Rolling,
-        OnFace,
+        OnFace_Default,
+		OnFace_00,
+		OnFace_01,
+		OnFace_02,
+		OnFace_03,
+		OnFace_04,
+		OnFace_05,
+		OnFace_06,
+		OnFace_07,
+		OnFace_08,
+		OnFace_09,
+		OnFace_10,
+		OnFace_11,
+		OnFace_12,
+		OnFace_13,
+		OnFace_14,
+		OnFace_15,
+		OnFace_16,
+		OnFace_17,
+		OnFace_18,
+		OnFace_19,
         Crooked,
         Battle_ShowTeam,
         Battle_FaceUp,
@@ -65,7 +85,7 @@ public class Die
     {
         None = 0,
         Face,   // Uses the color of the face (based on a rainbow)
-        Heat    // Uses how hot the die is (based on how much its being shaken)
+        ColorWheel    // Uses how hot the die is (based on how much its being shaken)
     }
 
     [System.Serializable]

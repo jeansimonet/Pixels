@@ -18,7 +18,27 @@ namespace Animations
         AnimationEvent_ChargingError,
         AnimationEvent_Handling,
 		AnimationEvent_Rolling,
-		AnimationEvent_OnFace,
+		AnimationEvent_OnFace_Default,
+		AnimationEvent_OnFace_00,
+		AnimationEvent_OnFace_01,
+		AnimationEvent_OnFace_02,
+		AnimationEvent_OnFace_03,
+		AnimationEvent_OnFace_04,
+		AnimationEvent_OnFace_05,
+		AnimationEvent_OnFace_06,
+		AnimationEvent_OnFace_07,
+		AnimationEvent_OnFace_08,
+		AnimationEvent_OnFace_09,
+		AnimationEvent_OnFace_10,
+		AnimationEvent_OnFace_11,
+		AnimationEvent_OnFace_12,
+		AnimationEvent_OnFace_13,
+		AnimationEvent_OnFace_14,
+		AnimationEvent_OnFace_15,
+		AnimationEvent_OnFace_16,
+		AnimationEvent_OnFace_17,
+		AnimationEvent_OnFace_18,
+		AnimationEvent_OnFace_19,
 		AnimationEvent_Crooked,
 		AnimationEvent_Battle_ShowTeam,
 		AnimationEvent_Battle_FaceUp,
@@ -38,7 +58,7 @@ namespace Animations
 	{
 		SpecialColor_None = 0,
 		SpecialColor_Face,
-		SpecialColor_Heat
+		SpecialColor_ColorWheel,
 	};
 
 	const char* getEventName(AnimationEvent event);

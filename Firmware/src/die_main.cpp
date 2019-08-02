@@ -42,6 +42,7 @@ namespace Die
 
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
     int currentFace = 0;
+    RollState currentRollState = RollState_Unknown;
 
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);
@@ -106,35 +107,19 @@ namespace Die
     }
 
     void onBatteryStateChange(void* token, BatteryController::BatteryState newState) {
-        // switch (newState) {
-        //     case BatteryController::BatteryState_Charging:
-        //         // Die is now charging, disconnect from Bluetooth etc...
-        //         if (Bluetooth::Stack::isConnected()) {
-        //             Bluetooth::Stack::disableAdvertisingOnDisconnect();
-        //             Bluetooth::Stack::disconnect();
-        //         } else {
-        //             Bluetooth::Stack::stopAdvertising();
-        //         }
-        //         currentTopLevelState = TopLevel_Charging;
-        //         break;
-        //     case BatteryController::BatteryState_Low:
-        //         if (Bluetooth::Stack::isConnected()) {
-        //             Bluetooth::Stack::disableAdvertisingOnDisconnect();
-        //             Bluetooth::Stack::disconnect();
-        //         } else {
-        //             Bluetooth::Stack::stopAdvertising();
-        //         }
-        //         currentTopLevelState = TopLevel_LowPower;
-        //         break;
-        //     case BatteryController::BatteryState_Ok:
-        //         currentTopLevelState = TopLevel_SoloPlay;
-        //         if (!Bluetooth::Stack::isAdvertising()) {
-        //             Bluetooth::Stack::startAdvertising();
-        //         }
-        //         break;
-        //     default:
-        //         break;
-        // }
+        switch (newState) {
+            case BatteryController::BatteryState_Charging:
+                AnimController::play(AnimationEvent_ChargingStart);
+                break;
+            case BatteryController::BatteryState_Low:
+                AnimController::play(AnimationEvent_LowBattery);
+                break;
+            case BatteryController::BatteryState_Ok:
+                AnimController::play(AnimationEvent_ChargingDone);
+                break;
+            default:
+                break;
+        }
     }
 
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {
@@ -142,11 +127,35 @@ namespace Die
 
         if (currentTopLevelState == TopLevel_SoloPlay) {
             // Play animation
-            if (newFace != currentFace) {
-                AnimController::play(AnimationEvent_Handling, newFace, false);
-                currentFace = newFace;
+            switch (newRollState) {
+                case RollState_OnFace:
+                    if (currentRollState == RollState_Rolling) {
+                        /// Check for an override animation first, then default
+                        AnimationEvent faceEvent = (AnimationEvent)((int)AnimationEvent_OnFace_00 + newFace);
+                        if (AnimController::hasAnimationForEvent(faceEvent)) {
+                            AnimController::play(faceEvent, 0, false);
+                        } else {
+                            AnimController::play(AnimationEvent_OnFace_Default, newFace, false);
+                        }
+                    }
+                    // Else don't play face anim
+                    break;
+                case RollState_Handling:
+                    AnimController::play(AnimationEvent_Handling, newFace, false);
+                    break;
+                case RollState_Rolling:
+                    AnimController::play(AnimationEvent_Rolling, newFace, false);
+                    break;
+                case RollState_Crooked:
+                    AnimController::play(AnimationEvent_Crooked, newFace, false);
+                    break;
+                default:
+                    break;
             }
         }
+
+        currentRollState = newRollState;
+        currentFace = newFace;
     }
 
     void onConnection(void* token, bool connected) {

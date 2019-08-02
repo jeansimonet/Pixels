@@ -24,8 +24,8 @@ namespace Modules
 		{
 			Core::float3 acc;
 			Core::float3 jerk;
-			float slowSigma;
-			float fastSigma;
+			Core::float3 smoothAcc;
+			float sigma;
 			float faceConfidence;
 			int face;
 			uint32_t time;

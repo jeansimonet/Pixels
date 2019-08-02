@@ -208,7 +208,7 @@ public class CurrentDicePoolDice
     void ShowFaceSelection()
     {
         faceSelectionRoot.gameObject.SetActive(true);
-        for (int i = 0; i < faceSelectionRoot.GetChildCount(); ++i)
+        for (int i = 0; i < faceSelectionRoot.childCount; ++i)
         {
             var childButton = faceSelectionRoot.GetChild(i).GetComponent<Button>();
             childButton.onClick.RemoveAllListeners();
