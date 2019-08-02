@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SingletonMonoBehaviour<T> : MonoBehaviour where T: class
+public class SingletonMonoBehaviour<T> : MonoBehaviour where T: MonoBehaviour
 {
 	static T _instance;
 
@@ -12,12 +12,12 @@ public class SingletonMonoBehaviour<T> : MonoBehaviour where T: class
 	{
         if (_instance == null)
         {
-    		_instance = Object.FindObjectOfType<Canvas>().rootCanvas.GetComponentInChildren<T>(includeInactive: true);
+			_instance = Utils.FindObjectOfTypeIncludingDisabled<T>();
         }
         return _instance;
 	}
 
-	void OnDestroy()
+	protected virtual void OnDestroy()
 	{
 		_instance = null;
 	}

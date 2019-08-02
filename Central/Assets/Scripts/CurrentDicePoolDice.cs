@@ -21,7 +21,6 @@ public class CurrentDicePoolDice
     public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
-    public Central central;
     bool commandsShown
     {
         get
@@ -40,10 +39,9 @@ public class CurrentDicePoolDice
 		
 	}
 
-    public void Setup(Die die, Central central)
+    public void Setup(Die die)
     {
         this.die = die;
-        this.central = central;
         nameText.text = die.name;
         statusText.text = die.connectionState.ToString();
         diceImage.color = Color.white;
@@ -115,7 +113,7 @@ public class CurrentDicePoolDice
     void ForgetDie()
     {
         // Tell central to forget about this die
-        central.ForgetDie(die);
+        Central.Instance.ForgetDie(die);
         HideCommands();
     }
 

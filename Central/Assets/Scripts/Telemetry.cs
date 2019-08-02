@@ -24,7 +24,7 @@ public class Telemetry : MonoBehaviour
 
 	void Awake()
 	{
-		central = GetComponent<Central>();
+		central = Central.Instance;
         discoveredDice = new Dictionary<Die, TelemetryDie>();
         trackedDice = new Dictionary<Die, TelemetryDie>();
     }

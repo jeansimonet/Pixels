@@ -12,7 +12,6 @@ public enum DiceType
 public class DiceAnimProgrammer
     : MonoBehaviour
 {
-    public Central central;
     public TimelineView timeline;
     public PleaseWaitDialogBox pleaseWait;
     public string JsonFileBaseName = "animation_set.json";
@@ -33,10 +32,10 @@ public class DiceAnimProgrammer
     IEnumerator Start()
     {
         // Until we can properly record data, disable
-        yield return new WaitUntil(() => central.state == Central.State.Idle);
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        central.onDieReady += OnNewDie;
+        Central.Instance.onDieReady += OnNewDie;
 
         // Create empty anim if needed
         LoadFromJson(DiceType.D20);
@@ -44,7 +43,7 @@ public class DiceAnimProgrammer
 
     private void OnDisable()
     {
-        central.onDieReady -= OnNewDie;
+        Central.Instance.onDieReady -= OnNewDie;
     }
 
     public void OnNewDie(Die die)

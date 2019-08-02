@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(AudioSource))]
 public class BattleGame : MonoBehaviour
@@ -10,7 +11,10 @@ public class BattleGame : MonoBehaviour
     BattleGameUI _UI = null;
 
     [SerializeField]
-    Central _Central = null;
+    Button _PoolManagementBtn = null;
+
+    [SerializeField]
+    bool _AutoConnect;
 
     [SerializeField]
     Sounds _Sounds = new Sounds();
@@ -173,7 +177,11 @@ public class BattleGame : MonoBehaviour
     void Start()
     {
         _audioSource = GetComponent<AudioSource>();
-        StartCoroutine(PeriodicScanAndConnectCr());
+        if (_AutoConnect)
+        {
+            StartCoroutine(PeriodicScanAndConnectCr());
+            _PoolManagementBtn.interactable = false;
+        }
     }
 
     // Update is called once per frame
@@ -361,14 +369,15 @@ public class BattleGame : MonoBehaviour
 
     IEnumerator PeriodicScanAndConnectCr()
     {
-        yield return new WaitUntil(() => _Central.state == Central.State.Idle);
-        _Central.onDieDiscovered += onDieDiscovered;
+        var central = Central.Instance;
+        yield return new WaitUntil(() => central.state == Central.State.Idle);
+        central.onDieDiscovered += onDieDiscovered;
 
         while (true)
         {
-            _Central.BeginScanForDice();
+            central.BeginScanForDice();
             yield return new WaitForSeconds(3.0f);
-            _Central.StopScanForDice();
+            central.StopScanForDice();
             yield return new WaitForSeconds(3.0f);
         }
     }
