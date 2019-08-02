@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class NotificationUI : MonoBehaviour
+public class NotificationUI : SingletonMonoBehaviour<NotificationUI>
 {
     public Text notificationField;
     public Button okButton;
     public Button cancelButton;
-
-    public static NotificationUI instance { get; private set; }
 
     CanvasGroup cg;
     Coroutine timeoutCoroutine;
@@ -17,14 +15,6 @@ public class NotificationUI : MonoBehaviour
     void Awake()
     {
         cg = GetComponent<CanvasGroup>();
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Debug.LogError("Multiple notification UI instances in scene");
-        }
     }
 
     // Start is called before the first frame update

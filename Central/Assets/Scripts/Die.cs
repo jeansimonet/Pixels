@@ -533,7 +533,7 @@ public class Die
         bool cancel = notifyUserMsg.cancel != 0;
         float timeout = (float)notifyUserMsg.timeout_s;
         string text = System.Text.Encoding.UTF8.GetString(notifyUserMsg.data, 0, notifyUserMsg.data.Length);
-        var uiInstance = NotificationUI.instance;
+        var uiInstance = NotificationUI.Instance;
         if (uiInstance != null)
         {
             // Show the message and tell the die when user clicks Ok!
