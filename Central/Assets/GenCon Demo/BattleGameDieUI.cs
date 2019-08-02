@@ -48,6 +48,7 @@ public class BattleGameDieUI : MonoBehaviour
     {
         this.die = die;
         _FaceText.gameObject.SetActive(die.dieType != Die.DieType.SixSided);
+        AnimationName = string.Empty;
     }
 
     void _SetTeam(int team)

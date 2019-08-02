@@ -91,7 +91,7 @@ public class BattleGame : MonoBehaviour
             if (force || (anim != _anim))
             {
                 _anim = anim;
-                _dieUI.AnimationName = _anim.ToString();
+                _dieUI.AnimationName = anim == Animations.None ? string.Empty : anim.ToString();
                 Debug.Log(Die.name + " |> " + anim);
             }
         }
@@ -205,6 +205,7 @@ public class BattleGame : MonoBehaviour
             {
                 Debug.Log($"Playing {eventName} on {dieUI.die.name}");
                 dieUI.die.PlayAnimationEvent(anim);            
+                dieUI.AnimationName = eventName.ToString();
             }
         }
         else
