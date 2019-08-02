@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
+//TODO use Die.DieType
 public enum DiceType
 {
 	D6, D20,
