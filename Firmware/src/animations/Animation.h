@@ -64,7 +64,12 @@ namespace Animations
 
 	/// <summary>
 	/// An animation track is essentially an animation curve for a specific LED.
-	/// size: 4 bytes (+ the actual keyframe data)
+	/// size: 4 bytes (+ the actual keyframe data).
+	
+	/// Note: Consider compressing into 2 bytes, for instance:
+	/// - 12 bits for offset (to cover a max of 4096 keyframes in the buffer, or 8kB of data)
+	/// - 4 bits for length (16 keyframes per track)
+	/// Also consider storing a time offset...
 	/// </summary>
 	struct RGBTrack
 	{
