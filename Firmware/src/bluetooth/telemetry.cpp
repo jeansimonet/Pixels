@@ -12,13 +12,16 @@
 
 using namespace Modules;
 using namespace Bluetooth;
+using namespace Utils;
 
 namespace Bluetooth
 {
 namespace Telemetry
 {
+    #define TELEMETRY_RATE_MS 100
     MessageAcc teleMessage;
     bool telemetryActive;
+    uint32_t lastMessageMS;
 
     void onAccDataReceived(void* param, const Accelerometer::AccelFrame& accelFrame);
     void onRequestTelemetryMessage(void* token, const Message* message);
@@ -26,16 +29,23 @@ namespace Telemetry
     void init() {
         // Register for messages to send telemetry data over!
         MessageService::RegisterMessageHandler(Message::MessageType_RequestTelemetry, nullptr, onRequestTelemetryMessage);
+        lastMessageMS = 0;
+        telemetryActive = false;
 
    		NRF_LOG_INFO("Telemetry initialized");
     }
 
 	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& frame) {
-        if (Stack::canSend()) {
-            teleMessage.data = frame;
-            // Send the message
-            if (!MessageService::SendMessage(&teleMessage)) {
-                NRF_LOG_DEBUG("Couldn't send message yet");
+        uint32_t time = Utils::millis();
+        if (time - lastMessageMS >= TELEMETRY_RATE_MS) {
+            if (Stack::canSend()) {
+                teleMessage.data = frame;
+                // Send the message
+                if (!MessageService::SendMessage(&teleMessage)) {
+                    NRF_LOG_DEBUG("Couldn't send message yet");
+                } else {
+                    lastMessageMS = time;
+                }
             }
         }
     }

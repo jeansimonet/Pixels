@@ -380,7 +380,7 @@ namespace AnimationSet
 							animations[animIndex].animationEvent = Animations::AnimationEvent_Rolling;
 							break;
 						case 1:
-							animations[animIndex].animationEvent = Animations::AnimationEvent_OnFace;
+							animations[animIndex].animationEvent = Animations::AnimationEvent_OnFace_Default;
 							break;
 						case 2:
 							animations[animIndex].animationEvent = Animations::AnimationEvent_Handling;

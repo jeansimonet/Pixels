@@ -5,6 +5,11 @@ namespace Bluetooth
 {
     namespace MessageService
     {
+        #define GENERIC_DATA_SERVICE_UUID {{0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0, 0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E}}
+        #define GENERIC_DATA_SERVICE_UUID_SHORT 0x0001
+        #define GENERIC_DATA_TX_CHARACTERISTIC 0x0001
+        #define GENERIC_DATA_RX_CHARACTERISTIC 0x0002
+
         void init();
 
         bool SendMessage(Message::MessageType msgType);

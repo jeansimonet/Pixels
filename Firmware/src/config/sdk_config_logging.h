@@ -36,7 +36,7 @@
 // <i> Must be power of 2 and multiple of 4.
 // <i> If NRF_LOG_DEFERRED = 0 then buffer size can be reduced to minimum.
 // <128=> 128 -> <16384=> 16384
-#define NRF_LOG_BUFSIZE 128
+#define NRF_LOG_BUFSIZE 1024
 
 // <q> NRF_LOG_CLI_CMDS  - Enable CLI commands for the module.
 #define NRF_LOG_CLI_CMDS 0

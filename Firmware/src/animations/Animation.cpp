@@ -32,7 +32,7 @@ namespace Animations
 				return "Handling";
 			case AnimationEvent_Rolling:
 				return "Rolling";
-			case AnimationEvent_OnFace:
+			case AnimationEvent_OnFace_Default:
 				return "OnFace";
 			case AnimationEvent_Crooked:
 				return "Crooked";

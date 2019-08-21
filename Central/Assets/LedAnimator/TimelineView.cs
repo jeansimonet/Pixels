@@ -395,7 +395,7 @@ public class TimelineView : MonoBehaviour
 		// Update size
 		var size = rectTransf.sizeDelta;
 		size.x = _widthPadding + Unit * Duration;
-		size.y = _colorAnimsRoot.childCount * 68 + (_colorAnimsRoot.childCount - 1) * 10; //TODO
+		size.y = _colorAnimsRoot.childCount * 68 + (_colorAnimsRoot.childCount - 1) * 30 + 80; //TODO
 		rectTransf.sizeDelta = size;
 
 		// Update vertical lines

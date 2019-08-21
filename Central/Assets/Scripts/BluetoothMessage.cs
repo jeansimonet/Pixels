@@ -28,6 +28,7 @@ public enum DieMessageType : byte
     DebugLog,
 
     PlayAnim,
+    PlayAnimEvent,
     RequestState,
     RequestAnimSet,
     RequestSettings,
@@ -41,6 +42,7 @@ public enum DieMessageType : byte
     RequestBatteryLevel,
     BatteryLevel,
     Calibrate,
+    CalibrateFace,
     NotifyUser,
     NotifyUserAck,
     TestHardware,
@@ -51,6 +53,7 @@ public enum DieMessageType : byte
     TestBulkSend,
     TestBulkReceive,
     SetAllLEDsToColor,
+    AttractMode,
 }
 
 public interface DieMessage
@@ -112,6 +115,9 @@ public static class DieMessages
                 case DieMessageType.PlayAnim:
                     ret = FromByteArray<DieMessagePlayAnim>(data);
                     break;
+                case DieMessageType.PlayAnimEvent:
+                    ret = FromByteArray<DieMessagePlayAnimEvent>(data);
+                    break;
                 case DieMessageType.RequestState:
                     ret = FromByteArray<DieMessageRequestState>(data);
                     break;
@@ -136,8 +142,14 @@ public static class DieMessages
                 case DieMessageType.BatteryLevel:
                     ret = FromByteArray<DieMessageBatteryLevel>(data);
                     break;
+                case DieMessageType.RequestBatteryLevel:
+                    ret = FromByteArray<DieMessageRequestBatteryLevel>(data);
+                    break;
                 case DieMessageType.Calibrate:
                     ret = FromByteArray<DieMessageCalibrate>(data);
+                    break;
+                case DieMessageType.CalibrateFace:
+                    ret = FromByteArray<DieMessageCalibrateFace>(data);
                     break;
                 case DieMessageType.NotifyUser:
                     ret = FromByteArray<DieMessageNotifyUser>(data);
@@ -157,9 +169,11 @@ public static class DieMessages
                 case DieMessageType.SetBattleState:
                     ret = FromByteArray<DieMessageSetBattleState>(data);
                     break;
-
+                case DieMessageType.AttractMode:
+                    ret = FromByteArray<DieMessageAttractMode>(data);
+                    break;
                 default:
-                    throw new System.Exception("Unhandled Message type for marshalling");
+                    throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
             }
         }
         return ret;
@@ -330,6 +344,18 @@ public class DieMessagePlayAnim
 {
     public DieMessageType type { get; set; } = DieMessageType.PlayAnim;
     public byte index;
+    public byte remapFace;
+    public byte loop;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessagePlayAnimEvent
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.PlayAnimEvent;
+    public byte evt;
+    public byte remapFace;
+    public byte loop;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -433,6 +459,14 @@ public class DieMessageCalibrate
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageCalibrateFace
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.CalibrateFace;
+    public byte face;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public class DieMessageNotifyUser
 : DieMessage
 {
@@ -479,3 +513,11 @@ public class DieMessageSetBattleState
 {
     public DieMessageType type { get; set; } = DieMessageType.SetBattleState;
 }
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageAttractMode
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.AttractMode;
+}
+
