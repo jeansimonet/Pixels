@@ -87,6 +87,7 @@ namespace AnimationSet
 	void init()
 	{
 		data = (Data const *)SettingsManager::getSettingsEndAddress();
+		//ProgramDefaultAnimationSet();
 		if (!CheckValid()) {
 			NRF_LOG_INFO("Animation Set not valid, programming default");
 			ProgramDefaultAnimationSet();
