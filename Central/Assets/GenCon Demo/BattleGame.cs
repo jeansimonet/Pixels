@@ -20,7 +20,7 @@ public class BattleGame : MonoBehaviour
     Button _ManualConnectBtn = null;
 
     [SerializeField]
-    Toggle _PlayFaceSounds = null;
+    Toggle _PlayFaceSoundsToggle = null;
 
     [SerializeField]
     bool _AutoConnect;
@@ -97,7 +97,7 @@ public class BattleGame : MonoBehaviour
         }
         public void OnStateChanged(Die die, Die.State newState)
         {
-            Debug.Log(die.name + " => OnStateChanged " + newState);
+            //Debug.Log(die.name + " => OnStateChanged " + newState);
 
             if ((newState != Die.State.Idle) && (newState != Die.State.Unknown))
             {
@@ -107,7 +107,7 @@ public class BattleGame : MonoBehaviour
             {
                 IsRolling = false;
                 HasRolled = true;
-                Debug.Log(die.name + " => rolled");
+                Debug.Log(die.name + " => rolled, got a " + Value);
 
                 LandedOnFace?.Invoke(this, Value);
             }
@@ -417,10 +417,8 @@ public class BattleGame : MonoBehaviour
 
     void OnDieLandedOnFace(BattleDie die, int value)
     {
-        if (_PlayFaceSounds.isOn)
+        if (_PlayFaceSoundsToggle.isOn)
         {
-            Debug.Log("OnDieLandedOnFace " + value);
-
             if (_Sounds.FaceValues?.Length >= value)
             {
                 _audioSource.PlayOneShot(_Sounds.FaceValues[value - 1]);
