@@ -5,8 +5,6 @@ using UnityEngine.UI;
 
 public class RenameDieDialog : MonoBehaviour
 {
-    public Central central;
-
     [Header("Fields")]
     public Button renameButton;
     public Button cancelButton;

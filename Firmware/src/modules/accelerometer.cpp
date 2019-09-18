@@ -19,7 +19,7 @@ using namespace Config;
 using namespace Bluetooth;
 
 // This defines how frequently we try to read the accelerometer
-#define TIMER2_RESOLUTION (10)	// ms
+#define TIMER2_RESOLUTION (100)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
 #define MAX_ACC_CLIENTS 4
 
@@ -31,11 +31,11 @@ namespace Accelerometer
 
 	int face;
 	float confidence;
-	float slowSigma;
-	float fastSigma;
+	float sigma;
 	float3 smoothAcc;
 	RollState rollState = RollState_Unknown;
 	bool moving = false;
+	float3 handleStateNormal; // The normal when we entered the handled state, so we can determine if we've moved enough
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
@@ -46,15 +46,25 @@ namespace Accelerometer
 	void updateState();
 
     void CalibrateHandler(void* context, const Message* msg);
+	void CalibrateFaceHandler(void* context, const Message* msg);
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
+        MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
 
 		face = 0;
 		confidence = 0.0f;
-		slowSigma = 0.0f;
-		fastSigma = 0.0f;
 		smoothAcc = float3::zero();
+
+		LIS2DE12::read();
+		AccelFrame newFrame;
+		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+		newFrame.time = Utils::millis();
+		newFrame.jerk = float3::zero();
+		newFrame.sigma = 0.0f;
+		newFrame.smoothAcc = newFrame.acc;
+		buffer.push(newFrame);
+
 		start();
 		NRF_LOG_INFO("Accelerometer initialized");
 	}
@@ -63,40 +73,26 @@ namespace Accelerometer
 	/// update is called from the timer
 	/// </summary>
 	void update(void* context) {
+		auto settings = SettingsManager::getSettings();
+		auto& lastFrame = buffer.last();
+
 		LIS2DE12::read();
 
 		AccelFrame newFrame;
 		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 		newFrame.time = Utils::millis();
+		newFrame.jerk = ((newFrame.acc - lastFrame.acc) * 1000.0f) / (float)(newFrame.time - lastFrame.time);
 
-		// Compute delta!
-		auto& lastFrame = buffer.last();
-		// NRF_LOG_INFO("lastFrame: %d: %d,%d,%d", lastFrame.Time, lastFrame.X, lastFrame.Y, lastFrame.Z);
-		// NRF_LOG_INFO("newFrame: %d: %d,%d,%d", newFrame.Time, newFrame.X, newFrame.Y, newFrame.Z);
-
-		float3 delta = newFrame.acc - lastFrame.acc;
-
-		// deltaTime should be roughly 10ms because that's how frequently we asked to be updated!
-		short deltaTime = (short)(newFrame.time - lastFrame.time); 
-
-		// Compute jerk
-		// deltas are stored in the same unit (over time) as accelerometer readings
-		// i.e. if readings are 8g scaled to a signed 12 bit integer (which they are)
-		// then jerk is 8g/s scaled to a signed 12 bit integer
-		newFrame.jerk = delta / deltaTime;
-
-		float jerk2 = newFrame.jerk.x * newFrame.jerk.x + newFrame.jerk.y * newFrame.jerk.y + newFrame.jerk.z * newFrame.jerk.z;
-		float acc2 = newFrame.acc.x * newFrame.acc.x + newFrame.acc.y * newFrame.acc.y + newFrame.acc.z * newFrame.acc.z;
-		auto settings = SettingsManager::getSettings();
+		float jerkMag = newFrame.jerk.sqrMagnitude();
+		if (jerkMag > 10.f) {
+			jerkMag = 10.f;
+		}
+		sigma = sigma * settings->sigmaDecay + jerkMag * (1.0f - settings->sigmaDecay);
+		newFrame.sigma = sigma;
 
 		smoothAcc = smoothAcc * settings->accDecay + newFrame.acc * (1.0f - settings->accDecay);
-
-		slowSigma = slowSigma * settings->sigmaDecaySlow + jerk2 * (1.0f - settings->sigmaDecaySlow);
-		fastSigma = fastSigma * settings->sigmaDecayFast + jerk2 * (1.0f - settings->sigmaDecayFast);
-		newFrame.slowSigma = slowSigma;
-		newFrame.fastSigma = fastSigma;
-
-		newFrame.face = determineFace(smoothAcc, &newFrame.faceConfidence);
+		newFrame.smoothAcc = smoothAcc;
+		newFrame.face = determineFace(newFrame.acc, &newFrame.faceConfidence);
 
 		buffer.push(newFrame);
 
@@ -106,8 +102,8 @@ namespace Accelerometer
 			frameDataClients[i].handler(frameDataClients[i].token, newFrame);
 		}
 
-		bool movingFast = newFrame.fastSigma > settings->fastMovingThreshold;
-		bool movingSlow = newFrame.slowSigma > settings->slowMovingThreshold;
+		bool startMoving = sigma > settings->startMovingThreshold;
+		bool stopMoving = sigma < settings->stopMovingThreshold;
 		bool onFace = newFrame.faceConfidence > settings->faceThreshold;
 		bool zeroG = newFrame.acc.sqrMagnitude() < (settings->fallingThreshold * settings->fallingThreshold);
         bool shock = newFrame.acc.sqrMagnitude() > (settings->shockThreshold * settings->shockThreshold);
@@ -118,27 +114,51 @@ namespace Accelerometer
             case RollState_OnFace:
             case RollState_Crooked:
                 // We start rolling if we detect enough motion
-                if (movingSlow) {
+                if (startMoving) {
                     // We're at least being handled
                     newRollState = RollState_Handling;
+					handleStateNormal = newFrame.acc.normalized();
                 }
                 break;
             case RollState_Handling:
-				if (shock || zeroG || newFrame.face != face) {
-					// Stuff is happening that we are most likely rolling now
-					newRollState = RollState_Rolling;
+				// Did we move ennough?
+				{
+					bool rotatedEnough = float3::dot(newFrame.acc.normalized(), handleStateNormal) < 0.5f;
+					if (shock || zeroG || rotatedEnough) {
+						// Stuff is happening that we are most likely rolling now
+						newRollState = RollState_Rolling;
+					} else if (stopMoving) {
+						// Just slid the dice around?
+						if (stopMoving) {
+							if (BoardManager::getBoard()->ledCount == 6) {
+								// We may be at rest
+								if (onFace) {
+									// We're at rest
+									newRollState = RollState_OnFace;
+								} else {
+									newRollState = RollState_Crooked;
+								}
+							} else {
+								newRollState = RollState_OnFace;
+							}
+						}
+					}
 				}
 				break;
 			case RollState_Rolling:
                 // If we stop moving we may be on a face
-                if (!movingSlow) {
-                    // We may be at rest
-                    if (onFace) {
-                        // We're at rest
-                        newRollState = RollState_OnFace;
-                    } else {
-                        newRollState = RollState_Crooked;
-                    }
+                if (stopMoving) {
+					if (BoardManager::getBoard()->ledCount == 6) {
+						// We may be at rest
+						if (onFace) {
+							// We're at rest
+							newRollState = RollState_OnFace;
+						} else {
+							newRollState = RollState_Crooked;
+						}
+					} else {
+						newRollState = RollState_OnFace;
+					}
                 }
                 break;
             default:
@@ -154,6 +174,7 @@ namespace Accelerometer
 			}
 
 			if (newRollState != rollState) {
+				NRF_LOG_INFO("State: %s", getRollStateString(newRollState));
 				rollState = newRollState;
 			}
 
@@ -353,6 +374,25 @@ namespace Accelerometer
 				});
 			}
 		});
+	}
+
+	void CalibrateFaceHandler(void* context, const Message* msg) {
+		const MessageCalibrateFace* faceMsg = (const MessageCalibrateFace*)msg;
+		uint8_t face = faceMsg->face;
+
+		// Copy current calibration normals
+		int normalCount = BoardManager::getBoard()->ledCount;
+		float3 calibratedNormalsCopy[normalCount];
+		memcpy(calibratedNormalsCopy, SettingsManager::getSettings()->faceNormals, normalCount * sizeof(float3));
+
+		// Replace the face's normal with what we measured
+		LIS2DE12::read();
+		calibratedNormalsCopy[face] = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+
+		// And flash the new normals
+		SettingsManager::programNormals(calibratedNormalsCopy, normalCount);
+
+		MessageService::NotifyUser("Face is calibrated.", true, false, 5, nullptr);
 	}
 }
 }

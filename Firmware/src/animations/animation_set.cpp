@@ -87,6 +87,7 @@ namespace AnimationSet
 	void init()
 	{
 		data = (Data const *)SettingsManager::getSettingsEndAddress();
+		//ProgramDefaultAnimationSet();
 		if (!CheckValid()) {
 			NRF_LOG_INFO("Animation Set not valid, programming default");
 			ProgramDefaultAnimationSet();
@@ -380,7 +381,7 @@ namespace AnimationSet
 							animations[animIndex].animationEvent = Animations::AnimationEvent_Rolling;
 							break;
 						case 1:
-							animations[animIndex].animationEvent = Animations::AnimationEvent_OnFace;
+							animations[animIndex].animationEvent = Animations::AnimationEvent_OnFace_Default;
 							break;
 						case 2:
 							animations[animIndex].animationEvent = Animations::AnimationEvent_Handling;

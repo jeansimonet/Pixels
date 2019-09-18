@@ -33,6 +33,7 @@ struct Message
 		MessageType_DebugLog,
 
 		MessageType_PlayAnim,
+		MessageType_PlayAnimEvent,
 		MessageType_RequestState,
 		MessageType_RequestAnimSet,
 		MessageType_RequestSettings,
@@ -46,6 +47,7 @@ struct Message
 		MessageType_RequestBatteryLevel,
 		MessageType_BatteryLevel,
 		MessageType_Calibrate,
+		MessageType_CalibrateFace,
 		MessageType_NotifyUser,
 		MessageType_NotifyUserAck,
 		MessageType_TestHardware,
@@ -57,6 +59,7 @@ struct Message
 		MessageType_TestBulkSend,
 		MessageType_TestBulkReceive,
 		MessageType_SetAllLEDsToColor,
+		DieMessageType_AttractMode,
 
 		MessageType_Count
 	};
@@ -148,6 +151,16 @@ struct MessagePlayAnim
 	inline MessagePlayAnim() : Message(Message::MessageType_PlayAnim) {}
 };
 
+struct MessagePlayAnimEvent
+	: public Message
+{
+	uint8_t evt;
+	uint8_t remapFace;
+	uint8_t loop;
+
+	inline MessagePlayAnimEvent() : Message(Message::MessageType_PlayAnimEvent) {}
+};
+
 struct MessageRequestTelemetry
 	: public Message
 {
@@ -222,6 +235,12 @@ struct MessageNotifyUserAck
 	inline MessageNotifyUserAck() : Message(Message::MessageType_NotifyUserAck) {}
 };
 
+struct MessageCalibrateFace
+: public Message
+{
+	uint8_t face;
+	inline MessageCalibrateFace() : Message(MessageType_CalibrateFace) {}
+};
 }
 
 #pragma pack(pop)

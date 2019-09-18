@@ -117,6 +117,9 @@ namespace Die
         // Add generic data service
         MessageService::init();
 
+        // Now that the message service added its uuid to the softdevice, initialize the advertising
+        Stack::initAdvertising();
+
         // Flash is needed to update settings/animations
         Flash::init();
 

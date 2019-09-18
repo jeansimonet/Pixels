@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(AudioSource))]
 public class BattleGame : MonoBehaviour
@@ -10,18 +11,31 @@ public class BattleGame : MonoBehaviour
     BattleGameUI _UI = null;
 
     [SerializeField]
-    Central _Central = null;
+    CurrentDicePool _CurrentDicePool = null;
 
     [SerializeField]
-    Sounds _Sounds;
+    ToggleGroup _diceToggleGroup = null;
+
+    [SerializeField]
+    Button _ManualConnectBtn = null;
+
+    [SerializeField]
+    Toggle _PlayFaceSoundsToggle = null;
+
+    [SerializeField]
+    bool _AutoConnect;
+
+    [SerializeField]
+    Sounds _Sounds = new Sounds();
 
     [System.Serializable]
-    struct Sounds
+    class Sounds
     {
-        public AudioClip[] NewPlayer;
-        public AudioClip[] DuelStarted;
-        public AudioClip[] GameCompleted;
-        public AudioClip[] GameCancelled;
+        public AudioClip[] NewPlayer = null;
+        public AudioClip[] DuelStarted = null;
+        public AudioClip[] GameCompleted = null;
+        public AudioClip[] GameCancelled = null;
+        public AudioClip[] FaceValues = null;
     }
 
     enum Animations
@@ -33,6 +47,8 @@ public class BattleGame : MonoBehaviour
     {
         BattleGameDieUI _dieUI;
         Animations _anim;
+        public delegate void LandedOnFaceHandler(BattleDie die, int value);
+        public event LandedOnFaceHandler LandedOnFace;
         public Die Die { get; }
         public int Value => Die.state != Die.State.Idle ? 0 : Die.face + 1;
         public bool IsRolling { get; private set; }
@@ -75,12 +91,14 @@ public class BattleGame : MonoBehaviour
             if (force || (anim != _anim))
             {
                 _anim = anim;
-                _dieUI.AnimationName = _anim.ToString();
+                _dieUI.AnimationName = anim == Animations.None ? string.Empty : anim.ToString();
                 Debug.Log(Die.name + " |> " + anim);
             }
         }
         public void OnStateChanged(Die die, Die.State newState)
         {
+            //Debug.Log(die.name + " => OnStateChanged " + newState);
+
             if ((newState != Die.State.Idle) && (newState != Die.State.Unknown))
             {
                 IsRolling = true;
@@ -89,24 +107,80 @@ public class BattleGame : MonoBehaviour
             {
                 IsRolling = false;
                 HasRolled = true;
-                Debug.Log(die.name + " => rolled");
+                Debug.Log(die.name + " => rolled, got a " + Value);
+
+                LandedOnFace?.Invoke(this, Value);
             }
+        }
+        public override string ToString()
+        {
+            return Die.name;
         }
     }
 
     class BattleTeam
     {
+        const int _teamNumD6 = 1;
+        const int _teamNumD20 = 2;
+        const int _teamNumD20s = 2;
+
+        List<BattleDie> _dice = new List<BattleDie>();
+
         public string Name { get; }
-        public List<BattleDie> Dice = new List<BattleDie>();
-        public BattleTeam(string name)
+        public int TeamNumber { get; }
+        public IReadOnlyList<BattleDie> Dice => _dice;
+        public IEnumerable<BattleDie> Dice6 => _dice.Where(d => d.Die.dieType == Die.DieType.SixSided);
+        public IEnumerable<BattleDie> Dice20 => _dice.Where(d => d.Die.dieType == Die.DieType.TwentySided);
+        public const int RequiredNumberOfDices = _teamNumD6 + _teamNumD20;
+        
+        public BattleTeam(int teamNumber)
         {
-            Name = name;
+            Name = "team" + teamNumber;
+            TeamNumber = teamNumber;
         }
-        public void PlayAnimation(Animations t)
+        public BattleDie TryAddDie(Die die, BattleGameDieUI uiDie)
         {
-            foreach (var d in Dice)
+            BattleDie battleDie = null;
+            bool add = true;
+#if TEAM_BATTLE
+            add = (die.dieType == Die.DieType.SixSided) ? (Dice6?.Count() < _teamNumD6) : (Dice20?.Count() < _teamNumD20);
+#endif
+            if (add)
             {
-                d.PlayAnimation(t);
+                battleDie = new BattleDie(die, TeamNumber, uiDie);
+                _dice.Add(battleDie);
+            }
+            return battleDie;
+        }
+        public BattleDie TryRemoveDie(Die die)
+        {
+            var battleDice = _dice.FirstOrDefault(d => d.Die == die);
+            return _dice.Remove(battleDice) ? battleDice : null;
+        }
+        public bool TryEnterBattle()
+        {
+            bool enterBattle = _dice.Count(d => d.HasRolled) >= RequiredNumberOfDices;
+            if (enterBattle)
+            {
+                foreach (var d in _dice)
+                {
+                    d.EnterBattle();
+                }
+            }
+            return enterBattle;
+        }
+        public void ExitBattle()
+        {
+            foreach (var d in _dice)
+            {
+                d.ExitBattle();
+            }
+        }
+        public void PlayAnimation(Animations anim)
+        {
+            foreach (var d in _dice)
+            {
+                d.PlayAnimation(anim);
             }
         }
     }
@@ -116,22 +190,50 @@ public class BattleGame : MonoBehaviour
 
     AudioSource _audioSource;
 
-    BattleTeam _team1 = new BattleTeam("team1");
-    BattleTeam _team2 = new BattleTeam("team2");
+    BattleTeam _team1 = new BattleTeam(1);
+    BattleTeam _team2 = new BattleTeam(2);
 
-    const int _teamSize = 3;
     Coroutine _battleCr;
+
+    public void PlayAnimation(string eventName)
+    {
+        if (System.Enum.TryParse(eventName, out Die.AnimationEvent anim))
+        {
+            foreach (var dieUI in _diceToggleGroup.GetComponentsInChildren<Toggle>()
+                .Where(t => t.isOn)
+                .Select(t => t.GetComponentInParent<BattleGameDieUI>()))
+            {
+                Debug.Log($"Playing {eventName} on {dieUI.die.name}");
+                dieUI.die.PlayAnimationEvent(anim);            
+                dieUI.AnimationName = eventName.ToString();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Bad event name: " + eventName);
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
     {
         _audioSource = GetComponent<AudioSource>();
-        StartCoroutine(PeriodicScanAndConnectCr());
+        if (_AutoConnect)
+        {
+            _ManualConnectBtn.interactable = false;
+            StartCoroutine(PeriodicScanAndConnectCr());
+        }
+        else
+        {
+            _CurrentDicePool.DiceAdded += AddDieToGame;
+            _CurrentDicePool.DiceRemoved += RemoveDieFromGame;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
+#if TEAM_BATTLE
         if (_battleCr == null)
         {
             bool team1EnterBattle = CheckTeamEnterBattle(_team1);
@@ -148,46 +250,39 @@ public class BattleGame : MonoBehaviour
         else if ((_team1.Dice.Any(d => d.IsBattling) && _team1.Dice.Any(d => d.IsRolling || d.HasRolled))
               || (_team2.Dice.Any(d => d.IsBattling) && _team2.Dice.Any(d => d.IsRolling || d.HasRolled)))
         {
-            CancelBattle("die roll");
+            CancelBattle(BattleCancelledReason.DieRoll);
         }
+#endif
     }
 
-    void CancelBattle(string reason)
+    enum BattleCancelledReason { DieRoll, DieJoined, DieLeft, }
+
+    void CancelBattle(BattleCancelledReason reason)
     {
         if (_battleCr != null)
         {
             StopCoroutine(_battleCr);
             _battleCr = null;
-            Debug.Log($"BATTLE CANCELLED ({reason})");
+            Debug.Log($"<color=red>Battle canceled! ({reason})</color>");
 
             PlaySound(_Sounds.GameCancelled);
         }
-        foreach (var d in _team1.Dice)
-        {
-            d.ExitBattle();
-        }
-        foreach (var d in _team1.Dice)
-        {
-            d.ExitBattle();
-        }
+        _team1.ExitBattle();
+        _team2.ExitBattle();
     }
 
     bool CheckTeamEnterBattle(BattleTeam team, bool otherTeamInBattle = false)
     {
-        bool enterBattle = team.Dice.Count(d => d.HasRolled) >= _teamSize;
-        if (enterBattle)
+        bool enteredBattle = team.TryEnterBattle();
+        if (enteredBattle)
         {
-            foreach (var d in team.Dice)
-            {
-                d.EnterBattle();
-            }
             team.PlayAnimation(Animations.FaceUp);
         }
         else
         {
             team.PlayAnimation(otherTeamInBattle ? Animations.WaitingForBattle : Animations.ShowTeam);
         }
-        return enterBattle;
+        return enteredBattle;
     }
 
     IEnumerator BattleCr()
@@ -214,6 +309,8 @@ public class BattleGame : MonoBehaviour
 
         PlaySound(_Sounds.NewPlayer);
 
+        Debug.Log("<color=red>Battle started!</color>");
+
         // Show faces for a little while
         yield return new WaitForSecondsRealtime(3);
 
@@ -226,36 +323,37 @@ public class BattleGame : MonoBehaviour
         // Pair dice for battle
         //
 
-        BattleDie FindHighestValue(BattleTeam team, IEnumerable<BattleDie> excluded)
+        BattleDie GetHighestValue(IEnumerable<BattleDie> dice)
         {
-            var dice = team.Dice.Except(excluded).OrderByDescending(d => d.Value).FirstOrDefault();
-            if (dice != null)
-            {
-                dice.PlayAnimation(Animations.Duel);
-            }
-            return dice;
+            var dieType = dice.FirstOrDefault(d => d.Die.dieType == Die.DieType.TwentySided)?.Die.dieType ?? Die.DieType.SixSided;
+            return dice.Where(d => d.Die.dieType == dieType).OrderByDescending(d => d.Value).FirstOrDefault();
         }
 
         int battleScore = 0;
-        var pairs = new List<System.ValueTuple<BattleDie, BattleDie>>(_teamSize);
         int numPairs = Mathf.Min(_team1.Dice.Count, _team2.Dice.Count);
+        var pairs = new List<System.ValueTuple<BattleDie, BattleDie>>(numPairs);
         for (int i = 0; i < numPairs; ++i)
         {
-            // Find pair
-            var die1 = FindHighestValue(_team1, pairs.Select(p => p.Item1));
-            var die2 = FindHighestValue(_team2, pairs.Select(p => p.Item2));
+            // Find new pair (goes with D20 first)
+            var die1 = GetHighestValue(_team1.Dice.Except(pairs.Select(p => p.Item1)));
+            var die2 = GetHighestValue(_team2.Dice.Except(pairs.Select(p => p.Item2)));
 
             if ((die1 == null) || (die2 == null))
             {
                 break;
             }
 
+            // Keep pair (they might be of different type)
             pairs.Add((die1, die2));
+            Debug.Log($"<color=green>Duel between {die1} ({die1.Die.dieType}) and {die2} ({die2.Die.dieType})</color>");
 
+            die1.PlayAnimation(Animations.Duel);
+            die2.PlayAnimation(Animations.Duel);
             PlaySound(_Sounds.DuelStarted);
     
-            yield return new WaitForSecondsRealtime(3);
+            yield return new WaitForSecondsRealtime(2);
 
+            // Find winner
             var winner = die1.Value > die2.Value ? die1 : (die2.Value > die1.Value ? die2 : null);
             if (winner != null)
             {
@@ -270,7 +368,7 @@ public class BattleGame : MonoBehaviour
                 die2.PlayAnimation(Animations.DuelDraw);
             }
 
-            yield return new WaitForSecondsRealtime(3);
+            yield return new WaitForSecondsRealtime(2);
         }
 
         //
@@ -288,22 +386,24 @@ public class BattleGame : MonoBehaviour
             {
                 var winner = battleScore > 0 ? _team1 : _team2;
                 var looser = winner == _team1 ? _team2 : _team1;
+                Debug.Log($"<color=green>Winner: {winner.Name}</color>");
                 looser.PlayAnimation(Animations.TeamLoose);
                 winner.PlayAnimation(Animations.TeamWin);
             }
             else
             {
+                Debug.Log("<color=green>Battle draw</color>");
                 _team1.PlayAnimation(Animations.TeamDraw);
                 _team2.PlayAnimation(Animations.TeamDraw);
             }
 
             PlaySound(_Sounds.GameCompleted);
 
-            yield return new WaitForSecondsRealtime(3);
+            yield return new WaitForSecondsRealtime(5);
         }
 
         _battleCr = null;
-        Debug.Log("BATTLE FINISHED");
+        Debug.Log("<color=red>Battle finished!</color>");
     }
 
     void PlaySound(AudioClip[] clips)
@@ -315,21 +415,38 @@ public class BattleGame : MonoBehaviour
         }
     }
 
+    void OnDieLandedOnFace(BattleDie die, int value)
+    {
+        if (_PlayFaceSoundsToggle.isOn)
+        {
+            if (_Sounds.FaceValues?.Length >= value)
+            {
+                _audioSource.PlayOneShot(_Sounds.FaceValues[value - 1]);
+            }
+            else
+            {
+                Debug.LogWarning("No sound for face value " + value);
+            }
+        }
+    }
+
     IEnumerator PeriodicScanAndConnectCr()
     {
-        yield return new WaitUntil(() => _Central.state == Central.State.Idle);
-        _Central.onDieDiscovered += onDieDiscovered;
+        var central = Central.Instance;
+
+        yield return new WaitUntil(() => central.state == Central.State.Idle);
+        central.onDieDiscovered += onDieDiscovered;
 
         while (true)
         {
-            _Central.BeginScanForDice();
+            central.BeginScanForDice();
             yield return new WaitForSeconds(3.0f);
-            _Central.StopScanForDice();
+            central.StopScanForDice();
             yield return new WaitForSeconds(3.0f);
         }
     }
 
-    public void onDieDiscovered(Die die)
+    void onDieDiscovered(Die die)
     {
         // Connect to the die!
 
@@ -346,7 +463,7 @@ public class BattleGame : MonoBehaviour
         {
             case Die.ConnectionState.Ready:
                 // Now we can check the type of the die
-                if (die.dieType == Die.DieType.SixSided)
+                if (die.dieType != Die.DieType.Unknown)
                 {
                     // Yay, good die!
 
@@ -373,8 +490,12 @@ public class BattleGame : MonoBehaviour
         _dice.Add(die);
         _UI.AddDie(die);
 
+#if TEAM_BATTLE
         var team = _team1.Dice.Count <= _team2.Dice.Count ? _team1 : _team2;
         AddDieToTeam(team, die);
+#else
+        AddDieToTeam(_team2, die); // Add to blue team only
+#endif
     }
 
     void RemoveDieFromGame(Die die)
@@ -389,30 +510,30 @@ public class BattleGame : MonoBehaviour
 
     void AddDieToTeam(BattleTeam team, Die die)
     {
-        if (team.Dice.Count < _teamSize)
+        var battleDie = team.TryAddDie(die, _UI.FindDie(die));
+        if (battleDie != null)
         {
-            team.Dice.Add(new BattleDie(die, team == _team1 ? 1 : 2, _UI.FindDie(die)));
-            Debug.Log($">> {team.Name} has a new member: {die.name} ({team.Dice.Count}/{_teamSize})");
-            CancelBattle("die joined");
+            battleDie.LandedOnFace += OnDieLandedOnFace;
+
+            Debug.Log($"<color=blue>{team.Name} has a new member: {die.name} of type {die.dieType} ({team.Dice.Count}/{BattleTeam.RequiredNumberOfDices})</color>");
+            CancelBattle(BattleCancelledReason.DieJoined);
         }
     }
 
     void RemoveDieFromTeam(BattleTeam team, Die die)
     {
-        foreach (var battleDie in team.Dice)
+        var battleDie = team.TryRemoveDie(die);
+        if (battleDie != null)
         {
-            if (battleDie.Die == die)
-            {
-                Debug.Log($">> {team.Name} lost a member: {die.name} ({team.Dice.Count}/{_teamSize})");
-                team.Dice.Remove(battleDie);
-                CancelBattle("die left");
+            battleDie.LandedOnFace -= OnDieLandedOnFace;
 
-                var pendingDie = _dice.FirstOrDefault(d => _team1.Dice.Concat(_team2.Dice).All(bd => bd.Die != d));
-                if (pendingDie != null)
-                {
-                    AddDieToTeam(team, pendingDie);
-                }
-                break;
+            Debug.Log($"<color=blue>{team.Name} lost a member: {die.name} of type {die.dieType} ({team.Dice.Count}/{BattleTeam.RequiredNumberOfDices})</color>");
+            CancelBattle(BattleCancelledReason.DieLeft);
+
+            var pendingDie = _dice.FirstOrDefault(d => _team1.Dice.Concat(_team2.Dice).All(bd => bd.Die != d));
+            if (pendingDie != null)
+            {
+                AddDieToTeam(team, pendingDie);
             }
         }
     }

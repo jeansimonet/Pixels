@@ -16,9 +16,11 @@ public class CurrentDicePoolDice
     public Button forgetButton;
     public Button testButton;
     public Button calibrateButton;
+    public Button calibrateFaceButton;
+    public Button AttractModeButton;
+    public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
-    public Central central;
     bool commandsShown
     {
         get
@@ -37,10 +39,9 @@ public class CurrentDicePoolDice
 		
 	}
 
-    public void Setup(Die die, Central central)
+    public void Setup(Die die)
     {
         this.die = die;
-        this.central = central;
         nameText.text = die.name;
         statusText.text = die.connectionState.ToString();
         diceImage.color = Color.white;
@@ -93,10 +94,17 @@ public class CurrentDicePoolDice
 
         calibrateButton.onClick.RemoveAllListeners();
         calibrateButton.onClick.AddListener(CalibrateDie);
+
+        calibrateFaceButton.onClick.RemoveAllListeners();
+        calibrateFaceButton.onClick.AddListener(() => ShowFaceSelection());
+
+        AttractModeButton.onClick.RemoveAllListeners();
+        AttractModeButton.onClick.AddListener(() => StartAttrackMode());
     }
 
     void HideCommands()
     {
+        HideFaceSelection();
         commandGroup.interactable = false;
         commandGroup.blocksRaycasts = false;
         commandGroup.alpha = 0.0f;
@@ -105,7 +113,7 @@ public class CurrentDicePoolDice
     void ForgetDie()
     {
         // Tell central to forget about this die
-        central.ForgetDie(die);
+        Central.Instance.ForgetDie(die);
         HideCommands();
     }
 
@@ -197,5 +205,34 @@ public class CurrentDicePoolDice
     {
         statusText.text = newState.ToString();
         MonitorBatteryLevel(die.connectionState >= Die.ConnectionState.Ready);
+    }
+
+    void ShowFaceSelection()
+    {
+        faceSelectionRoot.gameObject.SetActive(true);
+        for (int i = 0; i < faceSelectionRoot.childCount; ++i)
+        {
+            var childButton = faceSelectionRoot.GetChild(i).GetComponent<Button>();
+            childButton.onClick.RemoveAllListeners();
+            int face = i;
+            childButton.onClick.AddListener(() => CalibrateFace(face));
+        }
+    }
+
+    void StartAttrackMode()
+    {
+        die.StartAttractMode();
+    }
+
+    void HideFaceSelection()
+    {
+        faceSelectionRoot.gameObject.SetActive(false);
+    }
+
+    void CalibrateFace(int face)
+    {
+        HideFaceSelection();
+        HideCommands();
+        die.CalibrateFace(face);
     }
 }

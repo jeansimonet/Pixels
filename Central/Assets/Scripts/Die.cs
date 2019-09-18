@@ -45,7 +45,27 @@ public class Die
         ChargingError,
         Handling,
         Rolling,
-        OnFace,
+        OnFace_Default,
+		OnFace_00,
+		OnFace_01,
+		OnFace_02,
+		OnFace_03,
+		OnFace_04,
+		OnFace_05,
+		OnFace_06,
+		OnFace_07,
+		OnFace_08,
+		OnFace_09,
+		OnFace_10,
+		OnFace_11,
+		OnFace_12,
+		OnFace_13,
+		OnFace_14,
+		OnFace_15,
+		OnFace_16,
+		OnFace_17,
+		OnFace_18,
+		OnFace_19,
         Crooked,
         Battle_ShowTeam,
         Battle_FaceUp,
@@ -57,6 +77,7 @@ public class Die
         Battle_TeamWin,
         Battle_TeamLoose,
         Battle_TeamDraw,
+        AttractMode,
         // Etc...
         Count
     }
@@ -65,7 +86,7 @@ public class Die
     {
         None = 0,
         Face,   // Uses the color of the face (based on a rainbow)
-        Heat    // Uses how hot the die is (based on how much its being shaken)
+        ColorWheel    // Uses how hot the die is (based on how much its being shaken)
     }
 
     [System.Serializable]
@@ -177,12 +198,12 @@ public class Die
         messageDelegates.Add(DieMessageType.NotifyUser, OnNotifuUserMessage);
     }
 
-    public void Setup(string name, string address, ConnectionState connectionState, Central central)
+    public void Setup(string name, string address, ConnectionState connectionState)
     {
         this.name = name;
         this.address = address;
         this.connectionState = connectionState;
-        this.central = central;
+        this.central = Central.Instance;
     }
 
     public void Connect()
@@ -512,7 +533,7 @@ public class Die
         bool cancel = notifyUserMsg.cancel != 0;
         float timeout = (float)notifyUserMsg.timeout_s;
         string text = System.Text.Encoding.UTF8.GetString(notifyUserMsg.data, 0, notifyUserMsg.data.Length);
-        var uiInstance = NotificationUI.instance;
+        var uiInstance = NotificationUI.Instance;
         if (uiInstance != null)
         {
             // Show the message and tell the die when user clicks Ok!
@@ -580,6 +601,24 @@ public class Die
     public Coroutine PlayAnimation(int animationIndex)
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
+    }
+
+    public Coroutine PlayAnimationEvent(AnimationEvent evt)
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnimEvent() { evt = (byte)evt }));
+    }
+
+    public Coroutine PlayAnimation(int animationIndex, int remapFace, bool loop)
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim()
+        {
+            index = (byte)animationIndex, remapFace = (byte)remapFace, loop = loop ? (byte)1 : (byte)0
+        }));
+    }
+
+    public Coroutine StartAttractMode()
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessageAttractMode()));
     }
 
     public Coroutine Ping()
@@ -859,6 +898,11 @@ public class Die
     public void StartCalibration()
     {
         PostMessage(new DieMessageCalibrate());
+    }
+
+    public void CalibrateFace(int face)
+    {
+        PostMessage(new DieMessageCalibrateFace() {face = (byte)face});
     }
 
     public void SetLEDAnimatorMode()

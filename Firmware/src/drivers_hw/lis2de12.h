@@ -65,7 +65,7 @@ namespace DriversHW
 		extern short x, y, z;
 		extern float cx, cy, cz;
 
-		void init(LIS2DE12_Scale fsr = SCALE_2G, LIS2DE12_ODR odr = ODR_200);
+		void init(LIS2DE12_Scale fsr = SCALE_4G, LIS2DE12_ODR odr = ODR_200);
 		void read();
 		uint8_t available();
 

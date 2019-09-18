@@ -9,6 +9,7 @@
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
 #include "nrf_log.h"
+#include "accelerometer.h"
 
 using namespace Animations;
 using namespace Modules;
@@ -51,6 +52,10 @@ namespace AnimController
 	int animationLookupByEvent[AnimationEvent_Count];
 
 	uint32_t getColorForAnim(void* token, uint32_t colorIndex);
+	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame);
+
+	int currentRainbowIndex = 0;
+	const int rainbowScale = 1; 
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -78,6 +83,8 @@ namespace AnimController
 				animationLookupByEvent[anim.animationEvent] = i;
 			}
 		}
+
+		Accelerometer::hookFrameData(onAccelFrame, nullptr);
 
 		AnimationSet::setGetColorHandler(getColorForAnim);
 
@@ -157,6 +164,10 @@ namespace AnimController
 		Timers::stopTimer(animControllerTimer);
 	}
 
+	bool hasAnimationForEvent(AnimationEvent evt) {
+		return animationLookupByEvent[(uint16_t)evt] != -1;
+	}
+
 	/// <summary>
 	/// Add an animation to the list of running animations
 	/// </summary>
@@ -227,6 +238,10 @@ namespace AnimController
 				case SpecialColor_Face:
 					// Store a color based on the face
 					animations[animationCount].specialColorPayload = Rainbow::faceWheel(remapFace, BoardManager::getBoard()->ledCount);
+					break;
+				case SpecialColor_ColorWheel:
+					// Store the face index
+					animations[animationCount].specialColorPayload = remapFace;
 					break;
 				default:
 					// Other cases don't need any per-instance payload
@@ -317,6 +332,12 @@ namespace AnimController
 		animationCount--;
 	}
 
+	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame) {
+		if (accelFrame.jerk.sqrMagnitude() > 0.0f) {
+			currentRainbowIndex++;
+		}
+	}
+
 	uint32_t getColorForAnim(void* token, uint32_t colorIndex) {
 		if (token != nullptr) {
 			const AnimInstance* instance = (const AnimInstance*)token;
@@ -324,9 +345,15 @@ namespace AnimController
 				case SpecialColor_Face:
 					// The payload is the color
 					return instance->specialColorPayload;
-				case SpecialColor_Heat:
-					// TODO!!
-					return 0x12345678;
+				case SpecialColor_ColorWheel:
+					{
+						// Use the global rainbow
+						int index = currentRainbowIndex / rainbowScale;
+						if (index < 0) {
+							index += 256;
+						}
+						return Rainbow::wheel((uint8_t)index);
+					}
 				default:
 					return AnimationSet::getPaletteColor(colorIndex);
 			}

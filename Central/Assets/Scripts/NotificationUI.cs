@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class NotificationUI : MonoBehaviour
+public class NotificationUI : SingletonMonoBehaviour<NotificationUI>
 {
     public Text notificationField;
     public Button okButton;
     public Button cancelButton;
-
-    public static NotificationUI instance { get; private set; }
 
     CanvasGroup cg;
     Coroutine timeoutCoroutine;
@@ -17,14 +15,6 @@ public class NotificationUI : MonoBehaviour
     void Awake()
     {
         cg = GetComponent<CanvasGroup>();
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Debug.LogError("Multiple notification UI instances in scene");
-        }
     }
 
     // Start is called before the first frame update
@@ -40,6 +30,8 @@ public class NotificationUI : MonoBehaviour
 
     public void Show(string message, bool ok, bool cancel, float timeout, System.Action<bool> callback)
     {
+        gameObject.SetActive(true); // Unity WTF? Got to call this twice with 2019.1.10
+        gameObject.SetActive(true);
         notificationField.text = message;
         cg.alpha = 1.0f;
         cg.interactable = true;
@@ -82,9 +74,10 @@ public class NotificationUI : MonoBehaviour
 
     public void Hide()
     {
-        cg.alpha = 0.0f;
-        cg.interactable = false;
-        cg.blocksRaycasts = false;
+        // cg.alpha = 0.0f;
+        // cg.interactable = false;
+        // cg.blocksRaycasts = false;
+        gameObject.SetActive(false);
     }
 
     IEnumerator TimeoutCr(float timeout, System.Action<bool> callback)

@@ -5,8 +5,6 @@ using UnityEngine.UI;
 
 public class AddDiceToPool : MonoBehaviour {
 
-    public Central central;
-
     [Header("Fields")]
     public Button addSelectedButton;
     public Button cancelButton;
@@ -40,7 +38,7 @@ public class AddDiceToPool : MonoBehaviour {
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1.0f;
-        central.onDieDiscovered += AddAvailableDice;
+        Central.Instance.onDieDiscovered += AddAvailableDice;
     }
 
     public void Hide()
@@ -48,7 +46,7 @@ public class AddDiceToPool : MonoBehaviour {
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
-        central.onDieDiscovered -= AddAvailableDice;
+        Central.Instance.onDieDiscovered -= AddAvailableDice;
     }
 
     public void Populate()
@@ -76,14 +74,14 @@ public class AddDiceToPool : MonoBehaviour {
         cancelButton.onClick.RemoveAllListeners();
         cancelButton.onClick.AddListener(() =>
         {
-            central.StopScanForDice();
+            Central.Instance.StopScanForDice();
             Hide();
         });
 
         addSelectedButton.onClick.RemoveAllListeners();
         addSelectedButton.onClick.AddListener(() =>
         {
-            central.StopScanForDice();
+            Central.Instance.StopScanForDice();
             foreach (var die in selectedDice)
             {
                 pool.AddDie(die);
@@ -92,7 +90,7 @@ public class AddDiceToPool : MonoBehaviour {
         });
 
         // Kickoff a scan right away!
-        central.BeginScanForDice();
+        Central.Instance.BeginScanForDice();
     }
 
     private void AddAvailableDice(Die die)
