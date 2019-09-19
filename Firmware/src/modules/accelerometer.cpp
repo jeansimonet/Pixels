@@ -92,7 +92,7 @@ namespace Accelerometer
 
 		smoothAcc = smoothAcc * settings->accDecay + newFrame.acc * (1.0f - settings->accDecay);
 		newFrame.smoothAcc = smoothAcc;
-		newFrame.face = determineFace(smoothAcc, &newFrame.faceConfidence);
+		newFrame.face = determineFace(newFrame.acc, &newFrame.faceConfidence);
 
 		buffer.push(newFrame);
 
