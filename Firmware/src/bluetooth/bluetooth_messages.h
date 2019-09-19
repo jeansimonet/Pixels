@@ -34,6 +34,7 @@ struct Message
 
 		MessageType_PlayAnim,
 		MessageType_PlayAnimEvent,
+		MessageType_StopAnim,
 		MessageType_RequestState,
 		MessageType_RequestAnimSet,
 		MessageType_RequestSettings,
@@ -159,6 +160,15 @@ struct MessagePlayAnimEvent
 	uint8_t loop;
 
 	inline MessagePlayAnimEvent() : Message(Message::MessageType_PlayAnimEvent) {}
+};
+
+struct MessageStopAnim
+	: public Message
+{
+	uint8_t animation;
+	uint8_t remapFace;  // Assumes that an animation was made for face 0
+
+	inline MessageStopAnim() : Message(Message::MessageType_StopAnim) {}
 };
 
 struct MessageRequestTelemetry

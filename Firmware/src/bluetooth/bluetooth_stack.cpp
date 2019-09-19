@@ -415,8 +415,7 @@ namespace Stack
     bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
 
         PowerManager::feed();
-
-        bool ret = !notificationPending;
+        bool ret = connected && !notificationPending;
         if (ret) {
             ble_gatts_hvx_params_t     hvx_params;
             memset(&hvx_params, 0, sizeof(hvx_params));

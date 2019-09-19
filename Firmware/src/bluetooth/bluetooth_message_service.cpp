@@ -6,6 +6,7 @@
 #include "ble_srv_common.h"
 #include "nrf_sdh_ble.h"
 #include "drivers_nrf/scheduler.h"
+#include "bluetooth_message_queue.h"
 
 using namespace DriversNRF;
 
@@ -20,7 +21,6 @@ namespace MessageService
     uint16_t service_handle;
     ble_gatts_char_handles_t rx_handles;
     ble_gatts_char_handles_t tx_handles;
-    uint8_t sendMessageBuffer[MAX_DATA_SIZE];
 
 	struct HandlerAndToken
 	{
@@ -28,6 +28,16 @@ namespace MessageService
 		void* token;
 	};
 	HandlerAndToken messageHandlers[Message::MessageType_Count];
+
+    // This can be optimized to a variable-size queue
+    MessageQueue<32> messageQueue;
+
+    bool send(const uint8_t* data, uint16_t size);
+    bool SendMessage(Message::MessageType msgType);
+    bool SendMessage(const Message* msg, int msgSize);
+
+    void onMessageReceived(const uint8_t* data, uint16_t len);
+    void onConnectionStateChanged(void* param, bool connected);
 
     void init() {
         // Clear message handle array
@@ -84,13 +94,37 @@ namespace MessageService
         err_code = characteristic_add(service_handle, &add_char_params, &tx_handles);
         APP_ERROR_CHECK(err_code);
 
+        // Hook onto the connection state events
+        Stack::hook(onConnectionStateChanged, nullptr);
+
         NRF_LOG_INFO("Message Service Initialized");
     }
 
-    void OnMessageReceived(const uint8_t* data, uint16_t len);
+    void update() {
+        int msgSize = 0;
+        const Message* msg = messageQueue.peekNext(msgSize);
+        if (msg != nullptr) {
+            if (send(reinterpret_cast<const uint8_t*>(msg), msgSize)) {
+                // We were able to send the message!
+                messageQueue.dequeue();
+            }
+            // Else we'll try again next time
+        }
+    }
 
-    void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context)
-    {
+    bool isConnected() {
+        return Stack::isConnected();
+    }
+
+    void onConnectionStateChanged(void* param, bool connected) {
+        if (!connected) {
+            // Clear the message queue, if any
+            messageQueue.clear();
+        }
+    }
+
+
+    void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context) {
         switch (p_ble_evt->header.evt_id)
         {
             case BLE_GATTS_EVT_WRITE:
@@ -100,7 +134,7 @@ namespace MessageService
                     {
                         NRF_LOG_DEBUG("Generic Service Message Received: %d bytes", p_evt_write->len);
                         NRF_LOG_HEXDUMP_DEBUG(p_evt_write->data, p_evt_write->len);
-                        OnMessageReceived(p_evt_write->data, p_evt_write->len);
+                        onMessageReceived(p_evt_write->data, p_evt_write->len);
                     }
                     // Else its not meant for us
                 }
@@ -127,8 +161,11 @@ namespace MessageService
     }
 
     bool SendMessage(const Message* msg, int msgSize) {
-        memcpy(sendMessageBuffer, msg, msgSize);
-        return send(sendMessageBuffer, msgSize);
+        bool ret = send((const uint8_t*)msg, msgSize);
+        if (!ret) {
+            ret = messageQueue.enqueue(msg, msgSize);
+        }
+        return ret;
     }
 
     void RegisterMessageHandler(Message::MessageType msgType, void* token, MessageHandler handler) {
@@ -167,7 +204,7 @@ namespace MessageService
         }
     }
 
-    void OnMessageReceived(const uint8_t* data, uint16_t len) {
+    void onMessageReceived(const uint8_t* data, uint16_t len) {
         if (len >= sizeof(Message))
         {
             auto msg = reinterpret_cast<const Message*>(data);

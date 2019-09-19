@@ -1,5 +1,5 @@
 {
     "board": "SparkFun:nRF5:SparkFunNRF52",
     "configuration": "softdevice=s132,lfclk=lfxo",
-    "port": "COM7"
+    "port": "COM3"
 }

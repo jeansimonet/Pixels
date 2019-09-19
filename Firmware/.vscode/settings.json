@@ -40,6 +40,7 @@
         "nrfx_config.h": "c",
         "ble_nus.h": "c",
         "limits": "cpp",
-        "nrfx_log.h": "c"
+        "nrfx_log.h": "c",
+        "cstddef": "cpp"
     },
 }

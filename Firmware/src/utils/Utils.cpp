@@ -152,16 +152,16 @@ namespace Utils
 		// This is the matrix that rotates canonical normals into accelerometer reference frame
 		matrix3x3 rot = matrix3x3::mul(int_Acc, matrix3x3::transpose(int_Canon));
 
-		NRF_LOG_INFO("row 1: %d, %d, %d", (int)(rot.row1().x * 1000.0f), (int)(rot.row1().y * 1000.0f), (int)(rot.row1().z * 1000.0f));
-		NRF_LOG_INFO("row 2: %d, %d, %d", (int)(rot.row2().x * 1000.0f), (int)(rot.row2().y * 1000.0f), (int)(rot.row2().z * 1000.0f));
-		NRF_LOG_INFO("row 3: %d, %d, %d", (int)(rot.row3().x * 1000.0f), (int)(rot.row3().y * 1000.0f), (int)(rot.row3().z * 1000.0f));
+		// NRF_LOG_INFO("row 1: %d, %d, %d", (int)(rot.row1().x * 1000.0f), (int)(rot.row1().y * 1000.0f), (int)(rot.row1().z * 1000.0f));
+		// NRF_LOG_INFO("row 2: %d, %d, %d", (int)(rot.row2().x * 1000.0f), (int)(rot.row2().y * 1000.0f), (int)(rot.row2().z * 1000.0f));
+		// NRF_LOG_INFO("row 3: %d, %d, %d", (int)(rot.row3().x * 1000.0f), (int)(rot.row3().y * 1000.0f), (int)(rot.row3().z * 1000.0f));
 
 		// Now transform all the normals
 		for (int i = 0; i < count; ++i) {
 			float3 canonNormal = inOutNormals[i];
-			NRF_LOG_INFO("canon: %d, %d, %d", (int)(canonNormal.x * 1000.0f), (int)(canonNormal.y * 1000.0f), (int)(canonNormal.z * 1000.0f));
+//			NRF_LOG_INFO("canon: %d, %d, %d", (int)(canonNormal.x * 1000.0f), (int)(canonNormal.y * 1000.0f), (int)(canonNormal.z * 1000.0f));
 			float3 newNormal = matrix3x3::mul(rot, canonNormal);
-			NRF_LOG_INFO("new: %d, %d, %d", (int)(newNormal.x * 1000.0f), (int)(newNormal.y * 1000.0f), (int)(newNormal.z * 1000.0f));
+//			NRF_LOG_INFO("new: %d, %d, %d", (int)(newNormal.x * 1000.0f), (int)(newNormal.y * 1000.0f), (int)(newNormal.z * 1000.0f));
 			inOutNormals[i] = newNormal;
 		}
 	}
