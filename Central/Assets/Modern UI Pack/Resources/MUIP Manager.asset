@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb7cf53b7c3b36a4b9f4d2b688942503, type: 3}
+  m_Name: MUIP Manager
+  m_EditorClassIdentifier: 
+  enableDynamicUpdate: 1
+  enableExtendedColorPicker: 1
+  editorHints: 1
+  animatedIconColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  buttonThemeType: 0
+  buttonFont: {fileID: 11400000, guid: 84dd14695854bbc43a5faa24fcf93d0d, type: 2}
+  buttonFontSize: 22.5
+  buttonBorderColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  buttonFilledColor: {r: 1, g: 1, b: 1, a: 1}
+  buttonTextBasicColor: {r: 1, g: 1, b: 1, a: 1}
+  buttonTextColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  buttonTextHighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+  buttonIconBasicColor: {r: 1, g: 1, b: 1, a: 1}
+  buttonIconColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  buttonIconHighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+  dropdownItemFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
+  dropdownItemFontSize: 22.5
+  dropdownThemeType: 0
+  dropdownAnimationType: 1
+  dropdownFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
+  dropdownFontSize: 22.5
+  dropdownColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  dropdownTextColor: {r: 1, g: 1, b: 1, a: 1}
+  dropdownIconColor: {r: 1, g: 1, b: 1, a: 1}
+  dropdownItemColor: {r: 0.30588236, g: 0.3372549, b: 0.36862746, a: 1}
+  dropdownItemTextColor: {r: 1, g: 1, b: 1, a: 1}
+  dropdownItemIconColor: {r: 255, g: 255, b: 255, a: 1}
+  selectorFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
+  hSelectorFontSize: 28
+  selectorColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  selectorHighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+  hSelectorInvertAnimation: 0
+  hSelectorLoopSelection: 0
+  inputFieldFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
+  inputFieldFontSize: 28
+  inputFieldColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  modalWindowTitleFont: {fileID: 11400000, guid: fa328c1ae3ffb6b4583cf371153b0be6,
+    type: 2}
+  modalWindowContentFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f,
+    type: 2}
+  modalThemeType: 0
+  modalWindowTitleColor: {r: 1, g: 1, b: 1, a: 1}
+  modalWindowDescriptionColor: {r: 1, g: 1, b: 1, a: 1}
+  modalWindowIconColor: {r: 1, g: 1, b: 1, a: 1}
+  modalWindowBackgroundColor: {r: 0.37254903, g: 0.40784317, b: 0.45098042, a: 1}
+  modalWindowContentPanelColor: {r: 0.48264506, g: 0.5116812, b: 0.5471698, a: 1}
+  notificationTitleFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f,
+    type: 2}
+  notificationTitleFontSize: 22.5
+  notificationDescriptionFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f,
+    type: 2}
+  notificationDescriptionFontSize: 18
+  notificationThemeType: 0
+  notificationBackgroundColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  notificationTitleColor: {r: 1, g: 1, b: 1, a: 1}
+  notificationDescriptionColor: {r: 1, g: 1, b: 1, a: 1}
+  notificationIconColor: {r: 1, g: 1, b: 1, a: 1}
+  progressBarLabelFont: {fileID: 11400000, guid: 84dd14695854bbc43a5faa24fcf93d0d,
+    type: 2}
+  progressBarLabelFontSize: 25
+  progressBarColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  progressBarBackgroundColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 0.29411766}
+  progressBarLoopBackgroundColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  progressBarLabelColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  scrollbarColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  scrollbarBackgroundColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 0.19607843}
+  sliderLabelFont: {fileID: 11400000, guid: 84dd14695854bbc43a5faa24fcf93d0d, type: 2}
+  sliderLabelFontSize: 24
+  sliderThemeType: 0
+  sliderColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  sliderBackgroundColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 0.29411766}
+  sliderLabelColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
+  sliderPopupLabelColor: {r: 1, g: 1, b: 1, a: 1}
+  sliderHandleColor: {r: 0.37254903, g: 0.40784317, b: 0.45098042, a: 1}
+  switchBorderColor: {r: 0.37254903, g: 0.41176474, b: 0.45098042, a: 1}
+  switchBackgroundColor: {r: 0.37254903, g: 0.41176474, b: 0.45098042, a: 1}
+  switchHandleOnColor: {r: 1, g: 1, b: 1, a: 1}
+  switchHandleOffColor: {r: 0.37254903, g: 0.41176474, b: 0.45098042, a: 1}
+  toggleFont: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
+  toggleFontSize: 35
+  toggleThemeType: 0
+  toggleTextColor: {r: 0.37254903, g: 0.4117647, b: 0.4509804, a: 1}
+  toggleBorderColor: {r: 0.37254903, g: 0.4117647, b: 0.4509804, a: 1}
+  toggleBackgroundColor: {r: 0.37254903, g: 0.4117647, b: 0.4509804, a: 1}
+  toggleCheckColor: {r: 0.37254903, g: 0.4117647, b: 0.4509804, a: 1}
+  tooltipFont: {fileID: 11400000, guid: 84dd14695854bbc43a5faa24fcf93d0d, type: 2}
+  tooltipFontSize: 22
+  tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  tooltipBackgroundColor: {r: 0.37254903, g: 0.4117647, b: 0.4509804, a: 1}
