@@ -28,7 +28,7 @@ namespace Core
             matrix3x3 ret;
             ret.m11 = m.m11; ret.m12 = m.m21; ret.m13 = m.m31;
             ret.m21 = m.m12; ret.m22 = m.m22; ret.m23 = m.m32;
-            ret.m31 = m.m13; ret.m32 = m.m32; ret.m33 = m.m33;
+            ret.m31 = m.m13; ret.m32 = m.m23; ret.m33 = m.m33;
             return ret;
         }
 
