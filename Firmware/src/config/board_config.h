@@ -38,10 +38,9 @@ namespace Config
             uint8_t faceToLedLookup[MAX_LED_COUNT];
             Core::float3 faceNormals[MAX_LED_COUNT];
             const uint8_t* faceRemapLookup;
+            const uint8_t* screwupRemapLookup;
 
-            inline uint8_t remapLed(uint8_t animRemapIndex, uint8_t thisLedIndex) const {
-                return faceRemapLookup[animRemapIndex * ledCount + thisLedIndex];
-            }
+            uint8_t remapLed(uint8_t animRemapIndex, uint8_t thisLedIndex) const;
         };
 
         void init();

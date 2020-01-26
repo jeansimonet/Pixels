@@ -21,6 +21,11 @@ namespace BoardManager
         5, 0, 1, 2, 3, 4, 
     };
 
+    static const uint8_t sixSidedMisalignedRemap[] {
+        // FIXME!!!
+        0, 1, 2, 3, 4, 5
+    };
+
     static const uint8_t twentySidedRemap[] = {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
         1, 11, 10, 5, 17, 12, 6, 16, 19, 4, 15, 0, 3, 13, 7, 2, 14, 9, 8, 18,
@@ -34,7 +39,7 @@ namespace BoardManager
         9, 2, 15, 19, 14, 13, 18, 11, 16, 12, 7, 3, 8, 1, 6, 5, 0, 4, 17, 10,
         10, 4, 17, 12, 1, 6, 5, 16, 11, 19, 0, 8, 3, 14, 13, 18, 7, 2, 15, 9,
         11, 1, 9, 2, 14, 7, 0, 15, 13, 3, 16, 6, 4, 19, 12, 5, 17, 10, 18, 8,
-        17, 12, 16, 14, 1, 11, 15, 10, 0, 13, 6, 19, 9, 4, 8, 18, 5, 3, 7, 2,
+        12, 17, 3, 18, 5, 8, 19, 6, 4, 9, 10, 15, 13, 0, 11, 14, 1, 16, 2, 7,
         13, 14, 8, 10, 19, 17, 16, 18, 12, 4, 15, 7, 1, 3, 2, 0, 9, 11, 5, 6,
         14, 13, 11, 0, 9, 2, 7, 15, 3, 1, 18, 16, 4, 12, 17, 10, 19, 8, 6, 5,
         15, 12, 14, 13, 9, 18, 19, 11, 2, 16, 3, 17, 8, 0, 1, 10, 6, 5, 7, 4,
@@ -43,6 +48,12 @@ namespace BoardManager
         18, 9, 8, 4, 13, 7, 2, 19, 16, 5, 14, 3, 0, 17, 12, 6, 15, 11, 10, 1,
         19, 17, 18, 9, 13, 14, 15, 8, 7, 3, 16, 12, 11, 4, 5, 6, 10, 1, 2, 0,
     };
+
+    static const uint8_t twentySidedMisalignedRemap[] {
+        15, 19, 11, 1, 14, 16, 17, 9, 7, 6, 13, 12, 10, 2, 3, 5, 18, 8, 0, 4
+//        18,  3, 13, 14, 19, 15,  9,  8, 17,  7, 12,  2, 11, 10,  4,  0,  5,  6, 16,  1
+    };
+
 
 
     static const Board DevBoard = {
@@ -94,7 +105,8 @@ namespace BoardManager
             {1, 0, 0},  // This is not the correct data
             {-1, 0, 0}  // This is not the correct data
         } ,
-        .faceRemapLookup = twentySidedRemap
+        .faceRemapLookup = twentySidedRemap,
+        .screwupRemapLookup = twentySidedMisalignedRemap
     };
 
     static const Board D6Board = {
@@ -131,7 +143,8 @@ namespace BoardManager
             { 0,  0, -1},
             { 0,  1,  0}
         },
-        .faceRemapLookup = sixSidedRemap
+        .faceRemapLookup = sixSidedRemap,
+        .screwupRemapLookup = sixSidedMisalignedRemap
     };
 
     static const Board D20Board = {
@@ -182,11 +195,18 @@ namespace BoardManager
             {-0.6667246f,  0.7453931f, -0.0000000f},
             { 0.1273862f, -0.3333025f, -0.9341605f},
         },
-        .faceRemapLookup = twentySidedRemap
+        .faceRemapLookup = twentySidedRemap,
+        .screwupRemapLookup = twentySidedMisalignedRemap
     };
 
     // The board we're currently using
     static const Board* currentBoard = nullptr;
+
+    uint8_t Board::remapLed(uint8_t animRemapIndex, uint8_t thisLedIndex) const {
+        uint8_t remapped = faceRemapLookup[animRemapIndex * ledCount + thisLedIndex];
+        // Fix casting screw up
+        return screwupRemapLookup[remapped];
+    }
 
     void init() {
         // Sample adc board pin
@@ -223,5 +243,7 @@ namespace BoardManager
     const Board* getBoard() {
         return currentBoard;
     }
+
+
 }
 }
