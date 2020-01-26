@@ -53,14 +53,11 @@ namespace Bluetooth
 		{
             uint8_t nested;
             sd_nvic_critical_region_enter(&nested);
-            #if defined(DEBUG_MESSAGE_QUEUE)
-            NRF_LOG_INFO("Before queueing");
-            debugPrint();
-            #endif
             bool ret = false;
             int msgStride = computeStride(msgSize);
             #if defined(DEBUG_MESSAGE_QUEUE)
-            NRF_LOG_INFO("reader: %d, writer: %d, stride: %d", reader, writer, msgStride);
+            NRF_LOG_INFO("Before queueing message type %d of size %d (stride: %d)", msg->type, msgSize, msgStride);
+            debugPrint();
             #endif
             if (count == 0 || writer > reader) {
                 // Buffer looks like this:
@@ -76,6 +73,8 @@ namespace Bluetooth
 
                     // Update the count and writer index
                     writer += msgStride;
+                    if (writer == Size)
+                        writer = 0;
                     count += 1;
                     ret = true;
                 }
@@ -99,21 +98,28 @@ namespace Bluetooth
                 }
                 // Else nope, no room
             } else {
-                // Buffer looks like this
-                // [MMMW...RMMM]
-                if (writer + msgStride <= reader) {
-                    // There is room, add a message there!
-                    QueuedMessage* newMsg = reinterpret_cast<QueuedMessage*>(&data[writer]);
-                    newMsg->size = msgSize;
-                    newMsg->stride = msgStride;
-                    memcpy(newMsg->data, msg, msgSize);
+                if (reader != writer) {
+                    // Buffer looks like this
+                    // [MMMW...RMMM]
+                    if (writer + msgStride <= reader) {
 
-                    // Update the count and writer index
-                    writer += msgStride;
-                    count += 1;
-                    ret = true;
+                        // There is room, add a message there!
+                        QueuedMessage* newMsg = reinterpret_cast<QueuedMessage*>(&data[writer]);
+                        newMsg->size = msgSize;
+                        newMsg->stride = msgStride;
+                        memcpy(newMsg->data, msg, msgSize);
+
+                        // Update the count and writer index
+                        writer += msgStride;
+                        count += 1;
+                        ret = true;
+                    }
+                    // else no room!
                 }
-                // else no room!
+                // Else buffer looks like this
+                // [MMMRMMM]
+                //     W
+                // It is full!
             }
 
             #if defined(DEBUG_MESSAGE_QUEUE)
@@ -128,17 +134,30 @@ namespace Bluetooth
 		/// returns a pointer to the next message
 		/// </summary>
 		const Message* peekNext(int& outMsgSize) {
+
+            // Default return value
+            outMsgSize = 0;
+            const Message* ret = nullptr;
+
+            uint8_t nested;
+            sd_nvic_critical_region_enter(&nested);
 			if (count > 0) {
                 const QueuedMessage* msg = reinterpret_cast<const QueuedMessage*>(&data[reader]);
+                outMsgSize = msg->size;
                 if (outMsgSize == 0) {
                     msg = reinterpret_cast<const QueuedMessage*>(&data[0]);
+                    outMsgSize = msg->size;
                 }
-                outMsgSize = msg->size;
-                return reinterpret_cast<const Message*>(msg->data);
-            } else {
-                outMsgSize = 0;
-                return nullptr;
+                ret = reinterpret_cast<const Message*>(msg->data);
+
+                #if defined(DEBUG_MESSAGE_QUEUE)
+                NRF_LOG_INFO("Peeked first message of %d messages", count);
+                NRF_LOG_INFO("Reader: %d, Writer: %d", reader, writer);
+                NRF_LOG_INFO("Message type %d of size %d (stride: %d)", ret->type, msg->size, msg->stride);
+                #endif
             }
+            sd_nvic_critical_region_exit(nested);
+            return ret;
 		}
 
         bool dequeue() {
@@ -162,12 +181,19 @@ namespace Bluetooth
                 }
                 count -= 1;
                 ret = true;
+
+                #if defined(DEBUG_MESSAGE_QUEUE)
+                auto m = reinterpret_cast<const Message*>(msg->data);
+                NRF_LOG_INFO("After dequeueing message type %d of size %d (stride: %d)", m->type, msg->size, msg->stride);
+                debugPrint();
+                #endif
+            } else {
+                #if defined(DEBUG_MESSAGE_QUEUE)
+                NRF_LOG_INFO("After failing to dequeue message (no message in queue)");
+                debugPrint();
+                #endif
             }
 
-            #if defined(DEBUG_MESSAGE_QUEUE)
-            NRF_LOG_INFO("After dequeueing");
-            debugPrint();
-            #endif
             sd_nvic_critical_region_exit(nested);
             return ret;
         }
@@ -189,6 +215,7 @@ namespace Bluetooth
         #if defined(DEBUG_MESSAGE_QUEUE)
         void debugPrint() {
             NRF_LOG_INFO("Message Queue has %d messages", count);
+            NRF_LOG_INFO("Reader: %d, Writer: %d", reader, writer);
             if (count > 0) {
                 int i = 0;
                 int current = reader;
