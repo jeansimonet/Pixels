@@ -7,6 +7,11 @@
 #include "nrf_sdh_ble.h"
 #include "drivers_nrf/scheduler.h"
 #include "bluetooth_message_queue.h"
+#include "nrf_delay.h"
+
+#include "drivers_nrf/watchdog.h"
+#include "drivers_nrf/scheduler.h"
+#include "drivers_nrf/power_manager.h"
 
 using namespace DriversNRF;
 
@@ -30,7 +35,7 @@ namespace MessageService
 	HandlerAndToken messageHandlers[Message::MessageType_Count];
 
     // This can be optimized to a variable-size queue
-    MessageQueue<32> messageQueue;
+    MessageQueue<256> messageQueue;
 
     bool send(const uint8_t* data, uint16_t size);
     bool SendMessage(Message::MessageType msgType);
@@ -102,14 +107,16 @@ namespace MessageService
 
     void update() {
         int msgSize = 0;
-        const Message* msg = messageQueue.peekNext(msgSize);
-        if (msg != nullptr) {
-            if (send(reinterpret_cast<const uint8_t*>(msg), msgSize)) {
-                // We were able to send the message!
-                messageQueue.dequeue();
+        //if (Stack::canSend()) {
+            const Message* msg = messageQueue.peekNext(msgSize);
+            if (msg != nullptr) {
+                if (send(reinterpret_cast<const uint8_t*>(msg), msgSize)) {
+                    // We were able to send the message!
+                    messageQueue.dequeue();
+                }
+                // Else we'll try again next time
             }
-            // Else we'll try again next time
-        }
+        //}
     }
 
     bool isConnected() {
@@ -164,6 +171,13 @@ namespace MessageService
         bool ret = send((const uint8_t*)msg, msgSize);
         if (!ret) {
             ret = messageQueue.enqueue(msg, msgSize);
+            while (!ret) {
+                Scheduler::update();
+                Watchdog::feed();
+                PowerManager::update();
+                Bluetooth::MessageService::update();
+                ret = messageQueue.enqueue(msg, msgSize);
+            }
         }
         return ret;
     }
@@ -223,7 +237,7 @@ namespace MessageService
         notifyMsg.ok = ok ? 1 : 0;
         notifyMsg.cancel = cancel ? 1 : 0;
         notifyMsg.timeout_s = timeout_s;
-		strcpy(notifyMsg.text, text);
+		strncpy(notifyMsg.text, text, MAX_DATA_SIZE - 4);
         if ((ok || cancel) && callback != nullptr) {
             MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* msg)
             {
@@ -234,6 +248,66 @@ namespace MessageService
         }
 		MessageService::SendMessage(&notifyMsg);
     }
+
+#if BLE_LOG_ENABLED
+
+    void DebugLog_0(const char* text) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            strncpy(msg.text, text, MAX_DATA_SIZE);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_1(const char* text, uint32_t arg0) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_2(const char* text, uint32_t arg0, uint32_t arg1) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0, arg1);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_3(const char* text, uint32_t arg0, uint32_t arg1, uint32_t arg2) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0, arg1, arg2);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_4(const char* text, uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0, arg1, arg2, arg3);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_5(const char* text, uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0, arg1, arg2, arg3, arg4);
+            SendMessage(&msg);
+        }
+    }
+
+    void DebugLog_6(const char* text, uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, uint32_t arg5) {
+        if (isConnected()) {
+            MessageDebugLog msg;
+            snprintf(msg.text, MAX_DATA_SIZE, text, arg0, arg1, arg2, arg3, arg4, arg5);
+            SendMessage(&msg);
+        }
+    }
+
+#endif
 
 }
 }
