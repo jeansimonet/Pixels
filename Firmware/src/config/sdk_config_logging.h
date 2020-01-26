@@ -58,7 +58,7 @@
 
 // <o> NRF_LOG_STR_PUSH_BUFFER_SIZE  - Size of the buffer dedicated for strings stored using @ref NRF_LOG_PUSH.
 // <16=> 16 -> <1024=> 1024 
-#define NRF_LOG_STR_PUSH_BUFFER_SIZE 64
+#define NRF_LOG_STR_PUSH_BUFFER_SIZE 128
 
 // <e> NRF_LOG_USES_COLORS - If enabled then ANSI escape code for colors is prefixed to every string
 #define NRF_LOG_USES_COLORS 0
@@ -82,7 +82,7 @@
 
 #define NRF_LOG_BACKEND_UART_TX_PIN 20
  
-#define NRF_LOG_BACKEND_UART_BAUDRATE 30801920
+#define NRF_LOG_BACKEND_UART_BAUDRATE 61865984 
  
 #define NRF_LOG_BACKEND_UART_TEMP_BUFFER_SIZE 256
 
