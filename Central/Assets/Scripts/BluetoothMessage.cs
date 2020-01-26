@@ -29,6 +29,7 @@ public enum DieMessageType : byte
 
     PlayAnim,
     PlayAnimEvent,
+    StopAnim,
     RequestState,
     RequestAnimSet,
     RequestSettings,
@@ -50,10 +51,12 @@ public enum DieMessageType : byte
     SetLEDAnimState,
     SetBattleState,
 
+    // Test messages
     TestBulkSend,
     TestBulkReceive,
     SetAllLEDsToColor,
     AttractMode,
+    PrintNormals,
 }
 
 public interface DieMessage
@@ -118,6 +121,9 @@ public static class DieMessages
                 case DieMessageType.PlayAnimEvent:
                     ret = FromByteArray<DieMessagePlayAnimEvent>(data);
                     break;
+                case DieMessageType.StopAnim:
+                    ret = FromByteArray<DieMessageStopAnim>(data);
+                    break;
                 case DieMessageType.RequestState:
                     ret = FromByteArray<DieMessageRequestState>(data);
                     break;
@@ -171,6 +177,9 @@ public static class DieMessages
                     break;
                 case DieMessageType.AttractMode:
                     ret = FromByteArray<DieMessageAttractMode>(data);
+                    break;
+                case DieMessageType.PrintNormals:
+                    ret = FromByteArray<DieMessagePrintNormals>(data);
                     break;
                 default:
                     throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
@@ -359,6 +368,13 @@ public class DieMessagePlayAnimEvent
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageStopAnim
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.StopAnim;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public class DieMessageRequestState
     : DieMessage
 {
@@ -521,3 +537,10 @@ public class DieMessageAttractMode
     public DieMessageType type { get; set; } = DieMessageType.AttractMode;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessagePrintNormals
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.PrintNormals;
+    public byte face;
+}

@@ -195,7 +195,7 @@ public class Die
         messageDelegates.Add(DieMessageType.State, OnStateMessage);
         messageDelegates.Add(DieMessageType.Telemetry, OnTelemetryMessage);
         messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
-        messageDelegates.Add(DieMessageType.NotifyUser, OnNotifuUserMessage);
+        messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
     }
 
     public void Setup(string name, string address, ConnectionState connectionState)
@@ -494,6 +494,7 @@ public class Die
     {
         // Handle the message
         var stateMsg = (DieMessageState)message;
+        Debug.Log("State: " + ((State)(stateMsg.state)).ToString() + ", " + stateMsg.face);
 
         var newState = (State)stateMsg.state;
         var newFace = stateMsg.face;
@@ -526,7 +527,7 @@ public class Die
         Debug.Log(name + ": " + text);
     }
 
-    void OnNotifuUserMessage(DieMessage message)
+    void OnNotifyUserMessage(DieMessage message)
     {
         var notifyUserMsg = (DieMessageNotifyUser)message;
         bool ok = notifyUserMsg.ok != 0;
@@ -913,6 +914,22 @@ public class Die
     public void SetBattleMode()
     {
         PostMessage(new DieMessageSetBattleState());
+    }
+
+    public void PrintNormals()
+    {
+        StartCoroutine(PrintNormalsCr());
+    }
+
+    IEnumerator PrintNormalsCr()
+    {
+        for (int i = 0; i < 20; ++i)
+        {
+            var msg = new DieMessagePrintNormals();
+            msg.face = (byte)i;
+            PostMessage(msg);
+            yield return new WaitForSeconds(0.5f);
+        }
     }
 
     #endregion
