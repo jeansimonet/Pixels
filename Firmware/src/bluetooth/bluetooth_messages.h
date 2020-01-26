@@ -60,7 +60,8 @@ struct Message
 		MessageType_TestBulkSend,
 		MessageType_TestBulkReceive,
 		MessageType_SetAllLEDsToColor,
-		DieMessageType_AttractMode,
+		MessageType_AttractMode,
+		MessageType_PrintNormals,
 
 		MessageType_Count
 	};
@@ -250,6 +251,13 @@ struct MessageCalibrateFace
 {
 	uint8_t face;
 	inline MessageCalibrateFace() : Message(MessageType_CalibrateFace) {}
+};
+
+struct MessagePrintNormals
+: public Message
+{
+	uint8_t face;
+	inline MessagePrintNormals() : Message(MessageType_PrintNormals) {}
 };
 }
 
