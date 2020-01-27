@@ -53,9 +53,9 @@ namespace Die
     void PlayLEDAnim(void* context, const Message* msg);
     void PlayAnimEvent(void* context, const Message* msg);
     void StopLEDAnim(void* context, const Message* msg);
-	void EnterStandardState(void* context, const Message* msg);
-	void EnterLEDAnimState(void* context, const Message* msg);
-	void EnterBattleState(void* context, const Message* msg);
+    void EnterStandardState(void* context, const Message* msg);
+    void EnterLEDAnimState(void* context, const Message* msg);
+    void EnterBattleState(void* context, const Message* msg);
     void StartAttractMode(void* context, const Message* msg);
     void onConnection(void* token, bool connected);
 
@@ -77,10 +77,10 @@ namespace Die
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
         Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
         Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_StopAnim, nullptr, StopLEDAnim);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_AttractMode, nullptr, StartAttractMode);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_AttractMode, nullptr, StartAttractMode);
 
         Bluetooth::Stack::hook(onConnection, nullptr);
 
@@ -90,7 +90,7 @@ namespace Die
 
         currentFace = Accelerometer::currentFace();
 
-		NRF_LOG_INFO("Main Die Logic Initialized");
+        NRF_LOG_INFO("Main Die Logic Initialized");
     }
 
     void RequestStateHandler(void* token, const Message* message) {
@@ -199,7 +199,7 @@ namespace Die
         AnimController::play((AnimationEvent)playAnimMessage->evt, playAnimMessage->remapFace, playAnimMessage->loop != 0);
     }
 
-	void EnterStandardState(void* context, const Message* msg) {
+    void EnterStandardState(void* context, const Message* msg) {
         switch (currentTopLevelState) {
             case TopLevel_Unknown:
             case TopLevel_BattlePlay:
@@ -215,7 +215,7 @@ namespace Die
        }
     }
 
-	void EnterLEDAnimState(void* context, const Message* msg) {
+    void EnterLEDAnimState(void* context, const Message* msg) {
         switch (currentTopLevelState) {
             case TopLevel_Unknown:
             case TopLevel_BattlePlay:
@@ -231,7 +231,7 @@ namespace Die
        }
     }
     
-	void EnterBattleState(void* context, const Message* msg) {
+    void EnterBattleState(void* context, const Message* msg) {
         switch (currentTopLevelState) {
             case TopLevel_Animator:
             case TopLevel_Unknown:
@@ -252,10 +252,8 @@ namespace Die
         AnimController::play(AnimationEvent_AttractMode, 0, true);
     }
 
-
     // Main loop!
     void update() {
-
         Scheduler::update();
         Watchdog::feed();
         PowerManager::update();
