@@ -32,10 +32,10 @@ namespace Telemetry
         lastMessageMS = 0;
         telemetryActive = false;
 
-   		NRF_LOG_INFO("Telemetry initialized");
+        NRF_LOG_INFO("Telemetry initialized");
     }
 
-	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& frame) {
+    void onAccDataReceived(void* param, const Accelerometer::AccelFrame& frame) {
         uint32_t time = Utils::millis();
         if (time - lastMessageMS >= TELEMETRY_RATE_MS) {
             if (Stack::canSend()) {
