@@ -166,15 +166,19 @@ namespace Accelerometer
         }
 
 		if (newFrame.face != face || newRollState != rollState) {
+
+			// Debugging
+			//BLE_LOG_INFO("Face Normal: %d, %d, %d", (int)(newFrame.acc.x * 100), (int)(newFrame.acc.y * 100), (int)(newFrame.acc.z * 100));
+
 			if (newFrame.face != face) {
 				face = newFrame.face;
 				confidence = newFrame.faceConfidence;
 
-				NRF_LOG_INFO("Face %d, confidence " NRF_LOG_FLOAT_MARKER, face, NRF_LOG_FLOAT(confidence));
+				//NRF_LOG_INFO("Face %d, confidence " NRF_LOG_FLOAT_MARKER, face, NRF_LOG_FLOAT(confidence));
 			}
 
 			if (newRollState != rollState) {
-				NRF_LOG_INFO("State: %s", getRollStateString(newRollState));
+				//NRF_LOG_INFO("State: %s", getRollStateString(newRollState));
 				rollState = newRollState;
 			}
 
@@ -350,6 +354,9 @@ namespace Accelerometer
 				LIS2DE12::read();
 				measuredNormals->face1 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
+				// Debugging
+				BLE_LOG_INFO("Face 1 Normal: %d, %d, %d", (int)(measuredNormals->face1.x * 100), (int)(measuredNormals->face1.y * 100), (int)(measuredNormals->face1.z * 100));
+
 				// Place on face 5
 				MessageService::NotifyUser("Place face 5 up", true, true, 30, [] (bool okCancel)
 				{
@@ -358,6 +365,9 @@ namespace Accelerometer
 						// Read the normals
 						LIS2DE12::read();
 						measuredNormals->face5 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
+
+						// Debugging
+						BLE_LOG_INFO("Face 5 Normal: %d, %d, %d", (int)(measuredNormals->face5.x * 100), (int)(measuredNormals->face5.y * 100), (int)(measuredNormals->face5.z * 100));
 
 						// Now we can calibrate
 						int normalCount = BoardManager::getBoard()->ledCount;
@@ -372,6 +382,7 @@ namespace Accelerometer
 						MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
 					}
 				});
+
 			}
 		});
 	}

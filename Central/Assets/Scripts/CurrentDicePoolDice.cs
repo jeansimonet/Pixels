@@ -98,8 +98,11 @@ public class CurrentDicePoolDice
         calibrateFaceButton.onClick.RemoveAllListeners();
         calibrateFaceButton.onClick.AddListener(() => ShowFaceSelection());
 
+        //AttractModeButton.onClick.RemoveAllListeners();
+        //AttractModeButton.onClick.AddListener(() => StartAttrackMode());
+
         AttractModeButton.onClick.RemoveAllListeners();
-        AttractModeButton.onClick.AddListener(() => StartAttrackMode());
+        AttractModeButton.onClick.AddListener(() => PrintNormals());
     }
 
     void HideCommands()
@@ -234,5 +237,11 @@ public class CurrentDicePoolDice
         HideFaceSelection();
         HideCommands();
         die.CalibrateFace(face);
+    }
+
+    void PrintNormals()
+    {
+        HideCommands();
+        die.PrintNormals();
     }
 }

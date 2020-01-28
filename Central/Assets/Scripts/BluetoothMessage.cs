@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
@@ -51,10 +51,12 @@ public enum DieMessageType : byte
     SetLEDAnimState,
     SetBattleState,
 
+    // Test messages
     TestBulkSend,
     TestBulkReceive,
     SetAllLEDsToColor,
     AttractMode,
+    PrintNormals,
 }
 
 public interface DieMessage
@@ -175,6 +177,9 @@ public static class DieMessages
                     break;
                 case DieMessageType.AttractMode:
                     ret = FromByteArray<DieMessageAttractMode>(data);
+                    break;
+                case DieMessageType.PrintNormals:
+                    ret = FromByteArray<DieMessagePrintNormals>(data);
                     break;
                 default:
                     throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
@@ -534,3 +539,10 @@ public class DieMessageAttractMode
     public DieMessageType type { get; set; } = DieMessageType.AttractMode;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessagePrintNormals
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.PrintNormals;
+    public byte face;
+}

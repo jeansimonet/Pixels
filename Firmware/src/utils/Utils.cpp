@@ -4,7 +4,10 @@
 #include "core/float3.h"
 #include "core/matrix3x3.h"
 #include "config/settings.h"
+#include "config/board_config.h"
 #include "nrf_log.h"
+#include "bluetooth/bluetooth_message_service.h"
+
 
 using namespace Core;
 using namespace Config;
@@ -127,41 +130,64 @@ namespace Utils
         return toColor(r, g, b);
 	}
 
+	int findClosestNormal(const float3* normals, int count, const float3& n) {
+		float bestDot = -1000.0f;
+		int bestFace = -1;
+		for (int i = 0; i < count; ++i) {
+			float dot = float3::dot(n, normals[i]);
+			if (dot > bestDot) {
+				bestDot = dot;
+				bestFace = i;
+			}
+		}
+		return bestFace;
+	}
+
 	void CalibrateNormals(
 		int face1Index, const float3& face1Normal,
 		int face2Index, const float3& face2Normal,
 		float3* inOutNormals, int count) {
+
+		auto& canonNormals = BoardManager::getBoard()->faceNormals;
+
+		// int closestCanonNormal1 = findClosestNormal(canonNormals, count, face1Normal);
+		// int closestCanonNormal2 = findClosestNormal(canonNormals, count, face2Normal);
+
 		// We need to build a rotation matrix that turns canonical face normals into the reference frame
 		// of the accelerator, as defined by the measured coordinates of the 2 passed in face normals.
-		float3 canonFace1Normal = SettingsManager::getSettings()->faceNormals[face1Index];
-		float3 canonFace2Normal = SettingsManager::getSettings()->faceNormals[face2Index];
+		float3 canonFace1Normal = canonNormals[face1Index];
+		float3 canonFace2Normal = canonNormals[face2Index];
 
 		// Create our intermediate reference frame in both spaces
 		// Canonical space
 		float3 intX_Canon = canonFace1Normal; intX_Canon.normalize();
-		float3 intZ_Canon = float3::cross(intX_Canon, canonFace2Normal).normalize();
+		float3 intZ_Canon = float3::cross(intX_Canon, canonFace2Normal); intZ_Canon.normalize();
 		float3 intY_Canon = float3::cross(intZ_Canon, intX_Canon);
 		matrix3x3 int_Canon(intX_Canon, intY_Canon, intZ_Canon);
 
+		// BLE_LOG_INFO("intX_Canon: %d, %d, %d", (int)(intX_Canon.x * 100), (int)(intX_Canon.y * 100), (int)(intX_Canon.z * 100));
+		// BLE_LOG_INFO("intY_Canon: %d, %d, %d", (int)(intY_Canon.x * 100), (int)(intY_Canon.y * 100), (int)(intY_Canon.z * 100));
+		// BLE_LOG_INFO("intZ_Canon: %d, %d, %d", (int)(intY_Canon.x * 100), (int)(intY_Canon.y * 100), (int)(intY_Canon.z * 100));
+
 		// Accelerometer space
 		float3 intX_Acc = face1Normal; intX_Acc.normalize();
-		float3 intZ_Acc = float3::cross(intX_Acc, face2Normal).normalize();
+		float3 intZ_Acc = float3::cross(intX_Acc, face2Normal); intZ_Acc.normalize();
 		float3 intY_Acc = float3::cross(intZ_Acc, intX_Acc);
 		matrix3x3 int_Acc(intX_Acc, intY_Acc, intZ_Acc);
 
 		// This is the matrix that rotates canonical normals into accelerometer reference frame
 		matrix3x3 rot = matrix3x3::mul(int_Acc, matrix3x3::transpose(int_Canon));
 
-		NRF_LOG_INFO("row 1: %d, %d, %d", (int)(rot.row1().x * 1000.0f), (int)(rot.row1().y * 1000.0f), (int)(rot.row1().z * 1000.0f));
-		NRF_LOG_INFO("row 2: %d, %d, %d", (int)(rot.row2().x * 1000.0f), (int)(rot.row2().y * 1000.0f), (int)(rot.row2().z * 1000.0f));
-		NRF_LOG_INFO("row 3: %d, %d, %d", (int)(rot.row3().x * 1000.0f), (int)(rot.row3().y * 1000.0f), (int)(rot.row3().z * 1000.0f));
+		// NRF_LOG_INFO("row 1: %d, %d, %d", (int)(rot.row1().x * 100.0f), (int)(rot.row1().y * 100.0f), (int)(rot.row1().z * 100.0f));
+		// NRF_LOG_INFO("row 2: %d, %d, %d", (int)(rot.row2().x * 100.0f), (int)(rot.row2().y * 100.0f), (int)(rot.row2().z * 100.0f));
+		// NRF_LOG_INFO("row 3: %d, %d, %d", (int)(rot.row3().x * 100.0f), (int)(rot.row3().y * 100.0f), (int)(rot.row3().z * 100.0f));
 
 		// Now transform all the normals
 		for (int i = 0; i < count; ++i) {
 			float3 canonNormal = inOutNormals[i];
-			NRF_LOG_INFO("canon: %d, %d, %d", (int)(canonNormal.x * 1000.0f), (int)(canonNormal.y * 1000.0f), (int)(canonNormal.z * 1000.0f));
+			//NRF_LOG_INFO("canon: %d, %d, %d", (int)(canonNormal.x * 100.0f), (int)(canonNormal.y * 100.0f), (int)(canonNormal.z * 100.0f));
 			float3 newNormal = matrix3x3::mul(rot, canonNormal);
-			NRF_LOG_INFO("new: %d, %d, %d", (int)(newNormal.x * 1000.0f), (int)(newNormal.y * 1000.0f), (int)(newNormal.z * 1000.0f));
+			//NRF_LOG_INFO("new: %d, %d, %d", (int)(newNormal.x * 100.0f), (int)(newNormal.y * 100.0f), (int)(newNormal.z * 100.0f));
 			inOutNormals[i] = newNormal;
 		}
 	}

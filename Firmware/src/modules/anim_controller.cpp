@@ -264,7 +264,7 @@ namespace AnimController
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
 			auto& instance = animations[prevAnimIndex];
-			if (instance.animation == anim && instance.remapFace == remapFace)
+			if (instance.animation == anim && (remapFace == 255 || instance.remapFace == remapFace))
 			{
 				break;
 			}

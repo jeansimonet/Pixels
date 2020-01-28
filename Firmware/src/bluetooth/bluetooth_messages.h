@@ -34,6 +34,7 @@ struct Message
 
 		MessageType_PlayAnim,
 		MessageType_PlayAnimEvent,
+		MessageType_StopAnim,
 		MessageType_RequestState,
 		MessageType_RequestAnimSet,
 		MessageType_RequestSettings,
@@ -59,7 +60,8 @@ struct Message
 		MessageType_TestBulkSend,
 		MessageType_TestBulkReceive,
 		MessageType_SetAllLEDsToColor,
-		DieMessageType_AttractMode,
+		MessageType_AttractMode,
+		MessageType_PrintNormals,
 
 		MessageType_Count
 	};
@@ -161,6 +163,15 @@ struct MessagePlayAnimEvent
 	inline MessagePlayAnimEvent() : Message(Message::MessageType_PlayAnimEvent) {}
 };
 
+struct MessageStopAnim
+	: public Message
+{
+	uint8_t animation;
+	uint8_t remapFace;  // Assumes that an animation was made for face 0
+
+	inline MessageStopAnim() : Message(Message::MessageType_StopAnim) {}
+};
+
 struct MessageRequestTelemetry
 	: public Message
 {
@@ -240,6 +251,13 @@ struct MessageCalibrateFace
 {
 	uint8_t face;
 	inline MessageCalibrateFace() : Message(MessageType_CalibrateFace) {}
+};
+
+struct MessagePrintNormals
+: public Message
+{
+	uint8_t face;
+	inline MessagePrintNormals() : Message(MessageType_PrintNormals) {}
 };
 }
 

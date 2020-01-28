@@ -6,11 +6,15 @@ using System.Text;
 
 
 public class Central
-	: SingletonMonoBehaviour<Central>
+    : MonoBehaviour
 {
-    public string serviceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-	public string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-	public string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
+    static Central _instance = null;
+
+    public static Central Instance => _instance;
+
+    const string serviceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+	const string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+	const string writeCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
     public enum State
     {
@@ -52,6 +56,7 @@ public class Central
 
     void Awake()
     {
+        _instance = this;
         _dicePool = new Dictionary<string, Die>();
         _lostDice = new Dictionary<string, Die>();
         discoveredDice = new List<KeyValuePair<string, string>>();

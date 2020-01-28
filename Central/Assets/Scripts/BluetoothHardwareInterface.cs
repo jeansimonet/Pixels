@@ -3,6 +3,11 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+using fts;
+
+[PluginAttr("Win/DiceBLEWin")]
+#endif
 public class BluetoothLEHardwareInterface
 {
 	public enum CBCharacteristicProperties
@@ -78,54 +83,69 @@ public class BluetoothLEHardwareInterface
 		Debug.LogError(message);
 	}
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEConnectCallbacks(
+	[PluginFunctionAttr("_winBluetoothLEConnectCallbacks")]
+	private static _winBluetoothLEConnectCallbacks winBluetoothLEConnectCallbacks = null;
+	private delegate void _winBluetoothLEConnectCallbacks(
 		[MarshalAs(UnmanagedType.FunctionPtr)]SendBluetoothMessageDelegate sendMessage,
 		[MarshalAs(UnmanagedType.FunctionPtr)]DebugDelegate log,
 		[MarshalAs(UnmanagedType.FunctionPtr)]DebugDelegate warning,
 		[MarshalAs(UnmanagedType.FunctionPtr)]DebugDelegate error);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLELog([MarshalAs(UnmanagedType.LPStr)]string message);
+	[PluginFunctionAttr("_winBluetoothLELog")]
+	private static _winBluetoothLELog winBluetoothLELog = null;
+	private delegate void _winBluetoothLELog([MarshalAs(UnmanagedType.LPStr)]string message);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEInitialize(bool asCentral, bool asPeripheral);
+	[PluginFunctionAttr("_winBluetoothLEInitialize")]
+	private static _winBluetoothLEInitialize winBluetoothLEInitialize = null;
+	private delegate void _winBluetoothLEInitialize(bool asCentral, bool asPeripheral);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEDeInitialize();
+	[PluginFunctionAttr("_winBluetoothLEDeInitialize")]
+	private static _winBluetoothLEDeInitialize winBluetoothLEDeInitialize = null;
+	private delegate void _winBluetoothLEDeInitialize();
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEPauseMessages(bool isPaused);
+	[PluginFunctionAttr("_winBluetoothLEPauseMessages")]
+	private static _winBluetoothLEPauseMessages winBluetoothLEPauseMessages = null;
+	private delegate void _winBluetoothLEPauseMessages(bool isPaused);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEScanForPeripheralsWithServices([MarshalAs(UnmanagedType.LPStr)]string serviceUUIDsString, bool allowDuplicates, bool rssiOnly, bool clearPeripheralList);
+	[PluginFunctionAttr("_winBluetoothLEScanForPeripheralsWithServices")]
+	private static _winBluetoothLEScanForPeripheralsWithServices winBluetoothLEScanForPeripheralsWithServices = null;
+	private delegate void _winBluetoothLEScanForPeripheralsWithServices([MarshalAs(UnmanagedType.LPStr)]string serviceUUIDsString, bool allowDuplicates, bool rssiOnly, bool clearPeripheralList);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLERetrieveListOfPeripheralsWithServices([MarshalAs(UnmanagedType.LPStr)]string serviceUUIDsString);
+	[PluginFunctionAttr("_winBluetoothLERetrieveListOfPeripheralsWithServices")]
+	private static _winBluetoothLERetrieveListOfPeripheralsWithServices winBluetoothLERetrieveListOfPeripheralsWithServices = null;
+	private delegate void _winBluetoothLERetrieveListOfPeripheralsWithServices([MarshalAs(UnmanagedType.LPStr)]string serviceUUIDsString);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEStopScan();
+	[PluginFunctionAttr("_winBluetoothLEStopScan")]
+	private static _winBluetoothLEStopScan winBluetoothLEStopScan = null;
+	private delegate void _winBluetoothLEStopScan();
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEConnectToPeripheral([MarshalAs(UnmanagedType.LPStr)]string name);
+	[PluginFunctionAttr("_winBluetoothLEConnectToPeripheral")]
+	private static _winBluetoothLEConnectToPeripheral winBluetoothLEConnectToPeripheral = null;
+	private delegate void _winBluetoothLEConnectToPeripheral([MarshalAs(UnmanagedType.LPStr)]string name);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEDisconnectPeripheral([MarshalAs(UnmanagedType.LPStr)]string name);
+	[PluginFunctionAttr("_winBluetoothLEDisconnectPeripheral")]
+	private static _winBluetoothLEDisconnectPeripheral winBluetoothLEDisconnectPeripheral = null;
+	private delegate void _winBluetoothLEDisconnectPeripheral([MarshalAs(UnmanagedType.LPStr)]string name);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEReadCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
+	[PluginFunctionAttr("_winBluetoothLEReadCharacteristic")]
+	private static _winBluetoothLEReadCharacteristic winBluetoothLEReadCharacteristic = null;
+	private delegate void _winBluetoothLEReadCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEWriteCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic, byte[] data, int length, bool withResponse);
+	[PluginFunctionAttr("_winBluetoothLEWriteCharacteristic")]
+	private static _winBluetoothLEWriteCharacteristic winBluetoothLEWriteCharacteristic = null;
+	private delegate void _winBluetoothLEWriteCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic, byte[] data, int length, bool withResponse);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLESubscribeCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
+	[PluginFunctionAttr("_winBluetoothLESubscribeCharacteristic")]
+	private static _winBluetoothLESubscribeCharacteristic winBluetoothLESubscribeCharacteristic = null;
+	private delegate void _winBluetoothLESubscribeCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEUnSubscribeCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
+	[PluginFunctionAttr("_winBluetoothLEUnSubscribeCharacteristic")]
+	private static _winBluetoothLEUnSubscribeCharacteristic winBluetoothLEUnSubscribeCharacteristic = null;
+	private delegate void _winBluetoothLEUnSubscribeCharacteristic([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.LPStr)]string service, [MarshalAs(UnmanagedType.LPStr)]string characteristic);
 
-	[DllImport("DiceBLEWin")]
-	private static extern void _winBluetoothLEDisconnectAll();
+	[PluginFunctionAttr("_winBluetoothLEDisconnectAll")]
+	private static _winBluetoothLEDisconnectAll winBluetoothLEDisconnectAll = null;
+	private delegate void _winBluetoothLEDisconnectAll();
 
 #elif ((UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX) && !UNITY_EDITOR_OSX
 	[DllImport ("__Internal")]
@@ -212,7 +232,7 @@ public class BluetoothLEHardwareInterface
         if (logAllMessages)
         {
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-            _winBluetoothLELog(message);
+            winBluetoothLELog(message);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLELog (message);
 #elif UNITY_ANDROID
@@ -243,8 +263,8 @@ public class BluetoothLEHardwareInterface
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
 		// Register for updates
-		_winBluetoothLEConnectCallbacks(UnitySendMessageWrapper, DebugLog, DebugLogWarning, DebugLogError);
-		_winBluetoothLEInitialize(asCentral, asPeripheral);
+		winBluetoothLEConnectCallbacks(UnitySendMessageWrapper, DebugLog, DebugLogWarning, DebugLogError);
+		winBluetoothLEInitialize(asCentral, asPeripheral);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEInitialize (asCentral, asPeripheral);
 #elif UNITY_ANDROID
@@ -267,7 +287,7 @@ public class BluetoothLEHardwareInterface
 			bluetoothDeviceScript.DeinitializedAction = action;
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEDeInitialize();
+		winBluetoothLEDeInitialize();
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEDeInitialize ();
 #elif UNITY_ANDROID
@@ -297,7 +317,7 @@ public class BluetoothLEHardwareInterface
 	public static void PauseMessages (bool isPaused)
 	{
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEPauseMessages(isPaused);
+		winBluetoothLEPauseMessages(isPaused);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEPauseMessages (isPaused);
 #elif UNITY_ANDROID
@@ -343,7 +363,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEScanForPeripheralsWithServices(serviceUUIDsString, (actionAdvertisingInfo != null), rssiOnly, clearPeripheralList);
+		winBluetoothLEScanForPeripheralsWithServices(serviceUUIDsString, (actionAdvertisingInfo != null), rssiOnly, clearPeripheralList);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEScanForPeripheralsWithServices (serviceUUIDsString, (actionAdvertisingInfo != null), rssiOnly, clearPeripheralList);
 #elif UNITY_ANDROID
@@ -376,7 +396,7 @@ public class BluetoothLEHardwareInterface
 		serviceUUIDsString = serviceUUIDsString.Substring (0, serviceUUIDsString.Length - 1);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLERetrieveListOfPeripheralsWithServices(serviceUUIDsString);
+		winBluetoothLERetrieveListOfPeripheralsWithServices(serviceUUIDsString);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLERetrieveListOfPeripheralsWithServices (serviceUUIDsString);
 #elif UNITY_ANDROID
@@ -388,7 +408,7 @@ public class BluetoothLEHardwareInterface
 	public static void StopScan ()
 	{
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEStopScan();
+		winBluetoothLEStopScan();
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEStopScan ();
 #elif UNITY_ANDROID
@@ -400,7 +420,7 @@ public class BluetoothLEHardwareInterface
 	public static void DisconnectAll ()
 	{
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEDisconnectAll();
+		winBluetoothLEDisconnectAll();
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEDisconnectAll ();
 #elif UNITY_ANDROID
@@ -420,7 +440,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEConnectToPeripheral(name);
+		winBluetoothLEConnectToPeripheral(name);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEConnectToPeripheral (name);
 #elif UNITY_ANDROID
@@ -435,7 +455,7 @@ public class BluetoothLEHardwareInterface
 			bluetoothDeviceScript.DisconnectedPeripheralAction = action;
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEDisconnectPeripheral(name);
+		winBluetoothLEDisconnectPeripheral(name);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEDisconnectPeripheral (name);
 #elif UNITY_ANDROID
@@ -461,7 +481,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEReadCharacteristic(name, service, characteristic);
+		winBluetoothLEReadCharacteristic(name, service, characteristic);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEReadCharacteristic (name, service, characteristic);
 #elif UNITY_ANDROID
@@ -476,7 +496,7 @@ public class BluetoothLEHardwareInterface
 			bluetoothDeviceScript.DidWriteCharacteristicAction = action;
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEWriteCharacteristic(name, service, characteristic, data, length, withResponse);
+		winBluetoothLEWriteCharacteristic(name, service, characteristic, data, length, withResponse);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEWriteCharacteristic (name, service, characteristic, data, length, withResponse);
 #elif UNITY_ANDROID
@@ -521,7 +541,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLESubscribeCharacteristic(name, service, characteristic);
+		winBluetoothLESubscribeCharacteristic(name, service, characteristic);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLESubscribeCharacteristic (name, service, characteristic);
 #elif UNITY_ANDROID
@@ -566,7 +586,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLESubscribeCharacteristic(name, service, characteristic);
+		winBluetoothLESubscribeCharacteristic(name, service, characteristic);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLESubscribeCharacteristic (name, service, characteristic);
 #elif UNITY_ANDROID
@@ -611,7 +631,7 @@ public class BluetoothLEHardwareInterface
 		}
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		_winBluetoothLEUnSubscribeCharacteristic(name, service, characteristic);
+		winBluetoothLEUnSubscribeCharacteristic(name, service, characteristic);
 #elif (UNITY_IPHONE || UNITY_TVOS) && !UNITY_EDITOR_OSX
 		_iOSBluetoothLEUnSubscribeCharacteristic (name, service, characteristic);
 #elif UNITY_ANDROID

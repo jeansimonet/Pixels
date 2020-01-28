@@ -8,6 +8,7 @@
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
+#include "utils/utils.h"
 
 #define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
 #define SETTINGS_PAGE_COUNT 1
@@ -23,6 +24,9 @@ namespace SettingsManager
 	Settings const * settings = nullptr;
 
 	void ReceiveSettingsHandler(void* context, const Message* msg);
+	#if BLE_LOG_ENABLED
+	void PrintNormals(void* context, const Message* msg);
+	#endif
 	void init() {
 		settings = (Settings const * const)Flash::getFlashStartAddress();
 
@@ -33,6 +37,10 @@ namespace SettingsManager
 
 		// Register as a handler to program settings
 		MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
+		
+		#if BLE_LOG_ENABLED
+		MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
+		#endif
 
 		NRF_LOG_INFO("Settings initialized");
 	}
@@ -141,6 +149,16 @@ namespace SettingsManager
 		Flash::writeSynchronous((uint32_t)settings, &settingsCopy, sizeof(Settings));
 		NRF_LOG_INFO("Settings written to flash with new normals");
 	}
+
+	#if BLE_LOG_ENABLED
+	void PrintNormals(void* context, const Message* msg) {
+		auto m = static_cast<const MessagePrintNormals*>(msg);
+		int i = m->face;
+		auto settings = getSettings();
+		BLE_LOG_INFO("Face %d: %d, %d, %d", i, (int)(settings->faceNormals[i].x * 100), (int)(settings->faceNormals[i].y * 100), (int)(settings->faceNormals[i].z * 100));
+	}
+	#endif
+
 }
 }
 

@@ -52,6 +52,7 @@ namespace Die
     void SendRollState(Accelerometer::RollState rollState, int face);
     void PlayLEDAnim(void* context, const Message* msg);
     void PlayAnimEvent(void* context, const Message* msg);
+    void StopLEDAnim(void* context, const Message* msg);
 	void EnterStandardState(void* context, const Message* msg);
 	void EnterLEDAnimState(void* context, const Message* msg);
 	void EnterBattleState(void* context, const Message* msg);
@@ -75,10 +76,11 @@ namespace Die
 
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
         Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_StopAnim, nullptr, StopLEDAnim);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::DieMessageType_AttractMode, nullptr, StartAttractMode);
+		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_AttractMode, nullptr, StartAttractMode);
 
         Bluetooth::Stack::hook(onConnection, nullptr);
 
@@ -127,7 +129,9 @@ namespace Die
     }
 
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {
-        SendRollState(newRollState, newFace);
+        if (Bluetooth::MessageService::isConnected()) {
+            SendRollState(newRollState, newFace);
+        }
 
         if (currentTopLevelState == TopLevel_SoloPlay) {
             // Play animation
@@ -180,7 +184,14 @@ namespace Die
         if (animation.specialColorType == SpecialColor_Face) {
             remapFace = Accelerometer::currentFace();
         }
-        AnimController::play(&animation, remapFace);
+        AnimController::play(&animation, remapFace, playAnimMessage->loop);
+    }
+
+    void StopLEDAnim(void* context, const Message* msg) {
+        auto stopAnimMessage = (const MessageStopAnim*)msg;
+        NRF_LOG_INFO("Stopping animation %d", stopAnimMessage->animation);
+        auto& animation = AnimationSet::getAnimation(stopAnimMessage->animation);
+        AnimController::stop(&animation, stopAnimMessage->remapFace);
     }
 
     void PlayAnimEvent(void* context, const Message* msg) {
@@ -248,6 +259,7 @@ namespace Die
         Scheduler::update();
         Watchdog::feed();
         PowerManager::update();
+        Bluetooth::MessageService::update();
     }
 }
 

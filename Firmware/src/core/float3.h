@@ -79,7 +79,7 @@ namespace Core
 			return float3(
 				left.y * right.z - left.z * right.y,
 				left.z * right.x - left.x * right.z,
-				left.x * right.y - left.y * right.y
+				left.x * right.y - left.y * right.x
 			);
 		}
 
