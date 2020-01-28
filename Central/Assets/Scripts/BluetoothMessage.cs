@@ -29,6 +29,7 @@ public enum DieMessageType : byte
 
     PlayAnim,
     PlayAnimEvent,
+    StopAnim,
     RequestState,
     RequestAnimSet,
     RequestSettings,
@@ -117,6 +118,9 @@ public static class DieMessages
                     break;
                 case DieMessageType.PlayAnimEvent:
                     ret = FromByteArray<DieMessagePlayAnimEvent>(data);
+                    break;
+                case DieMessageType.StopAnim:
+                    ret = FromByteArray<DieMessageStopAnim>(data);
                     break;
                 case DieMessageType.RequestState:
                     ret = FromByteArray<DieMessageRequestState>(data);
@@ -356,6 +360,15 @@ public class DieMessagePlayAnimEvent
     public byte evt;
     public byte remapFace;
     public byte loop;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageStopAnim
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.StopAnim;
+    public byte index;
+    public byte remapFace;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

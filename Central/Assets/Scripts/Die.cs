@@ -616,6 +616,15 @@ public class Die
         }));
     }
 
+    public Coroutine StopAnimation(int animationIndex, int remapIndex)
+    {
+        return PerformBluetoothOperation(() => PostMessage(new DieMessageStopAnim()
+        {
+            index = (byte)animationIndex,
+            remapFace = (byte)remapIndex,
+        }));
+    }
+
     public Coroutine StartAttractMode()
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessageAttractMode()));

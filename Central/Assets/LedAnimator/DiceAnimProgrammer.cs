@@ -22,7 +22,9 @@ public class DiceAnimProgrammer
     // We use this to compare against the last version uploaded on the dice
     // and avoid re-uploading the set every time.
     // This is a hack to not have to implement change detection in the animation editor
-    byte[] animationSetByteArray; 
+    byte[] animationSetByteArray;
+
+    bool loopingAnim;
 
     void Awake()
     {
@@ -193,4 +195,35 @@ public class DiceAnimProgrammer
 
         }
     }
+
+    public void PlayPauseAnim()
+    {
+        StartCoroutine(PlayPauseCr());
+    }
+
+    IEnumerator PlayPauseCr()
+    {
+        if (die != null)
+        {
+            if (loopingAnim)
+            {
+                loopingAnim = false;
+                die.StopAnimation(timeline.CurrentAnimationIndex, 255);
+            }
+            else
+            {
+                loopingAnim = true;
+                timeline.ApplyChanges();
+                var rawAnim = animationSet.ToAnimationSet();
+                var newByteArray = rawAnim.ToByteArray();
+                if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
+                {
+                    yield return StartCoroutine(UploadAnimationSetCr());
+                }
+
+                die.PlayAnimation(timeline.CurrentAnimationIndex, 0, true);
+            }
+        }
+    }
+
 }
