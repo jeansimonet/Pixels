@@ -74,10 +74,10 @@ namespace AnimController
 		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
 
 		// Initialize the lookup table
-		for (int i = 0; i < AnimationEvent_Count; ++i) {
+		for (size_t i = 0; i < AnimationEvent_Count; ++i) {
 			animationLookupByEvent[i] = -1;
 		}
-		for (int i = 0; i < AnimationSet::getAnimationCount(); ++i) {
+		for (uint16_t i = 0; i < AnimationSet::getAnimationCount(); ++i) {
 			auto& anim = AnimationSet::getAnimation(i);
 			if (anim.animationEvent > AnimationEvent_None && anim.animationEvent < AnimationEvent_Count) {
 				animationLookupByEvent[anim.animationEvent] = i;
@@ -98,7 +98,7 @@ namespace AnimController
 	void update(int ms)
 	{
 		if (animationCount > 0) {
-	        PowerManager::feed();
+			PowerManager::feed();
 			auto board = BoardManager::getBoard();
 			auto& faceToLEDs = board->faceToLedLookup;
 
@@ -249,7 +249,6 @@ namespace AnimController
 					break;
 			}
 
-
 			animationCount++;
 		}
 		// Else there is no more room
@@ -363,4 +362,3 @@ namespace AnimController
 	}
 }
 }
-
