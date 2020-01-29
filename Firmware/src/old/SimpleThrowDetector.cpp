@@ -82,6 +82,3 @@ void SimpleThrowDetector::onAccelFrame(const AccelFrame& frame)
 		break;
 	}
 }
-
-
-
