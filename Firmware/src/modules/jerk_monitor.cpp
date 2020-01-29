@@ -38,6 +38,3 @@ void JerkMonitor::onAccelFrame(const AccelFrame& frame)
 		lazarus.poke();
 	}
 }
-
-
-
