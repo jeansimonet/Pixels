@@ -6,17 +6,17 @@
 
 namespace Animations
 {
-    enum AnimationEvent
-    {
+	enum AnimationEvent
+	{
 		AnimationEvent_None = 0,
 		AnimationEvent_Hello,
 		AnimationEvent_Connected,
 		AnimationEvent_Disconnected,
-        AnimationEvent_LowBattery,
-        AnimationEvent_ChargingStart,
-        AnimationEvent_ChargingDone,
-        AnimationEvent_ChargingError,
-        AnimationEvent_Handling,
+		AnimationEvent_LowBattery,
+		AnimationEvent_ChargingStart,
+		AnimationEvent_ChargingDone,
+		AnimationEvent_ChargingError,
+		AnimationEvent_Handling,
 		AnimationEvent_Rolling,
 		AnimationEvent_OnFace_Default,
 		AnimationEvent_OnFace_00,
@@ -51,9 +51,9 @@ namespace Animations
 		AnimationEvent_Battle_TeamLoose,
 		AnimationEvent_Battle_TeamDraw,
 		AnimationEvent_AttractMode,
-        // Etc...
-        AnimationEvent_Count
-    };
+		// Etc...
+		AnimationEvent_Count
+	};
 
 	enum SpecialColor
 	{
