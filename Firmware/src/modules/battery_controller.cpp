@@ -42,9 +42,9 @@ namespace BatteryController
     float vBatWhenChargingStart = 0.0f;
     uint32_t chargingStartedTime = 0;
 
-	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
+    DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
 
-	APP_TIMER_DEF(batteryControllerTimer);
+    APP_TIMER_DEF(batteryControllerTimer);
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);
@@ -63,30 +63,30 @@ namespace BatteryController
         // Set initial battery state
         currentBatteryState = computeCurrentState();
 
-		ret_code_t ret_code = app_timer_create(&batteryControllerTimer, APP_TIMER_MODE_SINGLE_SHOT, update);
-		APP_ERROR_CHECK(ret_code);
+        ret_code_t ret_code = app_timer_create(&batteryControllerTimer, APP_TIMER_MODE_SINGLE_SHOT, update);
+        APP_ERROR_CHECK(ret_code);
 
-		ret_code = app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
-		APP_ERROR_CHECK(ret_code);
+        ret_code = app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
+        APP_ERROR_CHECK(ret_code);
 
         lastUpdateTime = millis();
 
         NRF_LOG_INFO("Battery controller initialized - Battery %s", getChargeStateString(currentBatteryState));
     }
 
-	BatteryState getCurrentChargeState() {
+    BatteryState getCurrentChargeState() {
         return currentBatteryState;
     }
 
     const char* getChargeStateString(BatteryState state) {
         switch (currentBatteryState) {
-			case BatteryState_Ok:
+            case BatteryState_Ok:
                 return "Ok";
-			case BatteryState_Low:
+            case BatteryState_Low:
                 return "Low";
-			case BatteryState_Charging:
+            case BatteryState_Charging:
                 return "Charging";
-			case BatteryState_Unknown:
+            case BatteryState_Unknown:
             default:
                 return "Unknown";
         }
@@ -101,7 +101,7 @@ namespace BatteryController
             ret = currentBatteryState;
             switch (currentBatteryState)
             {
-    			case BatteryState_Ok:
+                case BatteryState_Ok:
                     if (level < SettingsManager::getSettings()->batteryLow) {
                         ret = BatteryState_Low;
                     } else if (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD) {
@@ -156,19 +156,19 @@ namespace BatteryController
             // Always update the stored battery voltage
             vBat = level;
         #else
-        if (onCharger) {
-            if (charging) {
-                ret = BatteryState_Charging;
-            } else {
-                // Either we're done, or we haven't started
-                if (vBat < SettingsManager::getSettings()->batteryLow) {
-                    // Not started
-                    ret = BatteryState_Low;
+            if (onCharger) {
+                if (charging) {
+                    ret = BatteryState_Charging;
                 } else {
-                    ret = BatteryState_Ok;
+                    // Either we're done, or we haven't started
+                    if (vBat < SettingsManager::getSettings()->batteryLow) {
+                        // Not started
+                        ret = BatteryState_Low;
+                    } else {
+                        ret = BatteryState_Ok;
+                    }
                 }
             }
-        }
         #endif
         return ret;
     }
@@ -186,7 +186,7 @@ namespace BatteryController
         auto newState = computeCurrentState();
         if (newState != currentBatteryState) {
             switch (newState) {
-    			case BatteryState_Ok:
+                case BatteryState_Ok:
                     NRF_LOG_INFO(">>> Battery is now Ok, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
                     break;
                 case BatteryState_Charging:
@@ -201,11 +201,11 @@ namespace BatteryController
             }
             currentBatteryState = newState;
             for (int i = 0; i < clients.Count(); ++i) {
-    			clients[i].handler(clients[i].token, newState);
+                clients[i].handler(clients[i].token, newState);
             }
         }
 
-	    app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
+        app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
     }
 
     void onBatteryEventHandler(void* context) {
@@ -224,36 +224,36 @@ namespace BatteryController
                 delay = BATTERY_TIMER_MS_QUICK;
             }
             // Restart the timer
-		    app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(delay), NULL);
+            app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(delay), NULL);
         }
     }
 
-	/// <summary>
-	/// Method used by clients to request timer callbacks when accelerometer readings are in
-	/// </summary>
-	void hook(BatteryStateChangeHandler callback, void* parameter)
-	{
-		if (!clients.Register(parameter, callback))
-		{
-			NRF_LOG_ERROR("Too many battery state hooks registered.");
-		}
-	}
+    /// <summary>
+    /// Method used by clients to request timer callbacks when accelerometer readings are in
+    /// </summary>
+    void hook(BatteryStateChangeHandler callback, void* parameter)
+    {
+        if (!clients.Register(parameter, callback))
+        {
+            NRF_LOG_ERROR("Too many battery state hooks registered.");
+        }
+    }
 
-	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
-	/// </summary>
-	void unHook(BatteryStateChangeHandler callback)
-	{
-		clients.UnregisterWithHandler(callback);
-	}
+    /// <summary>
+    /// Method used by clients to stop getting accelerometer reading callbacks
+    /// </summary>
+    void unHook(BatteryStateChangeHandler callback)
+    {
+        clients.UnregisterWithHandler(callback);
+    }
 
-	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
-	/// </summary>
-	void unHookWithParam(void* param)
-	{
-		clients.UnregisterWithToken(param);
-	}
+    /// <summary>
+    /// Method used by clients to stop getting accelerometer reading callbacks
+    /// </summary>
+    void unHookWithParam(void* param)
+    {
+        clients.UnregisterWithToken(param);
+    }
 
 }
 }
