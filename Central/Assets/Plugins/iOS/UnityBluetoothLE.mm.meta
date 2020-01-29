@@ -12,19 +12,30 @@ PluginImporter:
   validateReferences: 1
   platformData:
   - first:
-      '': Linux
+      : Any
+    second:
+      enabled: 0
+      settings:
+        Exclude Editor: 1
+        Exclude Linux64: 1
+        Exclude OSXUniversal: 1
+        Exclude Win: 1
+        Exclude Win64: 1
+        Exclude iOS: 0
+  - first:
+      : Linux
     second:
       enabled: 0
       settings:
         CPU: x86
   - first:
-      '': OSXIntel
+      : OSXIntel
     second:
       enabled: 0
       settings:
         CPU: AnyCPU
   - first:
-      '': OSXIntel64
+      : OSXIntel64
     second:
       enabled: 0
       settings:
@@ -67,6 +78,12 @@ PluginImporter:
       settings:
         CPU: AnyCPU
   - first:
+      Standalone: OSXUniversal
+    second:
+      enabled: 0
+      settings:
+        CPU: x86_64
+  - first:
       Standalone: Win
     second:
       enabled: 0
@@ -83,6 +100,8 @@ PluginImporter:
     second:
       enabled: 1
       settings:
+        AddToEmbeddedBinaries: false
+        CPU: AnyCPU
         CompileFlags: -fno-objc-arc
         FrameworkDependencies: CoreBluetooth;
   - first:
