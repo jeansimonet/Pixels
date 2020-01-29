@@ -27,12 +27,12 @@ namespace MessageService
     ble_gatts_char_handles_t rx_handles;
     ble_gatts_char_handles_t tx_handles;
 
-	struct HandlerAndToken
-	{
-		MessageHandler handler;
-		void* token;
-	};
-	HandlerAndToken messageHandlers[Message::MessageType_Count];
+    struct HandlerAndToken
+    {
+        MessageHandler handler;
+        void* token;
+    };
+    HandlerAndToken messageHandlers[Message::MessageType_Count];
 
     // This can be optimized to a variable-size queue
     MessageQueue<256> messageQueue;
@@ -137,8 +137,7 @@ namespace MessageService
             case BLE_GATTS_EVT_WRITE:
                 {
                     ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
-                    if (p_evt_write->handle == rx_handles.value_handle)
-                    {
+                    if (p_evt_write->handle == rx_handles.value_handle) {
                         NRF_LOG_DEBUG("Generic Service Message Received: %d bytes", p_evt_write->len);
                         NRF_LOG_HEXDUMP_DEBUG(p_evt_write->data, p_evt_write->len);
                         onMessageReceived(p_evt_write->data, p_evt_write->len);
@@ -183,12 +182,9 @@ namespace MessageService
     }
 
     void RegisterMessageHandler(Message::MessageType msgType, void* token, MessageHandler handler) {
-        if (messageHandlers[msgType].handler != nullptr)
-        {
+        if (messageHandlers[msgType].handler != nullptr) {
             NRF_LOG_WARNING("Handler for message %d already set.", msgType);
-        }
-        else
-        {
+        } else {
             messageHandlers[msgType].handler = handler;
             messageHandlers[msgType].token = token;
             NRF_LOG_DEBUG("Setting message handler for %d to %08x", msgType, handler);
@@ -211,19 +207,17 @@ namespace MessageService
         // debugPrintln(")");
         // #endif
         auto handler = messageHandlers[(int)msg->type];
-        if (handler.handler != nullptr)
-        {
+        if (handler.handler != nullptr) {
             NRF_LOG_DEBUG("Calling message handler %08x", handler.handler);
             handler.handler(handler.token, msg);
         }
     }
 
     void onMessageReceived(const uint8_t* data, uint16_t len) {
-        if (len >= sizeof(Message))
-        {
+        if (len >= sizeof(Message)) {
             auto msg = reinterpret_cast<const Message*>(data);
             if (msg->type >= Message::MessageType_WhoAreYou && msg->type < Message::MessageType_Count) {
-    		    Scheduler::push(data, len, MessageSchedulerHandler);
+                Scheduler::push(data, len, MessageSchedulerHandler);
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);
             }
@@ -233,11 +227,11 @@ namespace MessageService
     }
 
     void NotifyUser(const char* text, bool ok, bool cancel, uint8_t timeout_s, NotifyUserCallback callback) {
-		MessageNotifyUser notifyMsg;
+        MessageNotifyUser notifyMsg;
         notifyMsg.ok = ok ? 1 : 0;
         notifyMsg.cancel = cancel ? 1 : 0;
         notifyMsg.timeout_s = timeout_s;
-		strncpy(notifyMsg.text, text, MAX_DATA_SIZE - 4);
+        strncpy(notifyMsg.text, text, MAX_DATA_SIZE - 4);
         if ((ok || cancel) && callback != nullptr) {
             MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* msg)
             {
@@ -246,7 +240,7 @@ namespace MessageService
                 ((NotifyUserCallback)ctx)(ackMsg->okCancel != 0);
             });
         }
-		MessageService::SendMessage(&notifyMsg);
+        MessageService::SendMessage(&notifyMsg);
     }
 
 #if BLE_LOG_ENABLED
