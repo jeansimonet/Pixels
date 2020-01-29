@@ -45,12 +45,12 @@ namespace Accelerometer
 
 	void updateState();
 
-    void CalibrateHandler(void* context, const Message* msg);
+	void CalibrateHandler(void* context, const Message* msg);
 	void CalibrateFaceHandler(void* context, const Message* msg);
 
-    void init() {
-        MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
-        MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
+	void init() {
+		MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
+		MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
 
 		face = 0;
 		confidence = 0.0f;
@@ -106,21 +106,21 @@ namespace Accelerometer
 		bool stopMoving = sigma < settings->stopMovingThreshold;
 		bool onFace = newFrame.faceConfidence > settings->faceThreshold;
 		bool zeroG = newFrame.acc.sqrMagnitude() < (settings->fallingThreshold * settings->fallingThreshold);
-        bool shock = newFrame.acc.sqrMagnitude() > (settings->shockThreshold * settings->shockThreshold);
+		bool shock = newFrame.acc.sqrMagnitude() > (settings->shockThreshold * settings->shockThreshold);
 
-        RollState newRollState = rollState;
-        switch (rollState) {
-            case RollState_Unknown:
-            case RollState_OnFace:
-            case RollState_Crooked:
-                // We start rolling if we detect enough motion
-                if (startMoving) {
-                    // We're at least being handled
-                    newRollState = RollState_Handling;
+		RollState newRollState = rollState;
+		switch (rollState) {
+			case RollState_Unknown:
+			case RollState_OnFace:
+			case RollState_Crooked:
+				// We start rolling if we detect enough motion
+				if (startMoving) {
+					// We're at least being handled
+					newRollState = RollState_Handling;
 					handleStateNormal = newFrame.acc.normalized();
-                }
-                break;
-            case RollState_Handling:
+				}
+				break;
+			case RollState_Handling:
 				// Did we move ennough?
 				{
 					bool rotatedEnough = float3::dot(newFrame.acc.normalized(), handleStateNormal) < 0.5f;
@@ -146,8 +146,8 @@ namespace Accelerometer
 				}
 				break;
 			case RollState_Rolling:
-                // If we stop moving we may be on a face
-                if (stopMoving) {
+				// If we stop moving we may be on a face
+				if (stopMoving) {
 					if (BoardManager::getBoard()->ledCount == 6) {
 						// We may be at rest
 						if (onFace) {
@@ -159,11 +159,11 @@ namespace Accelerometer
 					} else {
 						newRollState = RollState_OnFace;
 					}
-                }
-                break;
-            default:
-                break;
-        }
+				}
+				break;
+			default:
+				break;
+		}
 
 		if (newFrame.face != face || newRollState != rollState) {
 
@@ -202,11 +202,7 @@ namespace Accelerometer
 		// Determine what state we're in to begin with
 		auto settings = SettingsManager::getSettings();
 		bool onFace = confidence > settings->faceThreshold;
-        if (onFace) {
-            rollState = RollState_OnFace;
-        } else {
-            rollState = RollState_Crooked;
-        }
+		rollState = (onFace) ? RollState_OnFace : RollState_Crooked;
 
 		ret_code_t ret_code = app_timer_create(&accelControllerTimer, APP_TIMER_MODE_REPEATED, Accelerometer::update);
 		APP_ERROR_CHECK(ret_code);
@@ -341,7 +337,7 @@ namespace Accelerometer
 	};
 	CalibrationNormals* measuredNormals = nullptr;
 
-    void CalibrateHandler(void* context, const Message* msg) {
+	void CalibrateHandler(void* context, const Message* msg) {
 		// Start calibration!
 		measuredNormals = (CalibrationNormals*)malloc(sizeof(CalibrationNormals));
 
