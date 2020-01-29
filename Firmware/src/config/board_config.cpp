@@ -51,7 +51,6 @@ namespace BoardManager
 
     static const uint8_t twentySidedMisalignedRemap[] {
         15, 19, 11, 1, 14, 16, 17, 9, 7, 6, 13, 12, 10, 2, 3, 5, 18, 8, 0, 4
-//        18,  3, 13, 14, 19, 15,  9,  8, 17,  7, 12,  2, 11, 10,  4,  0,  5,  6, 16,  1
     };
 
 
