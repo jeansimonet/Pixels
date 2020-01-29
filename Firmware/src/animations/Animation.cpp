@@ -154,7 +154,7 @@ namespace Animations
 	int Animation::updateLEDs(void* token, int time, int retIndices[], uint32_t retColors[]) const
 	{
 		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
-		for (int i = 0; i < trackCount; ++i)
+		for (uint16_t i = 0; i < trackCount; ++i)
 		{
 			const RGBTrack& rgbTrack = tracks[i].getTrack();
 			retIndices[i] = tracks[i].ledIndex;
@@ -170,7 +170,7 @@ namespace Animations
 	int Animation::stop(int retIndices[]) const
 	{
 		AnimationTrack const * const tracks = AnimationSet::getTracks(tracksOffset);
-		for (int i = 0; i < trackCount; ++i)
+		for (uint16_t i = 0; i < trackCount; ++i)
 		{
 			retIndices[i] = tracks[i].ledIndex;
 		}
@@ -186,4 +186,3 @@ namespace Animations
 		return AnimationSet::getTrack(tracksOffset + index);
 	}
 }
-
