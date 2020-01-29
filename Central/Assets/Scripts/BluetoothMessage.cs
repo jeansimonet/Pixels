@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
@@ -372,6 +372,8 @@ public class DieMessageStopAnim
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.StopAnim;
+    public byte index;
+    public byte remapFace;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
