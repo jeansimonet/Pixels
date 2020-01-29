@@ -2,7 +2,7 @@
 
 namespace Die
 {
-    void init();
+	void init();
 	void initMainLogic();
 
 	// Event handlers
@@ -11,6 +11,5 @@ namespace Die
 	void onChargingInterrupted();
 	void onChargingStarted();
 
-    void update();
+	void update();
 }
-
