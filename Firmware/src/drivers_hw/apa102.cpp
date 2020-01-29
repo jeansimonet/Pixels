@@ -43,14 +43,14 @@ namespace APA102
     		NRF_GPIO_PIN_DIR_OUTPUT,
     		NRF_GPIO_PIN_INPUT_DISCONNECT,
     		NRF_GPIO_PIN_NOPULL,
-			NRF_GPIO_PIN_S0S1,
+    		NRF_GPIO_PIN_S0S1,
     		NRF_GPIO_PIN_NOSENSE);
 
 		nrf_gpio_cfg(clockPin,
     		NRF_GPIO_PIN_DIR_OUTPUT,
     		NRF_GPIO_PIN_INPUT_DISCONNECT,
     		NRF_GPIO_PIN_NOPULL,
-			NRF_GPIO_PIN_S0S1,
+    		NRF_GPIO_PIN_S0S1,
     		NRF_GPIO_PIN_NOSENSE);
 
 		nrf_gpio_cfg_output(powerPin);
@@ -179,7 +179,7 @@ namespace APA102
 		}
 	}
 
-    void setAll(uint32_t c) {
+	void setAll(uint32_t c) {
 		for (int i = 0; i < numLEDs; ++i) {
 			uint8_t *p = &pixels[i * 3];
 			p[OFFSET_RED] = (uint8_t)(c >> 16);
@@ -202,7 +202,7 @@ namespace APA102
 		}
 	}
 
-    void setPixelColors(uint32_t* colors) {
+	void setPixelColors(uint32_t* colors) {
 		for (int i = 0; i < numLEDs; ++i) {
 			uint32_t c = colors[i];
 			uint8_t *p = &pixels[i * 3];
@@ -254,7 +254,7 @@ namespace APA102
 	#if DICE_SELFTEST && APA102_SELFTEST
 	void selfTest() {
 
-        NRF_LOG_INFO("Turning LEDs On, press any key to stop");
+		NRF_LOG_INFO("Turning LEDs On, press any key to stop");
 		for (int i = 0; i < numLEDs; ++i) {
 			int phase = 255 * i / numLEDs;
 			uint32_t color = Rainbow::wheel(phase);
@@ -262,9 +262,9 @@ namespace APA102
 		}
 		show();
 		int loop = 0;
-        while (true) {
+		while (true) {
 			// PowerManager::feed();
-            // PowerManager::update();
+			// PowerManager::update();
 
 			for (int i = 0; i < numLEDs; ++i) {
 				int phase = ((int)(255 * i / numLEDs) + loop) % 256;
@@ -275,10 +275,10 @@ namespace APA102
 
 			loop++;
 			nrf_delay_ms(100);
-        }
+		}
 		Log::getKey();
-        NRF_LOG_INFO("Turning LEDs Off!");
-    	clear();
+		NRF_LOG_INFO("Turning LEDs Off!");
+		clear();
 		show();
 	}
 	#endif
@@ -320,4 +320,3 @@ namespace APA102
 // 		}
 // 	}
 // }
-
