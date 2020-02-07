@@ -41,6 +41,16 @@
         "ble_nus.h": "c",
         "limits": "cpp",
         "nrfx_log.h": "c",
-        "cstddef": "cpp"
+        "cstddef": "cpp",
+        "random": "cpp",
+        "nrf_strerror.h": "c",
+        "streambuf": "cpp",
+        "rope": "cpp",
+        "fstream": "cpp",
+        "shared_mutex": "cpp",
+        "sstream": "cpp",
+        "exception": "cpp",
+        "iosfwd": "cpp",
+        "new": "cpp"
     },
 }

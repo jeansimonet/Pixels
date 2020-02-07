@@ -17,9 +17,6 @@ namespace DriversNRF
         void read(uint32_t flashAddress, void* outData, uint32_t size, FlashCallback callback);
         void erase(uint32_t flashAddress, uint32_t pages, FlashCallback callback);
 
-        void writeSynchronous(uint32_t flashAddress, const void* data, uint32_t size);
-        void eraseSynchronous(uint32_t flashAddress, uint32_t pages);
-
         uint32_t getFlashStartAddress();
         uint32_t getFlashEndAddress();
         uint32_t getPageSize();

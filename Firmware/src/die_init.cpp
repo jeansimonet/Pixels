@@ -124,62 +124,64 @@ namespace Die
         Flash::init();
 
         // The we read user settings from flash, or set some defaults if none are found
-        SettingsManager::init();
+        SettingsManager::init([] (bool result) {
 
-        // I2C is needed for the accelerometer, but depends on the board info
-        I2C::init();
+            // I2C is needed for the accelerometer, but depends on the board info
+            I2C::init();
 
-        //--------------------
-        // Initialize Hardware drivers
-        //--------------------
+            //--------------------
+            // Initialize Hardware drivers
+            //--------------------
 
-        // Lights also depend on board info
-        APA102::init();
+            // Lights also depend on board info
+            APA102::init();
 
-        // Accel pins depend on the board info
-        LIS2DE12::init();
+            // Accel pins depend on the board info
+            LIS2DE12::init();
 
-        // Battery sense pin depends on board info
-        Battery::init();
+            // Battery sense pin depends on board info
+            Battery::init();
 
-        //--------------------
-        // Initialize Modules
-        //--------------------
+            //--------------------
+            // Initialize Modules
+            //--------------------
 
-        // Animation set needs flash and board info
-        AnimationSet::init();
-        
-        #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
-        // Test bulk bulk_data_transfer
-        //SendBulkData::selfTest();
-        ReceiveBulkData::selfTest();
-        #endif
+            // Animation set needs flash and board info
+            AnimationSet::init([] (bool result) {
 
-        // Useful for development
-        LEDColorTester::init();
+                #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
+                // Test bulk bulk_data_transfer
+                //SendBulkData::selfTest();
+                ReceiveBulkData::selfTest();
+                #endif
 
-        // Accelerometer
-        Accelerometer::init();
+                // Useful for development
+                LEDColorTester::init();
 
-        // Telemetry depends on accelerometer
-        Telemetry::init();
+                // Accelerometer
+                Accelerometer::init();
 
-        // Animation controller relies on animation set
-        AnimController::init();
+                // Telemetry depends on accelerometer
+                Telemetry::init();
 
-        // Battery controller relies on the battery driver
-        BatteryController::init();
+                // Animation controller relies on animation set
+                AnimController::init();
 
-        HardwareTest::init();
+                // Battery controller relies on the battery driver
+                BatteryController::init();
 
-        // Initialize main logic manager
-        initMainLogic();
+                HardwareTest::init();
 
-        // Start advertising!
-        Stack::startAdvertising();
+                // Initialize main logic manager
+                initMainLogic();
 
-        // Entering the main loop! Play Hello! anim
-        AnimController::play(AnimationEvent_Hello, Accelerometer::currentFace());
+                // Start advertising!
+                Stack::startAdvertising();
 
+                // Entering the main loop! Play Hello! anim
+                AnimController::play(AnimationEvent_Hello, Accelerometer::currentFace());
+
+            });
+        });
     }
 }

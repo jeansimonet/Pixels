@@ -138,7 +138,7 @@ namespace AnimController
 
 					// Gamma correct and map face index to led index
 					for (int j = 0; j < ledCount; ++j) {
-						colors[j] = Utils::gamma(colors[j]); // turn off gamma for now...
+						colors[j] = colors[j]; // turn off gamma for now...
 						faceIndices[j] = board->remapLed(anim.remapFace, canonIndices[j]);
 						ledIndices[j] = faceToLEDs[faceIndices[j]];
 					}

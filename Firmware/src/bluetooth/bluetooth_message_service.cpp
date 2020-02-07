@@ -6,12 +6,12 @@
 #include "ble_srv_common.h"
 #include "nrf_sdh_ble.h"
 #include "drivers_nrf/scheduler.h"
-#include "bluetooth_message_queue.h"
 #include "nrf_delay.h"
 
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/power_manager.h"
+#include "drivers_nrf/timers.h"
 
 using namespace DriversNRF;
 
@@ -34,15 +34,11 @@ namespace MessageService
 	};
 	HandlerAndToken messageHandlers[Message::MessageType_Count];
 
-    // This can be optimized to a variable-size queue
-    MessageQueue<256> messageQueue;
-
     bool send(const uint8_t* data, uint16_t size);
     bool SendMessage(Message::MessageType msgType);
     bool SendMessage(const Message* msg, int msgSize);
 
     void onMessageReceived(const uint8_t* data, uint16_t len);
-    void onConnectionStateChanged(void* param, bool connected);
 
     void init() {
         // Clear message handle array
@@ -99,37 +95,12 @@ namespace MessageService
         err_code = characteristic_add(service_handle, &add_char_params, &tx_handles);
         APP_ERROR_CHECK(err_code);
 
-        // Hook onto the connection state events
-        Stack::hook(onConnectionStateChanged, nullptr);
-
         NRF_LOG_INFO("Message Service Initialized");
-    }
-
-    void update() {
-        int msgSize = 0;
-        //if (Stack::canSend()) {
-            const Message* msg = messageQueue.peekNext(msgSize);
-            if (msg != nullptr) {
-                if (send(reinterpret_cast<const uint8_t*>(msg), msgSize)) {
-                    // We were able to send the message!
-                    messageQueue.dequeue();
-                }
-                // Else we'll try again next time
-            }
-        //}
     }
 
     bool isConnected() {
         return Stack::isConnected();
     }
-
-    void onConnectionStateChanged(void* param, bool connected) {
-        if (!connected) {
-            // Clear the message queue, if any
-            messageQueue.clear();
-        }
-    }
-
 
     void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context) {
         switch (p_ble_evt->header.evt_id)
@@ -170,14 +141,10 @@ namespace MessageService
     bool SendMessage(const Message* msg, int msgSize) {
         bool ret = send((const uint8_t*)msg, msgSize);
         if (!ret) {
-            ret = messageQueue.enqueue(msg, msgSize);
-            while (!ret) {
-                Scheduler::update();
-                Watchdog::feed();
-                PowerManager::update();
-                Bluetooth::MessageService::update();
-                ret = messageQueue.enqueue(msg, msgSize);
-            }
+            Scheduler::push(msg, msgSize, [] (void * p_event_data, uint16_t event_size) {
+                SendMessage((const Message*)p_event_data, event_size);
+            });
+            NRF_LOG_DEBUG("Queued Message type %d of size %d", msg->type, msgSize);
         }
         return ret;
     }
@@ -239,13 +206,28 @@ namespace MessageService
         notifyMsg.timeout_s = timeout_s;
 		strncpy(notifyMsg.text, text, MAX_DATA_SIZE - 4);
         if ((ok || cancel) && callback != nullptr) {
-            MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* msg)
-            {
+
+            // This timer will trigger after the timeout period and unregister the event handler
+    		APP_TIMER_DEF(notifyTimeout);
+            Timers::createTimer(&notifyTimeout, APP_TIMER_MODE_SINGLE_SHOT, [](void* context) {
                 MessageService::UnregisterMessageHandler(Message::MessageType_NotifyUserAck);
+                ((NotifyUserCallback)context)(false);
+            });
+
+			Timers::startTimer(notifyTimeout, (uint32_t)timeout_s * 1000, (void*)callback);
+
+            MessageService::RegisterMessageHandler(Message::MessageType_NotifyUserAck, (void*)callback, [] (void* ctx, const Message* msg) {
+
+                MessageService::UnregisterMessageHandler(Message::MessageType_NotifyUserAck);
+
+                // Stop the timer since we got a message back!
+                Timers::stopTimer(notifyTimeout);
                 MessageNotifyUserAck* ackMsg = (MessageNotifyUserAck*)msg;
                 ((NotifyUserCallback)ctx)(ackMsg->okCancel != 0);
             });
         }
+
+        // Kick things off by sending the notification
 		MessageService::SendMessage(&notifyMsg);
     }
 

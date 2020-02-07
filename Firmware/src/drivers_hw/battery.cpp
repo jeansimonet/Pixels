@@ -8,6 +8,7 @@
 #include "../drivers_nrf/log.h"
 #include "../drivers_nrf/timers.h"
 #include "../drivers_nrf/power_manager.h"
+#include "../drivers_nrf/scheduler.h"
 
 using namespace DriversNRF;
 using namespace Config;
@@ -82,12 +83,16 @@ namespace Battery
         return ret;
     }
 
-	void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+    void handleBatteryEvent(void * p_event_data, uint16_t event_size) {
 		// Notify clients
 		for (int i = 0; i < clients.Count(); ++i)
 		{
 			clients[i].handler(clients[i].token);
 		}
+    }
+
+	void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+        Scheduler::push(nullptr, 0, handleBatteryEvent);
 	}
 
 	/// <summary>

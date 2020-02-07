@@ -84,16 +84,30 @@ namespace AnimationSet
 	// The animation set always points at a specific address in memory
 	Data const * data = nullptr;
 
-	void init()
+	void init(AnimationSetWrittenCallback callback)
 	{
+		static AnimationSetWrittenCallback _callback; // Don't initialize this static inline because it would only do it on first call!
+		_callback = callback;
 		data = (Data const *)SettingsManager::getSettingsEndAddress();
+
+		// This gets called after the animation set has been initialized
+		auto finishInit = [] (bool result) {
+				MessageService::RegisterMessageHandler(Message::MessageType_TransferAnimSet, nullptr, ReceiveAnimationSetHandler);
+				NRF_LOG_INFO("Animation Set initialized");
+				auto callBackCopy = _callback;
+				_callback = nullptr;
+				if (callBackCopy != nullptr) {
+					callBackCopy(result);
+				}
+			};
+
 		//ProgramDefaultAnimationSet();
 		if (!CheckValid()) {
 			NRF_LOG_INFO("Animation Set not valid, programming default");
-			ProgramDefaultAnimationSet();
+			ProgramDefaultAnimationSet(finishInit);
+		} else {
+			finishInit(true);
 		}
-		MessageService::RegisterMessageHandler(Message::MessageType_TransferAnimSet, nullptr, ReceiveAnimationSetHandler);
-		NRF_LOG_INFO("Animation Set initialized");
 		//printAnimationInfo();
 	}
 
@@ -304,10 +318,14 @@ namespace AnimationSet
 		);
 	}
 
-	void ProgramDefaultAnimationSet() {
+	void ProgramDefaultAnimationSet(AnimationSetWrittenCallback callback) {
+
+		static AnimationSetWrittenCallback _setWrittenCallback;
+		_setWrittenCallback = callback;
 
 		int paletteSize = 12;
-		uint8_t palette[paletteSize];
+		static uint8_t* palette;
+		palette = (uint8_t*)malloc(paletteSize * sizeof(uint8_t));
 		palette[0] = 0;
 		palette[1] = 0;
 		palette[2] = 0;
@@ -326,7 +344,8 @@ namespace AnimationSet
 
 		// Create a few keyframes
 		int keyFrameCount = 4 * 3;
-		RGBKeyframe keyframes[keyFrameCount];
+		static RGBKeyframe* keyframes;
+		keyframes = (RGBKeyframe*)malloc(keyFrameCount * sizeof(RGBKeyframe));
 		keyframes[0].setTimeAndColorIndex(0, 0);
 		keyframes[1].setTimeAndColorIndex(300, 1);
 		keyframes[2].setTimeAndColorIndex(700, 1);
@@ -347,7 +366,8 @@ namespace AnimationSet
 
 		// One track per color
 		int rgbTrackCount = 3;
-		RGBTrack rgbTracks[rgbTrackCount];
+		static RGBTrack* rgbTracks;
+		rgbTracks = (RGBTrack*)malloc(rgbTrackCount * sizeof(RGBTrack));
 		for (int c = 0; c < 3; ++c) {
 			// Each anim is a single track per face
 			int trackIndex = c;
@@ -357,7 +377,8 @@ namespace AnimationSet
 
 		// Create animation tracks
 		int trackCount = ledCount * 3;
-		AnimationTrack tracks[trackCount];
+		static AnimationTrack* tracks;
+		tracks = (AnimationTrack*)malloc(trackCount * sizeof(AnimationTrack));
 		for (int c = 0; c < 3; ++c) {
 			for (int l = 0; l < ledCount; ++l) {
 				int trackIndex = c * ledCount + l;
@@ -368,7 +389,8 @@ namespace AnimationSet
 
 		// Create animations
 		int animCount = ledCount * 3 + 3;
-		Animation animations[animCount];
+		static Animation* animations;
+		animations = (Animation*)malloc(animCount * sizeof(Animation));
 		for (int c = 0; c < 3; ++c) {
 			for (int a = 0; a < ledCount; ++a) {
 				int animIndex = c * ledCount + a;
@@ -431,46 +453,95 @@ namespace AnimationSet
 		uint32_t dataAddress = getAnimationSetDataAddress();
 		uint32_t pageCount = Flash::bytesToPages(flashSize);
 
+		uint32_t paletteAddress = dataAddress;
+		uint32_t keyframesAddress = paletteAddress + paletteSize * sizeof(uint8_t);
+		uint32_t rgbTracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
+		uint32_t tracksAddress = rgbTracksAddress + rgbTrackCount * sizeof(RGBTrack);
+		uint32_t animationsAddress = tracksAddress + trackCount * sizeof(AnimationTrack);
+
+		static Data* newData; // Don't initialize this static inline because it would only do it on first call!
+		newData = (Data*)malloc(sizeof(Data));
+		newData->headMarker = ANIMATION_SET_VALID_KEY;
+		newData->palette = (const uint8_t*)paletteAddress;
+		newData->paletteSize = paletteSize;
+		newData->keyframes = (const RGBKeyframe*)keyframesAddress;
+		newData->keyFrameCount = keyFrameCount;
+		newData->rgbTracks = (const RGBTrack*)rgbTracksAddress;
+		newData->rgbTrackCount = rgbTrackCount;
+		newData->tracks = (const AnimationTrack*)tracksAddress;
+		newData->trackCount = trackCount;
+		newData->animations = (const Animation*)animationsAddress;
+		newData->animationCount = animCount;
+		newData->tailMarker = ANIMATION_SET_VALID_KEY;
+
+		static auto finishProgram = [] (bool result) {
+			// Cleanup
+			free(newData);
+			free(animations);
+			free(tracks);
+			free(rgbTracks);
+			free(keyframes);
+			free(palette);
+
+			auto callBackCopy = _setWrittenCallback;
+			_setWrittenCallback = nullptr;
+			if (callBackCopy != nullptr) {
+				callBackCopy(result);
+			}
+		};
+
 		// Start by erasing the flash
 		NRF_LOG_DEBUG("Erasing flash");
-		Flash::eraseSynchronous(pageAddress, pageCount);
-
-		// Then program the palette
-		NRF_LOG_DEBUG("Writing palette");
-		uint32_t paletteAddress = dataAddress;
-		Flash::writeSynchronous(paletteAddress, palette, paletteSize * sizeof(uint8_t));
-		NRF_LOG_DEBUG("Writing RGB keyframes");
-		uint32_t keyframesAddress = paletteAddress + paletteSize * sizeof(uint8_t);
-		Flash::writeSynchronous(keyframesAddress, keyframes, keyFrameCount * sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("Writing RGB tracks");
-		uint32_t rgbTracksAddress = keyframesAddress + keyFrameCount * sizeof(RGBKeyframe);
-		Flash::writeSynchronous(rgbTracksAddress, rgbTracks, rgbTrackCount * sizeof(RGBTrack));
-		NRF_LOG_DEBUG("Writing Animation tracks");
-		uint32_t tracksAddress = rgbTracksAddress + rgbTrackCount * sizeof(RGBTrack);
-		Flash::writeSynchronous(tracksAddress, tracks, trackCount * sizeof(AnimationTrack));
-		NRF_LOG_DEBUG("Writing Animations");
-		uint32_t animationsAddress = tracksAddress + trackCount * sizeof(AnimationTrack);
-		Flash::writeSynchronous(animationsAddress, animations, animCount * sizeof(Animation));
-
-		// Create the dataset
-		NRF_LOG_DEBUG("Writing anim set");
-		Data newData;
-		newData.headMarker = ANIMATION_SET_VALID_KEY;
-		newData.palette = (const uint8_t*)paletteAddress;
-		newData.paletteSize = paletteSize;
-		newData.keyframes = (const RGBKeyframe*)keyframesAddress;
-		newData.keyFrameCount = keyFrameCount;
-		newData.rgbTracks = (const RGBTrack*)rgbTracksAddress;
-		newData.rgbTrackCount = rgbTrackCount;
-		newData.tracks = (const AnimationTrack*)tracksAddress;
-		newData.trackCount = trackCount;
-		newData.animations = (const Animation*)animationsAddress;
-		newData.animationCount = animCount;
-		newData.tailMarker = ANIMATION_SET_VALID_KEY;
-
-		// And write it!
-		Flash::writeSynchronous(getAnimationSetAddress(), &newData, sizeof(Data));
-		NRF_LOG_INFO("Done");
+		Flash::erase(pageAddress, pageCount, [](bool result, uint32_t address, uint16_t size) {
+			if (result) {
+				// Then program the palette
+				NRF_LOG_DEBUG("Writing palette");
+				Flash::write((uint32_t)(const void*)newData->palette, palette, newData->paletteSize * sizeof(uint8_t), [] (bool result, uint32_t address, uint16_t size) {
+					if (result) {
+						NRF_LOG_DEBUG("Writing RGB keyframes");
+						Flash::write((uint32_t)(const void*)newData->keyframes, keyframes, newData->keyFrameCount * sizeof(RGBKeyframe), [] (bool result, uint32_t address, uint16_t size) {
+							if (result) {
+								NRF_LOG_DEBUG("Writing RGB tracks");
+								Flash::write((uint32_t)(const void*)newData->rgbTracks, rgbTracks, newData->rgbTrackCount * sizeof(RGBTrack), [] (bool result, uint32_t address, uint16_t size) {
+									if (result) {
+										NRF_LOG_DEBUG("Writing Animation tracks");
+										Flash::write((uint32_t)(const void*)newData->tracks, tracks, newData->trackCount * sizeof(AnimationTrack), [] (bool result, uint32_t address, uint16_t size) {
+											if (result) {
+												NRF_LOG_DEBUG("Writing Animations");
+												Flash::write((uint32_t)(const void*)newData->animations, animations, newData->animationCount * sizeof(Animation), [] (bool result, uint32_t address, uint16_t size) {
+													if (result) {
+														NRF_LOG_DEBUG("Writing anim set");
+														Flash::write(getAnimationSetAddress(), newData, sizeof(Data), [] (bool result, uint32_t address, uint16_t size) {
+															if (result) {
+																NRF_LOG_INFO("Done");
+																//printAnimationInfo();
+															}
+															finishProgram(result);
+														});
+													} else {
+														finishProgram(false);
+													}
+												});
+											} else {
+												finishProgram(false);
+											}
+										});
+									} else {
+										finishProgram(false);
+									}
+								});
+							} else {
+								finishProgram(false);
+							}
+						});
+					} else {
+						finishProgram(false);
+					}
+				});
+			} else {
+				finishProgram(false);
+			}
+		});
 	}
 
 	void printAnimationInfo() {

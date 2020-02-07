@@ -172,6 +172,7 @@ namespace BoardManager
         // LED config
         .ledCount = 20,
         .faceToLedLookup = { 15, 4, 7, 1, 0, 19, 8, 10, 6, 14, 9, 11, 5, 13, 3, 17, 16, 12, 18, 2 },
+        // FYI This is the board order: 4, 3, 19, 14, 1, 12, 8, 2, 6, 10, 7, 11, 17, 13, 9, 0, 16, 15, 18, 5
         .faceNormals = {
             {-0.1273862f,  0.3333025f,  0.9341605f},
             { 0.6667246f, -0.7453931f, -0.0000000f},
