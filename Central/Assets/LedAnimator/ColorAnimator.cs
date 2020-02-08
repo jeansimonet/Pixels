@@ -85,6 +85,18 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		_timeline.AddTrack(ToAnimationTrack(_timeline.Unit));
 	}
 
+	public void DuplicateSelfToAll()
+	{
+		RemoveFocus();
+		SetLedNumber(0);
+		for (int i = 1; i < 20; ++i)
+		{
+			var copy = ToAnimationTrack(_timeline.Unit);
+			copy.ledIndex = i;
+			_timeline.AddTrack(copy);
+		}
+	}
+
 	public void GiveFocus()
 	{
 		if (!HasFocus)

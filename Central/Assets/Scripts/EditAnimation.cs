@@ -129,7 +129,9 @@ namespace Animations
                         if (kf.colorIndex() == AnimationSet.SPECIAL_COLOR_INDEX)
                             editKf.color = new Color32(255,255,255,0); // Important part is alpha
                         else
-                            editKf.color = set.getColor(kf.colorIndex());
+                        {
+                            editKf.color = ColorMapping.InverseRemap(set.getColor(kf.colorIndex()));
+                        }
                         editTrack.keyframes.Add(editKf);
                     }
                     editAnim.tracks.Add(editTrack);
@@ -172,7 +174,7 @@ namespace Animations
             set.palette = new byte[colors.Count * 3];
             foreach (var ci in colors)
             {
-                Color32 color = ci.Key;
+                Color32 color = ColorMapping.RemapColor(ci.Key);
                 int i = ci.Value;
                 set.palette[i * 3 + 0] = color.r;
                 set.palette[i * 3 + 1] = color.g;
