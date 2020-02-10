@@ -7,7 +7,6 @@ using Assets.SimpleColorPicker.Scripts;
 
 public class CalibrateColor : MonoBehaviour
 {
-    public Central central;
     public Palette palette;
     public ColorPicker picker;
     public Image Swatch;
@@ -22,8 +21,8 @@ public class CalibrateColor : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        central.onDieReady += AddDie;
-        central.onDieDisconnected += RemoveDie;
+        DicePool.Instance.onDieConnected += AddDie;
+        DicePool.Instance.onDieDisconnected += RemoveDie;
         palette.ColorSelected += SetPaletteColor;
         picker.ColorChanged += SetDieColor;
     }

@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Stats : MonoBehaviour
 {
-    public Central central;
     public RollStatBar rollBarPrefab;
     Die die;
 
@@ -14,8 +13,8 @@ public class Stats : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        central.onDieReady += AddDie;
-        central.onDieDisconnected += RemoveDie;
+        DicePool.Instance.onDieConnected += AddDie;
+        DicePool.Instance.onDieDisconnected += RemoveDie;
     }
 
     // Update is called once per frame

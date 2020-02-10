@@ -116,7 +116,7 @@ public class CurrentDicePoolDice
     void ForgetDie()
     {
         // Tell central to forget about this die
-        Central.Instance.ForgetDie(die);
+        DicePool.Instance.DisconnectDie(die);
         HideCommands();
     }
 

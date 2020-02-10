@@ -17,14 +17,11 @@ public class Telemetry : MonoBehaviour
     public Text scanText;
     public Text recordText;
 
-    Central central;
-
     Dictionary<Die, TelemetryDie> discoveredDice;
     Dictionary<Die, TelemetryDie> trackedDice;
 
 	void Awake()
 	{
-		central = Central.Instance;
         discoveredDice = new Dictionary<Die, TelemetryDie>();
         trackedDice = new Dictionary<Die, TelemetryDie>();
     }
@@ -48,7 +45,7 @@ public class Telemetry : MonoBehaviour
         scanButton.enabled = false;
         recordButton.enabled = false;
 
-        yield return new WaitUntil(() => central.state == Central.State.Idle);
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
 
         StartIdle();
     }
@@ -75,10 +72,10 @@ public class Telemetry : MonoBehaviour
 
     void StartScanning()
     {
-        central.onDieDiscovered += OnDieDiscovered;
-        central.onDieConnected += OnDieConnected;
-        central.onDieDisconnected += OnDieDisconnected;
-        central.BeginScanForDice();
+        DicePool.Instance.onDieDiscovered += OnDieDiscovered;
+        DicePool.Instance.onDieConnected += OnDieConnected;
+        DicePool.Instance.onDieDisconnected += OnDieDisconnected;
+        DicePool.Instance.BeginScanForDice();
         scanButton.enabled = true;
         scanText.text = "Stop";
         scanButton.onClick.RemoveAllListeners();
@@ -115,10 +112,10 @@ public class Telemetry : MonoBehaviour
     {
         scanButton.enabled = false;
         scanText.text = "Connecting";
-        central.StopScanForDice();
+        DicePool.Instance.StopScanForDice();
         foreach (var d in discoveredDice)
         {
-            central.ConnectToDie(d.Key);
+            DicePool.Instance.ConnectDie(d.Key);
         }
         StartIdle();
     }

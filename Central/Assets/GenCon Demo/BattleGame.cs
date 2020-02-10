@@ -432,16 +432,14 @@ public class BattleGame : MonoBehaviour
 
     IEnumerator PeriodicScanAndConnectCr()
     {
-        var central = Central.Instance;
-
-        yield return new WaitUntil(() => central.state == Central.State.Idle);
-        central.onDieDiscovered += onDieDiscovered;
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
+        DicePool.Instance.onDieDiscovered += onDieDiscovered;
 
         while (true)
         {
-            central.BeginScanForDice();
+            DicePool.Instance.BeginScanForDice();
             yield return new WaitForSeconds(3.0f);
-            central.StopScanForDice();
+            DicePool.Instance.StopScanForDice();
             yield return new WaitForSeconds(3.0f);
         }
     }
@@ -477,7 +475,7 @@ public class BattleGame : MonoBehaviour
                 // Else we probably should disconnect and then keep a list
                 // of invalid dice so we don't reconnected automatically
                 break;
-            case Die.ConnectionState.Unavailable:
+            case Die.ConnectionState.Disconnected:
                 RemoveDieFromGame(die);
                 break;
             default:

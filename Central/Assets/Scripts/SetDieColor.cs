@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class SetDieColor : MonoBehaviour
 {
-    public Central central;
     public ColorSelector colorSelector;
 
     Die die;
@@ -15,8 +14,8 @@ public class SetDieColor : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        central.onDieReady += AddDie;
-        central.onDieDisconnected += RemoveDie;
+        DicePool.Instance.onDieConnected += AddDie;
+        DicePool.Instance.onDieDisconnected += RemoveDie;
 
         colorSelector.onMouseButtonUp.AddListener(SetColor);
     }

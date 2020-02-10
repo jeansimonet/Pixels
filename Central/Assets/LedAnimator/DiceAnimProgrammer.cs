@@ -31,13 +31,10 @@ public class DiceAnimProgrammer
     }
 
     // Use this for initialization
-    IEnumerator Start()
+    void Start()
     {
-        // Until we can properly record data, disable
-        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
-
         // Register to be notified of new dice getting connected
-        Central.Instance.onDieReady += OnNewDie;
+        DicePool.Instance.onDieConnected += OnNewDie;
 
         // Create empty anim if needed
         LoadFromJson(DiceType.D20);
@@ -45,9 +42,9 @@ public class DiceAnimProgrammer
 
     private void OnDisable()
     {
-        if (Central.Instance != null)
+        if (DicePool.Instance != null)
         {
-            Central.Instance.onDieReady -= OnNewDie;
+            DicePool.Instance.onDieConnected -= OnNewDie;
         }
     }
 

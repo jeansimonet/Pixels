@@ -1,26 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SpeakNumber : MonoBehaviour
 {
+    public Text numberText;
     public AudioClip[] numbers;
-
-    Central central;
     AudioSource source;
 
     Die die;
 
     private void Awake()
     {
-        central = GetComponent<Central>();
         source = GetComponent<AudioSource>();
     }
     // Start is called before the first frame update
     void Start()
     {
-        central.onDieReady += AddDie;
-        central.onDieDisconnected += RemoveDie;
+        DicePool.Instance.onDieConnected += AddDie;
+        DicePool.Instance.onDieDisconnected += RemoveDie;
     }
 
     // Update is called once per frame
@@ -46,6 +45,7 @@ public class SpeakNumber : MonoBehaviour
 
     void OnDieStateChanged(Die die, Die.State newState)
     {
+        numberText.text = (die.face + 1).ToString();
         if (newState == Die.State.Idle)
         {
             Debug.Log("New Face: " + die.face);

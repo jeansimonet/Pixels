@@ -8,11 +8,12 @@ using System.Threading;
 
 public class Die
 	: MonoBehaviour
+    , Central.IDie
 {
-	public const float SCALE_2G = 2.0f;
-	public const float SCALE_4G = 4.0f;
-	public const float SCALE_8G = 8.0f;
-	float scale = SCALE_8G;
+	const float SCALE_2G = 2.0f;
+	const float SCALE_4G = 4.0f;
+	const float SCALE_8G = 8.0f;
+	const float scale = SCALE_8G;
 
     public enum DieType
     {
@@ -100,20 +101,16 @@ public class Die
 
     public enum ConnectionState
     {
-        Unavailable = 0,
-        Disconnecting,
-        Disconnected,
+        Disconnected = 0,
         Advertising,
         Connecting,
         Connected,
-        Subscribing,
-        Subscribed,
         FetchingId,
         FetchingState,
         Ready
     }
 
-    ConnectionState _connectionState = ConnectionState.Unavailable;
+    ConnectionState _connectionState = ConnectionState.Disconnected;
     public ConnectionState connectionState
     {
         get { return _connectionState; }
@@ -169,16 +166,6 @@ public class Die
     public delegate void SettingsChangedEvent(Die die);
     public SettingsChangedEvent OnSettingsChanged;
 
-    // For telemetry
-    Central central;
-
-    const string messageServiceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-    const string messageSubscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-    const string messageWriteCharacteristic = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
-
-    bool messageWriteCharacteristicFound = false;
-    bool messageReadCharacteristicFound = false;
-
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
     bool bluetoothOperationInProgress = false;
@@ -198,12 +185,11 @@ public class Die
         messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
     }
 
-    public void Setup(string name, string address, ConnectionState connectionState)
+    public void Setup(string name, string address)
     {
         this.name = name;
         this.address = address;
-        this.connectionState = connectionState;
-        this.central = Central.Instance;
+        this.connectionState = ConnectionState.Disconnected;
     }
 
     public void Connect()
@@ -213,83 +199,29 @@ public class Die
 
     IEnumerator ConnectCr()
     {
-        bool errorOccurred = false;
-        Central.OnBluetoothErrorEvent errorHandler = (err) => errorOccurred = true;
-        try
+        // Kick off connection
+        DicePool.Instance.ConnectDie(this);
+
+        // Wait until the die is either ready or disconnected because of some error
+        yield return new WaitUntil(() => connectionState == ConnectionState.Connected || connectionState == ConnectionState.Disconnected);
+
+        if (connectionState == ConnectionState.Connected)
         {
-            bluetoothOperationInProgress = true;
-            connectionState = ConnectionState.Connecting;
-
-            central.onBluetoothError += errorHandler;
-            central.ConnectToDie(this);
-            while ((!messageWriteCharacteristicFound || !messageReadCharacteristicFound ||
-                    connectionState != ConnectionState.Connected) && !errorOccurred)
-            {
-                yield return null;
-            }
-
-            if (errorOccurred)
-            {
-                // Notify central
-                Debug.LogError("Die " + name + " error while connecting");
-                connectionState = ConnectionState.Unavailable;
-                central.ForgetDie(this);
-            }
-            else
-            {
-                // We're connected and we've discovered all characteristics we care about, subscribe
-                connectionState = ConnectionState.Subscribing;
-                bool messageSub = false;
-                central.SubscribeCharacteristic(this, messageServiceGUID, messageSubscribeCharacteristic, () => messageSub = true);
-                float subscribeTimeStart = Time.time;
-                float timeout = 5.0f;
-                while (!messageSub && !errorOccurred && Time.time < subscribeTimeStart + timeout)
-                {
-                    yield return null;
-                }
-
-                if (errorOccurred)
-                {
-                    // Notify central
-                    Debug.LogError("Die " + name + " error while subscribing");
-                    connectionState = ConnectionState.Unavailable;
-                    central.ForgetDie(this);
-                }
-                else if (!messageSub)
-                {
-                    // Timeout trying to subscribe
-                    Debug.LogError("Die " + name + " timeout while subscribing");
-                    connectionState = ConnectionState.Unavailable;
-                    central.ForgetDie(this);
-                }
-                else
-                {
-                    connectionState = ConnectionState.Subscribed;
-                }
-            }
-        }
-        finally
-        {
-            central.onBluetoothError -= errorHandler;
-            bluetoothOperationInProgress = false;
-        }
-
-        if (!errorOccurred)
-        {
-            connectionState = ConnectionState.FetchingId;
-
             // Ask the die who it is!Upload
+            connectionState = ConnectionState.FetchingId;
             yield return GetDieType();
 
-            connectionState = ConnectionState.FetchingState;
-
             // Ping the die so we know its initial state
+            connectionState = ConnectionState.FetchingState;
             yield return Ping();
 
-            // All good!
             connectionState = ConnectionState.Ready;
-            central.DieReady(this);
         }
+    }
+
+    public void Disconnect()
+    {
+        DicePool.Instance.DisconnectDie(this);
     }
 
     public void OnAdvertising()
@@ -302,86 +234,19 @@ public class Die
         connectionState = ConnectionState.Connected;
 	}
 
-    public void OnServiceDiscovered(string service)
-    {
-    }
-
-    public void OnCharacterisicDiscovered(string service, string characteristic)
-    {
-        if (string.Compare(service.ToLower(), messageServiceGUID.ToLower()) == 0)
-        {
-            if (string.Compare(characteristic.ToLower(), messageSubscribeCharacteristic.ToLower()) == 0)
-                messageReadCharacteristicFound = true;
-            else if (string.Compare(characteristic.ToLower(), messageWriteCharacteristic.ToLower()) == 0)
-                messageWriteCharacteristicFound = true;
-        }
-    }
-
-    public void OnCharacterisicSubscribed(string service, string characteristic)
-    {
-    }
-
-    public void Disconnect()
-    {
-        if (connectionState >= ConnectionState.Connected)
-        {
-            connectionState = ConnectionState.Disconnecting;
-            central.DisconnectDie(this);
-        }
-    }
-
     public void OnDisconnected()
     {
-        if (connectionState != ConnectionState.Unavailable)
-        {
-            connectionState = ConnectionState.Disconnected;
-        }
+        connectionState = ConnectionState.Disconnected;
     }
 
-    public void OnLostConnection()
+    public void OnData(byte[] data)
     {
-        if (connectionState == ConnectionState.Ready)
+        // Process the message coming from the actual die!
+        var message = DieMessages.FromByteArray(data);
+        MessageReceivedDelegate del;
+        if (messageDelegates.TryGetValue(message.type, out del))
         {
-            // Unplanned disconnection, tell central!
-            connectionState = ConnectionState.Unavailable;
-            central.TryReconnectDie(this);
-        }
-    }
-
-    System.Action<string> onErrorAction;
-    public void OnError(string errorMessage)
-    {
-        onErrorAction?.Invoke(errorMessage);
-
-        // Reset to unknown state
-        connectionState = ConnectionState.Unavailable;
-
-        // Notify central that we're not sure the die is still there
-        //central.OnNotResponding(this);
-    }
-
-    public void OnDataReceived(string service, string characteristic, byte[] data)
-    {
-        if (string.Compare(service.ToLower(), messageServiceGUID.ToLower()) == 0)
-        {
-            if (string.Compare(characteristic.ToLower(), messageSubscribeCharacteristic.ToLower()) == 0)
-            {
-                // Process the message coming from the actual die!
-                var message = DieMessages.FromByteArray(data);
-                MessageReceivedDelegate del;
-                if (messageDelegates.TryGetValue(message.type, out del))
-                {
-                    del.Invoke(message);
-                }
-            }
-            else
-            {
-                Debug.LogWarning("Unknown characteristic " + characteristic);
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Unknown service " + service);
+            del.Invoke(message);
         }
     }
 
@@ -421,7 +286,7 @@ public class Die
         where T : DieMessage
     {
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
     }
 
     IEnumerator WaitForMessageCr(DieMessageType msgType, System.Action<DieMessage> msgReceivedCallback)
@@ -455,7 +320,7 @@ public class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        central.WriteCharacteristic(this, messageServiceGUID, messageWriteCharacteristic, msgBytes, msgBytes.Length, null);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
         while (ackMessage == null && Time.time < startTime + timeOut)
         {
             yield return null;
@@ -573,23 +438,21 @@ public class Die
                 yield return null;
             }
             bool errorOccured = false;
-            Central.OnBluetoothErrorEvent errorHandler = (err) => errorOccured = true;
+            DicePool.BluetoothErrorEvent errorHandler = (err) => errorOccured = true;
             try
             {
-                central.onBluetoothError += errorHandler;
+                DicePool.Instance.onBluetoothError += errorHandler;
                 bluetoothOperationInProgress = true;
                 // Attach to the error event
                 yield return StartCoroutine(operationCr);
                 if (errorOccured)
                 {
                     Debug.LogError("Die " + name + " error while performing action");
-                    connectionState = ConnectionState.Unavailable;
-                    central.TryReconnectDie(this);
                 }
             }
             finally
             {
-                central.onBluetoothError -= errorHandler;
+                DicePool.Instance.onBluetoothError -= errorHandler;
                 bluetoothOperationInProgress = false;
             }
         }
