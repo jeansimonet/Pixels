@@ -88,6 +88,7 @@ public class DiceAnimProgrammer
         {
             string jsonText = File.ReadAllText(path);
             animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
+            animationSet.FixupLedIndices();
             timeline.SetAnimations(diceType, animationSet);
             Debug.Log($"Loaded {diceType} animations from {path}");
         }

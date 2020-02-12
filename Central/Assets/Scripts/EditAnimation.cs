@@ -22,6 +22,21 @@ namespace Animations
             keyframe.color = color;
             return keyframe;
         }
+
+        public class EqualityComparer
+            : IEqualityComparer<EditKeyframe>
+        {
+            public bool Equals(EditKeyframe x, EditKeyframe y)
+            {
+                return x.time == y.time && x.color.Equals(y.color);
+            }
+
+            public int GetHashCode(EditKeyframe obj)
+            {
+                return obj.time.GetHashCode() ^ obj.color.GetHashCode();
+            }
+        }
+        public static EqualityComparer DefaultComparer = new EqualityComparer();
     }
 
     /// <summary>
@@ -30,7 +45,11 @@ namespace Animations
     [System.Serializable]
     public class EditTrack
     {
+        // Legacy ledIndex
+        [HideInInspector, SerializeField]
         public int ledIndex = -1;
+
+        public List<int> ledIndices = new List<int>();
         public bool empty => keyframes?.Count == 0;
         public float duration => keyframes.Count == 0 ? 0 : keyframes.Max(k => k.time);
         public float firstTime => keyframes.Count == 0 ? 0 : keyframes.First().time;
@@ -41,7 +60,7 @@ namespace Animations
         public EditTrack Duplicate()
         {
             var track = new EditTrack();
-            track.ledIndex = ledIndex;
+            track.ledIndices = new List<int>(ledIndices);
             if (keyframes != null)
             {
                 track.keyframes = new List<EditKeyframe>(keyframes.Count);
@@ -74,11 +93,10 @@ namespace Animations
             @event = Die.AnimationEvent.None;
             @specialColorType = Die.SpecialColor.None;
             tracks.Clear();
-            tracks.Capacity = 20;
+            var leds = new List<int>();
             for (int i = 0; i < 20; ++i)
-            {
-                tracks.Add(new Animations.EditTrack() { ledIndex = i});
-            }
+                leds.Add(i);
+            tracks.Add(new Animations.EditTrack() { ledIndices = leds });
         }
 
         public EditAnimation Duplicate()
@@ -119,7 +137,8 @@ namespace Animations
                 {
                     var track = anim.GetTrack(set, (ushort)j);
                     var editTrack = new EditTrack();
-                    editTrack.ledIndex = track.ledIndex;
+                    editTrack.ledIndices = new List<int>();
+                    editTrack.ledIndices.Add(track.ledIndex);
                     var rgbTrack = track.GetTrack(set);
                     for (int k = 0; k < rgbTrack.keyFrameCount; ++k)
                     {
@@ -136,6 +155,24 @@ namespace Animations
                     }
                     editAnim.tracks.Add(editTrack);
                 }
+
+                // De-duplicate tracks
+                for (int l = 0; l < editAnim.tracks.Count; ++l)
+                {
+                    for (int m = l + 1; m < editAnim.tracks.Count; ++m)
+                    {
+                        if (editAnim.tracks[m].keyframes.SequenceEqual(editAnim.tracks[l].keyframes, EditKeyframe.DefaultComparer))
+                        {
+                            // Concatenate the leds
+                            editAnim.tracks[l].ledIndices.AddRange(editAnim.tracks[m].ledIndices);
+
+                            // Remove the second edit anim
+                            editAnim.tracks.RemoveAt(m);
+                            m--;
+                        }
+                    }
+                }
+
                 editAnim.@event = (Die.AnimationEvent)anim.animationEvent;
                 editAnim.@specialColorType = (Die.SpecialColor)anim.specialColorType;
                 animations.Add(editAnim);
@@ -196,7 +233,7 @@ namespace Animations
                 var anim = new Animation();
                 anim.duration = (ushort)(editAnim.duration * 1000.0f);
                 anim.tracksOffset = (ushort)currentTrackOffset;
-                anim.trackCount = (ushort)editAnim.tracks.Count;
+                anim.trackCount = (ushort)editAnim.tracks.Sum(t => t.ledIndices.Count);
                 anim.animationEvent = (byte)editAnim.@event;
                 anim.specialColorType = (byte)editAnim.@specialColorType;
                 anims.Add(anim);
@@ -205,31 +242,36 @@ namespace Animations
                 for (int j = 0; j < editAnim.tracks.Count; ++j)
                 {
                     var editTrack = editAnim.tracks[j];
-                    var track = new AnimationTrack();
-                    track.ledIndex = (byte)editTrack.ledIndex;
 
-                    var rgbTrack = new RGBTrack();
-                    rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
-                    rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
-                    track.trackOffset = (ushort)rgbTracks.Count;
-                    rgbTracks.Add(rgbTrack);
-
-                    tracks.Add(track);
-
-                    // Now add keyframes
-                    for (int k = 0; k < editTrack.keyframes.Count; ++k)
+                    foreach (var led in editTrack.ledIndices)
                     {
-                        var editKeyframe = editTrack.keyframes[k];
-                        int colorIndex = AnimationSet.SPECIAL_COLOR_INDEX;
-                        if (editKeyframe.color.a != 0)
-                            colorIndex = colors[editKeyframe.color];
-                        var keyframe = new RGBKeyframe();
-                        keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
-                        keyframes.Add(keyframe);
+                        var track = new AnimationTrack();
+
+                        var rgbTrack = new RGBTrack();
+                        rgbTrack.keyframesOffset = (ushort)currentKeyframeOffset;
+                        rgbTrack.keyFrameCount = (byte)editTrack.keyframes.Count;
+                        track.trackOffset = (ushort)rgbTracks.Count;
+                        rgbTracks.Add(rgbTrack);
+
+                        track.ledIndex = (byte)led;
+
+                        // Now add keyframes
+                        for (int k = 0; k < editTrack.keyframes.Count; ++k)
+                        {
+                            var editKeyframe = editTrack.keyframes[k];
+                            int colorIndex = AnimationSet.SPECIAL_COLOR_INDEX;
+                            if (editKeyframe.color.a != 0)
+                                colorIndex = colors[editKeyframe.color];
+                            var keyframe = new RGBKeyframe();
+                            keyframe.setTimeAndColorIndex((ushort)(editKeyframe.time * 1000.0f), (ushort)colorIndex);
+                            keyframes.Add(keyframe);
+                        }
+                        currentKeyframeOffset += editTrack.keyframes.Count;
+
+                        tracks.Add(track);
                     }
-                    currentKeyframeOffset += editTrack.keyframes.Count;
                 }
-                currentTrackOffset += editAnim.tracks.Count;
+                currentTrackOffset += editAnim.tracks.Sum(t => t.ledIndices.Count);
             }
 
             set.keyframes = keyframes.ToArray();
@@ -279,6 +321,20 @@ namespace Animations
             return builder.ToString();
         }
 
+        public void FixupLedIndices()
+        {
+            foreach (var anim in animations)
+            {
+                foreach (var track in anim.tracks)
+                {
+                    if (track.ledIndices == null || track.ledIndices.Count == 0)
+                    {
+                        track.ledIndices = new List<int>() { track.ledIndex };
+                    }
+                }
+            }
+        }
+
         public static EditAnimationSet CreateTestSet()
         {
             EditAnimationSet set = new EditAnimationSet();
@@ -288,7 +344,8 @@ namespace Animations
                 for (int i = 0; i < a + 1; ++i)
                 {
                     var track = new EditTrack();
-                    track.ledIndex = i;
+                    track.ledIndices = new List<int>();
+                    track.ledIndices.Add(i);
                     for (int j = 0; j < 3; ++j)
                     {
                         var kf = new EditKeyframe();
