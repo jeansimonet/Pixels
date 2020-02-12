@@ -2,6 +2,7 @@
 #include "utils/utils.h"
 #include "drivers_nrf/flash.h"
 #include "drivers_nrf/scheduler.h"
+#include "drivers_nrf/timers.h"
 #include "config/board_config.h"
 #include "config/settings.h"
 #include "bluetooth/bluetooth_messages.h"
@@ -545,6 +546,7 @@ namespace AnimationSet
 	}
 
 	void printAnimationInfo() {
+		Timers::pause();
 		auto board = BoardManager::getBoard();
 		NRF_LOG_INFO("Palette size: %d bytes", getPaletteSize());
 		for (int p = 0; p < getPaletteSize() / 3; ++p) {
@@ -564,14 +566,15 @@ namespace AnimationSet
 				NRF_LOG_INFO("  Track Offset %d:", anim.tracksOffset + t);
 				NRF_LOG_INFO("  RGBTrack Offset %d:", track.trackOffset);
 				NRF_LOG_INFO("  Keyframe count: %d", rgbTrack.keyFrameCount);
-				for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
-					auto& keyframe = rgbTrack.getKeyframe(k);
-					int time = keyframe.time();
-					uint32_t color = keyframe.color(nullptr);
-					NRF_LOG_INFO("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
-				}
+				// for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
+				// 	auto& keyframe = rgbTrack.getKeyframe(k);
+				// 	int time = keyframe.time();
+				// 	uint32_t color = keyframe.color(nullptr);
+				// 	NRF_LOG_INFO("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
+				// }
 			}
 		}
+		Timers::resume();
 	}
 }
 }

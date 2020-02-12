@@ -3,6 +3,7 @@
 #include "nrf_delay.h"
 #include "config/board_config.h"
 #include "string.h" // for memset
+#include "../utils/utils.h"
 #include "../utils/Rainbow.h"
 #include "core/delegate_array.h"
 #include "../drivers_nrf/log.h"
@@ -101,15 +102,13 @@ namespace APA102
 
 	void show(void) {
 
-		if (!pixels) return;
-
 		// Are all the physical leds already all off?
 		bool powerOff = nrf_gpio_pin_out_read(powerPin) == 0;
 
 		// Do we want all the leds to be off?
 		bool allOff = true;
 		for (int i = 0; i < numLEDs; ++i) {
-			if (pixels[i] != 0) {
+			if (pixels[i * 3 + 0] != 0 || pixels[i * 3 + 1] != 0 || pixels[i * 3 + 2] != 0) {
 				allOff = false;
 				break;
 			}
