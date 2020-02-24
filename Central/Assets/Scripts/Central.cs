@@ -187,6 +187,7 @@ public class Central : MonoBehaviour
     {
         if (_dice.TryGetValue(die.address, out Die ddie))
         {
+            Debug.Log("Disconnecting die " + die.name);
             if (ddie.state == Die.State.Advertising)
             {
                 Debug.LogError("Die " + die.name + " in invalid state " + ddie.state);
@@ -362,9 +363,10 @@ public class Central : MonoBehaviour
                 case Die.State.Disconnecting:
                     // This is perfectly okay
                     finishDisconnect(die);
+                    Debug.Log("Disconnected " + die.die.name);
                     break;
                 case Die.State.Advertising:
-                    Debug.LogError("Disconnecting " + die.die.name + " is in incorrect state " + die.state);
+                    Debug.LogError("Disconnected " + die.die.name + " is in incorrect state " + die.state);
                     break;
                 case Die.State.Connecting:
                 case Die.State.Connected:
@@ -385,6 +387,7 @@ public class Central : MonoBehaviour
                     break;
                 case Die.State.Ready:
                 default:
+                    Debug.Log(die.die.name + " disconnected in state " + die.state);
                     finishDisconnect(die);
                     break;
             }
