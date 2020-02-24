@@ -28,7 +28,7 @@ public class Stats : MonoBehaviour
         this.die = die;
 
         // Create the bars
-        int count = die.dieType == Die.DieType.TwentySided ? 20 : 6;
+        int count = 20;
         bars = new RollStatBar[count];
         counts = new int[count];
         for (int i = 0; i < count; ++i)

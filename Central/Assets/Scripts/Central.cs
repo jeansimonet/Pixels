@@ -171,6 +171,8 @@ public class Central : MonoBehaviour
             ddie.messageReadCharacteristicFound = false;
             ddie.messageWriteCharacteristicFound = false;
 
+            Debug.Log("Connecting to die " + ddie.name);
+
             // And kick off the connection!
             BluetoothLEHardwareInterface.ConnectToPeripheral(die.address, OnDeviceConnected, OnServiceDiscovered, OnCharacteristicDiscovered, OnDeviceDisconnected);
         }
@@ -195,6 +197,8 @@ public class Central : MonoBehaviour
 
             // And kick off the disconnection!
             ddie.state = Die.State.Disconnecting;
+            Debug.Log("Disconnecting from die " + ddie.name);
+
             BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
         }
         else
@@ -314,6 +318,8 @@ public class Central : MonoBehaviour
             die = new Die(idie);
             _dice.Add(address, die);
 
+            Debug.Log("Discovered new die " + die.name);
+
             // Notify die!
             die.state = Die.State.Advertising; // <-- this is the default value, but it doesn't hurt to be explicit
             idie.OnAdvertising();
@@ -361,18 +367,19 @@ public class Central : MonoBehaviour
             {
                 case Die.State.Disconnecting:
                     // This is perfectly okay
+                    Debug.Log("Disconnected die " + die.name);
                     finishDisconnect(die);
                     break;
                 case Die.State.Advertising:
-                    Debug.LogError("Disconnecting " + die.die.name + " is in incorrect state " + die.state);
+                    Debug.LogError("Disconnecting " + die.name + " is in incorrect state " + die.state);
                     break;
                 case Die.State.Connecting:
                 case Die.State.Connected:
-                    Debug.LogWarning("Die " + die.die.name + " disconnected before subscribing");
+                    Debug.LogWarning("Die " + die.name + " disconnected before subscribing");
                     finishDisconnect(die);
                     break;
                 case Die.State.Subscribing:
-                    Debug.LogWarning("Die " + die.die.name + " disconnected while subscribing");
+                    Debug.LogWarning("Die " + die.name + " disconnected while subscribing");
 
                     // Clear error handler etc...
                     onBluetoothError -= OnCharacteristicSubscriptionError;
@@ -385,6 +392,7 @@ public class Central : MonoBehaviour
                     break;
                 case Die.State.Ready:
                 default:
+                    Debug.LogWarning("Die " + die.name + " disconnected unexpectedly!");
                     finishDisconnect(die);
                     break;
             }

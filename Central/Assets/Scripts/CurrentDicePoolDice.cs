@@ -18,6 +18,7 @@ public class CurrentDicePoolDice
     public Button calibrateButton;
     public Button calibrateFaceButton;
     public Button AttractModeButton;
+    public Button ResetParamsButton;
     public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
@@ -103,6 +104,9 @@ public class CurrentDicePoolDice
 
         AttractModeButton.onClick.RemoveAllListeners();
         AttractModeButton.onClick.AddListener(() => PrintNormals());
+
+        ResetParamsButton.onClick.RemoveAllListeners();
+        ResetParamsButton.onClick.AddListener(() => ResetParams());
     }
 
     void HideCommands()
@@ -243,5 +247,11 @@ public class CurrentDicePoolDice
     {
         HideCommands();
         die.PrintNormals();
+    }
+
+    void ResetParams()
+    {
+        HideCommands();
+        die.ResetParams();
     }
 }

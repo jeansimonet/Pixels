@@ -79,6 +79,7 @@ public class Die
         Battle_TeamLoose,
         Battle_TeamDraw,
         AttractMode,
+        Heat,
         // Etc...
         Count
     }
@@ -86,8 +87,10 @@ public class Die
     public enum SpecialColor
     {
         None = 0,
-        Face,   // Uses the color of the face (based on a rainbow)
-        ColorWheel    // Uses how hot the die is (based on how much its being shaken)
+        Face,           // Uses the color of the face (based on a rainbow)
+        ColorWheel,     // Uses how hot the die is (based on how much its being shaken)
+        HeatCurrent,    // Uses the current 'heat' value to determine color
+        HeatStart       // Evaluate the color based on heat only once at the start of the animation
     }
 
     [System.Serializable]
@@ -612,12 +615,14 @@ public class Die
         prepareDie.rgbTrackCount = set.getRGBTrackCount();
         prepareDie.trackCount = set.getTrackCount();
         prepareDie.animationCount = set.getAnimationCount();
+        prepareDie.heatTrackIndex = set.heatTrackIndex;
         Debug.Log("Animation Data to be sent:");
         Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
         Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
         Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
         Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.AnimationTrack>());
         Debug.Log("animations: " + prepareDie.animationCount + " * " + Marshal.SizeOf<Animations.Animation>());
+        Debug.Log("heat track: " + prepareDie.heatTrackIndex);
         bool timeout = false;
         yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(prepareDie, DieMessageType.TransferAnimSetAck, 3.0f, null, () => timeout = true));
         if (!timeout)
@@ -802,6 +807,11 @@ public class Die
             PostMessage(msg);
             yield return new WaitForSeconds(0.5f);
         }
+    }
+
+    public void ResetParams()
+    {
+        PostMessage(new DieMessageProgramDefaultParameters());
     }
 
     #endregion

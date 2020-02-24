@@ -238,6 +238,11 @@ namespace Animations
                 anim.specialColorType = (byte)editAnim.@specialColorType;
                 anims.Add(anim);
 
+                if (editAnim.@event == Die.AnimationEvent.Heat)
+                {
+                    set.heatTrackIndex = anim.tracksOffset;
+                }
+
                 // Now add tracks
                 for (int j = 0; j < editAnim.tracks.Count; ++j)
                 {
