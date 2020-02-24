@@ -224,6 +224,7 @@ namespace Animations
         public RGBTrack[] rgbTracks;
         public AnimationTrack[] tracks;
         public Animation[] animations;
+        public ushort heatTrackIndex;
 
         public int ComputeAnimationDataSize()
         {
@@ -423,6 +424,15 @@ namespace Animations
                             {
                                 trj.trackOffset--;
                             }
+                        }
+
+                        if (r == heatTrackIndex)
+                        {
+                            heatTrackIndex = (ushort)t;
+                        }
+                        else if (r < heatTrackIndex)
+                        {
+                            heatTrackIndex--;
                         }
 
                         // Remove the duplicate RGBTrack

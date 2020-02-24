@@ -50,6 +50,8 @@ public enum DieMessageType : byte
     SetStandardState,
     SetLEDAnimState,
     SetBattleState,
+    ProgramDefaultParameters,
+    ProgramDefaultParametersFinished,
 
     // Test messages
     TestBulkSend,
@@ -175,6 +177,12 @@ public static class DieMessages
                 case DieMessageType.SetBattleState:
                     ret = FromByteArray<DieMessageSetBattleState>(data);
                     break;
+                case DieMessageType.ProgramDefaultParameters:
+                    ret = FromByteArray<DieMessageProgramDefaultParameters>(data);
+                    break;
+                case DieMessageType.ProgramDefaultParametersFinished:
+                    ret = FromByteArray<DieMessageProgramDefaultParametersFinished>(data);
+                    break;
                 case DieMessageType.AttractMode:
                     ret = FromByteArray<DieMessageAttractMode>(data);
                     break;
@@ -290,6 +298,7 @@ public class DieMessageTransferAnimSet
     public ushort rgbTrackCount;
     public ushort trackCount;
     public ushort animationCount;
+    public ushort heatTrackIndex;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -533,6 +542,20 @@ public class DieMessageSetBattleState
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageProgramDefaultParameters
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.ProgramDefaultParameters;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageProgramDefaultParametersFinished
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.ProgramDefaultParametersFinished;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public class DieMessageAttractMode
 : DieMessage
 {
@@ -546,3 +569,4 @@ public class DieMessagePrintNormals
     public DieMessageType type { get; set; } = DieMessageType.PrintNormals;
     public byte face;
 }
+

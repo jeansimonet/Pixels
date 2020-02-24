@@ -55,6 +55,9 @@ namespace AnimationSet
 		const Animation* animations;
 		uint32_t animationCount;
 
+		// Heat Animation
+		uint32_t heatTrackIndex;
+
 		// Indicates whether there is valid data
 		uint32_t tailMarker;
 	};
@@ -215,6 +218,7 @@ namespace AnimationSet
 		uint32_t rgbTrackCount;
 		uint32_t trackCount;
 		uint32_t animationCount;
+		uint32_t heatTrackIndex;
 	} programmingToken;
 
 
@@ -259,6 +263,7 @@ namespace AnimationSet
 		programmingToken.rgbTrackCount = message->rgbTrackCount;
 		programmingToken.trackCount = message->trackCount;
 		programmingToken.animationCount = message->animationCount;
+		programmingToken.heatTrackIndex = message->heatTrackIndex;
 
 		// Start by erasing the flash
 		Flash::erase(pageAddress, pageCount,
@@ -297,6 +302,9 @@ namespace AnimationSet
 
 							newData->animations = (const Animation*)address;
 							newData->animationCount = programmingToken.animationCount;
+
+							newData->heatTrackIndex = programmingToken.heatTrackIndex;
+
 							newData->tailMarker = ANIMATION_SET_VALID_KEY;
 							NRF_LOG_DEBUG("Writing set");
 
@@ -473,6 +481,7 @@ namespace AnimationSet
 		newData->trackCount = trackCount;
 		newData->animations = (const Animation*)animationsAddress;
 		newData->animationCount = animCount;
+		newData->heatTrackIndex = 0;
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 
 		static auto finishProgram = [] (bool result) {
@@ -576,5 +585,10 @@ namespace AnimationSet
 		}
 		Timers::resume();
 	}
+
+	const RGBTrack& getHeatTrack() {
+		return data->rgbTracks[data->heatTrackIndex];
+	}
+
 }
 }

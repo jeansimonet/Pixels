@@ -42,18 +42,18 @@ namespace Battery
         int charging = checkCharging() ? 1 : 0;
         int coil = checkCoil() ? 1 : 0;
 
-		// Set interrupt pin
-		GPIOTE::enableInterrupt(
-			statePin,
-			NRF_GPIO_PIN_NOPULL,
-			NRF_GPIOTE_POLARITY_TOGGLE,
-			batteryInterruptHandler);
+		// // Set interrupt pin
+		// GPIOTE::enableInterrupt(
+		// 	statePin,
+		// 	NRF_GPIO_PIN_PULLUP,
+		// 	NRF_GPIOTE_POLARITY_TOGGLE,
+		// 	batteryInterruptHandler);
 
-		GPIOTE::enableInterrupt(
-			coilPin,
-			NRF_GPIO_PIN_NOPULL,
-			NRF_GPIOTE_POLARITY_TOGGLE,
-			batteryInterruptHandler);
+		// GPIOTE::enableInterrupt(
+		// 	coilPin,
+		// 	NRF_GPIO_PIN_NOPULL,
+		// 	NRF_GPIOTE_POLARITY_TOGGLE,
+		// 	batteryInterruptHandler);
 
         NRF_LOG_INFO("Battery initialized, Charging=%d, Coil=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
 
@@ -69,7 +69,7 @@ namespace Battery
     bool checkCharging() {
         // Status pin needs a pull-up, and is pulled low when charging
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
-        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_NOPULL);
+        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
         bool ret = nrf_gpio_pin_read(statePin) == 0;
         nrf_gpio_cfg_default(statePin);
         return ret;

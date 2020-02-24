@@ -55,6 +55,8 @@ struct Message
 		MessageType_SetStandardState,
 		MessageType_SetLEDAnimState,
 		MessageType_SetBattleState,
+		MessateType_ProgramDefaultParameters,
+		MessateType_ProgramDefaultParametersFinished,
 
 		// TESTING 
 		MessageType_TestBulkSend,
@@ -131,6 +133,7 @@ struct MessageTransferAnimSet
 	uint16_t rgbTrackCount;
 	uint16_t trackCount;
 	uint16_t animationCount;
+	uint16_t heatTrackIndex;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
 };

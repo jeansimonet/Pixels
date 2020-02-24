@@ -51,6 +51,7 @@ namespace Animations
 		AnimationEvent_Battle_TeamLoose,
 		AnimationEvent_Battle_TeamDraw,
 		AnimationEvent_AttractMode,
+        AnimationEvent_Heat,
         // Etc...
         AnimationEvent_Count
     };
@@ -60,6 +61,8 @@ namespace Animations
 		SpecialColor_None = 0,
 		SpecialColor_Face,
 		SpecialColor_ColorWheel,
+		SpecialColor_Heat_Current,
+		SpecialColor_Heat_Start,
 	};
 
 	const char* getEventName(AnimationEvent event);
@@ -99,6 +102,7 @@ namespace Animations
 		uint8_t keyFrameCount;		// Keyframe count
 		uint8_t padding;
 
+		uint16_t getDuration() const;
 		const RGBKeyframe& getKeyframe(uint16_t keyframeIndex) const;
 		uint32_t evaluate(void* token, int time) const;
 	};

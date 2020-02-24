@@ -6,6 +6,7 @@
 #include "utils/utils.h"
 #include "utils/rainbow.h"
 #include "config/board_config.h"
+#include "config/settings.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
 #include "nrf_log.h"
@@ -56,6 +57,7 @@ namespace AnimController
 
 	int currentRainbowIndex = 0;
 	const int rainbowScale = 1; 
+	float heat = 0.0f;
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -88,6 +90,9 @@ namespace AnimController
 
 		AnimationSet::setGetColorHandler(getColorForAnim);
 
+		heat = 0.0f;
+		currentRainbowIndex = 0;
+
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
@@ -97,6 +102,12 @@ namespace AnimController
 	/// <param name="ms">Current global time in milliseconds</param>
 	void update(int ms)
 	{
+		// Update heat value (cool down)
+		heat *= SettingsManager::getSettings()->coolDownRate;
+		if (heat < 0.0f) {
+			heat = 0.0f;
+		}
+
 		if (animationCount > 0) {
 	        PowerManager::feed();
 			auto board = BoardManager::getBoard();
@@ -252,6 +263,14 @@ namespace AnimController
 					// Store the face index
 					animations[animationCount].specialColorPayload = remapFace;
 					break;
+				case SpecialColor_Heat_Start:
+					{
+						// Use the global heat value
+						auto& trk = AnimationSet::getHeatTrack();
+						int heatMs = int(heat * trk.getDuration());
+						animations[animationCount].specialColorPayload = trk.evaluate(nullptr, heatMs);
+					}
+					break;
 				default:
 					// Other cases don't need any per-instance payload
 					animations[animationCount].specialColorPayload = 0;
@@ -342,8 +361,13 @@ namespace AnimController
 	}
 
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame) {
-		if (accelFrame.jerk.sqrMagnitude() > 0.0f) {
+		auto sqrMag = accelFrame.jerk.sqrMagnitude();
+		if (sqrMag > 0.0f) {
 			currentRainbowIndex++;
+			heat += sqrt(sqrMag) * SettingsManager::getSettings()->heatUpRate;
+			if (heat > 1.0f) {
+				heat = 1.0f;
+			}
 		}
 	}
 
@@ -352,6 +376,7 @@ namespace AnimController
 			const AnimInstance* instance = (const AnimInstance*)token;
 			switch (instance->animation->specialColorType) {
 				case SpecialColor_Face:
+				case SpecialColor_Heat_Start:
 					// The payload is the color
 					return instance->specialColorPayload;
 				case SpecialColor_ColorWheel:
@@ -362,6 +387,12 @@ namespace AnimController
 							index += 256;
 						}
 						return Rainbow::wheel((uint8_t)index);
+					}
+				case SpecialColor_Heat_Current:
+					{
+						auto& trk = AnimationSet::getHeatTrack();
+						int heatMs = int(heat * trk.getDuration());
+						return trk.evaluate(nullptr, heatMs);
 					}
 				default:
 					return AnimationSet::getPaletteColor(colorIndex);
