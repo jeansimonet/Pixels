@@ -88,6 +88,9 @@ namespace Animations
 					   (colorIndex & 0b1111111);
 	}
 
+	uint16_t RGBTrack::getDuration() const {
+		return AnimationSet::getKeyframe(keyframesOffset + keyFrameCount - 1).time();
+	}
 
 	const RGBKeyframe& RGBTrack::getKeyframe(uint16_t keyframeIndex) const {
 		assert(keyframeIndex < keyFrameCount);

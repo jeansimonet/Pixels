@@ -38,6 +38,8 @@ namespace Animations
 		typedef uint32_t (*getColorHandler)(void* token, uint32_t colorIndex);
 		void setGetColorHandler(getColorHandler handler);
 		void unsetGetColorHandler(getColorHandler handler);
+
+		const RGBTrack& getHeatTrack();
 	}
 }
 

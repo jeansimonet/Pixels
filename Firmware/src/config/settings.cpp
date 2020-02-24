@@ -24,6 +24,8 @@ namespace SettingsManager
 	Settings const * settings = nullptr;
 
 	void ReceiveSettingsHandler(void* context, const Message* msg);
+	void ProgramDefaultParametersHandler(void* context, const Message* msg);
+	
 	#if BLE_LOG_ENABLED
 	void PrintNormals(void* context, const Message* msg);
 	#endif
@@ -36,6 +38,7 @@ namespace SettingsManager
 		auto finishInit = [](bool success) {
 			// Register as a handler to program settings
 			MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
+			MessageService::RegisterMessageHandler(Message::MessateType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
 			
 			#if BLE_LOG_ENABLED
 			MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
@@ -108,6 +111,13 @@ namespace SettingsManager
 		);
 	}
 
+	void ProgramDefaultParametersHandler(void* context, const Message* msg) {
+		programDefaultParameters([] (bool result) {
+			// Ignore result for now
+			Bluetooth::MessageService::SendMessage(Message::MessateType_ProgramDefaultParametersFinished);
+		});
+	}
+
 	void writeToFlash(Settings* sourceSettings, SettingsWrittenCallback callback) {
 		// Temporary holders used in callbacks
 		static SettingsWrittenCallback _writeToFlashCallback;  // Don't initialize this static inline because it would only do it on first call!
@@ -148,8 +158,7 @@ namespace SettingsManager
 		});
 	}
 
-	void setDefaults(Settings& outSettings) {
-		outSettings.headMarker = SETTINGS_VALID_KEY;
+	void setDefaultParameters(Settings& outSettings) {
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
 		outSettings.startMovingThreshold = 5.0f;
@@ -161,12 +170,22 @@ namespace SettingsManager
 		outSettings.batteryLow = 3.0f;
 		outSettings.batteryHigh = 4.0f;
 		outSettings.accDecay = 0.9f;
+		outSettings.heatUpRate = 0.0004f;
+		outSettings.coolDownRate = 0.995f;
+	}
 
+	void setDefaultNormals(Settings& outSettings) {
 		// Copy normals from defaults
 		const Core::float3* defaultNormals = BoardManager::getBoard()->faceNormals;
 		for (int i = 0; i < BoardManager::getBoard()->ledCount; ++i) {
 			outSettings.faceNormals[i] = defaultNormals[i];
 		}
+	}
+
+	void setDefaults(Settings& outSettings) {
+		outSettings.headMarker = SETTINGS_VALID_KEY;
+		setDefaultParameters(outSettings);
+		setDefaultNormals(outSettings);
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}
 
@@ -174,6 +193,24 @@ namespace SettingsManager
 		Settings defaults;
 		setDefaults(defaults);
 		writeToFlash(&defaults, callback);
+	}
+
+	void programDefaultParameters(SettingsWrittenCallback callback) {
+
+		// Grab current settings
+		Settings settingsCopy;
+
+		// Begin by resetting our new settings
+		setDefaults(settingsCopy);
+
+		// Copy over everything
+		memcpy(&settingsCopy, settings, sizeof(Settings));
+
+		// Change normals
+		setDefaultParameters(settingsCopy);
+
+		// Reprogram settings
+		writeToFlash(&settingsCopy, callback);
 	}
 
 	void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback) {
@@ -191,7 +228,6 @@ namespace SettingsManager
 		memcpy(&(settingsCopy.faceNormals[0]), newNormals, count * sizeof(Core::float3));
 
 		// Reprogram settings
-		// Clear callback pointer before invoking it, in case the callback decides to trigger another write to flash!
 		writeToFlash(&settingsCopy, callback);
 	}
 

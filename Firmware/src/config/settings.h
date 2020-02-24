@@ -22,6 +22,8 @@ namespace Config
 		float fallingThreshold;
 		float shockThreshold;
 		float accDecay;
+		float heatUpRate;
+		float coolDownRate;
 		int minRollTime; // ms
 
 		// Battery
@@ -48,6 +50,7 @@ namespace Config
 		void writeToFlash(Settings* sourceSettings, SettingsWrittenCallback callback);
 		void setDefaults(Settings& outSettings);
 		void programDefaults(SettingsWrittenCallback callback);
+		void programDefaultParameters(SettingsWrittenCallback callback);
 		void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback);
 	}
 }
