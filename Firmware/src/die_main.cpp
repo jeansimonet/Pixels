@@ -257,7 +257,6 @@ namespace Die
         Scheduler::update();
         Watchdog::feed();
         PowerManager::update();
-        Bluetooth::MessageService::update();
     }
 }
 

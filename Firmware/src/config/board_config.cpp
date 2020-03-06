@@ -51,7 +51,6 @@ namespace BoardManager
 
     static const uint8_t twentySidedMisalignedRemap[] {
         15, 19, 11, 1, 14, 16, 17, 9, 7, 6, 13, 12, 10, 2, 3, 5, 18, 8, 0, 4
-//        18,  3, 13, 14, 19, 15,  9,  8, 17,  7, 12,  2, 11, 10,  4,  0,  5,  6, 16,  1
     };
 
 
@@ -173,6 +172,7 @@ namespace BoardManager
         // LED config
         .ledCount = 20,
         .faceToLedLookup = { 15, 4, 7, 1, 0, 19, 8, 10, 6, 14, 9, 11, 5, 13, 3, 17, 16, 12, 18, 2 },
+        // FYI This is the board order: 4, 3, 19, 14, 1, 12, 8, 2, 6, 10, 7, 11, 17, 13, 9, 0, 16, 15, 18, 5
         .faceNormals = {
             {-0.1273862f,  0.3333025f,  0.9341605f},
             { 0.6667246f, -0.7453931f, -0.0000000f},

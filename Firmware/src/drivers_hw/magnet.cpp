@@ -13,18 +13,8 @@ namespace DriversHW
 {
 namespace Magnet
 {
-    void ForceReset(uint32_t pin, nrf_gpiote_polarity_t action) {
-        NVIC_SystemReset();
-    }
-
     void init() {
         // Fetch config, check magnet state
-        // Magnet pin is pulled low when North pole is present
-        GPIOTE::enableInterrupt(
-            BoardManager::getBoard()->magnetPin,
-            NRF_GPIO_PIN_NOPULL,
-            NRF_GPIOTE_POLARITY_HITOLO,
-            ForceReset);
         //nrf_gpio_cfg_input(BoardManager::getBoard()->magnetPin, NRF_GPIO_PIN_NOPULL);
 
         #if DICE_SELFTEST && MAGNET_SELFTEST

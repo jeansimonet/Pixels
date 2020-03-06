@@ -75,11 +75,11 @@ public class TimelineView : MonoBehaviour
 
 	public void AddTrack()
 	{
-		LedSelectorPanel.Instance.Show(DiceType, ledIndex =>
+		LedSelectorPanel.Instance.Show(new List<int>() { 0 }, ledIndices =>
 		{
-			if (ledIndex != -1)
+			if (ledIndices.Count > 0)
 			{
-				var colorAnim = CreateTrack(ledIndex);
+				var colorAnim = CreateTrack(ledIndices);
 				colorAnim.LeftBound = 0;
 				colorAnim.RightBound = Unit * Duration;
 				colorAnim.GiveFocus();
@@ -91,7 +91,7 @@ public class TimelineView : MonoBehaviour
 
 	public void AddTrack(Animations.EditTrack track)
 	{
-		var colorAnim = CreateTrack();
+		var colorAnim = CreateTrack(null);
 		colorAnim.FromAnimationTrack(track, Unit);
 		Repaint();
 	}
@@ -307,14 +307,11 @@ public class TimelineView : MonoBehaviour
 		ShowAnimation(_animationSet.animations.Count - 1);
 	}
 
-    ColorAnimator CreateTrack(int ledIndex = -1)
+    ColorAnimator CreateTrack(List<int> ledIndices)
 	{
 		var colorAnim = GameObject.Instantiate<ColorAnimator>(_colorAnimPrefab, _colorAnimsRoot);
 		_animBottomButtons.SetAsLastSibling(); // Keep controls at the bottom
-		if (ledIndex != -1)
-		{
-			colorAnim.SetLedNumber(ledIndex);
-		}
+		colorAnim.SetLedNumbers(ledIndices);
 		colorAnim.GotFocus += OnColorAnimatorGotFocus;
 		return colorAnim;
 	}
@@ -346,7 +343,7 @@ public class TimelineView : MonoBehaviour
 
 			foreach (var track in CurrentAnimation.tracks)
 			{
-				var colorAnim = CreateTrack();
+				var colorAnim = CreateTrack(null);
 				colorAnim.FromAnimationTrack(track, Unit);
 			}
 		}

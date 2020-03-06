@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
 
 public class ColorAnimator : MonoBehaviour, IFocusable
 {
@@ -27,26 +28,31 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 
 	public MultiSlider ColorSlider => _movableColorSlider.Movable.GetComponentInChildren<MultiSlider>();
 
-    public int LedNumber => int.Parse(_number.text);
+    List<int> LedNumbers;
 
 	public void ChangeLed()
 	{
-		LedSelectorPanel.Instance.Show(_timeline.DiceType, number =>
-		{
-            if (number != -1)
-            {
-                SetLedNumber(number);
-            }
-        });
+		LedSelectorPanel.Instance.Show(LedNumbers, numbers => SetLedNumbers(numbers));
 	}
 
-	public void SetLedNumber(int number)
+	public void SetLedNumbers(List<int> numbers)
 	{
-		_number.text = (number + 1).ToString();
-		if (_timeline.DiceType == DiceType.D6)
+		if (numbers == null || numbers.Count == 0)
 		{
-			_number.gameObject.SetActive(false);
-			_image.sprite = _led6Sprites[number];
+			LedNumbers = new List<int>();
+			_number.text = "";
+		}
+		else
+		{
+			LedNumbers = new List<int>(numbers);
+			StringBuilder builder = new StringBuilder();
+			for (int i = 0; i < numbers.Count; ++i)
+			{
+				if (i != 0)
+					builder.Append(", ");
+				builder.Append((numbers[i] + 1).ToString());
+			}
+			_number.text = builder.ToString();
 		}
 	}
 
@@ -108,7 +114,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
         var rect = (ColorSlider.transform as RectTransform).rect;
         return new Animations.EditTrack()
         {
-            ledIndex = LedNumber - 1,
+            ledIndices = new List<int>(LedNumbers),
             keyframes = ColorSlider.ToAnimationKeyFrames(unitSize),
         };
     }
@@ -116,7 +122,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
     public void FromAnimationTrack(Animations.EditTrack track, float unitSize)
     {
         ShowConfirmRemove(false);
-        SetLedNumber(track.ledIndex);
+		SetLedNumbers(track.ledIndices);
 		if (track.empty)
 		{
 			LeftBound = 0 * unitSize;
@@ -163,6 +169,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 	void Awake()
 	{
 		_timeline = GetComponentInParent<TimelineView>(); //TODO
+		LedNumbers = new List<int>();
 	}
 
 	// Use this for initialization

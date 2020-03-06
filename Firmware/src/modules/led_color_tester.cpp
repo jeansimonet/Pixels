@@ -28,9 +28,9 @@ namespace LEDColorTester
 
     void SetAllLEDsToColorHandler(void* context, const Message* msg) {
         auto colorMsg = (const MessageSetAllLEDsToColor*)msg;
-        uint8_t r = Utils::gamma8(Utils::getRed(colorMsg->color));
-        uint8_t g = Utils::gamma8(Utils::getGreen(colorMsg->color));
-        uint8_t b = Utils::gamma8(Utils::getBlue(colorMsg->color));
+        uint8_t r = Utils::getRed(colorMsg->color);
+        uint8_t g = Utils::getGreen(colorMsg->color);
+        uint8_t b = Utils::getBlue(colorMsg->color);
         uint32_t color = Utils::toColor(r, g, b);
         NRF_LOG_INFO("Setting All LEDs to %06x -> %06x", colorMsg->color, color);
         APA102::setAll(color);

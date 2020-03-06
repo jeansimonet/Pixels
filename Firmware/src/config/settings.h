@@ -22,6 +22,8 @@ namespace Config
 		float fallingThreshold;
 		float shockThreshold;
 		float accDecay;
+		float heatUpRate;
+		float coolDownRate;
 		int minRollTime; // ms
 
 		// Battery
@@ -37,17 +39,19 @@ namespace Config
 
 	namespace SettingsManager
 	{
-		void init();
+		typedef void (*SettingsWrittenCallback)(bool success);
+
+		void init(SettingsWrittenCallback callback);
 		bool checkValid();
 		uint32_t getSettingsStartAddress();
 		uint32_t getSettingsEndAddress();
 		Config::Settings const * const getSettings();
 
-		void writeToFlash(Settings* sourceSettings);
-		void writeToFlash(void* rawData, size_t rawDataSize);
+		void writeToFlash(Settings* sourceSettings, SettingsWrittenCallback callback);
 		void setDefaults(Settings& outSettings);
-		void programDefaults();
-		void programNormals(const Core::float3* newNormals, int count);
+		void programDefaults(SettingsWrittenCallback callback);
+		void programDefaultParameters(SettingsWrittenCallback callback);
+		void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback);
 	}
 }
 

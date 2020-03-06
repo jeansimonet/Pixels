@@ -6,6 +6,7 @@
 #include "utils/utils.h"
 #include "utils/rainbow.h"
 #include "config/board_config.h"
+#include "config/settings.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
 #include "nrf_log.h"
@@ -56,6 +57,7 @@ namespace AnimController
 
 	int currentRainbowIndex = 0;
 	const int rainbowScale = 1; 
+	float heat = 0.0f;
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -88,6 +90,9 @@ namespace AnimController
 
 		AnimationSet::setGetColorHandler(getColorForAnim);
 
+		heat = 0.0f;
+		currentRainbowIndex = 0;
+
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
@@ -97,6 +102,12 @@ namespace AnimController
 	/// <param name="ms">Current global time in milliseconds</param>
 	void update(int ms)
 	{
+		// Update heat value (cool down)
+		heat *= SettingsManager::getSettings()->coolDownRate;
+		if (heat < 0.0f) {
+			heat = 0.0f;
+		}
+
 		if (animationCount > 0) {
 			PowerManager::feed();
 			auto board = BoardManager::getBoard();
@@ -107,11 +118,6 @@ namespace AnimController
 			for (int j = 0; j < BoardManager::getBoard()->ledCount; ++j) {
 				allColors[j] = 0;
 			}
-
-			int canonIndices[MAX_LED_COUNT];
-			int faceIndices[MAX_LED_COUNT];
-			int ledIndices[MAX_LED_COUNT];
-			uint32_t colors[MAX_LED_COUNT];
 
 			for (int i = 0; i < animationCount; ++i)
 			{
@@ -126,32 +132,46 @@ namespace AnimController
 				if (animTime > anim.animation->duration)
 				{
 					// The animation is over, get rid of it!
-					removeAtIndex(i);
+					// Shift the other animations
+					for (int j = i; j < animationCount - 1; ++j)
+					{
+						animations[j] = animations[j + 1];
+					}
+
+					// Reduce the count
+					animationCount--;
 
 					// Decrement loop counter since we just replaced the current anim
 					i--;
 				}
 				else
 				{
+					int canonIndices[MAX_LED_COUNT * 4]; // Allow up to 4 tracks to target the same LED
+					int faceIndices[MAX_LED_COUNT * 4];
+					int ledIndices[MAX_LED_COUNT * 4];
+					uint32_t colors[MAX_LED_COUNT * 4];
+
 					// Update the leds
-					int ledCount = anim.animation->updateLEDs(&anim, animTime, canonIndices, colors);
+					int animTrackCount = anim.animation->updateLEDs(&anim, animTime, canonIndices, colors);
+
 
 					// Gamma correct and map face index to led index
-					for (int j = 0; j < ledCount; ++j) {
-						colors[j] = Utils::gamma(colors[j]); // turn off gamma for now...
+					for (int j = 0; j < animTrackCount; ++j) {
+						colors[j] = Utils::gamma(colors[j]);
 						faceIndices[j] = board->remapLed(anim.remapFace, canonIndices[j]);
 						ledIndices[j] = faceToLEDs[faceIndices[j]];
 					}
 
 					// Update color array
-					for (int j = 0; j < ledCount; ++j) {
+					for (int j = 0; j < animTrackCount; ++j) {
+						// Combine colors if necessary
 						allColors[ledIndices[j]] = Utils::addColors(allColors[ledIndices[j]], colors[j]);
 					}
-
-					// And light up!
-					APA102::setPixelColors(allColors);
 				}
 			}
+			
+			// And light up!
+			APA102::setPixelColors(allColors);
 			APA102::show();
 		}
 	}
@@ -203,7 +223,7 @@ namespace AnimController
 			for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
 				auto& keyframe = rgbTrack.getKeyframe(k);
 				int time = keyframe.time();
-				uint32_t color = keyframe.color();
+				uint32_t color = keyframe.color(0);
 				NRF_LOG_DEBUG("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
 			}
 		}
@@ -242,6 +262,14 @@ namespace AnimController
 				case SpecialColor_ColorWheel:
 					// Store the face index
 					animations[animationCount].specialColorPayload = remapFace;
+					break;
+				case SpecialColor_Heat_Start:
+					{
+						// Use the global heat value
+						auto& trk = AnimationSet::getHeatTrack();
+						int heatMs = int(heat * trk.getDuration());
+						animations[animationCount].specialColorPayload = trk.evaluate(nullptr, heatMs);
+					}
 					break;
 				default:
 					// Other cases don't need any per-instance payload
@@ -332,8 +360,13 @@ namespace AnimController
 	}
 
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame) {
-		if (accelFrame.jerk.sqrMagnitude() > 0.0f) {
+		auto sqrMag = accelFrame.jerk.sqrMagnitude();
+		if (sqrMag > 0.0f) {
 			currentRainbowIndex++;
+			heat += sqrt(sqrMag) * SettingsManager::getSettings()->heatUpRate;
+			if (heat > 1.0f) {
+				heat = 1.0f;
+			}
 		}
 	}
 
@@ -342,6 +375,7 @@ namespace AnimController
 			const AnimInstance* instance = (const AnimInstance*)token;
 			switch (instance->animation->specialColorType) {
 				case SpecialColor_Face:
+				case SpecialColor_Heat_Start:
 					// The payload is the color
 					return instance->specialColorPayload;
 				case SpecialColor_ColorWheel:
@@ -352,6 +386,12 @@ namespace AnimController
 							index += 256;
 						}
 						return Rainbow::wheel((uint8_t)index);
+					}
+				case SpecialColor_Heat_Current:
+					{
+						auto& trk = AnimationSet::getHeatTrack();
+						int heatMs = int(heat * trk.getDuration());
+						return trk.evaluate(nullptr, heatMs);
 					}
 				default:
 					return AnimationSet::getPaletteColor(colorIndex);

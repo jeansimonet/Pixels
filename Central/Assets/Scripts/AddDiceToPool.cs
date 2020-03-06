@@ -34,11 +34,11 @@ public class AddDiceToPool : MonoBehaviour {
     public void Show()
     {
         canvasGroup.gameObject.SetActive(true);
+        DicePool.Instance.onDieDiscovered += AddAvailableDice;
         Populate();
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1.0f;
-        Central.Instance.onDieDiscovered += AddAvailableDice;
     }
 
     public void Hide()
@@ -46,10 +46,10 @@ public class AddDiceToPool : MonoBehaviour {
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.alpha = 0.0f;
-        Central.Instance.onDieDiscovered -= AddAvailableDice;
+        DicePool.Instance.onDieDiscovered -= AddAvailableDice;
     }
 
-    public void Populate()
+    public void Populate()  
     {
         selectedDice = new HashSet<Die>();
         availableDice = new List<AddDiceToPoolDice>();
@@ -74,14 +74,14 @@ public class AddDiceToPool : MonoBehaviour {
         cancelButton.onClick.RemoveAllListeners();
         cancelButton.onClick.AddListener(() =>
         {
-            Central.Instance.StopScanForDice();
+            DicePool.Instance.StopScanForDice();
             Hide();
         });
 
         addSelectedButton.onClick.RemoveAllListeners();
         addSelectedButton.onClick.AddListener(() =>
         {
-            Central.Instance.StopScanForDice();
+            DicePool.Instance.StopScanForDice();
             foreach (var die in selectedDice)
             {
                 pool.AddDie(die);
@@ -90,7 +90,7 @@ public class AddDiceToPool : MonoBehaviour {
         });
 
         // Kickoff a scan right away!
-        Central.Instance.BeginScanForDice();
+        DicePool.Instance.BeginScanForDice();
     }
 
     private void AddAvailableDice(Die die)

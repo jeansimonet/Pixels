@@ -373,9 +373,11 @@ namespace Accelerometer
 						Utils::CalibrateNormals(0, measuredNormals->face1, 4, measuredNormals->face5, canonNormalsCopy, normalCount);
 
 						// And flash the new normals
-						SettingsManager::programNormals(canonNormalsCopy, normalCount);
+						SettingsManager::programNormals(canonNormalsCopy, normalCount, [] (bool result) {
 
-						MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
+							// Notify user that we're done, yay!!!
+							MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
+						});
 					}
 				});
 
@@ -397,9 +399,9 @@ namespace Accelerometer
 		calibratedNormalsCopy[face] = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
 		// And flash the new normals
-		SettingsManager::programNormals(calibratedNormalsCopy, normalCount);
-
-		MessageService::NotifyUser("Face is calibrated.", true, false, 5, nullptr);
+		SettingsManager::programNormals(calibratedNormalsCopy, normalCount, [] (bool result) {
+			MessageService::NotifyUser("Face is calibrated.", true, false, 5, nullptr);
+		});
 	}
 }
 }

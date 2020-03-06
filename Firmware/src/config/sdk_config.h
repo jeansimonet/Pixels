@@ -238,7 +238,7 @@
 #define APP_TIMER_CONFIG_OP_QUEUE_SIZE 20
 
 // <q> APP_TIMER_CONFIG_USE_SCHEDULER  - Enable scheduling app_timer events to app_scheduler
-#define APP_TIMER_CONFIG_USE_SCHEDULER 0
+#define APP_TIMER_CONFIG_USE_SCHEDULER 1
 
 // <q> APP_TIMER_KEEPS_RTC_ACTIVE  - Enable RTC always on
 // <i> If option is enabled RTC is kept running even if there is no active timers.
@@ -455,7 +455,7 @@
 // <0=> NRF_SDH_DISPATCH_MODEL_INTERRUPT: SoftDevice events are passed to the application from the interrupt context.
 // <1=> NRF_SDH_DISPATCH_MODEL_APPSH: SoftDevice events are scheduled using @ref app_scheduler.
 // <2=> NRF_SDH_DISPATCH_MODEL_POLLING: SoftDevice events are to be fetched manually.
-#define NRF_SDH_DISPATCH_MODEL 0
+#define NRF_SDH_DISPATCH_MODEL 1
 
 // <h> Clock - SoftDevice clock configuration
 

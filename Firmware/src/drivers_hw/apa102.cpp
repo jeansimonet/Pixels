@@ -3,6 +3,7 @@
 #include "nrf_delay.h"
 #include "config/board_config.h"
 #include "string.h" // for memset
+#include "../utils/utils.h"
 #include "../utils/Rainbow.h"
 #include "core/delegate_array.h"
 #include "../drivers_nrf/log.h"
@@ -95,28 +96,28 @@ namespace APA102
 			}
 
 			nrf_gpio_pin_set(powerPin);
-
-			for (int j = 0; j < 10; ++j) {
-				nrf_delay_ms(1);
-				for (int i = 0; i < 4; i++) {
-					swSpiOut(0);    // Start-frame marker
-				}
-				for (int i = 0; i < numLEDs; ++i) {
-					swSpiOut(0xFF); // start
-					swSpiOut(0x00); // r
-					swSpiOut(0x00); // g
-					swSpiOut(0x00); // b
-				}
-				for (int i = 0; i < ((numLEDs + 15) / 16); i++) {
-					swSpiOut(0xFF); // End-frame marker
-				}
-			}
+			nrf_delay_ms(2); // Anything less than 2ms before toggling data/clk lines will cause artifacts
 		}
 	}
 
 	void show(void) {
 
-		if (!pixels) return;
+		// Are all the physical leds already all off?
+		bool powerOff = nrf_gpio_pin_out_read(powerPin) == 0;
+
+		// Do we want all the leds to be off?
+		bool allOff = true;
+		for (int i = 0; i < numLEDs; ++i) {
+			if (pixels[i * 3 + 0] != 0 || pixels[i * 3 + 1] != 0 || pixels[i * 3 + 2] != 0) {
+				allOff = false;
+				break;
+			}
+		}
+
+		if (powerOff && allOff) {
+			// Displaying all black and we've already turned every led off
+			return;
+		}
 
 		// Turn power on so we display something!!!
 		prepare();
@@ -124,7 +125,6 @@ namespace APA102
 		uint8_t *ptr = pixels;            // -> LED data
 		uint16_t n = numLEDs;              // Counter
 
-		bool allOff = true;
 		for (int i = 0; i < 4; i++) {
 			swSpiOut(0);    // Start-frame marker
 		}
@@ -133,10 +133,6 @@ namespace APA102
 			for (int i = 0; i < 3; i++) {
 				uint8_t comp = *ptr;
 				swSpiOut(comp); // R,G,B
-				if (comp != 0) {
-					// At least one component of one led was not 0
-					allOff = false;
-				}
 				ptr++;
 			}
 		} while (--n);
@@ -146,7 +142,7 @@ namespace APA102
 
 		if (allOff) {
 			// Turn power off too
-			nrf_delay_ms(1);
+			//nrf_delay_ms(1);
 			nrf_gpio_pin_clear(powerPin);
 			nrf_gpio_pin_clear(dataPin);
 			nrf_gpio_pin_clear(clockPin);

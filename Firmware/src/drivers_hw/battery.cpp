@@ -8,6 +8,7 @@
 #include "../drivers_nrf/log.h"
 #include "../drivers_nrf/timers.h"
 #include "../drivers_nrf/power_manager.h"
+#include "../drivers_nrf/scheduler.h"
 
 using namespace DriversNRF;
 using namespace Config;
@@ -41,18 +42,18 @@ namespace Battery
         int charging = checkCharging() ? 1 : 0;
         int coil = checkCoil() ? 1 : 0;
 
-		// Set interrupt pin
-		GPIOTE::enableInterrupt(
-			statePin,
-			NRF_GPIO_PIN_NOPULL,
-			NRF_GPIOTE_POLARITY_TOGGLE,
-			batteryInterruptHandler);
+		// // Set interrupt pin
+		// GPIOTE::enableInterrupt(
+		// 	statePin,
+		// 	NRF_GPIO_PIN_PULLUP,
+		// 	NRF_GPIOTE_POLARITY_TOGGLE,
+		// 	batteryInterruptHandler);
 
-		GPIOTE::enableInterrupt(
-			coilPin,
-			NRF_GPIO_PIN_NOPULL,
-			NRF_GPIOTE_POLARITY_TOGGLE,
-			batteryInterruptHandler);
+		// GPIOTE::enableInterrupt(
+		// 	coilPin,
+		// 	NRF_GPIO_PIN_NOPULL,
+		// 	NRF_GPIOTE_POLARITY_TOGGLE,
+		// 	batteryInterruptHandler);
 
         NRF_LOG_INFO("Battery initialized, Charging=%d, Coil=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
 
@@ -68,7 +69,7 @@ namespace Battery
     bool checkCharging() {
         // Status pin needs a pull-up, and is pulled low when charging
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
-        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_NOPULL);
+        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
         bool ret = nrf_gpio_pin_read(statePin) == 0;
         nrf_gpio_cfg_default(statePin);
         return ret;
@@ -82,12 +83,16 @@ namespace Battery
         return ret;
     }
 
-	void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+    void handleBatteryEvent(void * p_event_data, uint16_t event_size) {
 		// Notify clients
 		for (int i = 0; i < clients.Count(); ++i)
 		{
 			clients[i].handler(clients[i].token);
 		}
+    }
+
+	void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+        Scheduler::push(nullptr, 0, handleBatteryEvent);
 	}
 
 	/// <summary>

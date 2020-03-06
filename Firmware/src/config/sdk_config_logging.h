@@ -30,7 +30,7 @@
 // <q> NRF_LOG_ALLOW_OVERFLOW  - Configures behavior when circular buffer is full.
 // <i> If set then oldest logs are overwritten. Otherwise a 
 // <i> marker is injected informing about overflow.
-#define NRF_LOG_ALLOW_OVERFLOW 1
+#define NRF_LOG_ALLOW_OVERFLOW 0
 
 // <o> NRF_LOG_BUFSIZE  - Size of the buffer for storing logs (in bytes).
 // <i> Must be power of 2 and multiple of 4.

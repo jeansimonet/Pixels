@@ -15,22 +15,18 @@ public class DemoController : MonoBehaviour
 	public GameObject mainUI;
 	public DiceControl diceControlUI;
 
-	Central central;
-
     List<UIDie> dice;
 
 	void Awake()
 	{
-		central = GetComponent<Central>();
         dice = new List<UIDie>();
-
     }
 
 	// Use this for initialization
 	void Start()
 	{
         // Initialize Central
-        central.onDieDiscovered += (newDie) =>
+        DicePool.Instance.onDieDiscovered += (newDie) =>
         {
             var dieUI = GameObject.Instantiate<UIDie>(diePrefab);
             dieUI.transform.SetParent(diceRootUI.transform);
@@ -43,12 +39,12 @@ public class DemoController : MonoBehaviour
             dice.Add(dieUI);
         };
 
-        central.onDieDisconnected += (lostDie) =>
+		DicePool.Instance.onDieDisconnected += (lostDie) =>
         {
             GameObject.Destroy(dice.FirstOrDefault(uid => uid.die == lostDie).gameObject);
         };
 
-        central.BeginScanForDice();
+		DicePool.Instance.BeginScanForDice();
 	}
 
 	// Update is called once per frame

@@ -22,6 +22,19 @@
             "serialNumber": "801001366",
             "armToolchainPath": "C:/Program Files (x86)/GNU Tools Arm Embedded/7 2018-q2-update/bin",
         },
+        {
+            "name": "Cortex Attach",
+            "cwd": "${workspaceRoot}",
+            "executable": "_build/firmware.out",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "nRF52810_xxAA",
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": "801001366",
+            "armToolchainPath": "C:/Program Files (x86)/GNU Tools Arm Embedded/7 2018-q2-update/bin",
+        },
     ],
     "compounds" : [
         {

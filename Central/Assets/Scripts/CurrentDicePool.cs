@@ -57,7 +57,7 @@ public class CurrentDicePool
 
         dice = new List<CurrentDicePoolDice>();
 
-        Central.Instance.onDieForgotten += RemoveDie;
+        DicePool.Instance.onDieDisconnected += RemoveDie;
     }
 
     // Update is called once per frame

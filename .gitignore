@@ -17,3 +17,4 @@ Build.app/
 Firmware/.vscode/ipch/
 Bootloader/.vscode/ipch/
 Central/LEDAnimatorBuild
+Central/TelemetryBuild

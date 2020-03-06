@@ -22,20 +22,19 @@ public class DiceAnimProgrammer
     // We use this to compare against the last version uploaded on the dice
     // and avoid re-uploading the set every time.
     // This is a hack to not have to implement change detection in the animation editor
-    byte[] animationSetByteArray; 
+    byte[] animationSetByteArray;
+
+    bool loopingAnim;
 
     void Awake()
     {
     }
 
     // Use this for initialization
-    IEnumerator Start()
+    void Start()
     {
-        // Until we can properly record data, disable
-        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
-
         // Register to be notified of new dice getting connected
-        Central.Instance.onDieReady += OnNewDie;
+        DicePool.Instance.onDieConnected += OnNewDie;
 
         // Create empty anim if needed
         LoadFromJson(DiceType.D20);
@@ -43,9 +42,9 @@ public class DiceAnimProgrammer
 
     private void OnDisable()
     {
-        if (Central.Instance != null)
+        if (DicePool.Instance != null)
         {
-            Central.Instance.onDieReady -= OnNewDie;
+            DicePool.Instance.onDieConnected -= OnNewDie;
         }
     }
 
@@ -89,6 +88,7 @@ public class DiceAnimProgrammer
         {
             string jsonText = File.ReadAllText(path);
             animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
+            animationSet.FixupLedIndices();
             timeline.SetAnimations(diceType, animationSet);
             Debug.Log($"Loaded {diceType} animations from {path}");
         }
@@ -193,4 +193,35 @@ public class DiceAnimProgrammer
 
         }
     }
+
+    public void PlayPauseAnim()
+    {
+        StartCoroutine(PlayPauseCr());
+    }
+
+    IEnumerator PlayPauseCr()
+    {
+        if (die != null)
+        {
+            if (loopingAnim)
+            {
+                loopingAnim = false;
+                die.StopAnimation(timeline.CurrentAnimationIndex, 255);
+            }
+            else
+            {
+                loopingAnim = true;
+                timeline.ApplyChanges();
+                var rawAnim = animationSet.ToAnimationSet();
+                var newByteArray = rawAnim.ToByteArray();
+                if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
+                {
+                    yield return StartCoroutine(UploadAnimationSetCr());
+                }
+
+                die.PlayAnimation(timeline.CurrentAnimationIndex, 0, true);
+            }
+        }
+    }
+
 }

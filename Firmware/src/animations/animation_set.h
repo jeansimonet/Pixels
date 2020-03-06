@@ -13,7 +13,9 @@ namespace Animations
 {
 	namespace AnimationSet
 	{
-		void init();
+		typedef void (*AnimationSetWrittenCallback)(bool success);
+
+		void init(AnimationSetWrittenCallback callback);
 		bool CheckValid();
 		int ComputeAnimationDataSize();
 
@@ -27,7 +29,8 @@ namespace Animations
 		AnimationTrack const * const getTracks(uint16_t tracksStartIndex);
 		const Animation& getAnimation(uint16_t animIndex);
 		uint16_t getAnimationCount();
-		void ProgramDefaultAnimationSet();
+
+		void ProgramDefaultAnimationSet(AnimationSetWrittenCallback callback);
 		void printAnimationInfo();
 
 		void ReceiveAnimationSetHandler(void* context, const Bluetooth::Message* msg);
@@ -35,6 +38,8 @@ namespace Animations
 		typedef uint32_t (*getColorHandler)(void* token, uint32_t colorIndex);
 		void setGetColorHandler(getColorHandler handler);
 		void unsetGetColorHandler(getColorHandler handler);
+
+		const RGBTrack& getHeatTrack();
 	}
 }
 

@@ -3,69 +3,52 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
+using System.Text.RegularExpressions;
 
 public class LedSelectorPanel : SingletonMonoBehaviour<LedSelectorPanel>
 {
 	[SerializeField]
-	RectTransform _leds6Root = null;
-	[SerializeField]
-	RectTransform _leds20Root = null;
+	InputField _leds = null;
 
-	DiceType _diceType;
-	System.Action<int> _doneCb;
+	System.Action<List<int>> _doneCb;
 
-	RectTransform _LedsRoot
+	public void Show(List<int> leds, System.Action<List<int>> doneCB)
 	{
-		get
-		{
-			switch (_diceType)
-			{
-				case DiceType.D6: return _leds6Root;
-				case DiceType.D20: return _leds20Root;
-				default: return null;
-			}
-		}
-	}
-
-	public void Show(DiceType diceType, System.Action<int> doneCB)
-	{
-		_diceType = diceType;
 		_doneCb = doneCB;
 		gameObject.SetActive(true);
-
-		_leds6Root.gameObject.SetActive(false);
-		_leds20Root.gameObject.SetActive(false);
-		_LedsRoot.gameObject.SetActive(true);
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < leds.Count; ++i)
+		{
+			if (i != 0)
+				builder.Append(", ");
+			builder.Append((leds[i] + 1).ToString());
+		}
+		_leds.text = builder.ToString();
 	}
 
 	public void Close()
 	{
-		DoClose(-1);
+		DoClose();
 	}
 
-	void DoClose(int number)
+	void DoClose()
 	{
 		gameObject.SetActive(false);
-		_doneCb(number);
+		List<int> newList = new List<int>();
+		var leds = _leds.text.Split(',', ' ');
+		for (int i = 0; i < leds.Length; ++i)
+		{
+			if (!string.IsNullOrEmpty(leds[i]))
+			{
+				newList.Add(System.Convert.ToInt32(leds[i]) - 1);
+			}
+		}
+		_doneCb(newList);
 	}
 
 	// Use this for initialization
 	void Start()
 	{
-        int ledIndex = 0;
-		foreach (var btn in _leds6Root.GetComponentsInChildren<Button>())
-		{
-            int ledIndexCopy = ledIndex;
-			btn.onClick.AddListener(() => DoClose(ledIndexCopy));
-            ++ledIndex;
-		}
-
-        ledIndex = 0;
-		foreach (var btn in _leds20Root.GetComponentsInChildren<Button>())
-		{
-            int ledIndexCopy = ledIndex;
-			btn.onClick.AddListener(() => DoClose(ledIndexCopy));
-            ++ledIndex;
-		}
 	}
 }

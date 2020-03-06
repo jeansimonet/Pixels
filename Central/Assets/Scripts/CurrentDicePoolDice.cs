@@ -18,6 +18,7 @@ public class CurrentDicePoolDice
     public Button calibrateButton;
     public Button calibrateFaceButton;
     public Button AttractModeButton;
+    public Button ResetParamsButton;
     public Transform faceSelectionRoot;
 
     public Die die { get; private set; }
@@ -98,8 +99,14 @@ public class CurrentDicePoolDice
         calibrateFaceButton.onClick.RemoveAllListeners();
         calibrateFaceButton.onClick.AddListener(() => ShowFaceSelection());
 
+        //AttractModeButton.onClick.RemoveAllListeners();
+        //AttractModeButton.onClick.AddListener(() => StartAttrackMode());
+
         AttractModeButton.onClick.RemoveAllListeners();
-        AttractModeButton.onClick.AddListener(() => StartAttrackMode());
+        AttractModeButton.onClick.AddListener(() => PrintNormals());
+
+        ResetParamsButton.onClick.RemoveAllListeners();
+        ResetParamsButton.onClick.AddListener(() => ResetParams());
     }
 
     void HideCommands()
@@ -113,7 +120,7 @@ public class CurrentDicePoolDice
     void ForgetDie()
     {
         // Tell central to forget about this die
-        Central.Instance.ForgetDie(die);
+        DicePool.Instance.DisconnectDie(die);
         HideCommands();
     }
 
@@ -234,5 +241,17 @@ public class CurrentDicePoolDice
         HideFaceSelection();
         HideCommands();
         die.CalibrateFace(face);
+    }
+
+    void PrintNormals()
+    {
+        HideCommands();
+        die.PrintNormals();
+    }
+
+    void ResetParams()
+    {
+        HideCommands();
+        die.ResetParams();
     }
 }

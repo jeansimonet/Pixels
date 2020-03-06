@@ -15,7 +15,6 @@ namespace Bluetooth
         #define GENERIC_DATA_RX_CHARACTERISTIC 0x0002
 
         void init();
-        void update();
         bool isConnected();
 
         bool SendMessage(Message::MessageType msgType);

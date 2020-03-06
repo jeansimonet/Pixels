@@ -24,25 +24,40 @@ namespace SettingsManager
 	Settings const * settings = nullptr;
 
 	void ReceiveSettingsHandler(void* context, const Message* msg);
+	void ProgramDefaultParametersHandler(void* context, const Message* msg);
+	
 	#if BLE_LOG_ENABLED
 	void PrintNormals(void* context, const Message* msg);
 	#endif
-	void init() {
+	void init(SettingsWrittenCallback callback) {
+		static SettingsWrittenCallback _callback; // Don't initialize this static inline because it would only do it on first call!
+		_callback = callback;
+
 		settings = (Settings const * const)Flash::getFlashStartAddress();
+
+		auto finishInit = [](bool success) {
+			// Register as a handler to program settings
+			MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
+			MessageService::RegisterMessageHandler(Message::MessateType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
+			
+			#if BLE_LOG_ENABLED
+			MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
+			#endif
+
+			NRF_LOG_INFO("Settings initialized");
+			auto callBackCopy = _callback;
+			_callback = nullptr;
+			if (callBackCopy != nullptr) {
+				callBackCopy(success);
+			}
+		};
 
 		if (!checkValid()) {
 			NRF_LOG_WARNING("Settings not found in flash, programming defaults");
-			programDefaults();
+			programDefaults(finishInit);
+		} else {
+			finishInit(true);
 		}
-
-		// Register as a handler to program settings
-		MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
-		
-		#if BLE_LOG_ENABLED
-		MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
-		#endif
-
-		NRF_LOG_INFO("Settings initialized");
 	}
 
 	bool checkValid() {
@@ -96,15 +111,54 @@ namespace SettingsManager
 		);
 	}
 
-	void writeToFlash(Settings* sourceSettings) {
-		Flash::write((uint32_t)settings, sourceSettings, sizeof(Settings),
-			[](bool result, uint32_t address, uint16_t size) {
-				NRF_LOG_INFO("Settings written to flash");
+	void ProgramDefaultParametersHandler(void* context, const Message* msg) {
+		programDefaultParameters([] (bool result) {
+			// Ignore result for now
+			Bluetooth::MessageService::SendMessage(Message::MessateType_ProgramDefaultParametersFinished);
 		});
 	}
 
-	void setDefaults(Settings& outSettings) {
-		outSettings.headMarker = SETTINGS_VALID_KEY;
+	void writeToFlash(Settings* sourceSettings, SettingsWrittenCallback callback) {
+		// Temporary holders used in callbacks
+		static SettingsWrittenCallback _writeToFlashCallback;  // Don't initialize this static inline because it would only do it on first call!
+		_writeToFlashCallback = callback;
+
+		static Settings* _sourceSettings; // Don't initialize this static inline because it would only do it on first call!
+		_sourceSettings = (Settings*)malloc(sizeof(Settings));
+		memcpy(_sourceSettings, sourceSettings, sizeof(Settings));
+
+		static auto finishWrite = [] (bool result) {
+			free(_sourceSettings);
+			_sourceSettings = nullptr;
+
+			// Clear callback pointer before invoking it, in case the callback decides to trigger another write to flash!
+			auto callbackCopy = _writeToFlashCallback;
+			_writeToFlashCallback = nullptr;
+			if (callbackCopy != nullptr) {
+				callbackCopy(result);
+			}
+		};
+
+		// Start by erasing the flash!
+		Flash::erase((uint32_t)settings, SETTINGS_PAGE_COUNT, [] (bool result, uint32_t address, uint16_t size) {
+			if (result) {
+				Flash::write((uint32_t)settings, _sourceSettings, sizeof(Settings),
+					[](bool result, uint32_t address, uint16_t size) {
+						if (result) {
+							NRF_LOG_INFO("Settings written to flash");
+						} else {
+							NRF_LOG_INFO("Error writting to flash");
+						}
+						finishWrite(result);
+				});
+			} else {
+				NRF_LOG_ERROR("Error erasing flash");
+				finishWrite(false);
+			}
+		});
+	}
+
+	void setDefaultParameters(Settings& outSettings) {
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
 		outSettings.startMovingThreshold = 5.0f;
@@ -116,38 +170,65 @@ namespace SettingsManager
 		outSettings.batteryLow = 3.0f;
 		outSettings.batteryHigh = 4.0f;
 		outSettings.accDecay = 0.9f;
+		outSettings.heatUpRate = 0.0004f;
+		outSettings.coolDownRate = 0.995f;
+	}
 
+	void setDefaultNormals(Settings& outSettings) {
 		// Copy normals from defaults
 		const Core::float3* defaultNormals = BoardManager::getBoard()->faceNormals;
 		for (int i = 0; i < BoardManager::getBoard()->ledCount; ++i) {
 			outSettings.faceNormals[i] = defaultNormals[i];
 		}
+	}
+
+	void setDefaults(Settings& outSettings) {
+		outSettings.headMarker = SETTINGS_VALID_KEY;
+		setDefaultParameters(outSettings);
+		setDefaultNormals(outSettings);
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}
 
-	void programDefaults() {
-		Flash::eraseSynchronous((uint32_t)settings, SETTINGS_PAGE_COUNT);
+	void programDefaults(SettingsWrittenCallback callback) {
 		Settings defaults;
 		setDefaults(defaults);
-		Flash::writeSynchronous((uint32_t)settings, &defaults, sizeof(Settings));
-		NRF_LOG_INFO("Settings written to flash");
+		writeToFlash(&defaults, callback);
 	}
 
-	void programNormals(const Core::float3* newNormals, int count) {
+	void programDefaultParameters(SettingsWrittenCallback callback) {
 
 		// Grab current settings
 		Settings settingsCopy;
-		// Hack to reset other settings for now
+
+		// Begin by resetting our new settings
 		setDefaults(settingsCopy);
-		//memcpy(&settingsCopy, settings, sizeof(Settings));
+
+		// Copy over everything
+		memcpy(&settingsCopy, settings, sizeof(Settings));
+
+		// Change normals
+		setDefaultParameters(settingsCopy);
+
+		// Reprogram settings
+		writeToFlash(&settingsCopy, callback);
+	}
+
+	void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback) {
+
+		// Grab current settings
+		Settings settingsCopy;
+
+		// Begin by resetting our new settings
+		setDefaults(settingsCopy);
+
+		// Copy over everything
+		memcpy(&settingsCopy, settings, sizeof(Settings));
 
 		// Change normals
 		memcpy(&(settingsCopy.faceNormals[0]), newNormals, count * sizeof(Core::float3));
 
 		// Reprogram settings
-		Flash::eraseSynchronous((uint32_t)settings, SETTINGS_PAGE_COUNT);
-		Flash::writeSynchronous((uint32_t)settings, &settingsCopy, sizeof(Settings));
-		NRF_LOG_INFO("Settings written to flash with new normals");
+		writeToFlash(&settingsCopy, callback);
 	}
 
 	#if BLE_LOG_ENABLED

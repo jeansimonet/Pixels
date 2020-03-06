@@ -44,12 +44,12 @@ public class TelemetryDemo
         yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
 
         // Register to be notified of new dice getting connected
-        Central.Instance.onDieReady += OnNewDie;
+        DicePool.Instance.onDieConnected += OnNewDie;
     }
 
     private void OnDisable()
     {
-        Central.Instance.onDieConnected -= OnNewDie;
+        DicePool.Instance.onDieConnected -= OnNewDie;
     }
 
     public void OnNewDie(Die die)
@@ -85,7 +85,7 @@ public class TelemetryDemo
 
     void OnDieConnectionStateChanged(Die die, Die.ConnectionState newConnected)
     {
-        if (newConnected == Die.ConnectionState.Unavailable)
+        if (newConnected == Die.ConnectionState.Disconnected)
         {
             if (trackedDice.Count > 1)
             {

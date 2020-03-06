@@ -141,13 +141,6 @@ namespace Flash
         APP_ERROR_CHECK(rc);
     }
 
-    void writeSynchronous(uint32_t flashAddress, const void* data, uint32_t size) {
-        callback = nullptr;
-        ret_code_t rc = nrf_fstorage_write(&fstorage, flashAddress, data, size, NULL);
-        APP_ERROR_CHECK(rc);
-        waitForFlashReady();
-    }
-
     void read(uint32_t flashAddress, void* outData, uint32_t size, FlashCallback theCallback) {
         callback = theCallback;
         ret_code_t rc = nrf_fstorage_read(&fstorage, flashAddress, outData, size);
@@ -158,13 +151,6 @@ namespace Flash
         callback = theCallback;
         ret_code_t rc = nrf_fstorage_erase(&fstorage, flashAddress, pages, NULL);
         APP_ERROR_CHECK(rc);
-    }
-
-    void eraseSynchronous(uint32_t flashAddress, uint32_t pages) {
-        callback = nullptr;
-        ret_code_t rc = nrf_fstorage_erase(&fstorage, flashAddress, pages, NULL);
-        APP_ERROR_CHECK(rc);
-        waitForFlashReady();
     }
 
     uint32_t bytesToPages(uint32_t size) {
