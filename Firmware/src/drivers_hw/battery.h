@@ -1,5 +1,4 @@
 #pragma once
-#include "core/delegate_array.h"
 
 namespace DriversHW
 {
@@ -7,8 +6,12 @@ namespace DriversHW
     {
         void init();
         float checkVBat();
+        float checkVCoil();
+        bool canCheckVCoil();
+        float checkVLED();
+        bool canCheckVLED();
         bool checkCharging();
-        bool checkCoil();
+        bool canCheckCharging();
 
 		typedef void(*ClientMethod)(void* param);
 

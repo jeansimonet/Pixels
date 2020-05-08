@@ -3,6 +3,7 @@
 #include "nrf_gpio.h"
 #include "nrf_saadc.h"
 #include "nrf_log.h"
+#include "settings.h"
 
 #define BOARD_DETECT_DRIVE_PIN 25
 #define BOARD_DETECT_RESISTOR 100000 // 100k
@@ -49,16 +50,18 @@ namespace BoardManager
         19, 17, 18, 9, 13, 14, 15, 8, 7, 3, 16, 12, 11, 4, 5, 6, 10, 1, 2, 0,
     };
 
-    static const uint8_t twentySidedMisalignedRemap[] {
+    static const uint8_t twentySided_Black_MisalignedRemap[] {
         15, 19, 11, 1, 14, 16, 17, 9, 7, 6, 13, 12, 10, 2, 3, 5, 18, 8, 0, 4
     };
 
-
+    static const uint8_t twentySided_White_MisalignedRemap[] {
+        15, 19, 11, 1, 14, 16, 17, 9, 7, 6, 13, 12, 10, 2, 3, 5, 18, 8, 0, 4 // FIXME
+    };
 
     static const Board DevBoard = {
 
         // Measuring board type
-        .boardResistorValue = -1,
+        .boardResistorValues = {-1, -1},
 
         // Talking to LEDs
         .ledDataPin =  6,
@@ -71,12 +74,13 @@ namespace BoardManager
         .accInterruptPin = 16,
 
         // Power Management pins
-        .chargingStatePin = 1,
-        .CoilStatePin = 0,
+        .chargingStatePin = 0xFFFFFFFF,
+        .coilSensePin = NRF_SAADC_INPUT_DISABLED,
         .vbatSensePin = NRF_SAADC_INPUT_AIN2,
+        .vledSensePin = NRF_SAADC_INPUT_DISABLED,
 
         // Magnet pin
-        .magnetPin = 10,
+        .magnetPin = 0xFFFFFFFF,
 
         // LED config
         .ledCount = 21,
@@ -105,13 +109,12 @@ namespace BoardManager
             {-1, 0, 0}  // This is not the correct data
         } ,
         .faceRemapLookup = twentySidedRemap,
-        .screwupRemapLookup = twentySidedMisalignedRemap
     };
 
     static const Board D6Board = {
 
         // Measuring board type
-        .boardResistorValue = 47000, // 47k Resistor
+        .boardResistorValues = {47000, 47000}, // 47k Resistor
 
         // Talking to LEDs
         .ledDataPin =  1,
@@ -124,12 +127,13 @@ namespace BoardManager
         .accInterruptPin = 15,
 
         // Power Management pins
-        .chargingStatePin = 10,
-        .CoilStatePin = 9,
+        .chargingStatePin = 0xFFFFFFFF,
+        .coilSensePin = NRF_SAADC_INPUT_DISABLED,
         .vbatSensePin = NRF_SAADC_INPUT_AIN3,
+        .vledSensePin = NRF_SAADC_INPUT_DISABLED,
 
         // Magnet pin
-        .magnetPin = 6,
+        .magnetPin = 0xFFFFFFFF,
 
         // LED config
         .ledCount = 6,
@@ -143,13 +147,12 @@ namespace BoardManager
             { 0,  1,  0}
         },
         .faceRemapLookup = sixSidedRemap,
-        .screwupRemapLookup = sixSidedMisalignedRemap
     };
 
     static const Board D20Board = {
 
         // Measuring board type
-        .boardResistorValue = 20000, // 20k Resistor
+        .boardResistorValues = {20000, 20000}, // 20k Resistor
 
         // Talking to LEDs
         .ledDataPin =  1,
@@ -162,12 +165,13 @@ namespace BoardManager
         .accInterruptPin = 15,
 
         // Power Management pins
-        .chargingStatePin = 10,
-        .CoilStatePin = 9,
+        .chargingStatePin = 0xFFFFFFFF,
+        .coilSensePin = NRF_SAADC_INPUT_DISABLED,
         .vbatSensePin = NRF_SAADC_INPUT_AIN3,
+        .vledSensePin = NRF_SAADC_INPUT_DISABLED,
 
         // Magnet pin
-        .magnetPin = 6,
+        .magnetPin = 0xFFFFFFFF,
 
         // LED config
         .ledCount = 20,
@@ -196,7 +200,59 @@ namespace BoardManager
             { 0.1273862f, -0.3333025f, -0.9341605f},
         },
         .faceRemapLookup = twentySidedRemap,
-        .screwupRemapLookup = twentySidedMisalignedRemap
+    };
+
+    static const Board D20BoardV5 = {
+
+        // Measuring board type
+        .boardResistorValues = { 33000, 56000 }, // 33k or 56k Resistor
+
+        // Talking to LEDs
+        .ledDataPin =  0,
+        .ledClockPin = 1,
+        .ledPowerPin = 10,
+
+        // I2C Pins for accelerometer
+        .i2cDataPin = 12,
+        .i2cClockPin = 14,
+        .accInterruptPin = 15,
+
+        // Power Management pins
+        .chargingStatePin = 6,
+        .coilSensePin = NRF_SAADC_INPUT_AIN3,
+        .vbatSensePin = NRF_SAADC_INPUT_AIN6,
+        .vledSensePin = NRF_SAADC_INPUT_AIN2,
+
+        // Magnet pin
+        .magnetPin = 9,
+
+        // LED config
+        .ledCount = 20,
+        .faceToLedLookup = { 15, 4, 7, 1, 0, 19, 8, 10, 6, 14, 9, 11, 5, 13, 3, 17, 16, 12, 18, 2 },
+        // FYI This is the board order: 4, 3, 19, 14, 1, 12, 8, 2, 6, 10, 7, 11, 17, 13, 9, 0, 16, 15, 18, 5
+        .faceNormals = {
+            {-0.1273862f,  0.3333025f,  0.9341605f},
+            { 0.6667246f, -0.7453931f, -0.0000000f},
+            { 0.8726854f,  0.3333218f, -0.3568645f},
+            {-0.3333083f, -0.7453408f, -0.5773069f},
+            { 0.0000000f, -1.0000000f, -0.0000000f},
+            {-0.7453963f,  0.3333219f,  0.5773357f},
+            { 0.3333614f,  0.7453930f, -0.5774010f},
+            {-0.7453431f,  0.3333741f, -0.5773722f},
+            { 0.8726999f,  0.3333025f,  0.3567604f},
+            { 0.1273475f, -0.3333741f,  0.9341723f},
+            {-0.1273475f,  0.3333741f, -0.9341723f},
+            {-0.8726999f, -0.3333025f, -0.3567604f},
+            { 0.7453431f, -0.3333741f,  0.5773722f},
+            {-0.3331230f, -0.7450288f,  0.5778139f},
+            { 0.7453963f, -0.3333219f, -0.5773357f},
+            { 0.0000000f,  1.0000000f, -0.0000000f},
+            { 0.3333083f,  0.7453408f,  0.5773069f},
+            {-0.8726854f, -0.3333218f,  0.3568645f},
+            {-0.6667246f,  0.7453931f, -0.0000000f},
+            { 0.1273862f, -0.3333025f, -0.9341605f},
+        },
+        .faceRemapLookup = twentySidedRemap,
     };
 
     // The board we're currently using
@@ -205,7 +261,14 @@ namespace BoardManager
     uint8_t Board::remapLed(uint8_t animRemapIndex, uint8_t thisLedIndex) const {
         uint8_t remapped = faceRemapLookup[animRemapIndex * ledCount + thisLedIndex];
         // Fix casting screw up
-        return screwupRemapLookup[remapped];
+        switch (SettingsManager::getSettings()->d20Version) {
+            case D20Version_Black:
+                return twentySided_Black_MisalignedRemap[remapped];
+            case D20Version_White:
+                return twentySided_White_MisalignedRemap[remapped];
+            default:
+                return remapped;
+        }
     }
 
     void init() {
@@ -219,6 +282,7 @@ namespace BoardManager
         nrf_gpio_cfg_default(BOARD_DETECT_DRIVE_PIN);
 
         // Do some computation to figure out which variant we're working with!
+        // D20v5 board uses 33k over 100k voltage divider, or 56k over 100k (because I ran out of 33k 0402 resistors)
         // D20v3 board uses 20k over 100k voltage divider
         // i.e. the voltage read should be 3.3V * 20k / 120k = 0.55V
         // The D6v2 board uses 47k over 100k, i.e. 1.05V
@@ -226,9 +290,15 @@ namespace BoardManager
         // So we can allow a decent
         const float vdd = 3.2f; // supply voltage 3.2V
         const float tolerance = 0.2f; // +- 0.2V
-        float D20BoardVoltage = (vdd * D20Board.boardResistorValue) / (float)(100000 + D20Board.boardResistorValue);
-        float D6BoardVoltage = (vdd * D6Board.boardResistorValue) / (float)(100000 + D6Board.boardResistorValue);
-        if (vboard >= D20BoardVoltage - tolerance && vboard <= D20BoardVoltage + tolerance) {
+        float D20V5BoardVoltage1 = (vdd * D20BoardV5.boardResistorValues[0]) / (float)(100000 + D20BoardV5.boardResistorValues[0]);
+        float D20V5BoardVoltage2 = (vdd * D20BoardV5.boardResistorValues[1]) / (float)(100000 + D20BoardV5.boardResistorValues[1]);
+        float D20BoardVoltage = (vdd * D20Board.boardResistorValues[0]) / (float)(100000 + D20Board.boardResistorValues[0]);
+        float D6BoardVoltage = (vdd * D6Board.boardResistorValues[0]) / (float)(100000 + D6Board.boardResistorValues[0]);
+        if ((vboard >= D20V5BoardVoltage1 - tolerance && vboard <= D20V5BoardVoltage1 + tolerance) ||
+            (vboard >= D20V5BoardVoltage2 - tolerance && vboard <= D20V5BoardVoltage2 + tolerance)) {
+            currentBoard = &D20BoardV5;
+            NRF_LOG_INFO("Board is D20v5, boardIdVoltage=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vboard));
+        } else if (vboard >= D20BoardVoltage - tolerance && vboard <= D20BoardVoltage + tolerance) {
             currentBoard = &D20Board;
             NRF_LOG_INFO("Board is D20v3, boardIdVoltage=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vboard));
         } else if (vboard >= D6BoardVoltage - tolerance && vboard <= D6BoardVoltage + tolerance) {

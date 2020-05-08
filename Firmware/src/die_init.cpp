@@ -105,11 +105,11 @@ namespace Die
         // on the board and determine what kind of die this is.
         BoardManager::init();
 
-        // Magnet, so we know if ne need to go into DFU mode immediately
-        // Magnet::init(); 
+        // Magnet, so we know if ne need to go into quiet mode
+        Magnet::init(); 
         
         // Now that we know which board we are, initialize the battery monitoring A2D
-        A2D::initBatteryPin();
+        A2D::initBoardPins();
 
         // Enable bluetooth
         Stack::init();

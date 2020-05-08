@@ -8,6 +8,13 @@
 
 namespace Config
 {
+	enum D20Version : uint8_t
+	{
+		D20Version_Default = 0,
+		D20Version_Black, // Was cast in the wrong orientation so indices are all swapped
+		D20Version_White, // Was cast in the wrong orientation so indices are all swapped
+	};
+
 	struct Settings
 	{
 		// Indicates whether there is valid data
@@ -29,6 +36,11 @@ namespace Config
 		// Battery
 		float batteryLow;
 		float batteryHigh;
+
+		D20Version d20Version;
+		uint8_t filler1;
+		uint8_t filler2;
+		uint8_t filler3;
 
 		// Calibration data
 		Core::float3 faceNormals[MAX_LED_COUNT];

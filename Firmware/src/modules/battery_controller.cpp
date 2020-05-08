@@ -19,7 +19,8 @@ using namespace Utils;
 #define BATTERY_TIMER_MS_QUICK (100) //ms
 #define MAX_BATTERY_CLIENTS 2
 #define LAZY_CHARGE_DETECT
-#define CHARGE_START_DETECTION_THRESHOLD (0.1f) // 0.1V
+#define CHARGE_START_DETECTION_THRESHOLD (0.3f) // 0.3V
+#define CHARGE_VCOIL_THRESHOLD (4.0) //0.4V
 #define CHARGE_FULL (4.0f) // 4.0V
 #define INVALID_CHARGE_TIMEOUT 5000
 namespace Modules
@@ -32,10 +33,11 @@ namespace BatteryController
     void onLEDPowerEventHandler(void* context, bool powerOn);
     BatteryState computeCurrentState();
 
-    bool onCharger = false;
-    bool charging = false;
+    float vcoil = 0.0f;
     float vBat = 0.0f;
+    bool charging = false;
     float lowestVBat = 0.0f;
+    bool lazyChargeDetect = false;
     BatteryState currentBatteryState = BatteryState_Unknown;
     uint32_t lastUpdateTime = 0;
 
@@ -49,10 +51,11 @@ namespace BatteryController
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);
 
-        onCharger = Battery::checkCoil();
-        charging = Battery::checkCharging();
+        vcoil = Battery::checkVCoil();
         vBat = Battery::checkVBat();
+        charging = Battery::checkCharging();
         lowestVBat = vBat;
+        lazyChargeDetect = !Battery::canCheckCharging();
 
         // Register for battery events
         Battery::hook(onBatteryEventHandler, nullptr);
@@ -71,7 +74,11 @@ namespace BatteryController
 
         lastUpdateTime = millis();
 
-        NRF_LOG_INFO("Battery controller initialized - Battery %s", getChargeStateString(currentBatteryState));
+        if (lazyChargeDetect) {
+            NRF_LOG_INFO("Battery controller initialized - Lazy Charge Detect - Battery %s", getChargeStateString(currentBatteryState));
+        } else {
+            NRF_LOG_INFO("Battery controller initialized - Battery %s", getChargeStateString(currentBatteryState));
+        }
     }
 
 	BatteryState getCurrentChargeState() {
@@ -94,20 +101,20 @@ namespace BatteryController
 
     BatteryState computeCurrentState() {
         BatteryState ret = BatteryState_Unknown;
-        #if defined(LAZY_CHARGE_DETECT)
-            // We need to do everything based on vbat
-            // Measure new vBat
-            float level = Battery::checkVBat();
-            ret = currentBatteryState;
-            switch (currentBatteryState)
-            {
-    			case BatteryState_Ok:
-                    if (level < SettingsManager::getSettings()->batteryLow) {
-                        ret = BatteryState_Low;
-                    } else if (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD) {
+
+        // Measure new vBat
+        float level = Battery::checkVBat();
+        ret = currentBatteryState;
+        switch (currentBatteryState)
+        {
+            case BatteryState_Ok:
+                if (level < SettingsManager::getSettings()->batteryLow) {
+                    ret = BatteryState_Low;
+                } else {
+                    if ((lazyChargeDetect && (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
                         // Battery level going up, we must be charging
                         ret = BatteryState_Charging;
-                        vBatWhenChargingStart = level;
+                        vBatWhenChargingStart = lowestVBat;
                         chargingStartedTime = millis();
                     } else {
                         // Update stored lowest level
@@ -115,61 +122,72 @@ namespace BatteryController
                             lowestVBat = level;
                         }
                     }
-                    // Else still BatteryState_Ok
-                    break;
-                case BatteryState_Charging:
+                }
+                // Else still BatteryState_Ok
+                break;
+            case BatteryState_Charging:
+                if (lazyChargeDetect) {
                     if (level > SettingsManager::getSettings()->batteryHigh) {
                         // Reset lowest level
                         ret = BatteryState_Ok;
-                    } else if (level < vBatWhenChargingStart + CHARGE_START_DETECTION_THRESHOLD || millis() - chargingStartedTime > INVALID_CHARGE_TIMEOUT) {
+                    } else
+                    // Make sure we've waited enough to check state again
+                    if (millis() - chargingStartedTime > INVALID_CHARGE_TIMEOUT) {
+                        if (level < vBatWhenChargingStart + CHARGE_START_DETECTION_THRESHOLD) {
+                            // It looks like we stopped charging
+                            if (level > SettingsManager::getSettings()->batteryLow) {
+                                ret = BatteryState_Ok;
+                            } else {
+                                ret = BatteryState_Low;
+                            }
+                        }
+                        // Else still charging...
+                    }
+                } else {
+                    if (Battery::checkVCoil() > CHARGE_VCOIL_THRESHOLD) {
+                        if (!Battery::checkCharging()) {
+                            // Still on charger, but done charging
+                            ret = BatteryState_Ok;
+                        }
+                        // Else still charging
+                    } else {
+                        // No longer on charger, but we hadn't finished charging, check vBat
                         if (level > SettingsManager::getSettings()->batteryLow) {
                             ret = BatteryState_Ok;
                         } else {
                             ret = BatteryState_Low;
                         }
                     }
-                    // Else still not charged enough
-                    lowestVBat = level;
-                    break;
-                case BatteryState_Low:
-                    if (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD) {
-                        // Battery level going up, we must be charging
-                        ret = BatteryState_Charging;
-                        vBatWhenChargingStart = level;
-                        chargingStartedTime = millis();
-                    } else {
-                        // Update stored lowest level
-                        if (level < lowestVBat) {
-                            lowestVBat = level;
-                        }
-                    }
-                    break;
-                default:
-                    if (level > SettingsManager::getSettings()->batteryLow) {
-                        ret = BatteryState_Ok;
-                    } else {
-                        ret = BatteryState_Low;
-                    }
-                    break;
-            }
-
-            // Always update the stored battery voltage
-            vBat = level;
-        #else
-        if (onCharger) {
-            if (charging) {
-                ret = BatteryState_Charging;
-            } else {
-                // Either we're done, or we haven't started
-                if (vBat < SettingsManager::getSettings()->batteryLow) {
-                    // Not started
-                    ret = BatteryState_Low;
-                } else {
-                    ret = BatteryState_Ok;
                 }
-            }
+                // Else still not charged enough
+                lowestVBat = level;
+                break;
+            case BatteryState_Low:
+                if ((lazyChargeDetect && (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
+                    // Battery level going up, we must be charging
+                    ret = BatteryState_Charging;
+                    vBatWhenChargingStart = lowestVBat;
+                    chargingStartedTime = millis();
+                } else {
+                    // Update stored lowest level
+                    if (level < lowestVBat) {
+                        lowestVBat = level;
+                    }
+                }
+                break;
+            default:
+                if (!lazyChargeDetect && Battery::checkCharging()) {
+                    ret = BatteryState_Charging;
+                } else if (level > SettingsManager::getSettings()->batteryLow) {
+                    ret = BatteryState_Ok;
+                } else {
+                    ret = BatteryState_Low;
+                }
+                break;
         }
-        #endif
+
+        // Always update the stored battery voltage
+        vBat = level;
         return ret;
     }
 

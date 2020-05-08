@@ -51,6 +51,7 @@
         "sstream": "cpp",
         "exception": "cpp",
         "iosfwd": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "*.inc": "cpp"
     },
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #define MAX_LED_COUNT 21
+#define MAX_BOARD_RESISTOR_VALUES 2
 
 #include "stddef.h"
 #include "core/float3.h"
@@ -13,7 +14,7 @@ namespace Config
         struct Board
         {
             // Measuring board type
-            int boardResistorValue;
+            int boardResistorValues[MAX_BOARD_RESISTOR_VALUES];
 
             // Talking to LEDs
             uint32_t ledDataPin;
@@ -27,8 +28,9 @@ namespace Config
 
             // Power Management pins
             uint32_t chargingStatePin;
-            uint32_t CoilStatePin;
+            uint32_t coilSensePin;
             uint32_t vbatSensePin;
+            uint32_t vledSensePin;
 
             // Magnet pin
             uint32_t magnetPin;
@@ -38,7 +40,6 @@ namespace Config
             uint8_t faceToLedLookup[MAX_LED_COUNT];
             Core::float3 faceNormals[MAX_LED_COUNT];
             const uint8_t* faceRemapLookup;
-            const uint8_t* screwupRemapLookup;
 
             uint8_t remapLed(uint8_t animRemapIndex, uint8_t thisLedIndex) const;
         };

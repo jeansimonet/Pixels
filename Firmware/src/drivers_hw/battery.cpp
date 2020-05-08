@@ -3,12 +3,14 @@
 #include "board_config.h"
 #include "nrf_gpio.h"
 #include "nrf_delay.h"
+#include "nrf_saadc.h"
 #include "../drivers_nrf/gpiote.h"
 #include "../drivers_nrf/a2d.h"
 #include "../drivers_nrf/log.h"
 #include "../drivers_nrf/timers.h"
 #include "../drivers_nrf/power_manager.h"
 #include "../drivers_nrf/scheduler.h"
+#include "../core/delegate_array.h"
 
 using namespace DriversNRF;
 using namespace Config;
@@ -29,18 +31,12 @@ namespace Battery
 
         // Drive the status pin down for a moment
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
-        uint32_t coilPin = BoardManager::getBoard()->CoilStatePin;
 
         // Status pin needs a pull-up, and is pulled low when charging
         nrf_gpio_cfg_default(statePin);
 
-        // +5V sense pin needs a pull-down and is pulled up while charging
-        nrf_gpio_cfg_default(coilPin);
-
         // Read battery level and convert
-        float vbattery = checkVBat();
         int charging = checkCharging() ? 1 : 0;
-        int coil = checkCoil() ? 1 : 0;
 
 		// // Set interrupt pin
 		// GPIOTE::enableInterrupt(
@@ -55,7 +51,7 @@ namespace Battery
 		// 	NRF_GPIOTE_POLARITY_TOGGLE,
 		// 	batteryInterruptHandler);
 
-        NRF_LOG_INFO("Battery initialized, Charging=%d, Coil=%d, Battery Voltage=" NRF_LOG_FLOAT_MARKER, charging, coil, NRF_LOG_FLOAT(vbattery));
+        NRF_LOG_INFO("Battery initialized, Charging=%d", charging);
 
         #if DICE_SELFTEST && BATTERY_SELFTEST
         selfTest();
@@ -63,7 +59,26 @@ namespace Battery
     }
 
     float checkVBat() {
-        return A2D::readVBat() * vBatMult;
+        float ret = A2D::readVBat() * vBatMult;
+        return ret;
+    }
+
+    float checkVCoil() {
+        float ret = A2D::read5V() * vBatMult;
+        return ret;
+    }
+
+    bool canCheckVCoil() {
+        return Config::BoardManager::getBoard()->coilSensePin != NRF_SAADC_INPUT_DISABLED;
+    }
+
+    float checkVLED() {
+        float ret = A2D::readVLED() * vBatMult;
+        return ret;
+    }
+
+    bool canCheckVLED() {
+        return Config::BoardManager::getBoard()->vledSensePin != NRF_SAADC_INPUT_DISABLED;
     }
 
     bool checkCharging() {
@@ -75,12 +90,8 @@ namespace Battery
         return ret;
     }
 
-    bool checkCoil() {
-        uint32_t coilPin = BoardManager::getBoard()->CoilStatePin;
-        nrf_gpio_cfg_input(coilPin, NRF_GPIO_PIN_NOPULL);
-        bool ret = nrf_gpio_pin_read(coilPin) != 0;
-        nrf_gpio_cfg_default(coilPin);
-        return ret;
+    bool canCheckCharging() {
+        return Config::BoardManager::getBoard()->chargingStatePin != 0xFFFFFFFF;
     }
 
     void handleBatteryEvent(void * p_event_data, uint16_t event_size) {
@@ -96,7 +107,7 @@ namespace Battery
 	}
 
 	/// <summary>
-	/// Method used by clients to request timer callbacks when accelerometer readings are in
+	/// Method used by clients to request callbacks when battery changes state
 	/// </summary>
 	void hook(ClientMethod callback, void* parameter)
 	{
@@ -107,7 +118,7 @@ namespace Battery
 	}
 
 	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// Method used by clients to stop getting battery callbacks
 	/// </summary>
 	void unHook(ClientMethod callback)
 	{
@@ -115,7 +126,7 @@ namespace Battery
 	}
 
 	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
+	/// Method used by clients to stop getting battery callbacks
 	/// </summary>
 	void unHookWithParam(void* param)
 	{

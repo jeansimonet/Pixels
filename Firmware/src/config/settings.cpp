@@ -172,6 +172,7 @@ namespace SettingsManager
 		outSettings.accDecay = 0.9f;
 		outSettings.heatUpRate = 0.0004f;
 		outSettings.coolDownRate = 0.995f;
+		outSettings.d20Version = D20Version_Default;
 	}
 
 	void setDefaultNormals(Settings& outSettings) {

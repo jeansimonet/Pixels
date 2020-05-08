@@ -1,6 +1,9 @@
 PROJECT_NAME     := Firmware
 TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
+PUBLISH_DIRECTORY := binaries
+
+VERSION			 := 05_07
 
 SDK_ROOT := C:/nRF5_SDK
 PROJ_DIR := .
@@ -288,7 +291,10 @@ erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
 zip: firmware_release
-	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware.zip
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+
+publish: zip
+	copy $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip $(PUBLISH_DIRECTORY)
 
 settings:
 	nrfutil settings generate --family NRF52810 --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --bootloader-version 0xff --bl-settings-version 1 $(OUTPUT_DIRECTORY)/firmware_settings.hex

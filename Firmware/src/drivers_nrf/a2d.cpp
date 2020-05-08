@@ -11,6 +11,14 @@ namespace DriversNRF
 {
 namespace A2D
 {
+    bool supportsVCoil = false;
+    bool supportsVLED = false;
+
+    nrf_saadc_channel_config_t channel_config_conf;
+    nrf_saadc_channel_config_t channel_config_batt;
+    nrf_saadc_channel_config_t channel_config_5v;
+    nrf_saadc_channel_config_t channel_config_vled;
+
     void saadc_callback(nrfx_saadc_evt_t const * p_event) {
         // Do nothing!
     }
@@ -20,7 +28,7 @@ namespace A2D
         err_code = nrf_drv_saadc_init(NULL, saadc_callback);
         APP_ERROR_CHECK(err_code);
 
-        nrf_saadc_channel_config_t channel_config_conf =
+        channel_config_conf =
         {
             .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
             .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
@@ -33,8 +41,8 @@ namespace A2D
             .pin_n      = NRF_SAADC_INPUT_DISABLED
         };
 
-        err_code = nrf_drv_saadc_channel_init(0, &channel_config_conf);
-        APP_ERROR_CHECK(err_code);
+        supportsVCoil = false;
+        supportsVLED = false;
 
         NRF_LOG_INFO("A2D Initialized, vBoard=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVBoard()));
 
@@ -44,19 +52,23 @@ namespace A2D
     }
 
     int16_t readConfigPin() {
+        ret_code_t err_code = nrf_drv_saadc_channel_init(0, &channel_config_conf);
+        APP_ERROR_CHECK(err_code);
+
         int16_t ret;
-        ret_code_t err_code = nrf_drv_saadc_sample_convert(0, &ret);
+        err_code = nrf_drv_saadc_sample_convert(0, &ret);
         if (err_code != NRF_SUCCESS) {
             ret = -1;
         }
+
+        nrf_drv_saadc_channel_uninit(0);
+
         return ret;
     }
 
-    void initBatteryPin() {
-        ret_code_t err_code;
-
+    void initBoardPins() {
         // For the battery, we're going to need to change the default config
-        nrf_saadc_channel_config_t channel_config_batt =
+        channel_config_batt =
         {
             .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
             .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
@@ -69,10 +81,50 @@ namespace A2D
             .pin_n      = NRF_SAADC_INPUT_DISABLED
         };
 
-        err_code = nrf_drv_saadc_channel_init(1, &channel_config_batt);
-        APP_ERROR_CHECK(err_code);
+        auto csPin = (nrf_saadc_input_t)(Config::BoardManager::getBoard()->coilSensePin);
+        if (csPin != NRF_SAADC_INPUT_DISABLED) {
+            channel_config_5v =
+            {
+                .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
+                .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
+                .gain       = NRF_SAADC_GAIN1_6,
+                .reference  = NRF_SAADC_REFERENCE_INTERNAL,
+                .acq_time   = NRF_SAADC_ACQTIME_40US,
+                .mode       = NRF_SAADC_MODE_SINGLE_ENDED,
+                .burst      = NRF_SAADC_BURST_DISABLED,
+                .pin_p      = csPin,
+                .pin_n      = NRF_SAADC_INPUT_DISABLED
+            };
 
-        NRF_LOG_INFO("Battery A2D Initialized, vBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVBat()));
+            supportsVCoil = true;
+        }
+
+        auto vledPin = (nrf_saadc_input_t)(Config::BoardManager::getBoard()->vledSensePin);
+        if (vledPin != NRF_SAADC_INPUT_DISABLED) {
+            channel_config_vled =
+            {
+                .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
+                .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
+                .gain       = NRF_SAADC_GAIN1_6,
+                .reference  = NRF_SAADC_REFERENCE_INTERNAL,
+                .acq_time   = NRF_SAADC_ACQTIME_40US,
+                .mode       = NRF_SAADC_MODE_SINGLE_ENDED,
+                .burst      = NRF_SAADC_BURST_DISABLED,
+                .pin_p      = vledPin,
+                .pin_n      = NRF_SAADC_INPUT_DISABLED
+            };
+
+            supportsVLED = true;
+        }
+
+        NRF_LOG_INFO("A2D Pins Initialized");
+        NRF_LOG_INFO("\tvBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVBat()));
+        if (supportsVCoil) {
+            NRF_LOG_INFO("\tvCoil=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(read5V()));
+        }
+        if (supportsVLED) {
+            NRF_LOG_INFO("\tvLED=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVLED()));
+        }
 
         #if DICE_SELFTEST && A2D_SELFTEST_BATT
         selfTestBatt();
@@ -80,9 +132,52 @@ namespace A2D
     }
 
     int16_t readBatteryPin() {
+        ret_code_t err_code = nrf_drv_saadc_channel_init(0, &channel_config_batt);
+        APP_ERROR_CHECK(err_code);
+
         int16_t ret;
-        ret_code_t err_code = nrf_drv_saadc_sample_convert(1, &ret);
+        err_code = nrf_drv_saadc_sample_convert(0, &ret);
         if (err_code != NRF_SUCCESS) {
+            ret = -1;
+        }
+
+        nrf_drv_saadc_channel_uninit(0);
+        return ret;
+    }
+
+    int16_t read5VPin() {
+        int16_t ret;
+        if (supportsVCoil) {
+            ret_code_t err_code = nrf_drv_saadc_channel_init(0, &channel_config_5v);
+            APP_ERROR_CHECK(err_code);
+
+            err_code = nrf_drv_saadc_sample_convert(0, &ret);
+            if (err_code != NRF_SUCCESS) {
+                ret = -1;
+            }
+
+            nrf_drv_saadc_channel_uninit(0);
+        } else {
+            ret = -1;
+        }
+
+
+        return ret;
+    }
+
+    int16_t readVLEDPin() {
+        int16_t ret;
+        if (supportsVLED) {
+            ret_code_t err_code = nrf_drv_saadc_channel_init(0, &channel_config_vled);
+            APP_ERROR_CHECK(err_code);
+
+            err_code = nrf_drv_saadc_sample_convert(0, &ret);
+            if (err_code != NRF_SUCCESS) {
+                ret = -1;
+            }
+
+            nrf_drv_saadc_channel_uninit(0);
+        } else {
             ret = -1;
         }
         return ret;
@@ -102,6 +197,48 @@ namespace A2D
         // => V(p) = val * 0.003515625
 
         int16_t val = readBatteryPin();
+        if (val != -1) {
+            return (float)val * 0.003515625f;
+        } else {
+            return 0.0f;
+        }
+    }
+    
+    float read5V() {
+
+        // Digital value read is [V(p) - V(n)] * Gain / Reference * 2^(Resolution - m)
+        // In our case:
+        // - V(n) = 0
+        // - Gain = 1/6
+        // - Reference = 0.6V
+        // - Resolution = 10
+        // - m = 0
+        // val = V(p) * 2^12 / (6 * 0.6)
+        // => V(p) = val * 3.6 / 2^10
+        // => V(p) = val * 0.003515625
+
+        int16_t val = read5VPin();
+        if (val != -1) {
+            return (float)val * 0.003515625f;
+        } else {
+            return 0.0f;
+        }
+    }
+    
+    float readVLED() {
+
+        // Digital value read is [V(p) - V(n)] * Gain / Reference * 2^(Resolution - m)
+        // In our case:
+        // - V(n) = 0
+        // - Gain = 1/6
+        // - Reference = 0.6V
+        // - Resolution = 10
+        // - m = 0
+        // val = V(p) * 2^12 / (6 * 0.6)
+        // => V(p) = val * 3.6 / 2^10
+        // => V(p) = val * 0.003515625
+
+        int16_t val = readVLEDPin();
         if (val != -1) {
             return (float)val * 0.003515625f;
         } else {
