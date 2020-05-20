@@ -76,10 +76,10 @@ class PixelLink:
             if service:
                 self._subscriber = service.getCharacteristics(PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
                 self._writer = service.getCharacteristics(PIXELS_WRITE_CHARACTERISTIC)[0]
-                self._writer.write(bytes([MessageType.WhoAreYou]))
-                data = list(self._subscriber.read())
-                if data[0] == MessageType.IAmADie:
-                    self._dtype = DiceType(data[1])
+                self._send(MessageType.WhoAreYou)
+                msg = list(self._subscriber.read())
+                if msg[0] == MessageType.IAmADie:
+                    self._dtype = DiceType(msg[1])
             if not hasattr(self, '_dtype'):
                 raise Exception('Unexpected dice bluetooth characteristics')
         except:
@@ -100,22 +100,54 @@ class PixelLink:
         return self._dtype
 
     def play(self, index, remap_face = 0, loop = 0):
-        self._writer.write(bytes([MessageType.PlayAnim, index, remap_face, loop]))
+        self._send(MessageType.PlayAnim, index, remap_face, loop)
+
+    def calibrate(self):
+        self._send(MessageType.Calibrate)
+        for i in range(2):
+            msg = list(self._subscriber.read())
+            while msg[0] != MessageType.NotifyUser:
+                # Try again (why??)
+                print(f"Unexpected message: {msg}")
+                msg = list(self._subscriber.read())
+            if not self._notify_user(msg):
+                return False
+        return True
+
+    def _notify_user(self, msg):
+        assert(msg[0] == MessageType.NotifyUser)
+        #timeout, ok, cancel = msg[1:4]
+        txt = bytes(msg[4:]).decode("utf-8")
+        print(f'{txt} [Enter to continue, anything else to abort]: ')
+        ok = PixelLink._get_continue()
+        self._send(MessageType.NotifyUserAck, 1 if ok else 0)
+        return ok
+
+    def _send(self, message_type, *args):
+        self._writer.write(bytes([message_type, *args]))
+
+    @staticmethod
+    def _get_continue():
+        from getch import getch
+        return getch() == '\r'
 
 
 def enumerate_pixels(timeout_secs = 1):
     """Returns a list of Pixel dices discovered over Bluetooth"""
     devices = Scanner().scan(timeout_secs)
-    dices = []
+    pixels = []
     for dev in devices:
         #print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
         if dev.getValueText(7) == PIXELS_SERVICE_UUID:
-            dices.append(PixelLink(dev))
-    return dices
+            pixels.append(PixelLink(dev))
+    return pixels
 
 
 if __name__ == "__main__":
-    dices = enumerate_pixels()
-    for d in dices:
+    print('Scanning for Pixels')
+    pixels = enumerate_pixels()
+    for d in pixels:
         print(f"Found Pixel dice: {d.address} => {d.name} of type {d.dtype.name}")
-        d.play(0)
+        #d.play(0)
+        d.calibrate()
+        break
