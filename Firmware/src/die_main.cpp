@@ -259,6 +259,7 @@ namespace Die
         Scheduler::update();
         Watchdog::feed();
         PowerManager::update();
+        MessageService::update();
     }
 }
 

@@ -153,6 +153,12 @@ namespace Stack
                 notificationPending = false;
                 break;
 
+            case BLE_GATTS_EVT_HVC:
+                // Last notification was cleared!
+                NRF_LOG_INFO("Confirmation Received!");
+                notificationPending = false;
+                break;
+
             default:
                 // No implementation needed.
                 break;
@@ -412,27 +418,37 @@ namespace Stack
         return !notificationPending;
     }
 
-    bool send(uint16_t handle, const uint8_t* data, uint16_t len) {
+    SendResult send(uint16_t handle, const uint8_t* data, uint16_t len) {
 
         PowerManager::feed();
-        bool ret = connected && !notificationPending;
-        if (ret) {
-            ble_gatts_hvx_params_t     hvx_params;
-            memset(&hvx_params, 0, sizeof(hvx_params));
+        if (connected) {
+            if (!notificationPending) {
+                ble_gatts_hvx_params_t hvx_params;
+                memset(&hvx_params, 0, sizeof(hvx_params));
 
-            hvx_params.handle = handle;
-            hvx_params.p_data = data;
-            hvx_params.p_len = &len;
-            hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
-            notificationPending = true;
-            ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
-            ret = err_code == NRF_SUCCESS;
-            if (!ret) {
-                // Reset flag, since we won't be getting an event back
-                notificationPending = false;
+                hvx_params.handle = handle;
+                hvx_params.p_data = data;
+                hvx_params.p_len = &len;
+                hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+                notificationPending = true;
+                ret_code_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+                if (err_code == NRF_SUCCESS) {
+                    // Message was sent!
+                    return SendResult_Ok;
+                } else {
+                    // Some other error happened
+                    NRF_LOG_ERROR("Could not send Notification for Message type %d of size %d, Error %s(0x%x)", data[0], len, NRF_LOG_ERROR_STRING_GET(err_code), err_code);
+
+                    // Reset flag, since we won't be getting an event back
+                    notificationPending = false;
+                    return SendResult_Error;
+                }
+            } else {
+                return SendResult_Busy;
             }
+        } else {
+            return SendResult_NotConnected;
         }
-        return ret;
     }
 
     void slowAdvertising() {

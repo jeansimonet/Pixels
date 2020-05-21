@@ -28,7 +28,7 @@ namespace Core
 		/// Add an element to the queue
 		/// Returns true if the element could be added
 		/// </summary>
-		bool enqueue(T clientIndex)
+		bool enqueue(const T& clientIndex)
 		{
 			bool ret = count < MaxCount;
 			if (ret)

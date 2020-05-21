@@ -13,6 +13,11 @@
 #include "drivers_nrf/power_manager.h"
 #include "drivers_nrf/timers.h"
 
+#include "core/queue.h"
+
+#define MAX_MESSAGE_SIZE 132
+#define MESSAGE_QUEUE_SIZE 10
+
 using namespace DriversNRF;
 
 namespace Bluetooth
@@ -22,6 +27,15 @@ namespace MessageService
     void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context);
 
     NRF_SDH_BLE_OBSERVER(GenericServiceObserver, 3, BLEObserver, nullptr);
+
+    typedef uint8_t MessageBufferT[MAX_MESSAGE_SIZE];
+    struct MessageAndSize
+    {
+        uint16_t size;
+        MessageBufferT msg;
+    };
+    MessageAndSize MessageQueue[MESSAGE_QUEUE_SIZE];
+    int QueuedMessageCount;
 
     uint16_t service_handle;
     ble_gatts_char_handles_t rx_handles;
@@ -34,7 +48,7 @@ namespace MessageService
 	};
 	HandlerAndToken messageHandlers[Message::MessageType_Count];
 
-    bool send(const uint8_t* data, uint16_t size);
+    Stack::SendResult send(const uint8_t* data, uint16_t size);
     bool SendMessage(Message::MessageType msgType);
     bool SendMessage(const Message* msg, int msgSize);
 
@@ -95,11 +109,44 @@ namespace MessageService
         err_code = characteristic_add(service_handle, &add_char_params, &tx_handles);
         APP_ERROR_CHECK(err_code);
 
+        QueuedMessageCount = 0;
+
         NRF_LOG_INFO("Message Service Initialized");
     }
 
     bool isConnected() {
         return Stack::isConnected();
+    }
+
+    void update() {
+        // Send queued messages if possible
+        if (QueuedMessageCount > 0 && isConnected() && Stack::canSend()) {
+            int currentMessage = 0;
+            int count = QueuedMessageCount;
+            for (; currentMessage < count; ++currentMessage) {
+                // Try to send that message!
+                auto& tmp = MessageQueue[currentMessage];
+
+                if (send(tmp.msg, tmp.size) == Stack::SendResult_Busy) {
+                    // Stop processing the queue and try again next time
+                    break;
+                }
+                // Else the message was sent, or forgotten because we wouldn't know what to do!
+            }
+            CRITICAL_REGION_ENTER();
+            if (currentMessage == QueuedMessageCount) {
+                NRF_LOG_DEBUG("Sent ALL %d queued messages", QueuedMessageCount);
+                // Yes, all messages sent, clear buffer
+                QueuedMessageCount = 0;
+            } else if (currentMessage > 0) {
+                NRF_LOG_DEBUG("Sent %d queued messages", currentMessage);
+                // Not quite
+                QueuedMessageCount -= currentMessage;
+                memcpy(&(MessageQueue[0]), &(MessageQueue[currentMessage]), QueuedMessageCount * sizeof(MessageAndSize));
+            }
+            // Else do nothing
+            CRITICAL_REGION_EXIT();                
+        }
     }
 
     void BLEObserver(ble_evt_t const * p_ble_evt, void * p_context) {
@@ -127,7 +174,7 @@ namespace MessageService
         }
     }
 
-    bool send(const uint8_t* data, uint16_t size) {
+    Stack::SendResult send(const uint8_t* data, uint16_t size) {
         NRF_LOG_DEBUG("Generic Service Message Sending: %d bytes", size);
         NRF_LOG_HEXDUMP_DEBUG(data, size);
         return Stack::send(tx_handles.value_handle, data, size);
@@ -139,12 +186,36 @@ namespace MessageService
     }
 
     bool SendMessage(const Message* msg, int msgSize) {
-        bool ret = send((const uint8_t*)msg, msgSize);
-        if (!ret) {
-            Scheduler::push(msg, msgSize, [] (void * p_event_data, uint16_t event_size) {
-                SendMessage((const Message*)p_event_data, event_size);
-            });
-            NRF_LOG_DEBUG("Queued Message type %d of size %d", msg->type, msgSize);
+        bool ret = false;
+        auto res = send((const uint8_t*)msg, msgSize);
+        switch (res) {
+            case Stack::SendResult_Ok:
+                ret = true;
+                break;
+            case Stack::SendResult_Busy:
+                {
+                    // Couldn't send right away, try to schedule it for later
+                    CRITICAL_REGION_ENTER();
+                    ret = QueuedMessageCount < MESSAGE_QUEUE_SIZE;
+                    if (ret) {
+                        auto& queueMsg = MessageQueue[QueuedMessageCount];
+                        memcpy(queueMsg.msg, msg, msgSize);
+                        queueMsg.size = msgSize;
+                        QueuedMessageCount++;
+                        NRF_LOG_INFO("Queued Message type %d of size %d", msg->type, msgSize);
+                    } else {
+                        NRF_LOG_ERROR("Message of type %d of size %d NOT SENT (Queue full)", msg->type, msgSize);
+                    }
+                    CRITICAL_REGION_EXIT();
+                }
+                break;
+            case Stack::SendResult_Error:
+                // Any other error, don't know what to do, forget the message
+            case Stack::SendResult_NotConnected:
+                // Not connected, forget the message
+            default:
+                ret = false;
+                break;
         }
         return ret;
     }
@@ -190,7 +261,9 @@ namespace MessageService
         {
             auto msg = reinterpret_cast<const Message*>(data);
             if (msg->type >= Message::MessageType_WhoAreYou && msg->type < Message::MessageType_Count) {
-    		    Scheduler::push(data, len, MessageSchedulerHandler);
+    		    if (!Scheduler::push(data, len, MessageSchedulerHandler)) {
+                    NRF_LOG_ERROR("Message of type %d NOT HANDLED (Scheduler full)", msg->type);
+                }
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);
             }
