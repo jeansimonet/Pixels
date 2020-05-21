@@ -11,11 +11,17 @@ from adafruit_servokit import ServoKit
 # Initialize the servo shield
 kit = ServoKit(channels=16)
 
+kit.servo[1].actuation_range = 200.5
+kit.servo[1].set_pulse_width_range(600, 2485)
+servo_0 = 8
+servo_90 = 98
+servo_180 = 188
+
 # test servo!
-for angle in range(5):
-    kit.servo[0].angle = 0
-    sleep(1)
-    kit.servo[0].angle = 180
-    sleep(1)
+for angle in range(50):
+    kit.servo[1].angle = servo_0
+    sleep(2)
+    kit.servo[1].angle = servo_180
+    sleep(2)
     
     
