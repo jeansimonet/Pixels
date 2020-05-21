@@ -1,12 +1,19 @@
 # Install Remote Development Extension
 # https://www.hanselman.com/blog/VisualStudioCodeRemoteDevelopmentOverSSHToARaspberryPiIsButter.aspx
+
 # Select Python 3
 # https://learn.sparkfun.com/tutorials/python-programming-tutorial-getting-started-with-the-raspberry-pi/configure-your-pi
+
 # Getting started with bluepy => sudo pip3 install bluepy
 # Be sure to run pip3 (not pip) and with sudo (if running with sudo later on)
-# https://makersportal.com/blog/2018/3/25/arduino-internet-of-things-part-4-connecting-bluetooth-nodes-to-the-raspberry-pi-using-pythons-bluepy-library
-# run script with sudo or give rights to user to access bluetooth
+# https://makersportal.com/blogsudo setcap 'cap_net_raw,cap_net_admin+eip' ${PY_SITE_PACKAGES_DIR}/2018/3/25/arduino-internet-of-things-part-4-connecting-bluetooth-nodes-to-the-raspberry-pi-using-pythons-bluepy-library
+# /!\ run scripts with sudo
+
+# Give user required privileges to access bluetooth
 # https://github.com/IanHarvey/bluepy/issues/218
+# https://stackoverflow.com/questions/59786226/how-to-setup-the-enviroment-that-bluepy-can-scan-without-sudo
+# > sudo setcap 'cap_net_raw,cap_net_admin+eip' /home/pi/.local/lib/python3.7/site-packages/bluepy/bluepy-helper
+
 # VS Code Python Language Server
 # https://github.com/microsoft/vscode-python/issues/5969
 # https://devblogs.microsoft.com/python/introducing-the-python-language-server/
