@@ -3,7 +3,7 @@ TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
 PUBLISH_DIRECTORY := binaries
 
-VERSION			 := 05_07
+VERSION			 := 05_21
 
 SDK_ROOT := C:/nRF5_SDK
 PROJ_DIR := .
