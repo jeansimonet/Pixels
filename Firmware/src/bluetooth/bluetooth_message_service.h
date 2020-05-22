@@ -17,6 +17,8 @@ namespace Bluetooth
         void init();
         bool isConnected();
 
+        void update();
+
         bool SendMessage(Message::MessageType msgType);
         bool SendMessage(const Message* msg, int msgSize);
 

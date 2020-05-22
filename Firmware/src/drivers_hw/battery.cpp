@@ -33,7 +33,9 @@ namespace Battery
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
 
         // Status pin needs a pull-up, and is pulled low when charging
-        nrf_gpio_cfg_default(statePin);
+        if (statePin != 0xFFFFFFFF) {
+            nrf_gpio_cfg_default(statePin);
+        }
 
         // Read battery level and convert
         int charging = checkCharging() ? 1 : 0;
@@ -82,11 +84,14 @@ namespace Battery
     }
 
     bool checkCharging() {
+        bool ret = false;
         // Status pin needs a pull-up, and is pulled low when charging
         uint32_t statePin = BoardManager::getBoard()->chargingStatePin;
-        nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
-        bool ret = nrf_gpio_pin_read(statePin) == 0;
-        nrf_gpio_cfg_default(statePin);
+        if (statePin != 0xFFFFFFFF) {
+            nrf_gpio_cfg_input(statePin, NRF_GPIO_PIN_PULLUP);
+            ret = nrf_gpio_pin_read(statePin) == 0;
+            nrf_gpio_cfg_default(statePin);
+        }
         return ret;
     }
 

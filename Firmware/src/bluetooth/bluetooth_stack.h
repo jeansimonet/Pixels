@@ -12,7 +12,16 @@ namespace Bluetooth
         void startAdvertising();
         void disableAdvertisingOnDisconnect();
         bool canSend();
-        bool send(uint16_t handle, const uint8_t* data, uint16_t len);
+
+        enum SendResult
+        {
+            SendResult_Ok = 0,
+            SendResult_Busy,            // Should try again later
+            SendResult_NotConnected,    // No connection
+            SendResult_Error,           // Any other error
+        };
+
+        SendResult send(uint16_t handle, const uint8_t* data, uint16_t len);
         void slowAdvertising();
         void stopAdvertising();
         bool isAdvertising();

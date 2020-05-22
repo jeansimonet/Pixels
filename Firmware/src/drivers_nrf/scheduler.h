@@ -7,6 +7,6 @@ namespace DriversNRF
     {
         void init();
         void update();
-        void push(const void* eventData, uint16_t size, app_sched_event_handler_t handler);
+        bool push(const void* eventData, uint16_t size, app_sched_event_handler_t handler);
     }
 }
