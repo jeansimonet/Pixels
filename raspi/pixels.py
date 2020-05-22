@@ -4,7 +4,9 @@ from enum import IntEnum, unique
 
 # We're using the bluepy lib for easy bluetooth access
 # https://github.com/IanHarvey/bluepy
-from bluepy.btle import Scanner, ScanEntry, Peripheral
+from bluepy.btle import Scanner, ScanEntry, Peripheral, DefaultDelegate
+
+import time
 
 # Pixels Bluetooth constants
 PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
@@ -60,7 +62,6 @@ class MessageType(IntEnum):
     ProgramDefaultParameters = 37
     ProgramDefaultParametersFinished = 38
 
-
 class PixelLink:
     """Connection to a specific Pixel dice other Bluetooth"""
 
@@ -71,15 +72,25 @@ class PixelLink:
         self._address = bluepy_entry.addr
         self._name = bluepy_entry.getValueText(8)
         self._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
+
         try:
             service = self._device.getServiceByUUID(PIXELS_SERVICE_UUID)
             if service:
                 self._subscriber = service.getCharacteristics(PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
                 self._writer = service.getCharacteristics(PIXELS_WRITE_CHARACTERISTIC)[0]
+
+                # This magic code enables notifications from the subscribe characteristic,
+                # which in turn keeps the firmware on the dice from erroring out because
+                # it thinks it can't send notifications. Note that firmware code has also been
+                # fixed so it won't crash as a result :)
+                # There is an example at the bottom of the file of notifications working
+                self._device.writeCharacteristic(self._subscriber.valHandle + 1, b"\x01\x00")
+
                 self._send(MessageType.WhoAreYou)
                 msg = list(self._subscriber.read())
                 if msg[0] == MessageType.IAmADie:
                     self._dtype = DiceType(msg[1])
+
             if not hasattr(self, '_dtype'):
                 raise Exception('Unexpected dice bluetooth characteristics')
         except:
@@ -97,7 +108,8 @@ class PixelLink:
 
     @property
     def dtype(self):
-        return self._dtype
+        #return self._dtype
+        return DiceType._20
 
     def play(self, index, remap_face = 0, loop = 0):
         self._send(MessageType.PlayAnim, index, remap_face, loop)
@@ -124,7 +136,14 @@ class PixelLink:
         return ok
 
     def _send(self, message_type, *args):
-        self._writer.write(bytes([message_type, *args]))
+        msg = [message_type, *args]
+        self._writer.write(bytes(msg))
+
+    def setNotificationDelegate(self, delegate):
+        self._device.setDelegate(delegate)
+
+    def waitForNotifications(self, timeout):
+        return self._device.waitForNotifications(timeout)
 
     @staticmethod
     def _get_continue():
@@ -143,11 +162,34 @@ def enumerate_pixels(timeout_secs = 1):
     return pixels
 
 
+class PrintMessageDelegate(DefaultDelegate):
+    """Delegate passed to blupy that prints out the subscribe characteristic value changes."""
+    """i.e. it prints out 'messages' sent by the dice"""
+
+    def __init__(self):
+        DefaultDelegate.__init__(self)
+
+    def handleNotification(self, cHandle, data):
+        # Print out data for now
+        print(list(data))
+
+
 if __name__ == "__main__":
     print('Scanning for Pixels')
     pixels = enumerate_pixels()
     for d in pixels:
         print(f"Found Pixel dice: {d.address} => {d.name} of type {d.dtype.name}")
         #d.play(0)
-        d.calibrate()
+        #d.calibrate()
         break
+
+    if len(pixels) > 0:
+        pixels[0].setNotificationDelegate(PrintMessageDelegate())
+
+        # Print messages as we get them!
+        while True:
+            if pixels[0].waitForNotifications(5.0):
+                # handleNotification() was called
+                continue
+
+            print("Waiting...")

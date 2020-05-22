@@ -18,3 +18,4 @@ Firmware/.vscode/ipch/
 Bootloader/.vscode/ipch/
 Central/LEDAnimatorBuild
 Central/TelemetryBuild
+raspi/__pycache__/
