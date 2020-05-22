@@ -62,23 +62,6 @@ class MessageType(IntEnum):
     ProgramDefaultParameters = 37
     ProgramDefaultParametersFinished = 38
 
-class PrintMessageDelegate(DefaultDelegate):
-    """Delegate passed to blupy that prints out the subscribe characteristic value changes."""
-    """i.e. it prints out 'messages' sent by the dice"""
-
-    def __init__(self, pixel: PixelLink):
-        DefaultDelegate.__init__(self)
-        self._pixel = pixel
-
-    def handleNotification(self, cHandle, data):
-        msg = list(data)
-        if msg[0] == MessageType.NotifyUser:
-            self._pixel._notify_user(msg)
-        elif msg[0] == MessageType.DebugLog:
-            print(bytes(msg[1:]).decode("utf-8"))
-        else:
-            print(msg)
-
 
 class PixelLink:
     """Connection to a specific Pixel dice other Bluetooth"""
@@ -170,19 +153,33 @@ def enumerate_pixels(timeout_secs = 1):
             pixels.append(PixelLink(dev))
     return pixels
 
+class PrintMessageDelegate(DefaultDelegate):
+    """Delegate passed to blupy that prints out the subscribe characteristic value changes."""
+    """i.e. it prints out 'messages' sent by the dice"""
+
+    def __init__(self, pixel: PixelLink):
+        DefaultDelegate.__init__(self)
+        self._pixel = pixel
+
+    def handleNotification(self, cHandle, data):
+        msg = list(data)
+        if msg[0] == MessageType.NotifyUser:
+            self._pixel._notify_user(msg)
+        elif msg[0] == MessageType.DebugLog:
+            print(bytes(msg[1:]).decode("utf-8"))
+        else:
+            print(msg)
 
 if __name__ == "__main__":
     print('Scanning for Pixels')
     pixels = enumerate_pixels()
     for d in pixels:
         print(f"Found Pixel dice: {d.address} => {d.name} of type {d.dtype.name}")
-        #d.play(0)
-        #d.calibrate()
         break
 
     if len(pixels) > 0:
         pixels[0].setNotificationDelegate(PrintMessageDelegate(pixels[0]))
-        pixels[0].calibrate()
+        #pixels[0].calibrate()
 
         # Print messages as we get them!
         while True:
