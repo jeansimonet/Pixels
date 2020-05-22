@@ -62,6 +62,24 @@ class MessageType(IntEnum):
     ProgramDefaultParameters = 37
     ProgramDefaultParametersFinished = 38
 
+class PrintMessageDelegate(DefaultDelegate):
+    """Delegate passed to blupy that prints out the subscribe characteristic value changes."""
+    """i.e. it prints out 'messages' sent by the dice"""
+
+    def __init__(self, pixel: PixelLink):
+        DefaultDelegate.__init__(self)
+        self._pixel = pixel
+
+    def handleNotification(self, cHandle, data):
+        msg = list(data)
+        if msg[0] == MessageType.NotifyUser:
+            self._pixel._notify_user(msg)
+        elif msg[0] == MessageType.DebugLog:
+            print(bytes(msg[1:]).decode("utf-8"))
+        else:
+            print(msg)
+
+
 class PixelLink:
     """Connection to a specific Pixel dice other Bluetooth"""
 
@@ -116,15 +134,6 @@ class PixelLink:
 
     def calibrate(self):
         self._send(MessageType.Calibrate)
-        for i in range(2):
-            msg = list(self._subscriber.read())
-            while msg[0] != MessageType.NotifyUser:
-                # Try again (why??)
-                print(f"Unexpected message: {msg}")
-                msg = list(self._subscriber.read())
-            if not self._notify_user(msg):
-                return False
-        return True
 
     def _notify_user(self, msg):
         assert(msg[0] == MessageType.NotifyUser)
@@ -162,18 +171,6 @@ def enumerate_pixels(timeout_secs = 1):
     return pixels
 
 
-class PrintMessageDelegate(DefaultDelegate):
-    """Delegate passed to blupy that prints out the subscribe characteristic value changes."""
-    """i.e. it prints out 'messages' sent by the dice"""
-
-    def __init__(self):
-        DefaultDelegate.__init__(self)
-
-    def handleNotification(self, cHandle, data):
-        # Print out data for now
-        print(list(data))
-
-
 if __name__ == "__main__":
     print('Scanning for Pixels')
     pixels = enumerate_pixels()
@@ -184,7 +181,8 @@ if __name__ == "__main__":
         break
 
     if len(pixels) > 0:
-        pixels[0].setNotificationDelegate(PrintMessageDelegate())
+        pixels[0].setNotificationDelegate(PrintMessageDelegate(pixels[0]))
+        pixels[0].calibrate()
 
         # Print messages as we get them!
         while True:
