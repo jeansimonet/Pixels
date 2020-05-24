@@ -7,6 +7,19 @@ from enum import IntEnum, unique
 from bluepy.btle import Scanner, ScanEntry, Peripheral, DefaultDelegate
 
 
+# Known issues:
+
+# hci0 needs occasional reset 
+#     devices = Scanner().scan(timeout_secs)
+#   File "/home/pi/.local/lib/python3.7/site-packages/bluepy/btle.py", line 854, in scan
+#     self.stop()
+#   File "/home/pi/.local/lib/python3.7/site-packages/bluepy/btle.py", line 803, in stop
+#     self._mgmtCmd(self._cmd()+"end")
+#   File "/home/pi/.local/lib/python3.7/site-packages/bluepy/btle.py", line 312, in _mgmtCmd
+#     raise BTLEManagementError("Failed to execute management command '%s'" % (cmd), rsp)
+# bluepy.btle.BTLEManagementError: Failed to execute management command 'scanend' (code: 11, error: Rejected)# https://github.com/zewelor/bt-mqtt-gateway/issues/59
+
+
 # Pixels Bluetooth constants
 PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
 PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
@@ -105,6 +118,12 @@ class PixelLink:
             self.wait_for_notifications(1) # The 'IAmADie' message seems to always be the first one
             if not hasattr(self, '_dtype'):
                 raise Exception("Pixel type couldn't be identified")
+
+            # Battery level
+            self._battery_voltage = -1
+            self.refresh_battery_voltage()
+            self.wait_for_notifications(1)
+
         except:
             self._device.disconnect()
             raise
@@ -121,6 +140,10 @@ class PixelLink:
     def dtype(self):
         return self._dtype
 
+    @property
+    def battery_voltage(self):
+        return self._battery_voltage
+
     def wait_for_notifications(self, timeout):
         return self._device.waitForNotifications(timeout)
 
@@ -130,9 +153,11 @@ class PixelLink:
     def calibrate(self):
         self._send(MessageType.Calibrate)
 
+    def refresh_battery_voltage(self):
+        self._send(MessageType.RequestBatteryLevel)
+
     def _send(self, message_type, *args):
-        msg = [message_type, *args]
-        self._writer.write(bytes(msg))
+        self._writer.write(bytes([message_type, *args]))
 
     def _process_message(self, msg):
         if msg[0] == MessageType.IAmADie:
@@ -140,6 +165,9 @@ class PixelLink:
                 self._dtype = DiceType(msg[1])
         elif msg[0] == MessageType.DebugLog:
             print(f'DEBUG[{self.address}]: {bytes(msg[1:]).decode("utf-8")}')
+        elif msg[0] == MessageType.BatteryLevel:
+            import struct
+            self._update_battery_voltage(*struct.unpack('<f', bytes(msg[1:]))) #little endian
         elif msg[0] == MessageType.State:
             self._update_state(*msg[1:])
         elif msg[0] == MessageType.NotifyUser:
@@ -148,15 +176,21 @@ class PixelLink:
     def _update_state(self, state, face):
         print(f'Face {face + 1} state {state}')
 
+    def _update_battery_voltage(self, voltage):
+        self._battery_voltage = voltage
+        print(f'Battery voltage: {voltage}')
+
     def _notify_user(self, msg):
         assert(msg[0] == MessageType.NotifyUser)
         timeout, ok, cancel = msg[1:4]
         txt = bytes(msg[4:]).decode("utf-8")
-        if ok and cancel:
-            print(f'{txt} [Enter to continue, any other key to abort, timeout {timeout}s]:')
-        else:
-            print(f'{txt} [Enter to continue, timeout {timeout}s]:')
+        can_abort = ok and cancel
+        txt_key = 'Enter to continue, any other key to abort' if can_abort else 'Any key to continue'
+        print(f'{txt} [{txt_key}, timeout {timeout}s]:')
         ok = PixelLink._get_continue()
+        if not can_abort:
+            ok = True
+        print("Continuing" if ok else "Aborting")
         self._send(MessageType.NotifyUserAck, 1 if ok else 0)
         return ok
 
@@ -178,15 +212,16 @@ def enumerate_pixels(timeout_secs = 1):
 
 
 if __name__ == "__main__":
-    print('Scanning for Pixels')
     pixels = []
     while not pixels:
+        print('Scanning for Pixels...')
         pixels = enumerate_pixels()
         for dice in pixels:
             print(f"Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name}")
             break
 
-        #pixels[0].calibrate()
-        while True:
-            if not pixels[0].wait_for_notifications(5):
-                print("Waiting...")
+    #pixels[0].calibrate()
+    while True:
+        if not pixels[0].wait_for_notifications(5):
+            pixels[0].refresh_battery_voltage()
+            print("Waiting...")
