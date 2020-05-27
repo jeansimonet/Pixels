@@ -1,6 +1,12 @@
 # Utility classes to communicate with pixels dices
 
+# Standard lib
 from enum import IntEnum, unique
+import time
+
+# Our types
+from utils import integer_to_bytes
+from animation import AnimationSet
 
 # We're using the bluepy lib for easy bluetooth access
 # https://github.com/IanHarvey/bluepy
@@ -17,13 +23,9 @@ from bluepy.btle import Scanner, ScanEntry, Peripheral, DefaultDelegate
 #     self._mgmtCmd(self._cmd()+"end")
 #   File "/home/pi/.local/lib/python3.7/site-packages/bluepy/btle.py", line 312, in _mgmtCmd
 #     raise BTLEManagementError("Failed to execute management command '%s'" % (cmd), rsp)
-# bluepy.btle.BTLEManagementError: Failed to execute management command 'scanend' (code: 11, error: Rejected)# https://github.com/zewelor/bt-mqtt-gateway/issues/59
-
-
-# Pixels Bluetooth constants
-PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
-PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
-PIXELS_WRITE_CHARACTERISTIC = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E".lower()
+# bluepy.btle.BTLEManagementError: Failed to execute management command 'scanend' (code: 11, error: Rejected)
+# https://github.com/zewelor/bt-mqtt-gateway/issues/59
+# > sudo hciconfig hci0 reset
 
 
 @unique
@@ -82,21 +84,47 @@ class PixelLink:
     This class is not thread safe (because bluepy.btle.Peripheral is not)
     """
 
+    # Pixels Bluetooth constants
+    PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
+    PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
+    PIXELS_WRITE_CHARACTERISTIC = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E".lower()
+
+    PIXELS_MESSAGE_BULK_DATA_SIZE = 100
+
+    # Set to true to print messages content
+    _trace = True
+
+    @staticmethod
+    def enumerate_pixels(timeout_secs = 1):
+        """Returns a list of Pixel dices discovered over Bluetooth"""
+        devices = Scanner().scan(timeout_secs)
+        pixels = []
+        for dev in devices:
+            #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
+            if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
+                pixels.append(PixelLink(dev))
+        return pixels
+
+    @staticmethod
+    def _get_continue():
+        from getch import getch
+        return getch() == '\r'
+
     def __init__(self, bluepy_entry: ScanEntry):
         assert bluepy_entry != None
         #for (adtype, desc, value) in bluepy_entry.getScanData():
-        #    print(f"  {adtype} : {desc} => {value}")
+        #    print(f'> {adtype} : {desc} => {value}')
         self._address = bluepy_entry.addr
         self._name = bluepy_entry.getValueText(8)
         self._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
 
         try:
-            service = self._device.getServiceByUUID(PIXELS_SERVICE_UUID)
+            service = self._device.getServiceByUUID(PixelLink.PIXELS_SERVICE_UUID)
             if not service:
                 raise Exception('Pixel service not found')
 
-            self._subscriber = service.getCharacteristics(PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
-            self._writer = service.getCharacteristics(PIXELS_WRITE_CHARACTERISTIC)[0]
+            self._subscriber = service.getCharacteristics(PixelLink.PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
+            self._writer = service.getCharacteristics(PixelLink.PIXELS_WRITE_CHARACTERISTIC)[0]
 
             # This magic code enables notifications from the subscribe characteristic,
             # which in turn keeps the firmware on the dice from erroring out because
@@ -156,10 +184,44 @@ class PixelLink:
     def refresh_battery_voltage(self):
         self._send(MessageType.RequestBatteryLevel)
 
-    def _send(self, message_type, *args):
-        self._writer.write(bytes([message_type, *args]))
+    def upload_animation_set(self, anim_set: AnimationSet):
+        data = []
+        def append(dword):
+            data.extend(integer_to_bytes(dword, 2))
+        append(len(anim_set.palette))
+        append(len(anim_set.keyframes))
+        append(len(anim_set.rgb_tracks))
+        append(len(anim_set.tracks))
+        append(len(anim_set.animations))
+        append(anim_set.heat_track_index)
+        self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, 3)
+        self._upload_bulk_data(anim_set.pack())
+
+    def _send(self, message_type: MessageType, *args):
+        if PixelLink._trace:
+            print(f'<= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
+        data = bytes([message_type, *args])
+        # assert(len(data) < ???)
+        self._writer.write(data)
+
+    def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout):
+        intial_timeout = timeout
+        self._send(msg_type, *msg_data)
+        self._last_msg = None
+        last_time = time.perf_counter()
+        while timeout >= 0:
+            if not self.wait_for_notifications(timeout):
+                break
+            if self._last_msg[0] == ack_type:
+                return self._last_msg
+            t = time.perf_counter()
+            timeout -= t - last_time
+            last_time = t
+        raise Exception(f'Acknowledgement message of type {ack_type.name} not received before timeout of {intial_timeout}s')
 
     def _process_message(self, msg):
+        if PixelLink._trace:
+            print(f'=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
         if msg[0] == MessageType.IAmADie:
             if not self._dtype:
                 self._dtype = DiceType(msg[1])
@@ -172,6 +234,9 @@ class PixelLink:
             self._update_state(*msg[1:])
         elif msg[0] == MessageType.NotifyUser:
             self._notify_user(msg)
+        else:
+            #TODO event
+            self._last_msg = msg
 
     def _update_state(self, state, face):
         print(f'Face {face + 1} state {state}')
@@ -194,34 +259,33 @@ class PixelLink:
         self._send(MessageType.NotifyUserAck, 1 if ok else 0)
         return ok
 
-    @staticmethod
-    def _get_continue():
-        from getch import getch
-        return getch() == '\r'
-
-
-def enumerate_pixels(timeout_secs = 1):
-    """Returns a list of Pixel dices discovered over Bluetooth"""
-    devices = Scanner().scan(timeout_secs)
-    pixels = []
-    for dev in devices:
-        #print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
-        if dev.getValueText(7) == PIXELS_SERVICE_UUID:
-            pixels.append(PixelLink(dev))
-    return pixels
+    def _upload_bulk_data(self, data: bytes):
+        assert(len(data))
+        # Send setup message
+        self._send_and_ack(MessageType.BulkSetup, integer_to_bytes(len(data), 2), MessageType.BulkSetupAck, 3)
+        # Then transfer data
+        remainingSize = len(data)
+        offset = 0
+        while remainingSize > 0:
+            size = min(remainingSize, PixelLink.PIXELS_MESSAGE_BULK_DATA_SIZE)
+            header = [size] + integer_to_bytes(offset, 2)
+            self._send_and_ack(MessageType.BulkData, header + data[offset:offset+size], MessageType.BulkDataAck, 10)
+            remainingSize -= size
+            offset += size
 
 
 if __name__ == "__main__":
     pixels = []
     while not pixels:
         print('Scanning for Pixels...')
-        pixels = enumerate_pixels()
+        pixels = PixelLink.enumerate_pixels()
         for dice in pixels:
-            print(f"Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name}")
+            print(f'Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name}')
             break
 
     #pixels[0].calibrate()
-    while True:
-        if not pixels[0].wait_for_notifications(5):
-            pixels[0].refresh_battery_voltage()
-            print("Waiting...")
+    pixels[0].upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+    # while True:
+    #     if not pixels[0].wait_for_notifications(5):
+    #         pixels[0].refresh_battery_voltage()
+    #         print('Waiting...')
