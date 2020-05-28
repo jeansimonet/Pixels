@@ -9,18 +9,18 @@ namespace Core
 	class Queue
 	{
 		T items[MaxCount];
-		int count;
-		int reader;
-		int writer;
+		int _count;
+		int _reader;
+		int _writer;
 
 	public:
 		/// <summary>
 		/// Constructor
 		/// </summary>
 		Queue()
-			: count(0)
-			, reader(0)
-			, writer(0)
+			: _count(0)
+			, _reader(0)
+			, _writer(0)
 		{
 		}
 
@@ -30,13 +30,16 @@ namespace Core
 		/// </summary>
 		bool enqueue(const T& clientIndex)
 		{
-			bool ret = count < MaxCount;
+			bool ret = false;
+			CRITICAL_REGION_ENTER();
+			ret = _count < MaxCount;
 			if (ret)
 			{
-				items[writer] = clientIndex;
-				writer = (writer + 1) % MaxCount;
-				count++;
+				items[_writer] = clientIndex;
+				_writer = (_writer + 1) % MaxCount;
+				_count++;
 			}
+			CRITICAL_REGION_EXIT();
 			return ret;
 		}
 
@@ -46,13 +49,42 @@ namespace Core
 		/// </summary>
 		bool tryDequeue(T& outItem)
 		{
-			bool ret = count > 0;
+			bool ret = false;
+			CRITICAL_REGION_ENTER();
+			ret = _count > 0;
 			if (ret)
 			{
-				outItem = items[reader];
-				reader = (reader + 1) % MaxCount;
-				count--;
+				outItem = items[_reader];
+				_reader = (_reader + 1) % MaxCount;
+				_count--;
 			}
+			CRITICAL_REGION_EXIT();
+			return ret;
+		}
+
+		typedef bool(*TryDequeueFunctor)(T& item);
+
+		/// <summary>
+		/// Tries to pop the oldest element and call functor on it,
+		/// Returns true if the element could be popped AND functor could process it
+		/// if functor could not process element, then it isn't popped
+		/// </summary>
+		bool tryDequeue(TryDequeueFunctor functor)
+		{
+			bool ret = false;
+			CRITICAL_REGION_ENTER();
+			ret = _count > 0;
+			if (ret)
+			{
+				auto& outItem = items[_reader];
+				ret = functor(outItem);
+				if (ret)
+				{
+					_reader = (_reader + 1) % MaxCount;
+					_count--;
+				}
+			}
+			CRITICAL_REGION_EXIT();
 			return ret;
 		}
 
@@ -61,9 +93,16 @@ namespace Core
 		/// </summary>
 		void clear()
 		{
-			count = 0;
-			writer = 0;
-			reader = 0;
+			CRITICAL_REGION_ENTER();
+			_count = 0;
+			_writer = 0;
+			_reader = 0;
+			CRITICAL_REGION_EXIT();
+		}
+
+		int count() const
+		{
+			return _count;
 		}
 	};
 
