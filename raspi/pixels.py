@@ -89,7 +89,9 @@ class PixelLink:
     PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".lower()
     PIXELS_WRITE_CHARACTERISTIC = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E".lower()
 
-    PIXELS_MESSAGE_BULK_DATA_SIZE = 100
+    # Not completely sure why, but it seems Blupy doesn't like to send BLE paquets greater than 20 bytes without a response
+    # and the dice do not like to send responses, so we're stuck making sure our BulkData paquet fits in the 20 byte, i.e. 16 bytes of payload
+    PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
     # Set to true to print messages content
     _trace = True
