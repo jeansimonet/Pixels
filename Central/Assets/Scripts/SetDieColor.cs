@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class SetDieColor : MonoBehaviour
 {
-    public ColorSelector colorSelector;
-
     Die die;
     private void Awake()
     {
@@ -16,8 +14,6 @@ public class SetDieColor : MonoBehaviour
     {
         DicePool.Instance.onDieConnected += AddDie;
         DicePool.Instance.onDieDisconnected += RemoveDie;
-
-        colorSelector.onMouseButtonUp.AddListener(SetColor);
     }
 
     // Update is called once per frame
@@ -41,10 +37,6 @@ public class SetDieColor : MonoBehaviour
 
     public void SetColor()
     {
-        if (die != null)
-        {
-            die.SetLEDsToColor(ColorSelector.GetColor());
-        }
     }
 
 }

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
 using fts;
 
-[PluginAttr("Win/DiceBLEWin")]
+[PluginAttr("DiceBLEWin")]
 #endif
 public class BluetoothLEHardwareInterface
 {
