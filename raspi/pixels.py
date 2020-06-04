@@ -94,7 +94,7 @@ class PixelLink:
     PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
     # Set to true to print messages content
-    _trace = True
+    _trace = False
 
     @staticmethod
     def enumerate_pixels(timeout_secs = 1):
@@ -221,6 +221,20 @@ class PixelLink:
             last_time = t
         raise Exception(f'Acknowledgement message of type {ack_type.name} not received before timeout of {intial_timeout}s')
 
+    def waitForFace(self, timeout):
+        intial_timeout = timeout
+        self._last_msg = None
+        last_time = time.perf_counter()
+        while timeout >= 0:
+            if not self.wait_for_notifications(timeout):
+                break
+            if self._lastState == 1:
+                return self._lastFace
+            t = time.perf_counter()
+            timeout -= t - last_time
+            last_time = t
+        raise Exception(f'face not received before timeout of {intial_timeout}s')
+
     def _process_message(self, msg):
         if PixelLink._trace:
             print(f'=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
@@ -241,6 +255,8 @@ class PixelLink:
             self._last_msg = msg
 
     def _update_state(self, state, face):
+        self._lastState = state
+        self._lastFace = face
         print(f'Face {face + 1} state {state}')
 
     def _update_battery_voltage(self, voltage):
