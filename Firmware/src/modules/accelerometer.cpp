@@ -36,6 +36,7 @@ namespace Accelerometer
 	RollState rollState = RollState_Unknown;
 	bool moving = false;
 	float3 handleStateNormal; // The normal when we entered the handled state, so we can determine if we've moved enough
+	bool paused;
 
 	// This small buffer stores about 1 second of Acceleration data
 	Core::RingBuffer<AccelFrame, ACCEL_BUFFER_SIZE> buffer;
@@ -44,6 +45,8 @@ namespace Accelerometer
 	DelegateArray<RollStateClientMethod, MAX_ACC_CLIENTS> rollStateClients;
 
 	void updateState();
+	void pauseNotifications();
+	void resumeNotifications();
 
     void CalibrateHandler(void* context, const Message* msg);
 	void CalibrateFaceHandler(void* context, const Message* msg);
@@ -183,9 +186,10 @@ namespace Accelerometer
 			}
 
 			// Notify clients
-			for (int i = 0; i < rollStateClients.Count(); ++i)
-			{
-				rollStateClients[i].handler(rollStateClients[i].token, rollState, face);
+			if (!paused) {
+				for (int i = 0; i < rollStateClients.Count(); ++i) {
+					rollStateClients[i].handler(rollStateClients[i].token, rollState, face);
+				}
 			}
 		}
 	}
@@ -342,6 +346,10 @@ namespace Accelerometer
 	CalibrationNormals* measuredNormals = nullptr;
 
     void CalibrateHandler(void* context, const Message* msg) {
+
+		// Turn off state change notifications
+		stop();
+
 		// Start calibration!
 		measuredNormals = (CalibrationNormals*)malloc(sizeof(CalibrationNormals));
 
@@ -355,7 +363,7 @@ namespace Accelerometer
 				measuredNormals->face1 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
 				// Debugging
-				BLE_LOG_INFO("Face 1 Normal: %d, %d, %d", (int)(measuredNormals->face1.x * 100), (int)(measuredNormals->face1.y * 100), (int)(measuredNormals->face1.z * 100));
+				//BLE_LOG_INFO("Face 1 Normal: %d, %d, %d", (int)(measuredNormals->face1.x * 100), (int)(measuredNormals->face1.y * 100), (int)(measuredNormals->face1.z * 100));
 
 				// Place on face 5
 				MessageService::NotifyUser("Place face 5 up", true, true, 30, [] (bool okCancel)
@@ -367,7 +375,7 @@ namespace Accelerometer
 						measuredNormals->face5 = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 
 						// Debugging
-						BLE_LOG_INFO("Face 5 Normal: %d, %d, %d", (int)(measuredNormals->face5.x * 100), (int)(measuredNormals->face5.y * 100), (int)(measuredNormals->face5.z * 100));
+						//BLE_LOG_INFO("Face 5 Normal: %d, %d, %d", (int)(measuredNormals->face5.x * 100), (int)(measuredNormals->face5.y * 100), (int)(measuredNormals->face5.z * 100));
 
 						// Now we can calibrate
 						int normalCount = BoardManager::getBoard()->ledCount;
@@ -381,10 +389,19 @@ namespace Accelerometer
 
 							// Notify user that we're done, yay!!!
 							MessageService::NotifyUser("Die is calibrated.", true, false, 30, nullptr);
+
+							// Restart notifications
+							start();
 						});
+					} else {
+						// Restart notifications
+						start();
 					}
 				});
 
+			} else {
+				// Restart notifications
+				start();
 			}
 		});
 	}
