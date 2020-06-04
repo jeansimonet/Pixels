@@ -18,9 +18,5 @@ public class DisplayRGB : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Color32 c = (Color32)ColorSelector.GetColor();
-        R.text = c.r.ToString();
-        G.text = c.g.ToString();
-        B.text = c.b.ToString();
     }
 }

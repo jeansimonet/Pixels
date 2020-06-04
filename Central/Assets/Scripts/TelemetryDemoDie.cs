@@ -10,7 +10,6 @@ public class TelemetryDemoDie : MonoBehaviour
     public RawImage dieImage;
     public Die3D die3D;
     public Text faceNumberText;
-    public ColorSelector selector;
 
     Die die;
 
@@ -21,10 +20,6 @@ public class TelemetryDemoDie : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        selector.onMouseButtonUp.AddListener(() =>
-        {
-            die.SetLEDsToColor(ColorSelector.GetColor());
-        });
     }
 
     // Update is called once per frame

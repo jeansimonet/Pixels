@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/SpeakNumbers.unity
-    guid: be256e2501ea4a14da1418afb81df46e
+    path: Assets/LedAnimator/LedAnimator.unity
+    guid: 1bde56516a383ed448d560ea0cd73612
   m_configObjects: {}
