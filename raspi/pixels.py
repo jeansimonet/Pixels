@@ -6,6 +6,7 @@ import time
 
 # Our types
 from utils import integer_to_bytes, Event
+from color import Color32
 from animation import AnimationSet
 
 # We're using the bluepy lib for easy bluetooth access
@@ -79,6 +80,9 @@ class MessageType(IntEnum):
     ProgramDefaultParameters = 37
     ProgramDefaultParametersFinished = 38
 
+    # Test
+    SetAllLEDsToColor = 41
+
 
 class PixelLink:
     """
@@ -95,13 +99,16 @@ class PixelLink:
     # so we're stuck making sure our BulkData paquet fits in the 20 byte, i.e. 16 bytes of payload
     PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
+    # Default timeout in seconds used for waiting on a dice message
+    DEFAULT_TIMEOUT = 1
+
     # Set to true to print messages content
     _trace = False
 
     @staticmethod
-    def enumerate_pixels(timeout_secs = 1):
+    def enumerate_pixels(timeout = DEFAULT_TIMEOUT):
         """Returns a list of Pixel dices discovered over Bluetooth"""
-        devices = Scanner().scan(timeout_secs)
+        devices = Scanner().scan(timeout)
         pixels = []
         for dev in devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
@@ -152,20 +159,20 @@ class PixelLink:
             self.face_up_changed = Event()
             self.battery_voltage_changed = Event()
 
-            # Face up (0 means no face up)
-            self._face_up = 0
-
             # Check type
             self._dtype = None
             self._send(MessageType.WhoAreYou)
-            self.wait_for_message(1, MessageType.IAmADie)
+            self.wait_for_message(MessageType.IAmADie)
             if not self._dtype:
                 raise Exception("Pixel type couldn't be identified")
 
             # Battery level
             self._battery_voltage = -1
             self.refresh_battery_voltage()
-            self.wait_for_message(1, MessageType.BatteryLevel)
+
+            # Face up (0 means no face up)
+            self._face_up = 0
+            self.refresh_state()
 
         except:
             self._device.disconnect()
@@ -184,18 +191,18 @@ class PixelLink:
         return self._dtype
 
     @property
-    def face_up(self) -> int:
-        """Starts at 1, returns 0 if no face up
-        Associated event: face_up_changed"""
-        return self._face_up
-
-    @property
     def battery_voltage(self) -> float:
         """Battery voltage (usually between 2.5 and 4.2 volts)
         Associated event: battery_voltage_changed"""
         return self._battery_voltage
 
-    def wait_for_message(self, timeout, msg_type: MessageType = MessageType._None):
+    @property
+    def face_up(self) -> int:
+        """Starts at 1, returns 0 if no face up
+        Associated event: face_up_changed"""
+        return self._face_up
+
+    def wait_for_message(self, msg_type: MessageType = MessageType._None, timeout = DEFAULT_TIMEOUT):
         """Wait until the dice sends a message, or timeout
         (or don't wait at all if a message has already been received)
         Returns: message data or None
@@ -211,16 +218,27 @@ class PixelLink:
         finally:
             self.message_received.detach(on_message)
 
-    def play(self, index, remap_face = 0, loop = 0):
-        self._send(MessageType.PlayAnim, index, remap_face, loop)
+    def refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
+        self._send(MessageType.RequestBatteryLevel)
+        self.wait_for_message(MessageType.BatteryLevel, timeout)
+
+    def refresh_state(self, timeout = DEFAULT_TIMEOUT):
+        self._send(MessageType.RequestState)
+        self.wait_for_message(MessageType.State, timeout)
+
+    def request_telemetry(self, activate):
+        self._send(MessageType.RequestTelemetry, 1 if activate else 0)
+
+    # Not working at the moment
+    # def request_settings(self):
+    #     self._send_and_ack(MessageType.RequestSettings, [], MessageType.TransferSettings)
 
     def calibrate(self):
         self._send(MessageType.Calibrate)
 
-    def refresh_battery_voltage(self):
-        self._send(MessageType.RequestBatteryLevel)
-
-    def upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
+    def upload_animation_set(self, anim_set: AnimationSet, timeout = 1, progress_callback = None):
+        """Uploads animation data to the dice. This may take several seconds
+        The progress_callback argument is a function taking a float argument which is the normalized progress"""
         data = []
         def append(dword):
             data.extend(integer_to_bytes(dword, 2))
@@ -231,16 +249,30 @@ class PixelLink:
         append(len(anim_set.animations))
         append(anim_set.heat_track_index)
         self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
-        self._upload_bulk_data(anim_set.pack(), timeout)
+        self._upload_bulk_data(anim_set.pack(), timeout, progress_callback)
+
+    def play(self, index, remap_face = 0, loop = 0):
+        self._send(MessageType.PlayAnim, index, remap_face, loop)
+
+    def stop(self, index, remap_face = 0):
+        self._send(MessageType.StopAnim, index, remap_face)
+
+    def play_event(self, event, remap_face = 0, loop = 0):
+        self._send(MessageType.PlayAnimEvent, event, remap_face, loop)
+
+    # Not working at the moment
+    def force_LEDs_color(self, color: Color32):
+        c = integer_to_bytes(color.to_rgb(), 4)
+        self._send(MessageType.SetAllLEDsToColor, *c)
 
     def _send(self, message_type: MessageType, *args):
         if PixelLink._trace:
-            print(f'<= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
+            print(f'=> {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
         data = bytes([message_type, *args])
         # assert(len(data) < ???)
         self._writer.write(data)
 
-    def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout):
+    def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout = DEFAULT_TIMEOUT):
         assert(timeout >= 0)
         self._send(msg_type, *msg_data)
         try:
@@ -253,7 +285,7 @@ class PixelLink:
             t0 = time.perf_counter()
             elapsed = 0
             while elapsed <= timeout:
-                if not self.wait_for_message(timeout - elapsed):
+                if not self.wait_for_message(timeout = timeout - elapsed):
                     break
                 if ack_msg:
                     return ack_msg
@@ -264,7 +296,7 @@ class PixelLink:
 
     def _process_message(self, msg):
         if PixelLink._trace:
-            print(f'=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
+            print(f'<= {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
         if msg[0] == MessageType.IAmADie:
             if not self._dtype:
                 self._dtype = DiceType(msg[1])
@@ -306,11 +338,13 @@ class PixelLink:
         self._send(MessageType.NotifyUserAck, 1 if ok else 0)
         return ok
 
-    def _upload_bulk_data(self, data: bytes, timeout):
+    def _upload_bulk_data(self, data: bytes, timeout, progress_callback = None):
         assert(len(data))
         assert(timeout >= 0)
         # Send setup message
         self._send_and_ack(MessageType.BulkSetup, integer_to_bytes(len(data), 2), MessageType.BulkSetupAck, timeout)
+        if progress_callback:
+            progress_callback(0)
         # Then transfer data
         remainingSize = len(data)
         offset = 0
@@ -320,6 +354,8 @@ class PixelLink:
             self._send_and_ack(MessageType.BulkData, header + data[offset:offset+size], MessageType.BulkDataAck, timeout)
             remainingSize -= size
             offset += size
+            if progress_callback:
+                progress_callback(1 - remainingSize / len(data))
 
 
 if __name__ == "__main__":
@@ -328,10 +364,14 @@ if __name__ == "__main__":
         print('Scanning for Pixels...')
         pixels = PixelLink.enumerate_pixels()
         for dice in pixels:
-            print(f'Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name}')
+            print(f'Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name} with face up: {dice.face_up}')
 
     #pixels[0].calibrate()
-    #pixels[0].upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+    # def on_progress(progress):
+    #     from math import floor
+    #     print(f'Uploading animation: {floor(progress * 100)}%')
+    # pixels[0].upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'), progress_callback=on_progress)
+
     print('Pumping messages...')
 
     def on_face_up(dice, face):
@@ -342,5 +382,5 @@ if __name__ == "__main__":
         dice.face_up_changed.attach(lambda f: on_face_up(dice, f))
     while True:
         for dice in pixels:
-            dice.wait_for_message(0.1)
+            dice.wait_for_message(timeout = 0.1)
             #dice.refresh_battery_voltage()
