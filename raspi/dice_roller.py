@@ -3,6 +3,8 @@ from time import sleep
 from adafruit_servokit import ServoKit
 import json
 import traceback
+import asyncio
+
 
 class FlipFlopServoController:
     """ Customized servo controller for the dice roller, setting the angles appropriately"""
@@ -44,42 +46,35 @@ class DiceRoller:
         self.servo = FlipFlopServoController()
         self.dice = dice
 
-    def roll_once(self):
+    async def roll_once(self):
 
         # roll the servo
         self.servo.flip()
 
         # wait just a bit for the dice to start rolling
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
 
         # now wait for the dice to report a new face!
-        faces = {}
         for d in self.dice:
-            face = d.waitForFace(5)
-            faces[d.name] = face
-            #print(f"{d.name} rolled {face}")
+            await d._wait_until(lambda: d.face_up != 0, 10)
 
         # order according to the dice order
         ret = [0 for _ in self.dice]
         for i in range(len(self.dice)):
-            ret[i] = faces[self.dice[i].name]
+            ret[i] = self.dice[i].face_up
         return ret
         
 
 
-if __name__ == "__main__":
+async def main():
     print("Scanning for Pixels")
-    pixels = PixelLink.enumerate_pixels()
 
-    rollingDiceNames = ["D_19"]
+    rollingDiceNames = ["D_19", "D_55"]
     rollingDice = []
 
-    for d in pixels:
-        if d.name in rollingDiceNames:
-            print(f"Found Rolling dice: {d.address} => {d.name}")
-            rollingDice.append(d)
-        else:
-            print(f"Found Other dice: {d.address} => {d.name}")
+    for d in rollingDiceNames:
+        print(f"Found Rolling dice: {d}")
+        rollingDice.append(await PixelLink.connect_dice(d))
 
     if len(rollingDice) != len(rollingDiceNames):
         print("Missing some rolling dice")
@@ -104,7 +99,7 @@ if __name__ == "__main__":
     for d in rollingDice:
         all_rolls_stats.append([])
 
-    # store stats
+    # store roll stats
     roll_stats = []
     for d in rollingDice:
         die_stats = {}
@@ -115,18 +110,14 @@ if __name__ == "__main__":
     try:
         roll_count = 0
         while True:
-#        for i in range(20):
             if roll_count % 5 == 0:
-                # every 5 rolls we grab batery level and save stats to disk
+                # every 5 rolls we grab batery level and save all stats to disk
 
                 # grab battery level for all dice
                 bstats = []
                 bstats.append(time.perf_counter())
                 for d in rollingDice:
-                    d.refresh_battery_voltage()
-                    d.wait_for_notifications(5)
-                    bstats.append(d.battery_voltage)
-
+                    bstats.append(await d.refresh_battery_voltage())
                 battery_stats["stats"].append(bstats)
 
                 # write stats to disk
@@ -143,11 +134,11 @@ if __name__ == "__main__":
                 print(roll_stats)
 
             # every iteration, roll dice and keep track of stats
-            rolls = roller.roll_once()
+            rolls = await roller.roll_once()
             for r in range(len(rolls)):
                 roll = rolls[r]
                 all_rolls_stats[r].append(roll)
-                roll_stats[r]["stats"][roll] += 1
+                roll_stats[r]["stats"][roll - 1] += 1 # roll is face number, we convert it to an index
 
             # next roll
             roll_count += 1
@@ -159,4 +150,10 @@ if __name__ == "__main__":
 
     end_time = time.perf_counter()
     delta_time = end_time - start_time
-    print(f"Ending Rolling Test - end time: {int(end_time)} - test duration: {int(delta_time)}")
+    print(f"Rolling Test Ended - end time: {int(end_time)} - test duration: {int(delta_time)}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+    

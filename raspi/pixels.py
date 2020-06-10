@@ -3,6 +3,10 @@
 # Standard lib
 from enum import IntEnum, unique
 import time
+import asyncio
+import threading
+import traceback
+from queue import Queue
 
 # Our types
 from utils import integer_to_bytes, Event
@@ -79,6 +83,14 @@ class MessageType(IntEnum):
     ProgramDefaultParameters = 37
     ProgramDefaultParametersFinished = 38
 
+    # TESTING
+    SetAllLEDsToColor = 41
+    AttractMode = 42
+    PrintNormals = 43
+    PrintA2DReadings = 44
+
+    Count = 45
+
 
 class PixelLink:
     """
@@ -96,80 +108,118 @@ class PixelLink:
     PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
     # Set to true to print messages content
-    _trace = False
+    _trace = True
 
     @staticmethod
     def enumerate_pixels(timeout_secs = 1):
-        """Returns a list of Pixel dices discovered over Bluetooth"""
+        """Returns a list of Pixel dice discovered over Bluetooth.
+        Note that this method does not connect to the dice."""
         devices = Scanner().scan(timeout_secs)
         pixels = []
         for dev in devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
             if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
-                pixels.append(PixelLink(dev))
+                name = dev.getValueText(8)
+                pixels.append(name)
+                print(f"Discovered Pixel {name}")
         return pixels
+
+    @staticmethod
+    async def connect_dice(pixel_name, timeout_secs = 1):
+        """Connects to a single pixel, by name.
+        This is a coroutine because connecting to the dice takes time."""
+        devices = Scanner().scan(timeout_secs)
+        for dev in devices:
+            #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
+            if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID and dev.getValueText(8) == pixel_name:
+                return await PixelLink._create(dev)
+        raise Exception(f"Could not find pixel named {pixel_name}")
+        return None
 
     @staticmethod
     def _get_continue():
         from getch import getch
         return getch() == '\r'
 
-    def __init__(self, bluepy_entry: ScanEntry):
+    @staticmethod
+    async def _create(bluepy_entry: ScanEntry):
         assert bluepy_entry != None
+
+        dice = PixelLink()
+
         #for (adtype, desc, value) in bluepy_entry.getScanData():
         #    print(f'> {adtype} : {desc} => {value}')
-        self._address = bluepy_entry.addr
-        self._name = bluepy_entry.getValueText(8)
-        self._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
+        dice._address = bluepy_entry.addr
+        dice._name = bluepy_entry.getValueText(8)
+        dice._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
         # try with time.sleep(0.5) print("MTU", self._device.setMTU(255))
 
+        print(f"Connecting to dice {dice._name} at address {dice._address}")
         try:
             # Get pixels service
-            service = self._device.getServiceByUUID(PixelLink.PIXELS_SERVICE_UUID)
+            service = dice._device.getServiceByUUID(PixelLink.PIXELS_SERVICE_UUID)
             if not service:
                 raise Exception('Pixel service not found')
 
             # Get the subscriber and writer for exchanging data with the dice
-            self._subscriber = service.getCharacteristics(PixelLink.PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
-            self._writer = service.getCharacteristics(PixelLink.PIXELS_WRITE_CHARACTERISTIC)[0]
+            dice._subscriber = service.getCharacteristics(PixelLink.PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
+            dice._writer = service.getCharacteristics(PixelLink.PIXELS_WRITE_CHARACTERISTIC)[0]
 
             # This magic code enables notifications from the subscribe characteristic,
             # which in turn keeps the firmware on the dice from erroring out because
             # it thinks it can't send notifications. Note that firmware code has also been
             # fixed so it won't crash as a result :)
             # There is an example at the bottom of the file of notifications working
-            self._device.writeCharacteristic(self._subscriber.valHandle + 1, b'\x01\x00')
+            dice._device.writeCharacteristic(dice._subscriber.valHandle + 1, b'\x01\x00')
 
             # Bluepy notification delegate
-            myPixel = self
-            class PrintMessageDelegate(DefaultDelegate):
+            class ProcessMessageDelegate(DefaultDelegate):
                 def handleNotification(self, cHandle, data):
-                    myPixel._process_message(list(data))
-            self._device.withDelegate(PrintMessageDelegate())
+                    dice._process_message(list(data))
+            dice._device.withDelegate(ProcessMessageDelegate())
 
+
+            # Create the message map
+            dice._message_map = {}
+            for i in range(MessageType.Count):
+                dice._message_map[i] = []
+
+            # register default message handlers
+            dice._message_map[MessageType.IAmADie].append(PixelLink._die_type_handler)
+            dice._message_map[MessageType.DebugLog].append(PixelLink._debug_log_handler)
+            dice._message_map[MessageType.BatteryLevel].append(PixelLink._battery_level_handler)
+            dice._message_map[MessageType.State].append(PixelLink._state_handler)
+            dice._message_map[MessageType.NotifyUser].append(PixelLink._notify_user_handler)
+            
             # Setup events
-            self.message_received = Event()
-            self.face_up_changed = Event()
-            self.battery_voltage_changed = Event()
+            dice.face_up_changed = Event()
+            dice.battery_voltage_changed = Event()
 
             # Face up (0 means no face up)
-            self._face_up = 0
+            dice._face_up = 0
 
             # Check type
-            self._dtype = None
-            self._send(MessageType.WhoAreYou)
-            self.wait_for_message(1, MessageType.IAmADie)
-            if not self._dtype:
+            dice._dtype = None
+
+            # create message pump
+            dice._start_message_pump()
+
+            dice._send(MessageType.WhoAreYou)
+            await dice._wait_until(lambda : dice._dtype != None, 10)
+            if not dice._dtype:
                 raise Exception("Pixel type couldn't be identified")
 
             # Battery level
-            self._battery_voltage = -1
-            self.refresh_battery_voltage()
-            self.wait_for_message(1, MessageType.BatteryLevel)
+            dice._battery_voltage = -1
+            await dice.refresh_battery_voltage()
 
         except:
-            self._device.disconnect()
+            print(traceback.format_exc())
+            dice._device.disconnect()
             raise
+
+        print(f"Dice {dice._name} connected")
+        return dice
 
     @property
     def name(self) -> str:
@@ -195,118 +245,95 @@ class PixelLink:
         Associated event: battery_voltage_changed"""
         return self._battery_voltage
 
-    def wait_for_message(self, timeout, msg_type: MessageType = MessageType._None):
-        """Wait until the dice sends a message, or timeout
-        (or don't wait at all if a message has already been received)
-        Returns: message data or None
-        Associated event: message_received"""
-        try:
-            first_msg = None
-            def on_message(msg):
-                nonlocal first_msg
-                first_msg = msg
-            self.message_received.attach(on_message)
-            self._device.waitForNotifications(timeout)
-            return first_msg
-        finally:
-            self.message_received.detach(on_message)
+    def _start_message_pump(self):
+        """Starts the bluetooth message pump for this dice as a separate task (coroutine) on this thread."""
+        self._loop = asyncio.get_running_loop()
+        self._message_pump = self._loop.create_task(self._pump_messages())
 
-    def play(self, index, remap_face = 0, loop = 0):
-        self._send(MessageType.PlayAnim, index, remap_face, loop)
+    async def _pump_messages(self):
+        """ Message pump coroutine. Sits there checking for messages and processing them as needed.
+        The processing happens through the bluepy delegate"""
+        while True:
+            try:
+                self._device.waitForNotifications(0.01) # 0 seems to cause issues
+                await asyncio.sleep(0)
+            except:
+                print(traceback.format_exc())
+                break
 
-    def calibrate(self):
-        self._send(MessageType.Calibrate)
+    async def _wait_until(self, condition, timeout):
+        """ Wait until the condition is true or the timeout expires"""
+        t = time.perf_counter()
+        start_time = t
+        end_time = start_time + timeout
+        while (not condition()) and (t < end_time):
+            await asyncio.sleep(0)
+            t = time.perf_counter()
 
-    def refresh_battery_voltage(self):
-        self._send(MessageType.RequestBatteryLevel)
-
-    def upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
-        data = []
-        def append(dword):
-            data.extend(integer_to_bytes(dword, 2))
-        append(len(anim_set.palette))
-        append(len(anim_set.keyframes))
-        append(len(anim_set.rgb_tracks))
-        append(len(anim_set.tracks))
-        append(len(anim_set.animations))
-        append(anim_set.heat_track_index)
-        self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
-        self._upload_bulk_data(anim_set.pack(), timeout)
+        if not condition():
+            # not sure if I should throw or just return the condition...
+            raise Exception("Timeout while waiting for condition")
 
     def _send(self, message_type: MessageType, *args):
         if PixelLink._trace:
-            print(f'<= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
+            print(f'{self.name}<= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
         data = bytes([message_type, *args])
         # assert(len(data) < ???)
         self._writer.write(data)
 
-    def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout):
+    async def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout):
         assert(timeout >= 0)
         self._send(msg_type, *msg_data)
+        ack_msg = None
+        def on_message(self, msg):
+            nonlocal ack_msg
+            if not ack_msg and msg[0] == ack_type:
+                ack_msg = msg
+        self._message_map[ack_type].append(on_message)
         try:
-            ack_msg = None
-            def on_message(msg):
-                nonlocal ack_msg
-                if not ack_msg and msg[0] == ack_type:
-                    ack_msg = msg
-            self.message_received.attach(on_message)
-            t0 = time.perf_counter()
-            elapsed = 0
-            while elapsed <= timeout:
-                if not self.wait_for_message(timeout - elapsed):
-                    break
-                if ack_msg:
-                    return ack_msg
-                elapsed = time.perf_counter() - t0
-            raise Exception(f'Acknowledgement message of type {ack_type.name} not received before timeout of {timeout}s')
+            await self._wait_until(lambda: ack_msg != None, timeout)
         finally:
-            self.message_received.detach(on_message)
-
-    def waitForFace(self, timeout):
-        intial_timeout = timeout
-        self._last_msg = None
-        last_time = time.perf_counter()
-        while timeout >= 0:
-            if not self.wait_for_notifications(timeout):
-                break
-            if self._lastState == 1:
-                return self._lastFace
-            t = time.perf_counter()
-            timeout -= t - last_time
-            last_time = t
-        raise Exception(f'face not received before timeout of {intial_timeout}s')
+            self._message_map[ack_type].remove(on_message)
+        return ack_msg
 
     def _process_message(self, msg):
+        """Processes a message coming for the device and routes it to the proper message handler"""
         if PixelLink._trace:
-            print(f'=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
-        if msg[0] == MessageType.IAmADie:
-            if not self._dtype:
-                self._dtype = DiceType(msg[1])
-        elif msg[0] == MessageType.DebugLog:
-            print(f'DEBUG[{self.address}]: {bytes(msg[1:]).decode("utf-8")}')
-        elif msg[0] == MessageType.BatteryLevel:
-            import struct
-            self._update_battery_voltage(*struct.unpack('<f', bytes(msg[1:]))) #little endian
-        elif msg[0] == MessageType.State:
-            self._update_state(*msg[1:])
-        elif msg[0] == MessageType.NotifyUser:
-            self._notify_user(msg)
-        self.message_received.notify(msg)
+            print(f'{self.name}=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
 
-    def _update_state(self, state, face):
-        # print(f'Face {face + 1} state {state}')
+        handlers = self._message_map.get(msg[0])
+        for handler in handlers:
+            if handler != None:
+                # Pass the message to the handler
+                handler(self, msg)
+
+    """ Message Handlers """
+
+    def _die_type_handler(self, msg):
+        self._dtype = DiceType(msg[1])
+
+    def _debug_log_handler(self, msg):
+        endl = msg[1:].index(0) + 1 # find index of string terminator
+        print(f'DEBUG[{self.address}]: {bytes(msg[1:endl]).decode("utf-8")}')
+
+    def _battery_level_handler(self, msg):
+        import struct
+        voltage = struct.unpack('<f', bytes(msg[1:])) #little endian
+        #print(f'Battery voltage: {voltage}')
+        if self._battery_voltage != voltage:
+            self._battery_voltage = voltage
+            self.battery_voltage_changed.notify(voltage)
+
+    def _state_handler(self, msg):
+        state = msg[1]
+        face = msg[2]
+        #print(f'Face {face + 1} state {state}')
         face = face + 1 if state == 1 else 0
         if self._face_up != face:
             self._face_up = face
             self.face_up_changed.notify(face)
 
-    def _update_battery_voltage(self, voltage):
-        # print(f'Battery voltage: {voltage}')
-        if self._battery_voltage != voltage:
-            self._battery_voltage = voltage
-            self.battery_voltage_changed.notify(voltage)
-
-    def _notify_user(self, msg):
+    def _notify_user_handler(self, msg):
         assert(msg[0] == MessageType.NotifyUser)
         timeout, ok, cancel = msg[1:4]
         txt = bytes(msg[4:]).decode("utf-8")
@@ -320,41 +347,148 @@ class PixelLink:
         self._send(MessageType.NotifyUserAck, 1 if ok else 0)
         return ok
 
-    def _upload_bulk_data(self, data: bytes, timeout):
+    """ Utility """
+
+    async def _upload_bulk_data(self, data: bytes, progress_callback, timeout):
         assert(len(data))
         assert(timeout >= 0)
         # Send setup message
-        self._send_and_ack(MessageType.BulkSetup, integer_to_bytes(len(data), 2), MessageType.BulkSetupAck, timeout)
+        await self._send_and_ack(MessageType.BulkSetup, integer_to_bytes(len(data), 2), MessageType.BulkSetupAck, timeout)
         # Then transfer data
-        remainingSize = len(data)
+        total_size = len(data)
+        remainingSize = total_size
         offset = 0
         while remainingSize > 0:
             size = min(remainingSize, PixelLink.PIXELS_MESSAGE_BULK_DATA_SIZE)
             header = [size] + integer_to_bytes(offset, 2)
-            self._send_and_ack(MessageType.BulkData, header + data[offset:offset+size], MessageType.BulkDataAck, timeout)
+            await self._send_and_ack(MessageType.BulkData, header + data[offset:offset+size], MessageType.BulkDataAck, timeout)
+            if progress_callback != None:
+                progress_callback(offset, total_size)
             remainingSize -= size
             offset += size
 
+    async def upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
+        data = []
+        def append(dword):
+            data.extend(integer_to_bytes(dword, 2))
+        append(len(anim_set.palette))
+        append(len(anim_set.keyframes))
+        append(len(anim_set.rgb_tracks))
+        append(len(anim_set.tracks))
+        append(len(anim_set.animations))
+        append(anim_set.heat_track_index)
+
+        update_percent_increment = 0.1
+        next_update_percent = update_percent_increment
+        def print_progress(progress, total):
+            nonlocal update_percent_increment
+            nonlocal next_update_percent
+            percent = progress / total
+            if percent > next_update_percent:
+                print(f"Uploading animation: {percent * 100:.2f}% complete")
+                next_update_percent += update_percent_increment
+
+        await self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
+        await self._upload_bulk_data(anim_set.pack(), print_progress, timeout)
+
+    def async_upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
+        """ Kicks off a task to upload an animation set.
+        Returns a task if you want to wait for it, but really this is intended
+        to be called from the interactive interpreter """
+        return self._loop.create_task(self.upload_animation_set(anim_set, timeout))
+
+    async def refresh_battery_voltage(self):
+        await self._send_and_ack(MessageType.RequestBatteryLevel, [], MessageType.BatteryLevel, 10)
+        return self.battery_voltage
+
+    def async_refresh_battery_voltage(self):
+        """ Kicks off a task to refresh the battery voltage
+        Returns a task if you want to wait for it, but really this is intended
+        to be called from the interactive interpreter """
+        return self._loop.create_task(self.refresh_battery_voltage())
+
+    def play_animation(self, index, remap_face = 0, loop = 0):
+        self._send(MessageType.PlayAnim, index, remap_face, loop)
+
+    def start_calibration(self):
+        self._send(MessageType.Calibrate)
+
+    def print_a2d_levels(self):
+        self._send(MessageType.PrintA2DReadings)
+
+
+class InteractivePixels:
+    """ Small utility class that allows up to process dice messages in a separate thread.
+    This is really only useful for interactive mode, so we can send messages to dice from
+    the interpreter and see the responses printed out"""
+
+    _loop = None
+
+    @staticmethod
+    async def _empty_coroutine():
+        while True:
+            await asyncio.sleep(0)
+
+    @staticmethod
+    def _pump_messages_in_thread():
+        asyncio.set_event_loop(InteractivePixels._loop)
+        InteractivePixels._loop.run_until_complete(InteractivePixels._empty_coroutine())
+        InteractivePixels._loop.close()
+
+    @staticmethod
+    async def _connect_dice(dice_name, callback, timeout):
+        dice = await PixelLink.connect_dice(dice_name, timeout)
+        callback(dice)
+
+    @staticmethod
+    def start_global_message_pump():
+        """ Kicks off the thread that will pump messages for all the dice """
+        print('Pumping messages...')
+        InteractivePixels._loop = asyncio.new_event_loop()
+        t = threading.Thread(target=InteractivePixels._pump_messages_in_thread)
+        t.start()
+
+    @staticmethod
+    def connect_dice(dice_name, timeout = 1) -> PixelLink:
+        dice = []
+        InteractivePixels._loop.call_soon_threadsafe(lambda: asyncio.create_task(InteractivePixels._connect_dice(dice_name, lambda d: dice.append(d), timeout)))
+        return dice # dice won't be valid right away
+
+    @staticmethod
+    def transfer_dice(dice):
+        # stop message pump in current thread
+        dice._message_pump.cancel()
+
+        # and restart it in the threaded message loop
+        InteractivePixels._loop.call_soon_threadsafe(lambda: dice._start_message_pump())
+
+
+pixels = []
+
+async def main():
+
+    PixelLink.enumerate_pixels()
+
+    #if you want to connect to a dice, use this:
+    # dice = await PixelLink.connect_pixel("D_71")
+    # to upload animations, use this:
+    # await dice.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+
+    # to use pixels in interactive mode, run python -i pixels.py
+    # if you want to connect to a dice from the interactive interpreter, use this:
+    # >>> diceList = InteractivePixels.connect_dice("D_71")
+    # similarly:
+    # >>> diceList[0].async_upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+
+    InteractivePixels.start_global_message_pump()  
+
+    # if you want to continue pumping messages on a dice that was used in the script after main()
+    # terminates and the interactive interpreter shows up, you need to 'transfer' the dice over to the
+    # separate global_message_pump(). This will kill the dice's message pump on this thread and restart
+    # it on the thread that was created inside start_global_message_pump() and that will still be running
+    # after the main thread terminates.
+    # InteractivePixels.transfer_dice(dice)
+
 
 if __name__ == "__main__":
-    pixels = []
-    while not pixels:
-        print('Scanning for Pixels...')
-        pixels = PixelLink.enumerate_pixels()
-        for dice in pixels:
-            print(f'Found Pixel dice: {dice.address} => {dice.name} of type {dice.dtype.name}')
-
-    #pixels[0].calibrate()
-    #pixels[0].upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
-    print('Pumping messages...')
-
-    def on_face_up(dice, face):
-        # Skip events for "no face up"
-        if face:
-            print(f'{dice.name}: draw {face}')
-    for dice in pixels:
-        dice.face_up_changed.attach(lambda f: on_face_up(dice, f))
-    while True:
-        for dice in pixels:
-            dice.wait_for_message(0.1)
-            #dice.refresh_battery_voltage()
+    asyncio.run(main())
