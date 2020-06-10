@@ -10,6 +10,7 @@ from queue import Queue
 
 # Our types
 from utils import integer_to_bytes, Event
+from color import Color32
 from animation import AnimationSet
 
 # We're using the bluepy lib for easy bluetooth access
@@ -107,14 +108,16 @@ class PixelLink:
     # so we're stuck making sure our BulkData paquet fits in the 20 byte, i.e. 16 bytes of payload
     PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
+    # Default timeout in seconds used for waiting on a dice message
+    DEFAULT_TIMEOUT = 1
+
     # Set to true to print messages content
     _trace = True
 
     @staticmethod
-    def enumerate_pixels(timeout_secs = 1):
-        """Returns a list of Pixel dice discovered over Bluetooth.
-        Note that this method does not connect to the dice."""
-        devices = Scanner().scan(timeout_secs)
+    def enumerate_pixels(timeout = DEFAULT_TIMEOUT):
+        """Returns a list of Pixel dices discovered over Bluetooth"""
+        devices = Scanner().scan(timeout)
         pixels = []
         for dev in devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
@@ -195,15 +198,11 @@ class PixelLink:
             dice.face_up_changed = Event()
             dice.battery_voltage_changed = Event()
 
-            # Face up (0 means no face up)
-            dice._face_up = 0
-
-            # Check type
-            dice._dtype = None
-
             # create message pump
             dice._start_message_pump()
 
+            # Check type
+            dice._dtype = None
             dice._send(MessageType.WhoAreYou)
             await dice._wait_until(lambda : dice._dtype != None, 10)
             if not dice._dtype:
@@ -212,6 +211,10 @@ class PixelLink:
             # Battery level
             dice._battery_voltage = -1
             await dice.refresh_battery_voltage()
+
+            # Face up (0 means no face up)
+            dice._face_up = 0
+            await dice.refresh_state()
 
         except:
             print(traceback.format_exc())
@@ -234,16 +237,17 @@ class PixelLink:
         return self._dtype
 
     @property
+    def battery_voltage(self) -> float:
+        """Battery voltage (usually between 2.5 and 4.2 volts)
+        Associated event: battery_voltage_changed"""
+        return self._battery_voltage
+
+    @property
     def face_up(self) -> int:
         """Starts at 1, returns 0 if no face up
         Associated event: face_up_changed"""
         return self._face_up
 
-    @property
-    def battery_voltage(self) -> float:
-        """Battery voltage (usually between 2.5 and 4.2 volts)
-        Associated event: battery_voltage_changed"""
-        return self._battery_voltage
 
     def _start_message_pump(self):
         """Starts the bluetooth message pump for this dice as a separate task (coroutine) on this thread."""
@@ -276,12 +280,12 @@ class PixelLink:
 
     def _send(self, message_type: MessageType, *args):
         if PixelLink._trace:
-            print(f'{self.name}<= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
+            print(f'{self.name} <= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
         data = bytes([message_type, *args])
         # assert(len(data) < ???)
         self._writer.write(data)
 
-    async def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout):
+    async def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout = DEFAULT_TIMEOUT):
         assert(timeout >= 0)
         self._send(msg_type, *msg_data)
         ack_msg = None
@@ -299,15 +303,13 @@ class PixelLink:
     def _process_message(self, msg):
         """Processes a message coming for the device and routes it to the proper message handler"""
         if PixelLink._trace:
-            print(f'{self.name}=> {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
+            print(f'{self.name} => {MessageType(msg[0]).name}: {", ".join([format(i, "02x") for i in msg[1:]])}')
 
         handlers = self._message_map.get(msg[0])
         for handler in handlers:
             if handler != None:
                 # Pass the message to the handler
                 handler(self, msg)
-
-    """ Message Handlers """
 
     def _die_type_handler(self, msg):
         self._dtype = DiceType(msg[1])
@@ -347,9 +349,7 @@ class PixelLink:
         self._send(MessageType.NotifyUserAck, 1 if ok else 0)
         return ok
 
-    """ Utility """
-
-    async def _upload_bulk_data(self, data: bytes, progress_callback, timeout):
+    async def _upload_bulk_data(self, data: bytes, progress_callback, timeout = DEFAULT_TIMEOUT):
         assert(len(data))
         assert(timeout >= 0)
         # Send setup message
@@ -367,7 +367,7 @@ class PixelLink:
             remainingSize -= size
             offset += size
 
-    async def upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
+    async def upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
         data = []
         def append(dword):
             data.extend(integer_to_bytes(dword, 2))
@@ -391,24 +391,47 @@ class PixelLink:
         await self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
         await self._upload_bulk_data(anim_set.pack(), print_progress, timeout)
 
-    def async_upload_animation_set(self, anim_set: AnimationSet, timeout = 1):
+    def async_upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
         """ Kicks off a task to upload an animation set.
         Returns a task if you want to wait for it, but really this is intended
         to be called from the interactive interpreter """
         return self._loop.create_task(self.upload_animation_set(anim_set, timeout))
 
-    async def refresh_battery_voltage(self):
-        await self._send_and_ack(MessageType.RequestBatteryLevel, [], MessageType.BatteryLevel, 10)
+    async def refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
+        await self._send_and_ack(MessageType.RequestBatteryLevel, [], MessageType.BatteryLevel, timeout)
         return self.battery_voltage
 
-    def async_refresh_battery_voltage(self):
+    def async_refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
         """ Kicks off a task to refresh the battery voltage
         Returns a task if you want to wait for it, but really this is intended
         to be called from the interactive interpreter """
-        return self._loop.create_task(self.refresh_battery_voltage())
+        return self._loop.create_task(self.refresh_battery_voltage(timeout))
 
-    def play_animation(self, index, remap_face = 0, loop = 0):
+    async def refresh_state(self, timeout = DEFAULT_TIMEOUT):
+        await self._send_and_ack(MessageType.RequestState, [], MessageType.State, timeout)
+
+    def async_refresh_state(self, timeout = DEFAULT_TIMEOUT):
+        """ Kicks off a task to refresh the state
+        Returns a task if you want to wait for it, but really this is intended
+        to be called from the interactive interpreter """
+        return self._loop.create_task(self.refresh_state(timeout))
+
+    def request_telemetry(self, activate):
+        self._send(MessageType.RequestTelemetry, 1 if activate else 0)
+
+    def play(self, index, remap_face = 0, loop = 0):
         self._send(MessageType.PlayAnim, index, remap_face, loop)
+
+    def stop(self, index, remap_face = 0):
+        self._send(MessageType.StopAnim, index, remap_face)
+
+    def play_event(self, event, remap_face = 0, loop = 0):
+        self._send(MessageType.PlayAnimEvent, event, remap_face, loop)
+
+    # Not working at the moment
+    def force_LEDs_color(self, color: Color32):
+        c = integer_to_bytes(color.to_rgb(), 4)
+        self._send(MessageType.SetAllLEDsToColor, *c)
 
     def start_calibration(self):
         self._send(MessageType.Calibrate)

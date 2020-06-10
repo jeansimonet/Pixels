@@ -1,12 +1,13 @@
 import sys
 
 
-class Color:
-    """8 bit ARGB color"""
+class Color32:
+    """8 bit ARGB color, with component stored as integers in [0, 255]"""
 
     def __init__(self, r: int, g: int, b: int, a: int = 0):
         def check(x, name):
             if not isinstance(x, int): raise Exception(f"Argument '{name}' must of type int")
+            if x < 0 or x > 255: raise Exception(f"Argument '{name}' with value {x} is out of bounds")
             return x
         self.r = check(r, 'r')
         self.g = check(g, 'g')
@@ -24,6 +25,9 @@ class Color:
         else:
             raise Exception('Argument must be a dict, a list or a tuple')
 
+    def to_rgb(self):
+        return ((self.r & 0xff) << 16) + ((self.g & 0xff) << 8) + (self.b & 0xff)
+
     def __hash__(self):
         return hash(tuple(self))
 
@@ -31,7 +35,7 @@ class Color:
         return tuple(self) == tuple(other)
 
     def __repr__(self):
-        return 'Color' + repr(tuple(self))
+        return 'Color32' + repr(tuple(self))
 
     def __iter__(self):
         yield self.r
@@ -40,8 +44,8 @@ class Color:
         yield self.a
 
 
-Color.black = Color(0, 0, 0)
-Color.white = Color(255, 255, 255)
+Color32.black = Color32(0, 0, 0)
+Color32.white = Color32(255, 255, 255)
 
 
 def _load_color_mapping_data(filename):
@@ -50,15 +54,15 @@ def _load_color_mapping_data(filename):
         json = load(f)
         color_mapping = json['color_mapping']
         return \
-            [Color.create(c) for c in color_mapping['source_colors']], \
-            [Color.create(c) for c in color_mapping['dest_colors']], \
+            [Color32.create(c) for c in color_mapping['source_colors']], \
+            [Color32.create(c) for c in color_mapping['dest_colors']], \
             json['gamma_table']
 
 
 _source_colors, _dest_colors, _gamma_table = _load_color_mapping_data('color_mapping.json')
 
 
-def remap_color(color: Color):
+def remap_color(color: Color32):
     # Find the closest source color and return the matching mapped color
     min_dist = sys.maxsize
     for i in range(len(_source_colors)):
@@ -77,10 +81,10 @@ def remap_color(color: Color):
                 index -= 1
             mapped[i] = index
 
-    return Color.create(mapped)
+    return Color32.create(mapped)
 
 
-# def inverse_remap(color: Color):
+# def inverse_remap(color: Color32):
 #     min_dist = sys.maxsize
 #     for i in range(len(_dest_colors)):
 #         dst = _dest_colors[i]
@@ -92,5 +96,5 @@ def remap_color(color: Color):
 
 
 if __name__ == "__main__":
-    assert(remap_color(Color(60, 3, 120)) == Color(43, 0, 96, 255))
-    # assert(inverse_remap(Color(2, 0, 20)) == Color(58, 0, 128, 255))
+    assert(remap_color(Color32(60, 3, 120)) == Color32(43, 0, 96, 255))
+    # assert(inverse_remap(Color32(2, 0, 20)) == Color32(58, 0, 128, 255))

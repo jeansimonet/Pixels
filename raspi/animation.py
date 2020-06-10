@@ -1,7 +1,7 @@
 from enum import IntEnum, unique
 import itertools
 
-from color import Color, remap_color
+from color import Color32, remap_color
 from utils import integer_to_bytes
 
 
@@ -142,7 +142,7 @@ class EditKeyframe:
     """
     def __init__(self, json):
         self.time = json['time']
-        self.color = Color.create(json['color'])
+        self.color = Color32.create(json['color'])
     def __hash__(self):
         return hash(self.time, *tuple(self.color))
     def __eq__(self, other):
@@ -274,8 +274,6 @@ class AnimationSet:
                         time = ushort(editKeyframe.time * 1000)
                         color = ushort(colorIndex)
                         keyframe.timeAndColor = ushort(((int(time / 20) & 0b111111111) << 7) | (int(colorIndex) & 0b1111111))
-                        with open('RGBKeyframe.txt', 'a') as f:
-                            f.write(f'{time} {colorIndex} => {keyframe.timeAndColor}\n')
                         self.keyframes.append(keyframe)
 
                     currentKeyframeOffset += len(editTrack.keyframes)
