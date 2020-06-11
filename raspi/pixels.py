@@ -114,12 +114,14 @@ class PixelLink:
     # Set to true to print messages content
     _trace = True
 
+    _devices = []
+
     @staticmethod
     def enumerate_pixels(timeout = DEFAULT_TIMEOUT):
         """Returns a list of Pixel dices discovered over Bluetooth"""
-        devices = Scanner().scan(timeout)
+        PixelLink._devices = Scanner().scan(timeout)
         pixels = []
-        for dev in devices:
+        for dev in PixelLink._devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
             if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
                 name = dev.getValueText(8)
@@ -131,8 +133,7 @@ class PixelLink:
     async def connect_dice(pixel_name, timeout_secs = 1):
         """Connects to a single pixel, by name.
         This is a coroutine because connecting to the dice takes time."""
-        devices = Scanner().scan(timeout_secs)
-        for dev in devices:
+        for dev in PixelLink._devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
             if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID and dev.getValueText(8) == pixel_name:
                 return await PixelLink._create(dev)
@@ -491,9 +492,17 @@ pixels = []
 async def main():
 
     PixelLink.enumerate_pixels()
+    # dice1 = await PixelLink.connect_dice("D_71")
+    # dice2 = await PixelLink.connect_dice("D_55")
+
+    # await dice1.refresh_battery_voltage()
+    # await dice2.refresh_battery_voltage()
+
+    # while True:
+    #     await asyncio.sleep(1)
 
     #if you want to connect to a dice, use this:
-    # dice = await PixelLink.connect_pixel("D_71")
+    # dice = await PixelLink.connect_dice("D_71")
     # to upload animations, use this:
     # await dice.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
 
@@ -503,7 +512,7 @@ async def main():
     # similarly:
     # >>> diceList[0].async_upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
 
-    InteractivePixels.start_global_message_pump()  
+    # InteractivePixels.start_global_message_pump()  
 
     # if you want to continue pumping messages on a dice that was used in the script after main()
     # terminates and the interactive interpreter shows up, you need to 'transfer' the dice over to the
