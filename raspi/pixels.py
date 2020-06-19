@@ -6,6 +6,7 @@ import time
 import asyncio
 import threading
 import traceback
+import sys
 from queue import Queue
 
 # Our types
@@ -109,7 +110,7 @@ class PixelLink:
     PIXELS_MESSAGE_BULK_DATA_SIZE = 16
 
     # Default timeout in seconds used for waiting on a dice message
-    DEFAULT_TIMEOUT = 1
+    DEFAULT_TIMEOUT = 3
 
     # Set to true to print messages content
     _trace = True
@@ -225,6 +226,14 @@ class PixelLink:
         print(f"Dice {dice._name} connected")
         return dice
 
+    async def disconnect(self):
+        self._message_pump.cancel()
+        try:
+            await self._message_pump
+        except asyncio.CancelledError:
+            pass
+        self._device.disconnect()
+
     @property
     def name(self) -> str:
         return self._name
@@ -258,13 +267,12 @@ class PixelLink:
     async def _pump_messages(self):
         """ Message pump coroutine. Sits there checking for messages and processing them as needed.
         The processing happens through the bluepy delegate"""
-        while True:
-            try:
+        try:
+            while True:
                 self._device.waitForNotifications(0.01) # 0 seems to cause issues
                 await asyncio.sleep(0)
-            except:
-                print(traceback.format_exc())
-                break
+        except asyncio.CancelledError:
+            raise
 
     async def _wait_until(self, condition, timeout):
         """ Wait until the condition is true or the timeout expires"""
@@ -392,30 +400,24 @@ class PixelLink:
         await self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
         await self._upload_bulk_data(anim_set.pack(), print_progress, timeout)
 
-    def async_upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
-        """ Kicks off a task to upload an animation set.
-        Returns a task if you want to wait for it, but really this is intended
-        to be called from the interactive interpreter """
-        return self._loop.create_task(self.upload_animation_set(anim_set, timeout))
+    def run_upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
+        """ Kicks off a task to upload an animation set and waits for it to complete """
+        return asyncio.run(self.upload_animation_set(anim_set, timeout))
 
     async def refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
         await self._send_and_ack(MessageType.RequestBatteryLevel, [], MessageType.BatteryLevel, timeout)
         return self.battery_voltage
 
-    def async_refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
-        """ Kicks off a task to refresh the battery voltage
-        Returns a task if you want to wait for it, but really this is intended
-        to be called from the interactive interpreter """
-        return self._loop.create_task(self.refresh_battery_voltage(timeout))
+    def run_refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
+        """ Kicks off a task to refresh the battery voltage and waits for it to complete """
+        return asyncio.run(self.refresh_battery_voltage(timeout))
 
     async def refresh_state(self, timeout = DEFAULT_TIMEOUT):
         await self._send_and_ack(MessageType.RequestState, [], MessageType.State, timeout)
 
-    def async_refresh_state(self, timeout = DEFAULT_TIMEOUT):
-        """ Kicks off a task to refresh the state
-        Returns a task if you want to wait for it, but really this is intended
-        to be called from the interactive interpreter """
-        return self._loop.create_task(self.refresh_state(timeout))
+    def run_refresh_state(self, timeout = DEFAULT_TIMEOUT):
+        """ Kicks off a task to refresh the state and waits for it to complete """
+        return asyncio.run(self.refresh_state(timeout))
 
     def request_telemetry(self, activate):
         self._send(MessageType.RequestTelemetry, 1 if activate else 0)
@@ -441,58 +443,12 @@ class PixelLink:
         self._send(MessageType.PrintA2DReadings)
 
 
-class InteractivePixels:
-    """ Small utility class that allows up to process dice messages in a separate thread.
-    This is really only useful for interactive mode, so we can send messages to dice from
-    the interpreter and see the responses printed out"""
-
-    _loop = None
-
-    @staticmethod
-    async def _empty_coroutine():
-        while True:
-            await asyncio.sleep(0)
-
-    @staticmethod
-    def _pump_messages_in_thread():
-        asyncio.set_event_loop(InteractivePixels._loop)
-        InteractivePixels._loop.run_until_complete(InteractivePixels._empty_coroutine())
-        InteractivePixels._loop.close()
-
-    @staticmethod
-    async def _connect_dice(dice_name, callback, timeout):
-        dice = await PixelLink.connect_dice(dice_name, timeout)
-        callback(dice)
-
-    @staticmethod
-    def start_global_message_pump():
-        """ Kicks off the thread that will pump messages for all the dice """
-        print('Pumping messages...')
-        InteractivePixels._loop = asyncio.new_event_loop()
-        t = threading.Thread(target=InteractivePixels._pump_messages_in_thread)
-        t.start()
-
-    @staticmethod
-    def connect_dice(dice_name, timeout = 1) -> PixelLink:
-        dice = []
-        InteractivePixels._loop.call_soon_threadsafe(lambda: asyncio.create_task(InteractivePixels._connect_dice(dice_name, lambda d: dice.append(d), timeout)))
-        return dice # dice won't be valid right away
-
-    @staticmethod
-    def transfer_dice(dice):
-        # stop message pump in current thread
-        dice._message_pump.cancel()
-
-        # and restart it in the threaded message loop
-        InteractivePixels._loop.call_soon_threadsafe(lambda: dice._start_message_pump())
-
-
 pixels = []
 
 async def main():
 
     PixelLink.enumerate_pixels()
-    # dice1 = await PixelLink.connect_dice("D_71")
+    pixels.append(await PixelLink.connect_dice("D_71"))
     # dice2 = await PixelLink.connect_dice("D_55")
 
     # await dice1.refresh_battery_voltage()
@@ -504,23 +460,21 @@ async def main():
     #if you want to connect to a dice, use this:
     # dice = await PixelLink.connect_dice("D_71")
     # to upload animations, use this:
-    # await dice.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+    # await dice1.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+    for pixel in pixels:
+        await pixel.disconnect()
 
-    # to use pixels in interactive mode, run python -i pixels.py
-    # if you want to connect to a dice from the interactive interpreter, use this:
-    # >>> diceList = InteractivePixels.connect_dice("D_71")
-    # similarly:
-    # >>> diceList[0].async_upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
 
-    # InteractivePixels.start_global_message_pump()  
+# # Set the interpreter bool
+# try:
+#     if sys.ps1: interpreter = True
+# except AttributeError:
+#     interpreter = False
+#     if sys.flags.interactive: interpreter = True
 
-    # if you want to continue pumping messages on a dice that was used in the script after main()
-    # terminates and the interactive interpreter shows up, you need to 'transfer' the dice over to the
-    # separate global_message_pump(). This will kill the dice's message pump on this thread and restart
-    # it on the thread that was created inside start_global_message_pump() and that will still be running
-    # after the main thread terminates.
-    # InteractivePixels.transfer_dice(dice)
-
+# # Use the interpreter bool
+# if interpreter: print("We are in the Interpreter")
+# else: print("We are running from the command line")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main()) 
