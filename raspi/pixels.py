@@ -7,6 +7,7 @@ import asyncio
 import threading
 import traceback
 import sys
+import signal
 from queue import Queue
 
 # Our types
@@ -90,8 +91,9 @@ class MessageType(IntEnum):
     AttractMode = 42
     PrintNormals = 43
     PrintA2DReadings = 44
+    LightUpFace = 45
 
-    Count = 45
+    Count = 46
 
 
 class PixelLink:
@@ -118,121 +120,30 @@ class PixelLink:
     _devices = []
 
     @staticmethod
-    def enumerate_pixels(timeout = DEFAULT_TIMEOUT):
-        """Returns a list of Pixel dices discovered over Bluetooth"""
-        PixelLink._devices = Scanner().scan(timeout)
-        pixels = []
-        for dev in PixelLink._devices:
-            #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
-            if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
-                name = dev.getValueText(8)
-                pixels.append(name)
-                print(f"Discovered Pixel {name}")
-        return pixels
-
-    @staticmethod
-    async def connect_dice(pixel_name, timeout_secs = 1):
-        """Connects to a single pixel, by name.
-        This is a coroutine because connecting to the dice takes time."""
-        for dev in PixelLink._devices:
-            #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
-            if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID and dev.getValueText(8) == pixel_name:
-                return await PixelLink._create(dev)
-        raise Exception(f"Could not find pixel named {pixel_name}")
-        return None
-
-    @staticmethod
     def _get_continue():
         from getch import getch
         return getch() == '\r'
 
-    @staticmethod
-    async def _create(bluepy_entry: ScanEntry):
-        assert bluepy_entry != None
+    """ Use one of the Pixels.connect_xxx() methods to create a valid Pixel object """
+    def __init__(self):
+        self._address = None
+        self._name = None
+        self._device = None
+        self._subscriber = None
+        self._writer = None
 
-        dice = PixelLink()
+        # Create the message map
+        self._message_map = {}
+        for i in range(MessageType.Count):
+            self._message_map[i] = []
 
-        #for (adtype, desc, value) in bluepy_entry.getScanData():
-        #    print(f'> {adtype} : {desc} => {value}')
-        dice._address = bluepy_entry.addr
-        dice._name = bluepy_entry.getValueText(8)
-        dice._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
-        # try with time.sleep(0.5) print("MTU", self._device.setMTU(255))
+        # Setup events
+        self.face_up_changed = Event()
+        self.battery_voltage_changed = Event()
 
-        print(f"Connecting to dice {dice._name} at address {dice._address}")
-        try:
-            # Get pixels service
-            service = dice._device.getServiceByUUID(PixelLink.PIXELS_SERVICE_UUID)
-            if not service:
-                raise Exception('Pixel service not found')
-
-            # Get the subscriber and writer for exchanging data with the dice
-            dice._subscriber = service.getCharacteristics(PixelLink.PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
-            dice._writer = service.getCharacteristics(PixelLink.PIXELS_WRITE_CHARACTERISTIC)[0]
-
-            # This magic code enables notifications from the subscribe characteristic,
-            # which in turn keeps the firmware on the dice from erroring out because
-            # it thinks it can't send notifications. Note that firmware code has also been
-            # fixed so it won't crash as a result :)
-            # There is an example at the bottom of the file of notifications working
-            dice._device.writeCharacteristic(dice._subscriber.valHandle + 1, b'\x01\x00')
-
-            # Bluepy notification delegate
-            class ProcessMessageDelegate(DefaultDelegate):
-                def handleNotification(self, cHandle, data):
-                    dice._process_message(list(data))
-            dice._device.withDelegate(ProcessMessageDelegate())
-
-
-            # Create the message map
-            dice._message_map = {}
-            for i in range(MessageType.Count):
-                dice._message_map[i] = []
-
-            # register default message handlers
-            dice._message_map[MessageType.IAmADie].append(PixelLink._die_type_handler)
-            dice._message_map[MessageType.DebugLog].append(PixelLink._debug_log_handler)
-            dice._message_map[MessageType.BatteryLevel].append(PixelLink._battery_level_handler)
-            dice._message_map[MessageType.State].append(PixelLink._state_handler)
-            dice._message_map[MessageType.NotifyUser].append(PixelLink._notify_user_handler)
-            
-            # Setup events
-            dice.face_up_changed = Event()
-            dice.battery_voltage_changed = Event()
-
-            # create message pump
-            dice._start_message_pump()
-
-            # Check type
-            dice._dtype = None
-            dice._send(MessageType.WhoAreYou)
-            await dice._wait_until(lambda : dice._dtype != None, 10)
-            if not dice._dtype:
-                raise Exception("Pixel type couldn't be identified")
-
-            # Battery level
-            dice._battery_voltage = -1
-            await dice.refresh_battery_voltage()
-
-            # Face up (0 means no face up)
-            dice._face_up = 0
-            await dice.refresh_state()
-
-        except:
-            print(traceback.format_exc())
-            dice._device.disconnect()
-            raise
-
-        print(f"Dice {dice._name} connected")
-        return dice
-
-    async def disconnect(self):
-        self._message_pump.cancel()
-        try:
-            await self._message_pump
-        except asyncio.CancelledError:
-            pass
-        self._device.disconnect()
+        self._dtype = None
+        self._battery_voltage = -1
+        self._face_up = 0
 
     @property
     def name(self) -> str:
@@ -259,21 +170,6 @@ class PixelLink:
         return self._face_up
 
 
-    def _start_message_pump(self):
-        """Starts the bluetooth message pump for this dice as a separate task (coroutine) on this thread."""
-        self._loop = asyncio.get_running_loop()
-        self._message_pump = self._loop.create_task(self._pump_messages())
-
-    async def _pump_messages(self):
-        """ Message pump coroutine. Sits there checking for messages and processing them as needed.
-        The processing happens through the bluepy delegate"""
-        try:
-            while True:
-                self._device.waitForNotifications(0.01) # 0 seems to cause issues
-                await asyncio.sleep(0)
-        except asyncio.CancelledError:
-            raise
-
     async def _wait_until(self, condition, timeout):
         """ Wait until the condition is true or the timeout expires"""
         t = time.perf_counter()
@@ -281,6 +177,7 @@ class PixelLink:
         end_time = start_time + timeout
         while (not condition()) and (t < end_time):
             await asyncio.sleep(0)
+            time.sleep(0.001)
             t = time.perf_counter()
 
         if not condition():
@@ -290,9 +187,7 @@ class PixelLink:
     def _send(self, message_type: MessageType, *args):
         if PixelLink._trace:
             print(f'{self.name} <= {message_type.name}: {", ".join([format(i, "02x") for i in args])}')
-        data = bytes([message_type, *args])
-        # assert(len(data) < ???)
-        self._writer.write(data)
+        Pixels.send_data(self, message_type, *args)
 
     async def _send_and_ack(self, msg_type: MessageType, msg_data, ack_type: MessageType, timeout = DEFAULT_TIMEOUT):
         assert(timeout >= 0)
@@ -400,7 +295,7 @@ class PixelLink:
         await self._send_and_ack(MessageType.TransferAnimSet, data, MessageType.TransferAnimSetAck, timeout)
         await self._upload_bulk_data(anim_set.pack(), print_progress, timeout)
 
-    def run_upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
+    def await_upload_animation_set(self, anim_set: AnimationSet, timeout = DEFAULT_TIMEOUT):
         """ Kicks off a task to upload an animation set and waits for it to complete """
         return asyncio.run(self.upload_animation_set(anim_set, timeout))
 
@@ -408,14 +303,14 @@ class PixelLink:
         await self._send_and_ack(MessageType.RequestBatteryLevel, [], MessageType.BatteryLevel, timeout)
         return self.battery_voltage
 
-    def run_refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
+    def await_refresh_battery_voltage(self, timeout = DEFAULT_TIMEOUT):
         """ Kicks off a task to refresh the battery voltage and waits for it to complete """
         return asyncio.run(self.refresh_battery_voltage(timeout))
 
     async def refresh_state(self, timeout = DEFAULT_TIMEOUT):
         await self._send_and_ack(MessageType.RequestState, [], MessageType.State, timeout)
 
-    def run_refresh_state(self, timeout = DEFAULT_TIMEOUT):
+    def await_refresh_state(self, timeout = DEFAULT_TIMEOUT):
         """ Kicks off a task to refresh the state and waits for it to complete """
         return asyncio.run(self.refresh_state(timeout))
 
@@ -442,39 +337,242 @@ class PixelLink:
     def print_a2d_levels(self):
         self._send(MessageType.PrintA2DReadings)
 
+    def light_up_face(self, face, color: Color32, remapFace = 255, layoutIndex = 255, remapRot = 255):
+        data = []
+        data.extend(integer_to_bytes(face, 1))
+        data.extend(integer_to_bytes(remapFace, 1))
+        data.extend(integer_to_bytes(layoutIndex, 1))
+        data.extend(integer_to_bytes(remapRot, 1))
+        data.extend(integer_to_bytes(color.to_rgb(), 4))
+        self._send(MessageType.LightUpFace, *data)
+
+
+class Pixels:
+    """ Manages multiple pixels at once. Also supports the interactive mode """
+
+    @unique
+    class Command(IntEnum):
+        _None = 0
+        AddPixel = 1
+        RemovePixel = 2
+        SendMessage = 3
+        TerminateThread = 4
+
+
+    command_queue = Queue()
+
+    connected_pixels = []
+    available_pixels = []
+
+    DEFAULT_SCAN_TIMEOUT = 3
+
+    @staticmethod
+    def enumerate_pixels(timeout = DEFAULT_SCAN_TIMEOUT):
+        """Returns a list of Pixel dices discovered over Bluetooth"""
+        print(f"Scanning BLE devices...")
+        scanned_devices = Scanner().scan(timeout)
+        Pixels.available_pixels.clear()
+        for dev in scanned_devices:
+            #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
+            if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
+                name = dev.getValueText(8)
+                Pixels.available_pixels.append(dev)
+                print(f"Discovered Pixel {name}")
+        return Pixels.available_pixels
+
+    @staticmethod
+    async def connect_by_name(pixel_name):
+        """Connects to a single pixel, by name.
+        This is a coroutine because connecting to the dice takes time."""
+        for dev in Pixels.available_pixels:
+            name = dev.getValueText(8)
+            if name == pixel_name:
+                return await Pixels.connect_pixel(dev)
+        raise Exception(f"Could not find pixel named {pixel_name}")
+        return None
+
+    @staticmethod
+    def await_connect_by_name(pixel_name):
+        """Connects to a single pixel, by name."""
+        return asyncio.run(Pixels.connect_by_name(pixel_name))
+
+    @staticmethod
+    async def connect_pixel(entry: ScanEntry) -> PixelLink:
+        assert entry != None
+        dice = PixelLink()
+
+        finished = False
+        def assigning_dev(ret_dev):
+            nonlocal finished
+            finished = True 
+
+        # Get the BLE thread to connect to the device. We do this so the native code helper is attached to the BLE thread, not this one
+        Pixels.command_queue.put([Pixels.Command.AddPixel, entry, dice, assigning_dev])
+        while not finished:
+            await asyncio.sleep(0)
+
+        if dice._device != None:
+
+            # register default message handlers
+            dice._message_map[MessageType.IAmADie].append(PixelLink._die_type_handler)
+            dice._message_map[MessageType.DebugLog].append(PixelLink._debug_log_handler)
+            dice._message_map[MessageType.BatteryLevel].append(PixelLink._battery_level_handler)
+            dice._message_map[MessageType.State].append(PixelLink._state_handler)
+            dice._message_map[MessageType.NotifyUser].append(PixelLink._notify_user_handler)
+            
+            # Check type
+            dice._dtype = None
+            dice._send(MessageType.WhoAreYou)
+            await dice._wait_until(lambda : dice._dtype != None, 10)
+            if not dice._dtype:
+                raise Exception("Pixel type couldn't be identified")
+
+            # Battery level
+            dice._battery_voltage = -1
+            await dice.refresh_battery_voltage()
+
+            # Face up (0 means no face up)
+            dice._face_up = 0
+            await dice.refresh_state()
+
+            print(f"Dice {dice.name} connected")
+            return dice
+        else:
+            return None
+
+
+    @staticmethod
+    def remove_pixel(pixel: PixelLink):
+        Pixels.command_queue.put([Pixels.Command.RemovePixel, pixel])
+
+    @staticmethod
+    def send_data(pixel: PixelLink, message_type: MessageType, *args):
+        Pixels.command_queue.put([Pixels.Command.SendMessage, pixel, message_type, *args])
+
+    @staticmethod
+    def _main():
+        while True:
+            # process queue of messages
+            while Pixels.command_queue.qsize() > 0:
+                cmd = Pixels.command_queue.get(False)
+                if cmd[0] == Pixels.Command.AddPixel:
+                    # extract parameters
+                    bluepy_entry = cmd[1]
+                    pixel = cmd[2]
+
+                    # create the device
+                    # pixel = PixelLink()
+                    pixel._address = bluepy_entry.addr
+                    pixel._name = bluepy_entry.getValueText(8)
+                    pixel._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
+
+                    print(f"Connecting to dice {pixel._name} at address {pixel._address}")
+                    try:
+                        # Get connected_pixels service
+                        service = pixel._device.getServiceByUUID(PixelLink.PIXELS_SERVICE_UUID)
+                        if not service:
+                            raise Exception('Pixel service not found')
+
+                        # Get the subscriber and writer for exchanging data with the dice
+                        pixel._subscriber = service.getCharacteristics(PixelLink.PIXELS_SUBSCRIBE_CHARACTERISTIC)[0]
+                        pixel._writer = service.getCharacteristics(PixelLink.PIXELS_WRITE_CHARACTERISTIC)[0]
+
+                        # This magic code enables notifications from the subscribe characteristic,
+                        # which in turn keeps the firmware on the dice from erroring out because
+                        # it thinks it can't send notifications. Note that firmware code has also been
+                        # fixed so it won't crash as a result :)
+                        # There is an example at the bottom of the file of notifications working
+                        pixel._device.writeCharacteristic(pixel._subscriber.valHandle + 1, b'\x01\x00')
+
+                        # Bluepy notification delegate
+                        class ProcessMessageDelegate(DefaultDelegate):
+                            def handleNotification(self, cHandle, data):
+                                pixel._process_message(list(data))
+                        pixel._device.withDelegate(ProcessMessageDelegate())
+                    except:
+                        pixel._device.disconnect()
+                        pixel._device = None
+                        raise
+
+                    # store the pixel
+                    Pixels.connected_pixels.append(pixel)
+
+                    # notify calling code
+                    cmd[3](pixel._device)
+                elif cmd[0] == Pixels.Command.RemovePixel:
+                    pixel = cmd[1]
+                    Pixels.connected_pixels.remove(pixel)
+                    pixel._device.disconnect()
+                elif cmd[0] == Pixels.Command.SendMessage:
+                    pixel = cmd[1]
+                    data = bytes(cmd[2:])
+                    pixel._writer.write(data)
+                elif cmd[0] == Pixels.Command.TerminateThread:
+                    # close all connections
+                    for pixel in Pixels.connected_pixels:
+                        pixel._device.disconnect()
+                    Pixels.connected_pixels.clear()
+                    return
+
+            # poll BLE stacks
+            for pixel in Pixels.connected_pixels:
+                pixel._device.waitForNotifications(0.0001) # 0 seems to cause issues
+
+            # wait before looping again
+            time.sleep(0.0001)
+
+    @staticmethod
+    def start():
+
+        # install signal handler
+        def signal_handler(signal, frame):
+            Pixels.terminate()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+
+        # kick off thread
+        t = threading.Thread(target=Pixels._main)
+        t.start()
+
+        # start a scan!
+        Pixels.enumerate_pixels()
+
+    @staticmethod
+    def terminate():
+        Pixels.command_queue.put([Pixels.Command.TerminateThread])
+
+    @staticmethod
+    def is_in_interpreter():
+        interpreter = False
+        try:
+            interpreter = sys.ps1
+        except AttributeError:
+            interpreter = sys.flags.interactive
+        return interpreter
+
 
 pixels = []
-
+color = Color32(255, 255, 0)
 async def main():
+    Pixels.start()  
 
-    PixelLink.enumerate_pixels()
-    pixels.append(await PixelLink.connect_dice("D_71"))
+    # pixels.append(await Pixels.connect_by_name("D_71"))
+    # await pixels[0].refresh_battery_voltage()
     # dice2 = await PixelLink.connect_dice("D_55")
+    # connected_pixels.append(dice2)
+    # color = Color32(255, 255, 0)
+    # dice2.light_up_face(0, color)
 
-    # await dice1.refresh_battery_voltage()
+    #await dice1.refresh_battery_voltage()
+
+    #await dice1.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
     # await dice2.refresh_battery_voltage()
 
-    # while True:
-    #     await asyncio.sleep(1)
-
-    #if you want to connect to a dice, use this:
-    # dice = await PixelLink.connect_dice("D_71")
-    # to upload animations, use this:
-    # await dice1.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
-    for pixel in pixels:
-        await pixel.disconnect()
-
-
-# # Set the interpreter bool
-# try:
-#     if sys.ps1: interpreter = True
-# except AttributeError:
-#     interpreter = False
-#     if sys.flags.interactive: interpreter = True
-
-# # Use the interpreter bool
-# if interpreter: print("We are in the Interpreter")
-# else: print("We are running from the command line")
+    # If we're in the interactive interpreter, don't terminate the BLE thread, use Ctrl-C instead
+    # this way messages are still processed
+    if not Pixels.is_in_interpreter():
+        Pixels.terminate()
 
 if __name__ == "__main__":
     asyncio.run(main()) 
