@@ -67,14 +67,14 @@ class DiceRoller:
 
 
 async def main():
-    print("Scanning for Pixels")
+    Pixels.start()
 
-    rollingDiceNames = ["D_19", "D_55"]
+    rollingDiceNames = ["D_48"]
     rollingDice = []
 
     for d in rollingDiceNames:
         print(f"Found Rolling dice: {d}")
-        rollingDice.append(await PixelLink.connect_dice(d))
+        rollingDice.append(await Pixels.connect_by_name(d))
 
     if len(rollingDice) != len(rollingDiceNames):
         print("Missing some rolling dice")
@@ -106,6 +106,10 @@ async def main():
         die_stats["name"] = d.name
         die_stats["stats"] = [0 for _ in range(20)]
         roll_stats.append(die_stats)
+
+    # turn off LEDs for more battery life
+    for d in rollingDice:
+        d.set_led_anim_state()
 
     try:
         roll_count = 0
@@ -151,6 +155,9 @@ async def main():
     end_time = time.perf_counter()
     delta_time = end_time - start_time
     print(f"Rolling Test Ended - end time: {int(end_time)} - test duration: {int(delta_time)}")
+
+    if not Pixels.is_in_interpreter():
+        Pixels.terminate()
 
 
 if __name__ == "__main__":

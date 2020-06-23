@@ -92,8 +92,9 @@ class MessageType(IntEnum):
     PrintNormals = 43
     PrintA2DReadings = 44
     LightUpFace = 45
+    SetLEDToColor = 46
 
-    Count = 46
+    Count = 47
 
 
 class PixelLink:
@@ -115,7 +116,7 @@ class PixelLink:
     DEFAULT_TIMEOUT = 3
 
     # Set to true to print messages content
-    _trace = True
+    _trace = False
 
     _devices = []
 
@@ -326,10 +327,16 @@ class PixelLink:
     def play_event(self, event, remap_face = 0, loop = 0):
         self._send(MessageType.PlayAnimEvent, event, remap_face, loop)
 
-    # Not working at the moment
     def force_LEDs_color(self, color: Color32):
         c = integer_to_bytes(color.to_rgb(), 4)
         self._send(MessageType.SetAllLEDsToColor, *c)
+
+    def force_LED_color(self, ledIndex, color: Color32):
+        """ Led index starts at 0 """
+        data = []
+        data.extend(integer_to_bytes(ledIndex, 1))
+        data.extend(integer_to_bytes(color.to_rgb(), 4))
+        self._send(MessageType.SetLEDToColor, *data)
 
     def start_calibration(self):
         self._send(MessageType.Calibrate)
@@ -337,7 +344,7 @@ class PixelLink:
     def print_a2d_levels(self):
         self._send(MessageType.PrintA2DReadings)
 
-    def light_up_face(self, face, color: Color32, remapFace = 255, layoutIndex = 255, remapRot = 255):
+    def light_up_face(self, face, color: Color32, remapFace = 0, layoutIndex = 255, remapRot = 255):
         data = []
         data.extend(integer_to_bytes(face, 1))
         data.extend(integer_to_bytes(remapFace, 1))
@@ -346,6 +353,8 @@ class PixelLink:
         data.extend(integer_to_bytes(color.to_rgb(), 4))
         self._send(MessageType.LightUpFace, *data)
 
+    def set_led_anim_state(self):
+        self._send(MessageType.SetLEDAnimState)
 
 class Pixels:
     """ Manages multiple pixels at once. Also supports the interactive mode """
@@ -375,7 +384,8 @@ class Pixels:
         for dev in scanned_devices:
             #print(f'Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB')
             if dev.getValueText(7) == PixelLink.PIXELS_SERVICE_UUID:
-                name = dev.getValueText(8)
+                # Grab full name if possible, otherwise short name
+                name = dev.getValueText(9) or dev.getValueText(8)
                 Pixels.available_pixels.append(dev)
                 print(f"Discovered Pixel {name}")
         return Pixels.available_pixels
@@ -385,7 +395,8 @@ class Pixels:
         """Connects to a single pixel, by name.
         This is a coroutine because connecting to the dice takes time."""
         for dev in Pixels.available_pixels:
-            name = dev.getValueText(8)
+            # Grab full name if possible, otherwise short name
+            name = dev.getValueText(9) or dev.getValueText(8)
             if name == pixel_name:
                 return await Pixels.connect_pixel(dev)
         raise Exception(f"Could not find pixel named {pixel_name}")
@@ -463,7 +474,7 @@ class Pixels:
                     # create the device
                     # pixel = PixelLink()
                     pixel._address = bluepy_entry.addr
-                    pixel._name = bluepy_entry.getValueText(8)
+                    pixel._name = bluepy_entry.getValueText(9) or bluepy_entry.getValueText(8)
                     pixel._device = Peripheral(bluepy_entry.addr, bluepy_entry.addrType)
 
                     print(f"Connecting to dice {pixel._name} at address {pixel._address}")
@@ -566,7 +577,10 @@ async def main():
 
     #await dice1.refresh_battery_voltage()
 
-    #await dice1.upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
+    #pixels.append(await Pixels.connect_by_name("D_48674010"))
+    #pixels.append(await Pixels.connect_by_name("D_71902510"))
+    
+    #await pixels[0].upload_animation_set(AnimationSet.from_json_file('D20_animation_set.json'))
     # await dice2.refresh_battery_voltage()
 
     # If we're in the interactive interpreter, don't terminate the BLE thread, use Ctrl-C instead
