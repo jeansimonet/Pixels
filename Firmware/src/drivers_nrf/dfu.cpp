@@ -5,7 +5,7 @@
 #include "app_error.h"
 #include "nrf_log.h"
 
-#include "../bluetooth/bluetooth.h"
+#include "bluetooth/bluetooth_stack.h"
 
 namespace DriversNRF
 {
@@ -32,12 +32,12 @@ namespace DFU
                 NRF_LOG_INFO("Device is preparing to enter bootloader mode.");
 
                 // Prevent device from advertising on disconnect.
-                Bluetooth::disableAdvertisingOnDisconnect();
+                Bluetooth::Stack::disableAdvertisingOnDisconnect();
 
                 // Disconnect all other bonded devices that currently are connected.
                 // This is required to receive a service changed indication
                 // on bootup after a successful (or aborted) Device Firmware Update.
-                Bluetooth::disconnect();
+                Bluetooth::Stack::disconnect();
                 break;
             }
 
@@ -79,16 +79,12 @@ namespace DFU
         ret_code_t err_code = ble_dfu_buttonless_async_svci_init();
         APP_ERROR_CHECK(err_code);
 
-    }
-
-    void initBLE() {
         ble_dfu_buttonless_init_t dfus_init = {0};
 
         dfus_init.evt_handler = ble_dfu_evt_handler;
 
-        ret_code_t err_code = ble_dfu_buttonless_init(&dfus_init);
+        err_code = ble_dfu_buttonless_init(&dfus_init);
         APP_ERROR_CHECK(err_code);
-
     }
 }
 }

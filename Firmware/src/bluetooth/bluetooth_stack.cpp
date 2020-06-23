@@ -69,8 +69,7 @@ namespace Stack
     /**< Universally unique service identifiers. */
     ble_uuid_t m_adv_uuids[] = 
     {
-        //{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
-        {GENERIC_DATA_SERVICE_UUID_SHORT, BLE_UUID_TYPE_VENDOR_BEGIN}
+        {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
     };
 
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;

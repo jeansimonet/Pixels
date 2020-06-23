@@ -4,6 +4,7 @@ namespace Die
 {
     void init();
 	void initMainLogic();
+	void initDebugLogic();
 
 	// Event handlers
 	void onChargingNeeded();
