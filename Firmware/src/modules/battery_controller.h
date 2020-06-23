@@ -16,7 +16,8 @@ namespace Modules
 			BatteryState_Unknown,
 			BatteryState_Ok,
 			BatteryState_Low,
-			BatteryState_Charging
+			BatteryState_Charging,
+			BatteryState_Done
 		};
 
 		BatteryState getCurrentChargeState();
