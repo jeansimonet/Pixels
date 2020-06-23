@@ -25,6 +25,15 @@ namespace Core
 	struct float3;
 }
 
+namespace Config
+{
+namespace DiceVariants
+{
+	struct Layouts;
+	struct Layout;
+}
+}
+
 namespace Utils
 {
 	int parseWord(char*& text, int& len, char* outWord, int outWordLen);
@@ -44,9 +53,21 @@ namespace Utils
 	uint8_t gamma8(uint8_t x);
 	uint32_t gamma(uint32_t color);
 
-	void CalibrateNormals(
+	const Core::float3* getDefaultNormals(int faceCount);
+
+	int CalibrateNormals(
 		int face1Index, const Core::float3& face1Normal,
 		int face2Index, const Core::float3& face2Normal,
-		Core::float3* inOutNormals, int count);
+		int face3Index, const Core::float3& face3Normal,
+		const Config::DiceVariants::Layouts* layouts,
+		Core::float3* outNormals, int faceCount);
+
+	bool CalibrateInternalRotation(
+		int led0Index, const Core::float3& led0Normal,
+		int led1Index, const Core::float3& led1Normal,
+		const Core::float3* newNormals,
+		const Config::DiceVariants::Layout* layout,
+		uint8_t* faceToLEDOut,
+		int faceCount);
 }
 

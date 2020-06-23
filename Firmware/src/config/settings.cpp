@@ -8,9 +8,11 @@
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
 #include "malloc.h"
+#include "config/dice_variants.h"
 #include "utils/utils.h"
 
-#define SETTINGS_VALID_KEY (0x05E77165) // 0SETTINGS in leet speak ;)
+#define SETTINGS_VALID_KEY (0x15E77165) // 1SETTINGS in leet speak ;)
+#define SETTINGS_VERSION 1
 #define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
@@ -62,6 +64,7 @@ namespace SettingsManager
 
 	bool checkValid() {
 		return (settings->headMarker == SETTINGS_VALID_KEY &&
+			settings->version == SETTINGS_VERSION &&
 			settings->tailMarker == SETTINGS_VALID_KEY);
 	}
 
@@ -172,21 +175,26 @@ namespace SettingsManager
 		outSettings.accDecay = 0.9f;
 		outSettings.heatUpRate = 0.0004f;
 		outSettings.coolDownRate = 0.995f;
-		outSettings.d20Version = D20Version_Default;
 	}
 
-	void setDefaultNormals(Settings& outSettings) {
+	void setDefaultCalibrationData(Settings& outSettings) {
 		// Copy normals from defaults
-		const Core::float3* defaultNormals = BoardManager::getBoard()->faceNormals;
-		for (int i = 0; i < BoardManager::getBoard()->ledCount; ++i) {
+		int ledCount = BoardManager::getBoard()->ledCount;
+		const Core::float3* defaultNormals = Config::DiceVariants::getDefaultNormals(ledCount);
+		const uint8_t* defaultLookup = Config::DiceVariants::getDefaultLookup(ledCount);
+		for (int i = 0; i < ledCount; ++i) {
 			outSettings.faceNormals[i] = defaultNormals[i];
+			outSettings.faceToLEDLookup[i] = defaultLookup[i];
 		}
+		outSettings.faceLayoutLookupIndex = 0;
 	}
+
 
 	void setDefaults(Settings& outSettings) {
 		outSettings.headMarker = SETTINGS_VALID_KEY;
+		outSettings.version = SETTINGS_VERSION;
 		setDefaultParameters(outSettings);
-		setDefaultNormals(outSettings);
+		setDefaultCalibrationData(outSettings);
 		outSettings.tailMarker = SETTINGS_VALID_KEY;
 	}
 
@@ -214,7 +222,7 @@ namespace SettingsManager
 		writeToFlash(&settingsCopy, callback);
 	}
 
-	void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback) {
+	void programCalibrationData(const Core::float3* newNormals, int faceLayoutLookupIndex, const uint8_t* newFaceToLEDLookup, int count, SettingsWrittenCallback callback) {
 
 		// Grab current settings
 		Settings settingsCopy;
@@ -228,7 +236,12 @@ namespace SettingsManager
 		// Change normals
 		memcpy(&(settingsCopy.faceNormals[0]), newNormals, count * sizeof(Core::float3));
 
+		// Change remapping
+		settingsCopy.faceLayoutLookupIndex = faceLayoutLookupIndex;
+		memcpy(settingsCopy.faceToLEDLookup, newFaceToLEDLookup, count * sizeof(uint8_t));
+
 		// Reprogram settings
+		NRF_LOG_INFO("Programming settings in flash");
 		writeToFlash(&settingsCopy, callback);
 	}
 

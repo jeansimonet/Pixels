@@ -3,7 +3,7 @@ TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
 PUBLISH_DIRECTORY := binaries
 
-VERSION			 := 05_28
+VERSION			 := 06_23
 
 SDK_ROOT := C:/nRF5_SDK
 PROJ_DIR := .
@@ -81,6 +81,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/bluetooth/telemetry.cpp \
 	$(PROJ_DIR)/src/config/board_config.cpp \
 	$(PROJ_DIR)/src/config/settings.cpp \
+	$(PROJ_DIR)/src/config/dice_variants.cpp \
 	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
 	$(PROJ_DIR)/src/drivers_hw/battery.cpp \
 	$(PROJ_DIR)/src/drivers_hw/lis2de12.cpp \

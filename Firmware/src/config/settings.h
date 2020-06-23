@@ -8,17 +8,11 @@
 
 namespace Config
 {
-	enum D20Version : uint8_t
-	{
-		D20Version_Default = 0,
-		D20Version_Black, // Was cast in the wrong orientation so indices are all swapped
-		D20Version_White, // Was cast in the wrong orientation so indices are all swapped
-	};
-
 	struct Settings
 	{
 		// Indicates whether there is valid data
 		uint32_t headMarker;
+		int version;
 
 		// Face detector
 		float jerkClamp;
@@ -37,13 +31,11 @@ namespace Config
 		float batteryLow;
 		float batteryHigh;
 
-		D20Version d20Version;
-		uint8_t filler1;
-		uint8_t filler2;
-		uint8_t filler3;
-
 		// Calibration data
+		int faceLayoutLookupIndex;
+		int padding0;
 		Core::float3 faceNormals[MAX_LED_COUNT];
+		uint8_t faceToLEDLookup[MAX_LED_COUNT];
 		
 		// Indicates whether there is valid data
 		uint32_t tailMarker;
@@ -63,7 +55,7 @@ namespace Config
 		void setDefaults(Settings& outSettings);
 		void programDefaults(SettingsWrittenCallback callback);
 		void programDefaultParameters(SettingsWrittenCallback callback);
-		void programNormals(const Core::float3* newNormals, int count, SettingsWrittenCallback callback);
+		void programCalibrationData(const Core::float3* newNormals, int faceLayoutLookupIndex, const uint8_t* newFaceToLEDLookup, int count, SettingsWrittenCallback callback);
 	}
 }
 
