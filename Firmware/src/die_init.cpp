@@ -12,6 +12,7 @@
 #include "drivers_nrf/i2c.h"
 #include "drivers_nrf/flash.h"
 #include "drivers_nrf/gpiote.h"
+#include "drivers_nrf/dfu.h"
 
 #include "config/board_config.h"
 #include "config/settings.h"
@@ -67,9 +68,7 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 
 namespace Die
 {
-    // Start the die please!
     void init() {
-
         //--------------------
         // Initialize NRF drivers
         //--------------------
@@ -97,6 +96,21 @@ namespace Die
         // identify the board we're dealing with
         A2D::init();
         
+        // Enable bluetooth
+        Stack::init();
+
+        // Add generic data service
+        MessageService::init();
+
+        // Initialize the DFU service
+        DFU::init();
+
+        // Now that the message service added its uuid to the softdevice, initialize the advertising
+        Stack::initAdvertising();
+
+        // Flash is needed to update settings/animations
+        Flash::init();
+
         //--------------------
         // Fetch board configuration now, so we know how to initialize
         // the rest of the hardware (pins, led count, etc...)
@@ -110,18 +124,6 @@ namespace Die
         
         // Now that we know which board we are, initialize the battery monitoring A2D
         A2D::initBoardPins();
-
-        // Enable bluetooth
-        Stack::init();
-
-        // Add generic data service
-        MessageService::init();
-
-        // Now that the message service added its uuid to the softdevice, initialize the advertising
-        Stack::initAdvertising();
-
-        // Flash is needed to update settings/animations
-        Flash::init();
 
         // The we read user settings from flash, or set some defaults if none are found
         SettingsManager::init([] (bool result) {
@@ -149,12 +151,6 @@ namespace Die
             // Animation set needs flash and board info
             AnimationSet::init([] (bool result) {
 
-                #if DICE_SELFTEST && BULK_DATA_TRANSFER_SELFTEST
-                // Test bulk bulk_data_transfer
-                //SendBulkData::selfTest();
-                ReceiveBulkData::selfTest();
-                #endif
-
                 // Useful for development
                 LEDColorTester::init();
 
@@ -170,17 +166,20 @@ namespace Die
                 // Battery controller relies on the battery driver
                 BatteryController::init();
 
-                HardwareTest::init();
-
-                // Initialize main logic manager
-                initMainLogic();
+                //HardwareTest::init();
 
                 // Start advertising!
                 Stack::startAdvertising();
 
+            #if defined(DEBUG_FIRMWARE)
+                initDebugLogic();
+            #else
+                // Initialize main logic manager
+                initMainLogic();
+
                 // Entering the main loop! Play Hello! anim
                 AnimController::play(AnimationEvent_Hello, Accelerometer::currentFace());
-
+            #endif
             });
         });
     }

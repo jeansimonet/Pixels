@@ -437,7 +437,7 @@
 #define NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE 1408
 
 // <o> NRF_SDH_BLE_VS_UUID_COUNT - The number of vendor-specific UUIDs. 
-#define NRF_SDH_BLE_VS_UUID_COUNT 1
+#define NRF_SDH_BLE_VS_UUID_COUNT 2
 
 // <q> NRF_SDH_BLE_SERVICE_CHANGED  - Include the Service Changed characteristic in the Attribute Table.
 #define NRF_SDH_BLE_SERVICE_CHANGED 1

@@ -93,6 +93,30 @@ namespace Die
 		NRF_LOG_INFO("Main Die Logic Initialized");
     }
 
+    void initDebugLogic() {
+
+        switch (BoardManager::getBoard()->ledCount)
+        {
+            case 6:
+                dieType = DieType_6Sided;
+                break;
+            case 20:
+                dieType = DieType_20Sided;
+                break;
+            default:
+                break;
+        }
+
+        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
+        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
+        Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_StopAnim, nullptr, StopLEDAnim);
+
+        BatteryController::hook(onBatteryStateChange, nullptr);
+
+		NRF_LOG_INFO("DEBUG FIRMWARE Initialized");
+    }
+
     void RequestStateHandler(void* token, const Message* message) {
         SendRollState(Accelerometer::currentRollState(), Accelerometer::currentFace());
     }

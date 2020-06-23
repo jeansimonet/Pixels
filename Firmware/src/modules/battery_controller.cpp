@@ -107,6 +107,18 @@ namespace BatteryController
         ret = currentBatteryState;
         switch (currentBatteryState)
         {
+            case BatteryState_Done:
+                if (!lazyChargeDetect) {
+                    if (Battery::checkCharging()) {
+                        // Started charging again
+                        ret = BatteryState_Charging;
+                    } else if (Battery::checkVCoil() < CHARGE_VCOIL_THRESHOLD) {
+                        // No longer on charger
+                        ret = BatteryState_Ok;
+                    }
+                }
+                // In lazy charge detect mode, we're not sure if the die is still on the charger
+                break;
             case BatteryState_Ok:
                 if (level < SettingsManager::getSettings()->batteryLow) {
                     ret = BatteryState_Low;
@@ -147,7 +159,7 @@ namespace BatteryController
                     if (Battery::checkVCoil() > CHARGE_VCOIL_THRESHOLD) {
                         if (!Battery::checkCharging()) {
                             // Still on charger, but done charging
-                            ret = BatteryState_Ok;
+                            ret = BatteryState_Done;
                         }
                         // Else still charging
                     } else {
@@ -204,7 +216,10 @@ namespace BatteryController
         auto newState = computeCurrentState();
         if (newState != currentBatteryState) {
             switch (newState) {
-    			case BatteryState_Ok:
+                case BatteryState_Done:
+                    NRF_LOG_INFO(">>> Battery finished charging, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
+                    break;
+                case BatteryState_Ok:
                     NRF_LOG_INFO(">>> Battery is now Ok, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
                     break;
                 case BatteryState_Charging:

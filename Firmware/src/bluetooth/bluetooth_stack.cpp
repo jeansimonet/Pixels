@@ -69,8 +69,12 @@ namespace Stack
     /**< Universally unique service identifiers. */
     ble_uuid_t m_adv_uuids[] = 
     {
-        //{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
-        {GENERIC_DATA_SERVICE_UUID_SHORT, BLE_UUID_TYPE_VENDOR_BEGIN}
+        {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
+    };
+
+    ble_uuid_t m_srv_uuids[] = 
+    {
+        {GENERIC_DATA_SERVICE_UUID_SHORT, BLE_UUID_TYPE_VENDOR_BEGIN},
     };
 
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
@@ -310,6 +314,10 @@ namespace Stack
         init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
         init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
         init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
+
+        init.srdata.uuids_complete.uuid_cnt = sizeof(m_srv_uuids) / sizeof(m_srv_uuids[0]);
+        init.srdata.uuids_complete.p_uuids  = m_srv_uuids;
+
 
         advertising_config_get(&init.config);
 

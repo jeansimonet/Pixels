@@ -39,7 +39,7 @@ namespace Magnet
             // ret_code = app_timer_start(magnetTimer, APP_TIMER_TICKS(MAGNET_TIMER_MS), NULL);
             // APP_ERROR_CHECK(ret_code);
 
-            // Read battery level and convert
+            // Read magnet
             int magnet = checkMagnet() ? 1 : 0;
             NRF_LOG_INFO("Magnet initialized, Magnet=%d", magnet);
         } else {

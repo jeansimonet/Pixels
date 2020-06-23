@@ -7,6 +7,7 @@
 #include "utils/rainbow.h"
 #include "config/board_config.h"
 #include "config/settings.h"
+#include "config/dice_variants.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
 #include "nrf_log.h"
@@ -54,6 +55,7 @@ namespace AnimController
 
 	uint32_t getColorForAnim(void* token, uint32_t colorIndex);
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame);
+	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace);
 
 	int currentRainbowIndex = 0;
 	const int rainbowScale = 1; 
@@ -71,10 +73,6 @@ namespace AnimController
 	/// </summary>
 	void init()
 	{
-		animationCount = 0;
-		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
-		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
-
 		// Initialize the lookup table
 		for (int i = 0; i < AnimationEvent_Count; ++i) {
 			animationLookupByEvent[i] = -1;
@@ -87,11 +85,14 @@ namespace AnimController
 		}
 
 		Accelerometer::hookFrameData(onAccelFrame, nullptr);
-
 		AnimationSet::setGetColorHandler(getColorForAnim);
 
 		heat = 0.0f;
 		currentRainbowIndex = 0;
+
+		animationCount = 0;
+		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
+		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
 
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
@@ -102,20 +103,23 @@ namespace AnimController
 	/// <param name="ms">Current global time in milliseconds</param>
 	void update(int ms)
 	{
+		auto s = SettingsManager::getSettings();
+		auto b = BoardManager::getBoard();
+		auto l = DiceVariants::getLayout(b->ledCount, s->faceLayoutLookupIndex);
+		int c = b->ledCount;
+
 		// Update heat value (cool down)
-		heat *= SettingsManager::getSettings()->coolDownRate;
+		heat *= s->coolDownRate;
 		if (heat < 0.0f) {
 			heat = 0.0f;
 		}
 
 		if (animationCount > 0) {
 	        PowerManager::feed();
-			auto board = BoardManager::getBoard();
-			auto& faceToLEDs = board->faceToLedLookup;
 
 			// clear the global color array
 			uint32_t allColors[MAX_LED_COUNT];
-			for (int j = 0; j < BoardManager::getBoard()->ledCount; ++j) {
+			for (int j = 0; j < c; ++j) {
 				allColors[j] = 0;
 			}
 
@@ -147,24 +151,32 @@ namespace AnimController
 				else
 				{
 					int canonIndices[MAX_LED_COUNT * 4]; // Allow up to 4 tracks to target the same LED
-					int faceIndices[MAX_LED_COUNT * 4];
 					int ledIndices[MAX_LED_COUNT * 4];
 					uint32_t colors[MAX_LED_COUNT * 4];
 
 					// Update the leds
 					int animTrackCount = anim.animation->updateLEDs(&anim, animTime, canonIndices, colors);
 
-
 					// Gamma correct and map face index to led index
+					//NRF_LOG_INFO("track_count = %d", animTrackCount);
 					for (int j = 0; j < animTrackCount; ++j) {
 						colors[j] = Utils::gamma(colors[j]);
-						faceIndices[j] = board->remapLed(anim.remapFace, canonIndices[j]);
-						ledIndices[j] = faceToLEDs[faceIndices[j]];
+
+						// The transformation is:
+						// animFaceIndex (what face the animation says it wants to light up)
+						//	-> rotatedAnimFaceIndex (based on remapFace and remapping table, i.e. what actual
+						//	   face should light up to "retarget" the animation around the current up face)
+						//		-> ledIndex (based on pcb face to led mapping, i.e. to account for the internal rotation
+						//		   of the PCB and the fact that the LEDs are not accessed in the same order as the number of the faces)
+						int rotatedAnimFaceIndex = l->faceRemap[anim.remapFace * c + canonIndices[j]];
+						ledIndices[j] = s->faceToLEDLookup[rotatedAnimFaceIndex];
 					}
 
 					// Update color array
 					for (int j = 0; j < animTrackCount; ++j) {
+						
 						// Combine colors if necessary
+						//NRF_LOG_INFO("index: %d -> %08x", ledIndices[j], colors[j]);
 						allColors[ledIndices[j]] = Utils::addColors(allColors[ledIndices[j]], colors[j]);
 					}
 				}
@@ -325,19 +337,27 @@ namespace AnimController
 	/// </summary>
 	void stopAtIndex(int animIndex)
 	{
+		auto s = SettingsManager::getSettings();
+		auto b = BoardManager::getBoard();
+		auto l = DiceVariants::getLayout(b->ledCount, s->faceLayoutLookupIndex);
+		int c = b->ledCount;
+
 		// Found the animation, start by killing the leds it controls
-		auto board = BoardManager::getBoard();
-		auto& faceToLEDs = board->faceToLedLookup;
 		int canonIndices[MAX_LED_COUNT];
-		int faceIndices[MAX_LED_COUNT];
 		int ledIndices[MAX_LED_COUNT];
 		uint32_t zeros[MAX_LED_COUNT];
 		memset(zeros, 0, sizeof(uint32_t) * MAX_LED_COUNT);
 		auto& anim = animations[animIndex];
 		int ledCount = anim.animation->stop(canonIndices);
 		for (int i = 0; i < ledCount; ++i) {
-			faceIndices[i] = board->remapLed(anim.remapFace, canonIndices[i]);
-			ledIndices[i] = faceToLEDs[faceIndices[i]];
+			// The transformation is:
+			// animFaceIndex (what face the animation says it wants to light up)
+			//	-> rotatedAnimFaceIndex (based on remapFace and remapping table, i.e. what actual
+			//	   face should light up to "retarget" the animation around the current up face)
+			//		-> ledIndex (based on pcb face to led mapping, i.e. to account for the internal rotation
+			//		   of the PCB and the fact that the LEDs are not accessed in the same order as the number of the faces)
+			int rotatedAnimFaceIndex = l->faceRemap[anim.remapFace * c + canonIndices[i]];
+			ledIndices[i] = s->faceToLEDLookup[rotatedAnimFaceIndex];
 		}
 		APA102::setPixelColors(ledIndices, zeros, ledCount);
 		APA102::show();
@@ -401,6 +421,24 @@ namespace AnimController
 			return AnimationSet::getPaletteColor(colorIndex);
 		}
 	}
+
+	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace) {
+		// The transformation is:
+		// animFaceIndex (what face the animation says it wants to light up)
+		//	-> rotatedAnimFaceIndex (based on remapFace and remapping table, i.e. what actual
+		//	   face should light up to "retarget" the animation around the current up face)
+		//		-> ledIndex (based on pcb face to led mapping, i.e. to account for the internal rotation
+		//		   of the PCB and the fact that the LEDs are not accessed in the same order as the number of the faces)
+
+		auto s = SettingsManager::getSettings();
+		auto b = BoardManager::getBoard();
+		auto l = DiceVariants::getLayout(b->ledCount, s->faceLayoutLookupIndex);
+		int c = b->ledCount;
+
+		int rotatedAnimFaceIndex = l->faceRemap[remapFace * c + animFaceIndex];
+		return s->faceToLEDLookup[rotatedAnimFaceIndex];
+	}
+
 }
 }
 

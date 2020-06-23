@@ -3,6 +3,7 @@
 #include "drivers_nrf/flash.h"
 #include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/timers.h"
+#include "modules/accelerometer.h"
 #include "config/board_config.h"
 #include "config/settings.h"
 #include "bluetooth/bluetooth_messages.h"
@@ -14,6 +15,8 @@
 #include "nrf_delay.h"
 
 #define ANIMATION_SET_VALID_KEY (0x600DF00D) // Good Food ;)
+#define ANIMATION_SET_VERSION 1
+
 // We place animation set and animations in descending addresses
 // So the animation set is at the top of the page
 #define MAX_PALETTE_SIZE (COLOR_MAP_SIZE * 3)
@@ -23,6 +26,7 @@ using namespace Utils;
 using namespace DriversNRF;
 using namespace Bluetooth;
 using namespace Config;
+using namespace Modules;
 
 namespace Animations
 {
@@ -32,6 +36,7 @@ namespace AnimationSet
 	{
 		// Indicates whether there is valid data
 		uint32_t headMarker;
+		int version;
 
 		// The palette for all animations, stored in RGB RGB RGB etc...
 		// Maximum 128 * 3 = 376 bytes
@@ -120,7 +125,9 @@ namespace AnimationSet
 	/// </summary>
 	bool CheckValid()
 	{
-		return data->headMarker == ANIMATION_SET_VALID_KEY && data->tailMarker == ANIMATION_SET_VALID_KEY;
+		return data->headMarker == ANIMATION_SET_VALID_KEY &&
+			data->version == ANIMATION_SET_VERSION &&
+			data->tailMarker == ANIMATION_SET_VALID_KEY;
 	}
 
 	/// <summary>
@@ -229,6 +236,8 @@ namespace AnimationSet
 		NRF_LOG_INFO("Received Request to download new animation set");
 		const MessageTransferAnimSet* message = (const MessageTransferAnimSet*)msg;
 
+		Accelerometer::stop();
+
 		uint32_t buffersSize =
 			message->keyFrameCount * sizeof(RGBKeyframe) +
 			message->rgbTrackCount * sizeof(RGBTrack) +
@@ -283,6 +292,7 @@ namespace AnimationSet
 							NRF_LOG_DEBUG("Setting up pointers");
 							newData = (Data*)malloc(sizeof(Data));
 							newData->headMarker = ANIMATION_SET_VALID_KEY;
+							newData->version = ANIMATION_SET_VERSION;
 							uint32_t address = programmingToken.dataAddress;
 							newData->palette = (const uint8_t*)address;
 							newData->paletteSize = programmingToken.paletteSize;
@@ -314,12 +324,15 @@ namespace AnimationSet
 									free(newData);
 
 									if (!CheckValid()) {
-										NRF_LOG_ERROR("Animation data is not valid!");
+										NRF_LOG_ERROR("Animation data is not valid, reprogramming defaults!");
+										ProgramDefaultAnimationSet(nullptr);
 									}
+									Accelerometer::start();
 								}
 							);
 						} else {
 							NRF_LOG_ERROR("Error transfering animation data");
+							Accelerometer::start();
 						}
 					}
 				);
@@ -471,6 +484,7 @@ namespace AnimationSet
 		static Data* newData; // Don't initialize this static inline because it would only do it on first call!
 		newData = (Data*)malloc(sizeof(Data));
 		newData->headMarker = ANIMATION_SET_VALID_KEY;
+		newData->version = ANIMATION_SET_VERSION;
 		newData->palette = (const uint8_t*)paletteAddress;
 		newData->paletteSize = paletteSize;
 		newData->keyframes = (const RGBKeyframe*)keyframesAddress;
@@ -556,7 +570,6 @@ namespace AnimationSet
 
 	void printAnimationInfo() {
 		Timers::pause();
-		auto board = BoardManager::getBoard();
 		NRF_LOG_INFO("Palette size: %d bytes", getPaletteSize());
 		for (int p = 0; p < getPaletteSize() / 3; ++p) {
 			NRF_LOG_INFO("  Color %d: %08x", p, getPaletteColor(p));
@@ -571,7 +584,6 @@ namespace AnimationSet
 				auto& rgbTrack = track.getTrack();
 				NRF_LOG_INFO("  Track %d:", t);
 				NRF_LOG_INFO("  Face %d:", track.ledIndex);
-				NRF_LOG_INFO("  LED %d:", board->faceToLedLookup[track.ledIndex]);
 				NRF_LOG_INFO("  Track Offset %d:", anim.tracksOffset + t);
 				NRF_LOG_INFO("  RGBTrack Offset %d:", track.trackOffset);
 				NRF_LOG_INFO("  Keyframe count: %d", rgbTrack.keyFrameCount);
