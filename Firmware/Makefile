@@ -14,6 +14,8 @@ $(OUTPUT_DIRECTORY)/firmware.out: \
 # Source files common to all targets
 SRC_FILES += \
 	$(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
+	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu.c \
+	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu_unbonded.c \
 	$(SDK_ROOT)/components/ble/common/ble_advdata.c \
 	$(SDK_ROOT)/components/ble/common/ble_conn_params.c \
 	$(SDK_ROOT)/components/ble/common/ble_conn_state.c \
@@ -28,6 +30,7 @@ SRC_FILES += \
 	$(SDK_ROOT)/components/libraries/atomic_fifo/nrf_atfifo.c \
 	$(SDK_ROOT)/components/libraries/atomic_flags/nrf_atflags.c \
 	$(SDK_ROOT)/components/libraries/balloc/nrf_balloc.c \
+	$(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_svci.c \
 	$(SDK_ROOT)/components/libraries/bsp/bsp.c \
 	$(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
 	$(SDK_ROOT)/components/libraries/fds/fds.c \
@@ -83,6 +86,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_hw/lis2de12.cpp \
 	$(PROJ_DIR)/src/drivers_hw/magnet.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/a2d.cpp \
+	$(PROJ_DIR)/src/drivers_nrf/dfu.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/flash.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/gpiote.cpp \
 	$(PROJ_DIR)/src/drivers_nrf/i2c.cpp \
@@ -207,6 +211,8 @@ COMMON_FLAGS += -mcpu=cortex-m4
 COMMON_FLAGS += -mthumb -mabi=aapcs
 COMMON_FLAGS += -mfloat-abi=soft
 COMMON_FLAGS += -DNRF52_PAN_74
+COMMON_FLAGS += -DNRF_DFU_SVCI_ENABLED
+COMMON_FLAGS += -DNRF_DFU_TRANSPORT_BLE=1
 
 # COMMON_FLAGS += -DDEVELOP_IN_NRF52832
 DEBUG_FLAGS = -DNRF_LOG_ENABLED=0
@@ -306,9 +312,11 @@ flash: firmware_debug settings
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware_settings.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
+# Flash over BLE, you must use DICE=D_XXXXXXX argument to make flash_ble
+# e.g. make flash_ble DICE=D_71902510
 flash_ble: zip
-	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware.hex over BLE DFU
-	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n DiceDfuTarg -pkg _build/firmware.zip
+	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip over BLE DFU
+	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 
 # Flash softdevice
 flash_softdevice:
@@ -321,7 +329,7 @@ flash_bootloader:
 	nrfjprog -f nrf52 -s 801001366 --program $(PROJ_DIR)/../Bootloader/_build/nrf52810_xxaa_s112.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
-flash_board: erase flash_softdevice flash_bootloader flash_ble
+flash_board: erase flash_softdevice flash_bootloader flash
 
 
 reflash:  erase  flash  flash_softdevice
