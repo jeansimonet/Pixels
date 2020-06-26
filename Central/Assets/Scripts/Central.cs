@@ -260,11 +260,6 @@ public class Central : MonoBehaviour
 #endif
     }
 
-    void OnApplicationQuit()
-    {
-        BluetoothLEHardwareInterface.DeInitialize(null);
-    }
-
     void OnDestroy()
     {
         BluetoothLEHardwareInterface.DeInitialize(null);
@@ -368,7 +363,7 @@ public class Central : MonoBehaviour
             {
                 case Die.State.Disconnecting:
                     // This is perfectly okay
-                    Debug.Log("Disconnected die " + die.name);
+                    Debug.Log("Disconnecting die " + die.name);
                     finishDisconnect(die);
                     Debug.Log("Disconnected " + die.die.name);
                     break;
