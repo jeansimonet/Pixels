@@ -20,6 +20,8 @@ namespace DriversHW
 		void unHook(ClientMethod client);
 		void unHookWithParam(void* param);
 
+	    void printA2DReadings();
+
         void selfTest();
     }
 }

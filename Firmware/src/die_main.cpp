@@ -13,6 +13,11 @@
 #include "animations/animation_set.h"
 #include "nrf_log.h"
 
+#if !defined(FIRMWARE_VERSION)
+    #warning Firmware version not defined
+    #define FIRMWARE_VERSION "Unknown"
+#endif
+
 using namespace DriversNRF;
 using namespace Modules;
 using namespace Bluetooth;
@@ -22,15 +27,6 @@ using namespace Animations;
 
 namespace Die
 {
-    enum DieType
-    {
-        DieType_Unknown = 0,
-        DieType_6Sided,
-        DieType_20Sided
-    };
-
-    DieType dieType = DieType_Unknown;
-
     enum TopLevelState
     {
         TopLevel_Unknown = 0,
@@ -62,18 +58,6 @@ namespace Die
     void initMainLogic() {
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
 
-        switch (BoardManager::getBoard()->ledCount)
-        {
-            case 6:
-                dieType = DieType_6Sided;
-                break;
-            case 20:
-                dieType = DieType_20Sided;
-                break;
-            default:
-                break;
-        }
-
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
         Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_PlayAnim, nullptr, PlayLEDAnim);
         Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_StopAnim, nullptr, StopLEDAnim);
@@ -94,18 +78,6 @@ namespace Die
     }
 
     void initDebugLogic() {
-
-        switch (BoardManager::getBoard()->ledCount)
-        {
-            case 6:
-                dieType = DieType_6Sided;
-                break;
-            case 20:
-                dieType = DieType_20Sided;
-                break;
-            default:
-                break;
-        }
 
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_RequestState, nullptr, RequestStateHandler);
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_WhoAreYou, nullptr, WhoAreYouHandler);
@@ -132,7 +104,9 @@ namespace Die
     void WhoAreYouHandler(void* token, const Message* message) {
         // Central asked for the die state, return it!
         Bluetooth::MessageIAmADie identityMessage;
-        identityMessage.id = (uint8_t)dieType;
+        identityMessage.faceCount = (uint8_t)BoardManager::getBoard()->ledCount;
+        identityMessage.designAndColor = SettingsManager::getSettings()->designAndColor;
+        strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         Bluetooth::MessageService::SendMessage(&identityMessage);
     }
 
@@ -207,6 +181,8 @@ namespace Die
         uint8_t remapFace = 0;
         if (animation.specialColorType == SpecialColor_Face) {
             remapFace = Accelerometer::currentFace();
+        } else {
+            remapFace = playAnimMessage->remapFace;
         }
         AnimController::play(&animation, remapFace, playAnimMessage->loop);
     }

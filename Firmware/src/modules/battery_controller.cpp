@@ -9,8 +9,10 @@
 #include "die.h"
 #include "drivers_hw/apa102.h"
 #include "utils/utils.h"
+#include "drivers_nrf/a2d.h"
 
 using namespace DriversHW;
+using namespace DriversNRF;
 using namespace Bluetooth;
 using namespace Config;
 using namespace Utils;
@@ -213,6 +215,10 @@ namespace BatteryController
     }
 
     void update(void* context) {
+        // // DEBUG
+        // Battery::printA2DReadings();
+        // // DEBUG
+
         auto newState = computeCurrentState();
         if (newState != currentBatteryState) {
             switch (newState) {

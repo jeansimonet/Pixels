@@ -8,6 +8,7 @@ namespace Bluetooth
     {
         void init();
         void initAdvertising();
+        void initCustomAdvertisingData();
         void disconnect();
         void startAdvertising();
         void disableAdvertisingOnDisconnect();

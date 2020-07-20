@@ -52,6 +52,7 @@
         "exception": "cpp",
         "iosfwd": "cpp",
         "new": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "algorithm": "cpp"
     },
 }

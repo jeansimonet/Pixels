@@ -12,7 +12,7 @@
 #include "utils/utils.h"
 
 #define SETTINGS_VALID_KEY (0x15E77165) // 1SETTINGS in leet speak ;)
-#define SETTINGS_VERSION 1
+#define SETTINGS_VERSION 2
 #define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
@@ -21,6 +21,7 @@ using namespace Config;
 
 namespace Config
 {
+
 namespace SettingsManager
 {
 	Settings const * settings = nullptr;
@@ -162,6 +163,7 @@ namespace SettingsManager
 	}
 
 	void setDefaultParameters(Settings& outSettings) {
+		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Unknown;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
 		outSettings.startMovingThreshold = 5.0f;
@@ -169,7 +171,6 @@ namespace SettingsManager
 		outSettings.faceThreshold = 0.98f;
 		outSettings.fallingThreshold = 0.1f;
 		outSettings.shockThreshold = 7.5f;
-		outSettings.minRollTime = 300;
 		outSettings.batteryLow = 3.0f;
 		outSettings.batteryHigh = 4.0f;
 		outSettings.accDecay = 0.9f;

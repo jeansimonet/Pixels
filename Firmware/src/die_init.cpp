@@ -128,6 +128,9 @@ namespace Die
         // The we read user settings from flash, or set some defaults if none are found
         SettingsManager::init([] (bool result) {
 
+            // Now that the settings are set, update custom advertising data
+            Stack::initCustomAdvertisingData();
+
             // I2C is needed for the accelerometer, but depends on the board info
             I2C::init();
 

@@ -2,9 +2,11 @@
 
 #include <stdint.h>
 #include "config/sdk_config.h"
+#include "config/dice_variants.h"
 #include "modules/accelerometer.h"
 
 #define MAX_DATA_SIZE 100
+#define VERSION_INFO_SIZE 8
 
 #pragma pack(push, 1)
 
@@ -78,6 +80,19 @@ struct Message
 
 protected:
 	inline Message() : type(MessageType_None) {}
+};
+
+
+/// <summary>
+/// Identifies the dice
+/// </summary>
+struct MessageIAmADie
+: public Message
+{
+	uint8_t faceCount; // Which kind of dice this is
+	Config::DiceVariants::DesignAndColor designAndColor; // Physical look
+	char versionInfo[VERSION_INFO_SIZE]; // Firmware version string, i.e. "10_05"
+	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) { versionInfo[0] = 0; }
 };
 
 /// <summary>
@@ -221,13 +236,6 @@ struct MessageBatteryLevel
 {
 	float level;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
-};
-
-struct MessageIAmADie
-: public Message
-{
-	uint8_t id;
-	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) {}
 };
 
 struct MessageNotifyUser

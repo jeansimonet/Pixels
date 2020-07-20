@@ -15,11 +15,15 @@
 #include "peer_manager.h"
 #include "peer_manager_handler.h"
 #include "config/settings.h"
+#include "config/board_config.h"
+#include "config/dice_variants.h"
 #include "drivers_nrf/power_manager.h"
 #include "core/delegate_array.h"
+#include "modules/accelerometer.h"
 
 using namespace Config;
 using namespace DriversNRF;
+using namespace Modules;
 
 namespace Bluetooth
 {
@@ -79,6 +83,55 @@ namespace Stack
 
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
 
+    // Custom advertising data, so the Pixel app can identify dice before they're even connected
+    struct CustomAdvertisingData
+    {
+        Config::DiceVariants::DesignAndColor designAndColor; // Physical look, also only 8 bits
+        uint8_t faceCount; // Which kind of dice this is
+        Accelerometer::RollState rollState; // Indicates whether the dice is being shaken
+        uint8_t currentFace; // Which face is currently up
+    };
+
+    // Global custom manufacturer data
+    CustomAdvertisingData customAdvertisingData;
+
+    // Buffer pointing to the custom advertising data, so Softdevice knows where and how big it is
+    ble_advdata_manuf_data_t m_sp_manuf_advdata =
+    {
+        .company_identifier = 0xABCD, // <-- should pick a good one!
+        .data               =
+        {
+            .size   = sizeof(customAdvertisingData),
+            .p_data = (uint8_t*)(void*)&customAdvertisingData
+        }
+    };
+
+    // Advertising data structs
+    ble_advdata_t adv_data;
+    ble_advdata_t sr_data;
+
+    // This will store packed versions of advertising structs
+    uint8_t adv_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Advertising data buffer. */
+    uint8_t sr_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Scan Response data buffer. */
+
+    // And this will tell the Softdevice where those buffers are
+    ble_gap_adv_data_t m_sp_advdata_buf = 
+    {
+        .adv_data =
+        {
+            .p_data = adv_data_buffer,
+            .len    = sizeof(adv_data_buffer)
+        },
+        .scan_rsp_data =
+        {
+            .p_data = sr_data_buffer,
+            .len    = sizeof(sr_data_buffer)
+        }
+    };
+
+    void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
+    void updateCustomAdvertisingData(Accelerometer::RollState newState, int newFace);
+
     /**@brief Function for handling BLE events.
      *
      * @param[in]   p_ble_evt   Bluetooth stack event.
@@ -93,6 +146,7 @@ namespace Stack
             case BLE_GAP_EVT_DISCONNECTED:
                 NRF_LOG_INFO("Disconnected, reason: 0x%02x", p_ble_evt->evt.gap_evt.params.disconnected.reason);
                 connected = false;
+                currentlyAdvertising = true;
                 for (int i = 0; i < clients.Count(); ++i) {
                     clients[i].handler(clients[i].token, false);
                 }
@@ -103,10 +157,14 @@ namespace Stack
                 m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
                 err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
                 APP_ERROR_CHECK(err_code);
+                currentlyAdvertising = false;
                 connected = true;
                 for (int i = 0; i < clients.Count(); ++i) {
                     clients[i].handler(clients[i].token, true);
                 }
+
+                // Unhook from accelerometer events, we don't need them
+                Accelerometer::unHookRollState(onRollStateChange);
                 break;
 
             case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -178,9 +236,17 @@ namespace Stack
         switch (ble_adv_evt)
         {
             case BLE_ADV_EVT_FAST:
+            {
                 NRF_LOG_INFO("Fast advertising.");
+                ret_code_t err_code = ble_advertising_advdata_update(&m_advertising, &m_sp_advdata_buf, false);
+                APP_ERROR_CHECK(err_code);
+
+                // Register to be notified of accelerometer changes
+                Accelerometer::hookRollState(onRollStateChange, nullptr);
+
                 currentlyAdvertising = true;
-                break;
+            }
+            break;
 
             case BLE_ADV_EVT_IDLE:
                 NRF_LOG_INFO("Advertising Idle.");
@@ -318,7 +384,6 @@ namespace Stack
         init.srdata.uuids_complete.uuid_cnt = sizeof(m_srv_uuids) / sizeof(m_srv_uuids[0]);
         init.srdata.uuids_complete.p_uuids  = m_srv_uuids;
 
-
         advertising_config_get(&init.config);
 
         init.evt_handler = on_adv_evt;
@@ -352,34 +417,36 @@ namespace Stack
         err_code = ble_conn_params_init(&cp_init);
         APP_ERROR_CHECK(err_code);
 
-        // ble_gap_sec_params_t sec_param;
-
-        // err_code = pm_init();
-        // APP_ERROR_CHECK(err_code);
-
-        // memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
-
-        // // Security parameters to be used for all security procedures.
-        // sec_param.bond           = SEC_PARAM_BOND;
-        // sec_param.mitm           = SEC_PARAM_MITM;
-        // sec_param.lesc           = SEC_PARAM_LESC;
-        // sec_param.keypress       = SEC_PARAM_KEYPRESS;
-        // sec_param.io_caps        = SEC_PARAM_IO_CAPABILITIES;
-        // sec_param.oob            = SEC_PARAM_OOB;
-        // sec_param.min_key_size   = SEC_PARAM_MIN_KEY_SIZE;
-        // sec_param.max_key_size   = SEC_PARAM_MAX_KEY_SIZE;
-        // sec_param.kdist_own.enc  = 1;
-        // sec_param.kdist_own.id   = 1;
-        // sec_param.kdist_peer.enc = 1;
-        // sec_param.kdist_peer.id  = 1;
-
-        // err_code = pm_sec_params_set(&sec_param);
-        // APP_ERROR_CHECK(err_code);
-
-        // err_code = pm_register(pm_evt_handler);
-        // APP_ERROR_CHECK(err_code);
+        // Copy advertising data for later, when we update the manufacturer data
+        memcpy(&adv_data, &init.advdata, sizeof(ble_advdata_t));
+        memcpy(&sr_data, &init.srdata, sizeof(ble_advdata_t));
+        adv_data.p_manuf_specific_data = &m_sp_manuf_advdata;
     }
 
+    void initCustomAdvertisingData() {
+        // Initialize the custom advertising data
+        customAdvertisingData.faceCount = (uint8_t)Config::BoardManager::getBoard()->ledCount;
+        customAdvertisingData.designAndColor = Config::SettingsManager::getSettings()->designAndColor;
+
+        updateCustomAdvertisingData(Accelerometer::currentRollState(), Accelerometer::currentFace());
+    }
+
+    void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace) {
+        updateCustomAdvertisingData(newState, newFace);
+    }
+
+    void updateCustomAdvertisingData(Accelerometer::RollState newState, int newFace) {
+        // Update manufacturer specific advertising data
+        customAdvertisingData.currentFace = newFace;
+        customAdvertisingData.rollState = newState;
+
+        // Update advertising data
+        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        APP_ERROR_CHECK(err_code);
+
+        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        APP_ERROR_CHECK(err_code);
+    }
 
     void disconnectLink(uint16_t conn_handle, void * p_context) {
         UNUSED_PARAMETER(p_context);

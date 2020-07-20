@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "stddef.h"
 #include "core/float3.h"
+#include "dice_variants.h"
 
 #define MAX_LED_COUNT 21
 
@@ -13,6 +14,9 @@ namespace Config
 		// Indicates whether there is valid data
 		uint32_t headMarker;
 		int version;
+
+		// Physical Appearance
+		DiceVariants::DesignAndColor designAndColor;
 
 		// Face detector
 		float jerkClamp;
@@ -25,7 +29,6 @@ namespace Config
 		float accDecay;
 		float heatUpRate;
 		float coolDownRate;
-		int minRollTime; // ms
 
 		// Battery
 		float batteryLow;

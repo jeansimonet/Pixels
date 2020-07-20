@@ -9,6 +9,19 @@ namespace Config
 {
     namespace DiceVariants
     {
+        // This enum describes what the dice looks like, so the App can use the appropriate 3D model/color
+        enum DesignAndColor : uint8_t
+        {
+            DesignAndColor_Unknown = 0,
+            DesignAndColor_V3_Orange,
+            DesignAndColor_V4_BlackClear,
+            DesignAndColor_V4_WhiteClear,
+            DesignAndColor_V5_Grey,
+            DesignAndColor_V5_White,
+            DesignAndColor_V5_Black,
+            DesignAndColor_V5_Gold,
+        };
+
         struct Layout
         {
             const Core::float3* faceNormals;

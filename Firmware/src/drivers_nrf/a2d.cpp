@@ -4,9 +4,6 @@
 #include "log.h"
 #include "timers.h"
 #include "power_manager.h"
-#include "bluetooth/bluetooth_messages.h"
-#include "bluetooth/bluetooth_message_service.h"
-#include "bluetooth/bluetooth_stack.h"
 
 #define BOARD_DETECT_SENSE_PIN NRF_SAADC_INPUT_AIN4
 
@@ -21,8 +18,6 @@ namespace A2D
     nrf_saadc_channel_config_t channel_config_batt;
     nrf_saadc_channel_config_t channel_config_5v;
     nrf_saadc_channel_config_t channel_config_vled;
-
-    void printA2DReadings(void* token, const Bluetooth::Message* message);
 
     void saadc_callback(nrfx_saadc_evt_t const * p_event) {
         // Do nothing!
@@ -123,15 +118,6 @@ namespace A2D
         }
 
         NRF_LOG_INFO("A2D Pins Initialized");
-        NRF_LOG_INFO("\tvBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVBat()));
-        if (supportsVCoil) {
-            NRF_LOG_INFO("\tvCoil=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(read5V()));
-        }
-        if (supportsVLED) {
-            NRF_LOG_INFO("\tvLED=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVLED()));
-        }
-
-        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_PrintA2DReadings, nullptr, printA2DReadings);
 
         #if DICE_SELFTEST && A2D_SELFTEST_BATT
         selfTestBatt();
@@ -270,16 +256,6 @@ namespace A2D
             return (float)val * 0.003515625f;
         } else {
             return 0.0f;
-        }
-    }
-
-    void printA2DReadings(void* token, const Bluetooth::Message* message) {
-        BLE_LOG_INFO("vBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVBat()));
-        if (supportsVCoil) {
-            BLE_LOG_INFO("vCoil=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(read5V()));
-        }
-        if (supportsVLED) {
-            BLE_LOG_INFO("vLED=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(readVLED()));
         }
     }
 

@@ -12,6 +12,10 @@
 #include "../drivers_nrf/scheduler.h"
 #include "../core/delegate_array.h"
 
+#include "bluetooth/bluetooth_messages.h"
+#include "bluetooth/bluetooth_message_service.h"
+#include "bluetooth/bluetooth_stack.h"
+
 using namespace DriversNRF;
 using namespace Config;
 
@@ -25,6 +29,7 @@ namespace Battery
 	DelegateArray<ClientMethod, MAX_BATTERY_CLIENTS> clients;
 
     void batteryInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action);
+    void printA2DReadingsBLE(void* token, const Bluetooth::Message* message);
 
     void init() {
         // Set charger and fault pins as input
@@ -52,6 +57,9 @@ namespace Battery
 		// 	NRF_GPIO_PIN_NOPULL,
 		// 	NRF_GPIOTE_POLARITY_TOGGLE,
 		// 	batteryInterruptHandler);
+
+        printA2DReadings();
+        Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_PrintA2DReadings, nullptr, printA2DReadingsBLE);
 
         NRF_LOG_INFO("Battery initialized, Charging=%d", charging);
 
@@ -137,6 +145,34 @@ namespace Battery
 	{
 		clients.UnregisterWithToken(param);
 	}
+
+    void printA2DReadings() {
+        if (canCheckCharging()) {
+            if (checkCharging()) {
+                NRF_LOG_INFO("\tvBat=" NRF_LOG_FLOAT_MARKER ", charging.", NRF_LOG_FLOAT(checkVBat()));
+            } else {
+                NRF_LOG_INFO("\tvBat=" NRF_LOG_FLOAT_MARKER ", not charging.", NRF_LOG_FLOAT(checkVBat()));
+            }
+        } else {
+            NRF_LOG_INFO("\tvBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVBat()));
+        }
+        if (canCheckVCoil()) {
+            NRF_LOG_INFO("\tvCoil=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVCoil()));
+        }
+        if (canCheckVLED()) {
+            NRF_LOG_INFO("\tvLED=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVLED()));
+        }
+    }
+
+    void printA2DReadingsBLE(void* token, const Bluetooth::Message* message) {
+        BLE_LOG_INFO("vBat=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVBat()));
+        if (canCheckVCoil()) {
+            BLE_LOG_INFO("vCoil=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVCoil()));
+        }
+        if (canCheckVLED()) {
+            BLE_LOG_INFO("vLED=" NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(checkVLED()));
+        }
+    }
 
     #if DICE_SELFTEST && BATTERY_SELFTEST
     APP_TIMER_DEF(readBatTimer);

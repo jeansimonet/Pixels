@@ -31,7 +31,7 @@ namespace Modules
 			uint32_t time;
 		};
 
-	    enum RollState
+	    enum RollState : uint8_t
 		{
 			RollState_Unknown = 0,
 			RollState_OnFace,
