@@ -518,12 +518,12 @@ public class Die
         yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, setDieId, null));
     }
 
-    public Coroutine UploadBulkData(byte[] bytes)
+    public Coroutine UploadBulkData(byte[] bytes, System.Action<float> uploadPctCallback)
     {
-        return PerformBluetoothOperation(UploadBulkDataCr(bytes));
+        return PerformBluetoothOperation(UploadBulkDataCr(bytes, uploadPctCallback));
     }
 
-    IEnumerator UploadBulkDataCr(byte[] bytes)
+    IEnumerator UploadBulkDataCr(byte[] bytes, System.Action<float> uploadPctCallback)
     {
         short remainingSize = (short)bytes.Length;
 
@@ -547,6 +547,10 @@ public class Die
             yield return StartCoroutine(SendMessageWithAckRetryCr(data, DieMessageType.BulkDataAck, null));
             remainingSize -= data.size;
             offset += data.size;
+            if (uploadPctCallback != null)
+            {
+                uploadPctCallback((float)offset/bytes.Length);
+            }
         }
 
         Debug.Log("Finished sending bulk data");
@@ -601,12 +605,12 @@ public class Die
         onBufferReady.Invoke(buffer);
     }
 
-    public Coroutine UploadAnimationSet(AnimationSet set, System.Action<bool> callBack)
+    public Coroutine UploadAnimationSet(AnimationSet set, System.Action<float> uploadPctCallback, System.Action<bool> callBack)
     {
-        return PerformBluetoothOperation(UploadAnimationSetCr(set, callBack));
+        return PerformBluetoothOperation(UploadAnimationSetCr(set, uploadPctCallback, callBack));
     }
 
-    IEnumerator UploadAnimationSetCr(AnimationSet set, System.Action<bool> callBack)
+    IEnumerator UploadAnimationSetCr(AnimationSet set, System.Action<float> uploadPctCallback, System.Action<bool> callBack)
     {
         // Prepare the die
         var prepareDie = new DieMessageTransferAnimSet();
@@ -630,7 +634,7 @@ public class Die
             Debug.Log("die is ready, sending animations");
             Debug.Log("byte array should be: " + set.ComputeAnimationDataSize());
             var setData = set.ToByteArray();
-            yield return StartCoroutine(UploadBulkDataCr(setData));
+            yield return StartCoroutine(UploadBulkDataCr(setData, uploadPctCallback));
 
             // We're done!
             Debug.Log("Done!");
@@ -687,7 +691,7 @@ public class Die
 
         // Die is ready, perform bulk transfer of the settings
         byte[] settingsBytes = DieSettings.ToByteArray(settings);
-        yield return StartCoroutine(UploadBulkDataCr(settingsBytes));
+        yield return StartCoroutine(UploadBulkDataCr(settingsBytes, null));
 
         // We're done!
     }

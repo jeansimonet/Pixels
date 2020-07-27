@@ -205,6 +205,12 @@ namespace Animations
         }
     };
 
+    public class AnimationInstance
+    {
+        public Animation animation;
+        public float time;
+    }
+
     /// <summary>
     /// Animation Set is the set of all animations and colors stored in the die
     /// This data gets transfered straight to the dice. For that purpose, the data

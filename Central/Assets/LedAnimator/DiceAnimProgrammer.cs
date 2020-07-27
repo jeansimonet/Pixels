@@ -156,7 +156,7 @@ public class DiceAnimProgrammer
         // Upload!
         if (die != null)
         {
-            yield return die.UploadAnimationSet(rawAnim, null);
+            yield return die.UploadAnimationSet(rawAnim, (pct) => pleaseWait.UpdatePct(pct), null);
         }
         pleaseWait.Hide();
     }

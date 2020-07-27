@@ -133,7 +133,7 @@ public class Central : MonoBehaviour
             }
         }
 
-        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(new string[] { serviceGUID }, OnDeviceDiscovered, null, false, true);
+        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(new string[] { serviceGUID }, OnDeviceDiscovered, OnDeviceAdvertisingInfo, false, true);
     }
 
     /// <summary>
@@ -323,6 +323,11 @@ public class Central : MonoBehaviour
         }
     }
 
+    void OnDeviceAdvertisingInfo(string address, string name, int dataSize, byte[] data) 
+    {
+        Debug.Log("Discovered die advertising data" + data.ToString());
+    }
+
     void OnDeviceConnected(string address)
     {
         if (_dice.TryGetValue(address, out Die die))
@@ -409,15 +414,15 @@ public class Central : MonoBehaviour
     {
         if (_dice.TryGetValue(address, out Die die))
         {
-            if (die.state != Die.State.Connecting)
-            {
-                Debug.LogError("Die " + die.name + " in invalid state " + die.state);
-                return;
-            }
-
             // We are looking for 2 characteristics, a generic read and a generic write!
             if (string.Compare(service.ToLower(), serviceGUID.ToLower()) == 0)
             {
+                if (die.state != Die.State.Connecting)
+                {
+                    Debug.LogError("Die " + die.name + " in invalid state " + die.state);
+                    return;
+                }
+
                 if (string.Compare(characteristic.ToLower(), subscribeCharacteristic.ToLower()) == 0)
                     die.messageReadCharacteristicFound = true;
                 else if (string.Compare(characteristic.ToLower(), writeCharacteristic.ToLower()) == 0)
@@ -426,6 +431,7 @@ public class Central : MonoBehaviour
                 // Are we ready to move onto the next step?
                 CheckDieCharacteristics(die);
             }
+            // Else ignore this characteristic
         }
         else
         {

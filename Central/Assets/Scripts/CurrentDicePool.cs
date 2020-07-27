@@ -17,7 +17,6 @@ public class CurrentDicePool
 
     [Header("References")]
     public AddDiceToPool addDiceDialog;
-    public SceneMenu sceneMenuDialog;
 
     [Header("Prefabs")]
     public CurrentDicePoolDice diceUIPrefab;
@@ -51,9 +50,6 @@ public class CurrentDicePool
 
         addDiceButton.onClick.RemoveAllListeners();
         addDiceButton.onClick.AddListener(() => addDiceDialog.Show());
-
-        menuButton.onClick.RemoveAllListeners();
-        menuButton.onClick.AddListener(() => sceneMenuDialog.Show());
 
         dice = new List<CurrentDicePoolDice>();
 
