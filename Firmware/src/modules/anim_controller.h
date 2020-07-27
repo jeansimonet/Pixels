@@ -18,11 +18,13 @@ namespace Modules
 
 		void init();
 		void stop();
-		bool hasAnimationForEvent(Animations::AnimationEvent evt);
-		void play(Animations::AnimationEvent evt, uint8_t remapFace = 0, bool loop = false);
-		void play(const Animations::Animation* anim, uint8_t remapFace = 0, bool loop = false);
-		void stop(const Animations::Animation* anim, uint8_t remapFace = 0);
+
+		void play(int animIndex, uint8_t remapFace = 0, bool loop = false);
+		void stop(int animIndex, uint8_t remapFace = 0);
 		void stopAll();
+
+		int getCurrentRainbowOffset();
+		float getCurrentHeat();
 	}
 }
 

@@ -73,7 +73,11 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/die_init.cpp \
 	$(PROJ_DIR)/src/die_main.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
-	$(PROJ_DIR)/src/animations/animation_set.cpp \
+	$(PROJ_DIR)/src/animations/presets/animation_simple.cpp \
+	$(PROJ_DIR)/src/animations/presets/animation_keyframed.cpp \
+	$(PROJ_DIR)/src/animations/presets/animation_rainbow.cpp \
+	$(PROJ_DIR)/src/behaviors/action.cpp \
+	$(PROJ_DIR)/src/behaviors/condition.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_messages.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_message_service.cpp \
@@ -82,6 +86,8 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/config/board_config.cpp \
 	$(PROJ_DIR)/src/config/settings.cpp \
 	$(PROJ_DIR)/src/config/dice_variants.cpp \
+	$(PROJ_DIR)/src/data_set/data_set.cpp \
+	$(PROJ_DIR)/src/data_set/data_set_defaults.cpp \
 	$(PROJ_DIR)/src/drivers_hw/apa102.cpp \
 	$(PROJ_DIR)/src/drivers_hw/battery.cpp \
 	$(PROJ_DIR)/src/drivers_hw/lis2de12.cpp \
@@ -98,9 +104,11 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/drivers_nrf/watchdog.cpp \
 	$(PROJ_DIR)/src/modules/accelerometer.cpp \
 	$(PROJ_DIR)/src/modules/anim_controller.cpp \
+	$(PROJ_DIR)/src/modules/behavior_controller.cpp \
 	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/modules/battery_controller.cpp \
 	$(PROJ_DIR)/src/modules/hardware_test.cpp \
+	$(PROJ_DIR)/src/utils/abi.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \
 	# $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \

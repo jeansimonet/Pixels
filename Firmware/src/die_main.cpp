@@ -10,7 +10,7 @@
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
-#include "animations/animation_set.h"
+#include "data_set/data_set.h"
 #include "nrf_log.h"
 
 #if !defined(FIRMWARE_VERSION)
@@ -64,7 +64,7 @@ namespace Die
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetStandardState, nullptr, EnterStandardState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetLEDAnimState, nullptr, EnterLEDAnimState);
 		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_SetBattleState, nullptr, EnterBattleState);
-		Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_AttractMode, nullptr, StartAttractMode);
+		//Bluetooth::MessageService::RegisterMessageHandler(Message::MessageType_AttractMode, nullptr, StartAttractMode);
 
         Bluetooth::Stack::hook(onConnection, nullptr);
 
@@ -111,19 +111,19 @@ namespace Die
     }
 
     void onBatteryStateChange(void* token, BatteryController::BatteryState newState) {
-        switch (newState) {
-            case BatteryController::BatteryState_Charging:
-                AnimController::play(AnimationEvent_ChargingStart);
-                break;
-            case BatteryController::BatteryState_Low:
-                AnimController::play(AnimationEvent_LowBattery);
-                break;
-            case BatteryController::BatteryState_Ok:
-                AnimController::play(AnimationEvent_ChargingDone);
-                break;
-            default:
-                break;
-        }
+        // switch (newState) {
+        //     case BatteryController::BatteryState_Charging:
+        //         AnimController::play(AnimationEvent_ChargingStart);
+        //         break;
+        //     case BatteryController::BatteryState_Low:
+        //         AnimController::play(AnimationEvent_LowBattery);
+        //         break;
+        //     case BatteryController::BatteryState_Ok:
+        //         AnimController::play(AnimationEvent_ChargingDone);
+        //         break;
+        //     default:
+        //         break;
+        // }
     }
 
     void onRollStateChange(void* token, Accelerometer::RollState newRollState, int newFace) {
@@ -131,44 +131,12 @@ namespace Die
             SendRollState(newRollState, newFace);
         }
 
-        if (currentTopLevelState == TopLevel_SoloPlay) {
-            // Play animation
-            switch (newRollState) {
-                case RollState_OnFace:
-                    if (currentRollState == RollState_Rolling) {
-                        /// Check for an override animation first, then default
-                        AnimationEvent faceEvent = (AnimationEvent)((int)AnimationEvent_OnFace_00 + newFace);
-                        if (AnimController::hasAnimationForEvent(faceEvent)) {
-                            AnimController::play(faceEvent, 0, false);
-                        } else {
-                            AnimController::play(AnimationEvent_OnFace_Default, newFace, false);
-                        }
-                    }
-                    // Else don't play face anim
-                    break;
-                case RollState_Handling:
-                    AnimController::play(AnimationEvent_Handling, newFace, false);
-                    break;
-                case RollState_Rolling:
-                    AnimController::play(AnimationEvent_Rolling, newFace, false);
-                    break;
-                case RollState_Crooked:
-                    AnimController::play(AnimationEvent_Crooked, newFace, false);
-                    break;
-                default:
-                    break;
-            }
-        }
-
         currentRollState = newRollState;
         currentFace = newFace;
     }
 
     void onConnection(void* token, bool connected) {
-        if (connected) {
-            AnimController::play(AnimationEvent_Connected);
-        } else {
-            AnimController::play(AnimationEvent_Disconnected);
+        if (!connected) {
             // Return to solo play
             EnterStandardState(nullptr, nullptr);
         }
@@ -177,26 +145,13 @@ namespace Die
     void PlayLEDAnim(void* context, const Message* msg) {
         auto playAnimMessage = (const MessagePlayAnim*)msg;
         NRF_LOG_INFO("Playing animation %d", playAnimMessage->animation);
-        auto& animation = AnimationSet::getAnimation(playAnimMessage->animation);
-        uint8_t remapFace = 0;
-        if (animation.specialColorType == SpecialColor_Face) {
-            remapFace = Accelerometer::currentFace();
-        } else {
-            remapFace = playAnimMessage->remapFace;
-        }
-        AnimController::play(&animation, remapFace, playAnimMessage->loop);
+        AnimController::play(playAnimMessage->animation, playAnimMessage->remapFace, playAnimMessage->loop);
     }
 
     void StopLEDAnim(void* context, const Message* msg) {
         auto stopAnimMessage = (const MessageStopAnim*)msg;
         NRF_LOG_INFO("Stopping animation %d", stopAnimMessage->animation);
-        auto& animation = AnimationSet::getAnimation(stopAnimMessage->animation);
-        AnimController::stop(&animation, stopAnimMessage->remapFace);
-    }
-
-    void PlayAnimEvent(void* context, const Message* msg) {
-        auto playAnimMessage = (const MessagePlayAnimEvent*)msg;
-        AnimController::play((AnimationEvent)playAnimMessage->evt, playAnimMessage->remapFace, playAnimMessage->loop != 0);
+        AnimController::stop((int)stopAnimMessage->animation, stopAnimMessage->remapFace);
     }
 
 	void EnterStandardState(void* context, const Message* msg) {
@@ -246,12 +201,6 @@ namespace Die
                 break;
        }
     }
-
-    void StartAttractMode(void* context, const Message* msg) {
-        currentTopLevelState = TopLevel_Attract;
-        AnimController::play(AnimationEvent_AttractMode, 0, true);
-    }
-
 
     // Main loop!
     void update() {

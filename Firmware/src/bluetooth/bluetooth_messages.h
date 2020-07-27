@@ -151,6 +151,14 @@ struct MessageTransferAnimSet
 	uint16_t rgbTrackCount;
 	uint16_t trackCount;
 	uint16_t animationCount;
+	uint16_t animationSize;
+	uint16_t conditionCount;
+	uint16_t conditionSize;
+	uint16_t actionCount;
+	uint16_t actionSize;
+	uint16_t ruleCount;
+	uint16_t behaviorCount;
+	uint16_t currentBehaviorIndex;
 	uint16_t heatTrackIndex;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}

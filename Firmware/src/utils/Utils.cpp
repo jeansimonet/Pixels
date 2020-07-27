@@ -15,11 +15,25 @@ using namespace Config;
 
 namespace Utils
 {
+	uint32_t roundUpTo4(uint32_t address) {
+		return 4 * ((address + 3) / 4);
+	}
+
 	uint32_t addColors(uint32_t a, uint32_t b) {
 		uint8_t red = MAX(getRed(a), getRed(b));
 		uint8_t green = MAX(getGreen(a), getGreen(b));
 		uint8_t blue = MAX(getBlue(a), getBlue(b));
 		return toColor(red,green,blue);
+	}
+
+	uint32_t interpolateColors(uint32_t color1, uint32_t time1, uint32_t color2, uint32_t time2, uint32_t time) {
+		// To stick to integer math, we'll scale the values
+		int scaler = 1024;
+		int scaledPercent = (time - time1) * scaler / (time2 - time1);
+		int scaledRed = getRed(color1)* (scaler - scaledPercent) + getRed(color2) * scaledPercent;
+		int scaledGreen = getGreen(color1) * (scaler - scaledPercent) + getGreen(color2) * scaledPercent;
+		int scaledBlue = getBlue(color1) * (scaler - scaledPercent) + getBlue(color2) * scaledPercent;
+		return toColor(scaledRed / scaler, scaledGreen / scaler, scaledBlue / scaler);
 	}
 
 	/// <summary>
@@ -275,4 +289,78 @@ namespace Utils
 		// Did not find a mapping
 		return false;
 	}
+
+	// Originals: https://github.com/andyherbert/lz1
+	
+	uint32_t lz77_compress (uint8_t *uncompressed_text, uint32_t uncompressed_size, uint8_t *compressed_text)
+	{
+		uint8_t pointer_length, temp_pointer_length;
+		uint16_t pointer_pos, temp_pointer_pos, output_pointer;
+		uint32_t compressed_pointer, output_size, coding_pos, output_lookahead_ref, look_behind, look_ahead;
+		
+		*((uint32_t *) compressed_text) = uncompressed_size;
+		compressed_pointer = output_size = 4;
+		
+		for(coding_pos = 0; coding_pos < uncompressed_size; ++coding_pos)
+		{
+			pointer_pos = 0;
+			pointer_length = 0;
+			for(temp_pointer_pos = 1; (temp_pointer_pos < 4096) && (temp_pointer_pos <= coding_pos); ++temp_pointer_pos)
+			{
+				look_behind = coding_pos - temp_pointer_pos;
+				look_ahead = coding_pos;
+				for(temp_pointer_length = 0; uncompressed_text[look_ahead++] == uncompressed_text[look_behind++]; ++temp_pointer_length)
+					if(temp_pointer_length == 15)
+						break;
+				if(temp_pointer_length > pointer_length)
+				{
+					pointer_pos = temp_pointer_pos;
+					pointer_length = temp_pointer_length;
+					if(pointer_length == 15)
+						break;
+				}
+			}
+			coding_pos += pointer_length;
+			if(pointer_length && (coding_pos == uncompressed_size))
+			{
+				output_pointer = (pointer_pos << 4) | (pointer_length - 1);
+				output_lookahead_ref = coding_pos - 1;
+			}
+			else
+			{
+				output_pointer = (pointer_pos << 4) | pointer_length;
+				output_lookahead_ref = coding_pos;
+			}
+			*((uint32_t *) (compressed_text + compressed_pointer)) = output_pointer;
+			compressed_pointer += 2;
+			*(compressed_text + compressed_pointer++) = *(uncompressed_text + output_lookahead_ref);
+			output_size += 3;
+		}
+		
+		return output_size;
+	}
+
+	uint32_t lz77_decompress (uint8_t *compressed_text, uint8_t *uncompressed_text)
+	{
+		uint8_t pointer_length;
+		uint16_t input_pointer, pointer_pos;
+		uint32_t compressed_pointer, coding_pos, pointer_offset, uncompressed_size;
+		
+		uncompressed_size = *((uint32_t *) compressed_text);
+		compressed_pointer = 4;
+		
+		for(coding_pos = 0; coding_pos < uncompressed_size; ++coding_pos)
+		{
+			input_pointer = *((uint32_t *) (compressed_text + compressed_pointer));
+			compressed_pointer += 2;
+			pointer_pos = input_pointer >> 4;
+			pointer_length = input_pointer & 15;
+			if(pointer_pos)
+				for(pointer_offset = coding_pos - pointer_pos; pointer_length > 0; --pointer_length)
+					uncompressed_text[coding_pos++] = uncompressed_text[pointer_offset++];
+			*(uncompressed_text + coding_pos) = *(compressed_text + compressed_pointer++);
+		}
+		
+		return coding_pos;
+	}	
 }

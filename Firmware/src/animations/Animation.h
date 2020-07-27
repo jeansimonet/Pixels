@@ -6,56 +6,6 @@
 
 namespace Animations
 {
-    enum AnimationEvent
-    {
-		AnimationEvent_None = 0,
-		AnimationEvent_Hello,
-		AnimationEvent_Connected,
-		AnimationEvent_Disconnected,
-        AnimationEvent_LowBattery,
-        AnimationEvent_ChargingStart,
-        AnimationEvent_ChargingDone,
-        AnimationEvent_ChargingError,
-        AnimationEvent_Handling,
-		AnimationEvent_Rolling,
-		AnimationEvent_OnFace_Default,
-		AnimationEvent_OnFace_00,
-		AnimationEvent_OnFace_01,
-		AnimationEvent_OnFace_02,
-		AnimationEvent_OnFace_03,
-		AnimationEvent_OnFace_04,
-		AnimationEvent_OnFace_05,
-		AnimationEvent_OnFace_06,
-		AnimationEvent_OnFace_07,
-		AnimationEvent_OnFace_08,
-		AnimationEvent_OnFace_09,
-		AnimationEvent_OnFace_10,
-		AnimationEvent_OnFace_11,
-		AnimationEvent_OnFace_12,
-		AnimationEvent_OnFace_13,
-		AnimationEvent_OnFace_14,
-		AnimationEvent_OnFace_15,
-		AnimationEvent_OnFace_16,
-		AnimationEvent_OnFace_17,
-		AnimationEvent_OnFace_18,
-		AnimationEvent_OnFace_19,
-		AnimationEvent_Crooked,
-		AnimationEvent_Battle_ShowTeam,
-		AnimationEvent_Battle_FaceUp,
-		AnimationEvent_Battle_WaitingForBattle,
-		AnimationEvent_Battle_Duel,
-		AnimationEvent_Battle_DuelWin,
-		AnimationEvent_Battle_DuelLose,
-		AnimationEvent_Battle_DuelDraw,
-		AnimationEvent_Battle_TeamWin,
-		AnimationEvent_Battle_TeamLoose,
-		AnimationEvent_Battle_TeamDraw,
-		AnimationEvent_AttractMode,
-        AnimationEvent_Heat,
-        // Etc...
-        AnimationEvent_Count
-    };
-
 	enum SpecialColor
 	{
 		SpecialColor_None = 0,
@@ -65,7 +15,7 @@ namespace Animations
 		SpecialColor_Heat_Start,
 	};
 
-	const char* getEventName(AnimationEvent event);
+	class IAnimationSpecialColorToken;
 
 	/// <summary>
 	/// Stores a single keyframe of an LED animation
@@ -81,7 +31,7 @@ namespace Animations
 		uint16_t timeAndColor;
 
 		uint16_t time() const; // unpack the time in ms
-		uint32_t color(void* token) const;// unpack the color using the lookup table from the animation set
+		uint32_t color(const IAnimationSpecialColorToken* token) const;// unpack the color using the lookup table from the animation set
 
 		void setTimeAndColorIndex(uint16_t timeInMS, uint16_t colorIndex);
 	};
@@ -104,42 +54,81 @@ namespace Animations
 
 		uint16_t getDuration() const;
 		const RGBKeyframe& getKeyframe(uint16_t keyframeIndex) const;
-		uint32_t evaluate(void* token, int time) const;
+		uint32_t evaluate(const IAnimationSpecialColorToken* token, int time) const;
 	};
 
 	/// <summary>
-	/// AnimationTrack track is essentially an animation associated with a track
+	/// LEDTrack is essentially an animation associated with an led
 	/// size: 4 bytes (+ the actual keyframe data)
 	/// </summary>
-	struct AnimationTrack
+	struct LEDTrack
 	{
 	public:
 		uint16_t trackOffset; // offset into a global keyframe buffer
 		uint8_t ledIndex;	// 0 - 20
 		uint8_t padding;
 
-		const RGBTrack& getTrack() const;
-		uint32_t evaluate(void* token, int time) const;
+		const RGBTrack& getLEDTrack() const;
+		uint32_t evaluate(const IAnimationSpecialColorToken* token, int time) const;
 	};
 
 	/// <summary>
-	/// A keyframe-based animation
-	/// size: 8 bytes (+ actual track and keyframe data)
+	/// Defines the types of Animation Presets we have/support
+	/// </summary>
+	enum AnimationType : uint8_t
+	{
+		Animation_Unknown = 0,
+		Animation_Simple,
+		Animation_Rainbow,
+		Animation_Keyframed,
+	};
+
+	/// <summary>
+	/// Base struct for animation presets. All presets have a few properties in common.
+	/// Presets are stored in flash, so do not have methods or vtables or anything like that.
 	/// </summary>
 	struct Animation
 	{
-	public:
+		AnimationType type;
+		uint8_t padding_type; // to keep duration 16-bit aligned
 		uint16_t duration; // in ms
-		uint16_t tracksOffset; // offset into a global buffer of tracks
-		uint16_t trackCount;
-		uint8_t animationEvent; // is really AnimationEvent
-		uint8_t specialColorType; // is really SpecialColor
+	};
+
+	/// <summary>
+	/// Animation instance data, refers to an animation preset but stores the instance data and
+	/// (derived classes) implements logic for displaying the animation.
+	/// </summary>
+	class AnimationInstance
+	{
+	public:
+		Animation const * animationPreset;
+		int startTime; //ms
+		uint8_t remapFace;
+		bool loop;
+
+	protected:
+		AnimationInstance(const Animation* preset);
 
 	public:
-		const AnimationTrack& GetTrack(int index) const;
-		int updateLEDs(void* token, int time, int retIndices[], uint32_t retColors[]) const;
-		int stop(int retIndices[]) const;
+		virtual ~AnimationInstance();
+		virtual void start(int _startTime, uint8_t _remapFace, bool _loop);
+		virtual int animationSize() const = 0;
+		virtual int updateLEDs(int ms, int retIndices[], uint32_t retColors[]) = 0;
+		virtual int stop(int retIndices[]) = 0;
 	};
+
+	/// <summary>
+	/// Special interface class to let RGB keyframes access (and blend) with special colors.
+	/// </summary>
+	class IAnimationSpecialColorToken
+	{
+	public:
+		virtual uint32_t getColor(uint32_t colorIndex) const = 0;
+	};
+
+	Animations::AnimationInstance* createAnimationInstance(int animationIndex);
+	Animations::AnimationInstance* createAnimationInstance(const Animations::Animation* preset);
+	void destroyAnimationInstance(Animations::AnimationInstance* animationInstance);
 
 }
 

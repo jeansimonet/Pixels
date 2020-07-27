@@ -170,6 +170,11 @@ namespace Flash
         return fstorage.p_flash_info->erase_unit;
     }
 
+	uint32_t getFlashByteSize(uint32_t totalDataByteSize) {
+		auto pageSize = Flash::getPageSize();
+		return pageSize * ((totalDataByteSize + pageSize - 1) / pageSize);
+	}
+
 
     #if DICE_SELFTEST && FLASH_SELFTEST
     bool testing = false;

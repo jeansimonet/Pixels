@@ -6,7 +6,7 @@
 #include "nrf_log.h"
 #include "modules/anim_controller.h"
 #include "animations/animation.h"
-#include "animations/animation_set.h"
+#include "data_set/data_set.h"
 #include "config/board_config.h"
 #include "config/settings.h"
 #include "config/dice_variants.h"

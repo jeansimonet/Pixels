@@ -1,6 +1,6 @@
 #include "anim_controller.h"
 #include "animations/animation.h"
-#include "animations/animation_set.h"
+#include "data_set/data_set.h"
 #include "drivers_nrf/timers.h"
 #include "drivers_nrf/power_manager.h"
 #include "utils/utils.h"
@@ -26,40 +26,19 @@ namespace Modules
 {
 namespace AnimController
 {
-	/// <summary>
-	/// Internal helper struct used to store a running animation instance
-	/// </summary>
-	struct AnimInstance
-	{
-		Animation const * animation;
-		uint32_t specialColorPayload; // meaning varies
-		int startTime; //ms
-		uint8_t remapFace;
-		bool loop;
-
-		AnimInstance()
-			: animation(nullptr)
-			, specialColorPayload(0)
-			, startTime(0)
-			, remapFace(0)
-			, loop(false)
-		{
-		}
-	};
-
 	// Our currently running animations
-	AnimInstance animations[MAX_ANIMS];
+	Animations::AnimationInstance* animations[MAX_ANIMS];
 	int animationCount;
 
-	int animationLookupByEvent[AnimationEvent_Count];
+	// FIXME!!!
+	int currentRainbowIndex = 0;
+	const int rainbowScale = 1; 
+	float heat = 0.0f;
 
 	uint32_t getColorForAnim(void* token, uint32_t colorIndex);
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame);
 	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace);
 
-	int currentRainbowIndex = 0;
-	const int rainbowScale = 1; 
-	float heat = 0.0f;
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -73,19 +52,7 @@ namespace AnimController
 	/// </summary>
 	void init()
 	{
-		// Initialize the lookup table
-		for (int i = 0; i < AnimationEvent_Count; ++i) {
-			animationLookupByEvent[i] = -1;
-		}
-		for (int i = 0; i < AnimationSet::getAnimationCount(); ++i) {
-			auto& anim = AnimationSet::getAnimation(i);
-			if (anim.animationEvent > AnimationEvent_None && anim.animationEvent < AnimationEvent_Count) {
-				animationLookupByEvent[anim.animationEvent] = i;
-			}
-		}
-
 		Accelerometer::hookFrameData(onAccelFrame, nullptr);
-		AnimationSet::setGetColorHandler(getColorForAnim);
 
 		heat = 0.0f;
 		currentRainbowIndex = 0;
@@ -125,17 +92,19 @@ namespace AnimController
 
 			for (int i = 0; i < animationCount; ++i)
 			{
-				auto& anim = animations[i];
-				int animTime = ms - anim.startTime;
-				if (anim.loop && animTime > anim.animation->duration) {
+				auto anim = animations[i];
+				int animTime = ms - anim->startTime;
+				if (anim->loop && animTime > anim->animationPreset->duration) {
 					// Yes, update anim start time so next if statement updates the animation
-					anim.startTime += anim.animation->duration;
-					animTime = ms - anim.startTime;
+					anim->startTime += anim->animationPreset->duration;
+					animTime = ms - anim->startTime;
 				}
 
-				if (animTime > anim.animation->duration)
+				if (animTime > anim->animationPreset->duration)
 				{
 					// The animation is over, get rid of it!
+					Animations::destroyAnimationInstance(anim);
+
 					// Shift the other animations
 					for (int j = i; j < animationCount - 1; ++j)
 					{
@@ -155,7 +124,7 @@ namespace AnimController
 					uint32_t colors[MAX_LED_COUNT * 4];
 
 					// Update the leds
-					int animTrackCount = anim.animation->updateLEDs(&anim, animTime, canonIndices, colors);
+					int animTrackCount = anim->updateLEDs(ms, canonIndices, colors);
 
 					// Gamma correct and map face index to led index
 					//NRF_LOG_INFO("track_count = %d", animTrackCount);
@@ -168,7 +137,7 @@ namespace AnimController
 						//	   face should light up to "retarget" the animation around the current up face)
 						//		-> ledIndex (based on pcb face to led mapping, i.e. to account for the internal rotation
 						//		   of the PCB and the fact that the LEDs are not accessed in the same order as the number of the faces)
-						int rotatedAnimFaceIndex = l->faceRemap[anim.remapFace * c + canonIndices[j]];
+						int rotatedAnimFaceIndex = l->faceRemap[anim->remapFace * c + canonIndices[j]];
 						ledIndices[j] = s->faceToLEDLookup[rotatedAnimFaceIndex];
 					}
 
@@ -196,30 +165,10 @@ namespace AnimController
 		Timers::stopTimer(animControllerTimer);
 	}
 
-	bool hasAnimationForEvent(AnimationEvent evt) {
-		return animationLookupByEvent[(uint16_t)evt] != -1;
-	}
-
 	/// <summary>
 	/// Add an animation to the list of running animations
 	/// </summary>
-	void play(AnimationEvent evt, uint8_t remapFace, bool loop) {
-		int evtIndex = (uint16_t)evt;
-		int animIndex = animationLookupByEvent[evtIndex];
-		if (animIndex == -1) {
-			animIndex = 0;
-		}
-		NRF_LOG_INFO("Playing anim event %s (%d) on Face %d", Animations::getEventName(evt), animIndex, remapFace);
-		if (animIndex < AnimationSet::getAnimationCount()) {
-			auto& anim = AnimationSet::getAnimation(animIndex);
-			play(&anim, remapFace, loop);
-		}
-	}
-
-	/// <summary>
-	/// Add an animation to the list of running animations
-	/// </summary>
-	void play(const Animations::Animation* anim, uint8_t remapFace, bool loop)
+	void play(int animIndex, uint8_t remapFace, bool loop)
 	{
 		#if (NRF_LOG_DEFAULT_LEVEL == 4)
 		NRF_LOG_DEBUG("Playing Anim!");
@@ -230,7 +179,7 @@ namespace AnimController
 			NRF_LOG_DEBUG("  Track Offset %d:", anim->tracksOffset + t);
 			NRF_LOG_DEBUG("  LED index %d:", track.ledIndex);
 			NRF_LOG_DEBUG("  RGB Track Offset %d:", track.trackOffset);
-			auto& rgbTrack = track.getTrack();
+			auto& rgbTrack = track.getLEDTrack();
 			NRF_LOG_DEBUG("  RGB Keyframe count: %d", rgbTrack.keyFrameCount);
 			for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
 				auto& keyframe = rgbTrack.getKeyframe(k);
@@ -241,11 +190,15 @@ namespace AnimController
 		}
 		#endif
 
+		// Find the preset for this animation Index
+		auto animationPreset = DataSet::getAnimation(animIndex);
+
+		// Is there already an animation for this?
 		int prevAnimIndex = 0;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
-			auto& prevAnim = animations[prevAnimIndex];
-			if (prevAnim.animation == anim && prevAnim.remapFace == remapFace)
+			auto prevAnim = animations[prevAnimIndex];
+			if (prevAnim->animationPreset == animationPreset && prevAnim->remapFace == remapFace)
 			{
 				break;
 			}
@@ -256,40 +209,13 @@ namespace AnimController
 		{
 			// Replace a previous animation
 			stopAtIndex(prevAnimIndex);
-			animations[prevAnimIndex].startTime = ms;
+			animations[prevAnimIndex]->startTime = ms;
 		}
 		else if (animationCount < MAX_ANIMS)
 		{
 			// Add a new animation
-			animations[animationCount].animation = anim;
-			animations[animationCount].startTime = ms;
-			animations[animationCount].remapFace = remapFace;
-			animations[animationCount].loop = loop;
-
-			switch (anim->specialColorType) {
-				case SpecialColor_Face:
-					// Store a color based on the face
-					animations[animationCount].specialColorPayload = Rainbow::faceWheel(remapFace, BoardManager::getBoard()->ledCount);
-					break;
-				case SpecialColor_ColorWheel:
-					// Store the face index
-					animations[animationCount].specialColorPayload = remapFace;
-					break;
-				case SpecialColor_Heat_Start:
-					{
-						// Use the global heat value
-						auto& trk = AnimationSet::getHeatTrack();
-						int heatMs = int(heat * trk.getDuration());
-						animations[animationCount].specialColorPayload = trk.evaluate(nullptr, heatMs);
-					}
-					break;
-				default:
-					// Other cases don't need any per-instance payload
-					animations[animationCount].specialColorPayload = 0;
-					break;
-			}
-
-
+			animations[animationCount] = Animations::createAnimationInstance(animationPreset);
+			animations[animationCount]->start(ms, remapFace, loop);
 			animationCount++;
 		}
 		// Else there is no more room
@@ -298,14 +224,20 @@ namespace AnimController
 	/// <summary>
 	/// Forcibly stop a currently running animation
 	/// </summary>
-	void stop(const Animations::Animation* anim, uint8_t remapFace)
+	void stop(int animIndex, uint8_t remapFace)
 	{
+		// Find the preset for this animation Index
+		auto animationPreset = DataSet::getAnimation(animIndex);
+
+		// Find the animation with that preset and remap face
 		int prevAnimIndex = 0;
+		AnimationInstance* prevAnimInstance = nullptr;
 		for (; prevAnimIndex < animationCount; ++prevAnimIndex)
 		{
-			auto& instance = animations[prevAnimIndex];
-			if (instance.animation == anim && (remapFace == 255 || instance.remapFace == remapFace))
+			auto instance = animations[prevAnimIndex];
+			if (instance->animationPreset == animationPreset && (remapFace == 255 || instance->remapFace == remapFace))
 			{
+				prevAnimInstance = instance;
 				break;
 			}
 		}
@@ -313,6 +245,9 @@ namespace AnimController
 		if (prevAnimIndex < animationCount)
 		{
 			removeAtIndex(prevAnimIndex);
+
+			// Delete the instance
+			Animations::destroyAnimationInstance(prevAnimInstance);
 		}
 		// Else the animation isn't playing
 	}
@@ -324,8 +259,8 @@ namespace AnimController
 	{
 		for (int i = 0; i < animationCount; ++i)
 		{
-			animations[i].animation = nullptr;
-			animations[i].startTime = 0;
+			// Delete the instance
+			Animations::destroyAnimationInstance(animations[i]);
 		}
 		animationCount = 0;
 		APA102::clear();
@@ -347,8 +282,8 @@ namespace AnimController
 		int ledIndices[MAX_LED_COUNT];
 		uint32_t zeros[MAX_LED_COUNT];
 		memset(zeros, 0, sizeof(uint32_t) * MAX_LED_COUNT);
-		auto& anim = animations[animIndex];
-		int ledCount = anim.animation->stop(canonIndices);
+		auto anim = animations[animIndex];
+		int ledCount = anim->stop(canonIndices);
 		for (int i = 0; i < ledCount; ++i) {
 			// The transformation is:
 			// animFaceIndex (what face the animation says it wants to light up)
@@ -356,7 +291,7 @@ namespace AnimController
 			//	   face should light up to "retarget" the animation around the current up face)
 			//		-> ledIndex (based on pcb face to led mapping, i.e. to account for the internal rotation
 			//		   of the PCB and the fact that the LEDs are not accessed in the same order as the number of the faces)
-			int rotatedAnimFaceIndex = l->faceRemap[anim.remapFace * c + canonIndices[i]];
+			int rotatedAnimFaceIndex = l->faceRemap[anim->remapFace * c + canonIndices[i]];
 			ledIndices[i] = s->faceToLEDLookup[rotatedAnimFaceIndex];
 		}
 		APA102::setPixelColors(ledIndices, zeros, ledCount);
@@ -391,37 +326,6 @@ namespace AnimController
 		}
 	}
 
-	uint32_t getColorForAnim(void* token, uint32_t colorIndex) {
-		if (token != nullptr) {
-			const AnimInstance* instance = (const AnimInstance*)token;
-			switch (instance->animation->specialColorType) {
-				case SpecialColor_Face:
-				case SpecialColor_Heat_Start:
-					// The payload is the color
-					return instance->specialColorPayload;
-				case SpecialColor_ColorWheel:
-					{
-						// Use the global rainbow
-						int index = currentRainbowIndex / rainbowScale;
-						if (index < 0) {
-							index += 256;
-						}
-						return Rainbow::wheel((uint8_t)index);
-					}
-				case SpecialColor_Heat_Current:
-					{
-						auto& trk = AnimationSet::getHeatTrack();
-						int heatMs = int(heat * trk.getDuration());
-						return trk.evaluate(nullptr, heatMs);
-					}
-				default:
-					return AnimationSet::getPaletteColor(colorIndex);
-			}
-		} else {
-			return AnimationSet::getPaletteColor(colorIndex);
-		}
-	}
-
 	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace) {
 		// The transformation is:
 		// animFaceIndex (what face the animation says it wants to light up)
@@ -438,6 +342,14 @@ namespace AnimController
 		int rotatedAnimFaceIndex = l->faceRemap[remapFace * c + animFaceIndex];
 		return s->faceToLEDLookup[rotatedAnimFaceIndex];
 	}
+
+	int getCurrentRainbowOffset() {
+		return currentRainbowIndex / rainbowScale;
+	}
+	float getCurrentHeat() {
+		return heat;
+	}
+	
 
 }
 }

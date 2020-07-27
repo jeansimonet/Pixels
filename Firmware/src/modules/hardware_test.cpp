@@ -19,7 +19,7 @@
 #include "drivers_hw/battery.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
-#include "animations/animation_set.h"
+#include "data_set/data_set.h"
 
 using namespace Modules;
 using namespace Core;
@@ -49,7 +49,7 @@ namespace HardwareTest
         NRF_LOG_INFO("Starting Hardware Test");
 
         // Reprogram default anim settings
-        AnimationSet::ProgramDefaultAnimationSet([] (bool result) {
+        DataSet::ProgramDefaultDataSet([] (bool result) {
 
             // Check Accelerometer WHOAMI
             if (LIS2DE12::checkWhoAMI()) {
@@ -84,10 +84,10 @@ namespace HardwareTest
                                         // Turn all LEDs on repeatedly!
                                         Timers::createTimer(&ledsTimer, APP_TIMER_MODE_REPEATED, [](void* ctx)
                                         {
-                                            AnimController::play(&AnimationSet::getAnimation(AnimationSet::getAnimationCount() - 3));
+                                            AnimController::play(DataSet::getAnimationCount() - 3);
                                         });
                                         Timers::startTimer(ledsTimer, 1000, nullptr);
-                                        AnimController::play(&AnimationSet::getAnimation(AnimationSet::getAnimationCount() - 3));
+                                        AnimController::play(DataSet::getAnimationCount() - 3);
 
                                         MessageService::NotifyUser("Check all leds", true, true, 30, [](bool okCancel)
                                         {

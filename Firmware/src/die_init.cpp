@@ -27,12 +27,13 @@
 #include "bluetooth/bulk_data_transfer.h"
 #include "bluetooth/telemetry.h"
 
-#include "animations/Animation_set.h"
+#include "data_set/data_set.h"
 
 #include "modules/led_color_tester.h"
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
 #include "modules/battery_controller.h"
+#include "modules/behavior_controller.h"
 #include "modules/hardware_test.h"
 
 #include "nrf_sdh.h"
@@ -152,7 +153,7 @@ namespace Die
             //--------------------
 
             // Animation set needs flash and board info
-            AnimationSet::init([] (bool result) {
+            DataSet::init([] (bool result) {
 
                 // Useful for development
                 LEDColorTester::init();
@@ -169,6 +170,9 @@ namespace Die
                 // Battery controller relies on the battery driver
                 BatteryController::init();
 
+                // Behavior Controller relies on all the modules
+                BehaviorController::init();
+
                 //HardwareTest::init();
 
                 // Start advertising!
@@ -181,7 +185,7 @@ namespace Die
                 initMainLogic();
 
                 // Entering the main loop! Play Hello! anim
-                AnimController::play(AnimationEvent_Hello, Accelerometer::currentFace());
+                BehaviorController::onDiceInitialized();
             #endif
             });
         });

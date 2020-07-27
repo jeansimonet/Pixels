@@ -1,0 +1,50 @@
+#pragma once
+
+#include "animations/Animation.h"
+
+namespace Animations
+{
+	/// <summary>
+	/// A keyframe-based animation
+	/// size: 8 bytes (+ actual track and keyframe data)
+	/// </summary>
+	struct AnimationKeyframed
+		: public Animation
+	{
+		uint8_t specialColorType; // is really SpecialColor
+		uint16_t tracksOffset; // offset into a global buffer of tracks
+		uint16_t trackCount;
+		uint8_t padding2;
+		uint8_t padding3;
+	};
+
+	/// <summary>
+	/// Keyframe-based animation instance data
+	/// </summary>
+	class AnimationInstanceKeyframed
+		: public IAnimationSpecialColorToken
+		, public AnimationInstance
+	{
+	private:
+		uint32_t specialColorPayload; // meaning varies
+
+	public:
+		AnimationInstanceKeyframed(const AnimationKeyframed* preset);
+		virtual ~AnimationInstanceKeyframed();
+
+	public:
+		virtual int animationSize() const;
+
+		virtual void start(int _startTime, uint8_t _remapFace, bool _loop);
+		virtual int updateLEDs(int ms, int retIndices[], uint32_t retColors[]);
+		virtual int stop(int retIndices[]);
+
+	private:
+		const AnimationKeyframed* getPreset() const;
+		const LEDTrack& GetTrack(int index) const;
+
+	public:
+		virtual uint32_t getColor(uint32_t colorIndex) const;
+	};
+
+}

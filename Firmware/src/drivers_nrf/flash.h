@@ -21,6 +21,7 @@ namespace DriversNRF
         uint32_t getFlashEndAddress();
         uint32_t getPageSize();
         uint32_t bytesToPages(uint32_t size);
+        uint32_t getFlashByteSize(uint32_t totalDataByteSize);
 
         void selfTest();
 	}

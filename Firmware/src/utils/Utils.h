@@ -36,6 +36,8 @@ namespace DiceVariants
 
 namespace Utils
 {
+	uint32_t roundUpTo4(uint32_t address);
+
 	int parseWord(char*& text, int& len, char* outWord, int outWordLen);
 
 	constexpr uint32_t toColor(uint8_t red, uint8_t green, uint8_t blue) { return (uint32_t)(red << 16) | (uint32_t)(green << 8) | (uint32_t)blue; }
@@ -47,6 +49,8 @@ namespace Utils
 	}
 
 	uint32_t addColors(uint32_t a, uint32_t b);
+
+	uint32_t interpolateColors(uint32_t color1, uint32_t time1, uint32_t color2, uint32_t time2, uint32_t time);
 
 	uint32_t millis( void );
 	uint8_t sine8(uint8_t x);
@@ -69,5 +73,9 @@ namespace Utils
 		const Config::DiceVariants::Layout* layout,
 		uint8_t* faceToLEDOut,
 		int faceCount);
+
+	uint32_t lz77_compress (uint8_t *uncompressed_text, uint32_t uncompressed_size, uint8_t *compressed_text);
+	uint32_t lz77_decompress (uint8_t *compressed_text, uint8_t *uncompressed_text);
+
 }
 
