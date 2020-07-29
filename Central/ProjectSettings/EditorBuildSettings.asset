@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Pixels_App_Mockup.unity
+    path: Assets/Pixels.unity
     guid: 61435c47209f19542973324961d1f90d
   m_configObjects: {}

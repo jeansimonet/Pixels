@@ -43,10 +43,10 @@ public class SpeakNumber : MonoBehaviour
         }
     }
 
-    void OnDieStateChanged(Die die, Die.State newState)
+    void OnDieStateChanged(Die die, Die.RollState newState)
     {
         numberText.text = (die.face + 1).ToString();
-        if (newState == Die.State.Idle)
+        if (newState == Die.RollState.OnFace)
         {
             Debug.Log("New Face: " + die.face);
             source.PlayOneShot(numbers[die.face]);

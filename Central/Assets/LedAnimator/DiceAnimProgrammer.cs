@@ -17,7 +17,7 @@ public class DiceAnimProgrammer
     public string JsonFileBaseName = "animation_set.json";
 
     Die die = null;
-    Animations.EditAnimationSet animationSet;
+    EditDataSet animationSet;
     
     // We use this to compare against the last version uploaded on the dice
     // and avoid re-uploading the set every time.
@@ -87,17 +87,16 @@ public class DiceAnimProgrammer
         if (ret)
         {
             string jsonText = File.ReadAllText(path);
-            animationSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
-            animationSet.FixupLedIndices();
+            animationSet = JsonUtility.FromJson<EditDataSet>(jsonText);
             timeline.SetAnimations(diceType, animationSet);
             Debug.Log($"Loaded {diceType} animations from {path}");
         }
         else
         {
-            animationSet = new Animations.EditAnimationSet();
+            animationSet = new EditDataSet();
             animationSet.animations = new List<Animations.EditAnimation>();
-            var anim = new Animations.EditAnimation();
-            anim.Reset();
+            var anim = new Animations.EditAnimationKeyframed();
+            //anim.Reset();
             animationSet.animations.Add(anim);
             timeline.SetAnimations(diceType, animationSet);
             Debug.Log($"Loaded empty {diceType} animation");
@@ -142,7 +141,7 @@ public class DiceAnimProgrammer
     {
         pleaseWait.Show("Uploading Animation Set to Dice");
         timeline.ApplyChanges();
-        var rawAnim = animationSet.ToAnimationSet();
+        var rawAnim = animationSet.ToDataSet();
         var newByteArray = rawAnim.ToByteArray();
 
         // Update stored array
@@ -165,7 +164,7 @@ public class DiceAnimProgrammer
     {
         if (die != null)
         {
-            //die.DownloadAnimationSet(animationSet.ToAnimationSet());
+            //die.DownloadAnimationSet(animationSet.ToDataSet());
         }
     }
 
@@ -179,7 +178,7 @@ public class DiceAnimProgrammer
         if (die != null)
         {
             timeline.ApplyChanges();
-            var rawAnim = animationSet.ToAnimationSet();
+            var rawAnim = animationSet.ToDataSet();
             var newByteArray = rawAnim.ToByteArray();
             if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
             {
@@ -212,7 +211,7 @@ public class DiceAnimProgrammer
             {
                 loopingAnim = true;
                 timeline.ApplyChanges();
-                var rawAnim = animationSet.ToAnimationSet();
+                var rawAnim = animationSet.ToDataSet();
                 var newByteArray = rawAnim.ToByteArray();
                 if (animationSetByteArray == null || !ByteArraysEquals(newByteArray, animationSetByteArray))
                 {

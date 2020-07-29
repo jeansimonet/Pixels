@@ -6,59 +6,60 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-
 /// <summary>
 /// These message identifiers have to match up with the ones on the firmware of course!
 /// </summary>
 public enum DieMessageType : byte
 {
-    None = 0,
-    WhoAreYou,
-    IAmADie,
-    State,
-    Telemetry,
-    BulkSetup,
-    BulkSetupAck,
-    BulkData,
-    BulkDataAck,
-    TransferAnimSet,
-    TransferAnimSetAck,
-    TransferSettings,
-    TransferSettingsAck,
-    DebugLog,
-
-    PlayAnim,
-    PlayAnimEvent,
-    StopAnim,
-    RequestState,
-    RequestAnimSet,
-    RequestSettings,
-    RequestTelemetry,
-    ProgramDefaultAnimSet,
-    ProgramDefaultAnimSetFinished,
-    Flash,
-    FlashFinished,
-    RequestDefaultAnimSetColor,
-    DefaultAnimSetColor,
-    RequestBatteryLevel,
-    BatteryLevel,
-    Calibrate,
-    CalibrateFace,
-    NotifyUser,
-    NotifyUserAck,
-    TestHardware,
-    SetStandardState,
-    SetLEDAnimState,
-    SetBattleState,
-    ProgramDefaultParameters,
-    ProgramDefaultParametersFinished,
-
-    // Test messages
-    TestBulkSend,
-    TestBulkReceive,
-    SetAllLEDsToColor,
-    AttractMode,
-    PrintNormals,
+	None = 0,
+	WhoAreYou,
+	IAmADie,
+	State,
+	Telemetry,
+	BulkSetup,
+	BulkSetupAck,
+	BulkData,
+	BulkDataAck,
+	TransferAnimSet,
+	TransferAnimSetAck,
+	TransferSettings,
+	TransferSettingsAck,
+	DebugLog,
+	PlayAnim,
+	PlayAnimEvent,
+	StopAnim,
+	RequestState,
+	RequestAnimSet,
+	RequestSettings,
+	RequestTelemetry,
+	ProgramDefaultAnimSet,
+	ProgramDefaultAnimSetFinished,
+	Flash,
+	FlashFinished,
+	RequestDefaultAnimSetColor,
+	DefaultAnimSetColor,
+	RequestBatteryLevel,
+	BatteryLevel,
+	Calibrate,
+	CalibrateFace,
+	NotifyUser,
+	NotifyUserAck,
+	TestHardware,
+	SetStandardState,
+	SetLEDAnimState,
+	SetBattleState,
+	ProgramDefaultParameters,
+	ProgramDefaultParametersFinished,
+	
+    // Testing
+    TestBulkSend, 
+	TestBulkReceive,
+	SetAllLEDsToColor,
+	AttractMode,
+	PrintNormals,
+	PrintA2DReadings,
+	LightUpFace,
+	SetLEDToColor,
 }
 
 public interface DieMessage
@@ -69,6 +70,7 @@ public interface DieMessage
 public static class DieMessages
 {
     public const int maxDataSize = 100;
+    public const int VERSION_INFO_SIZE = 8;
 
     public static DieMessage FromByteArray(byte[] data)
     {
@@ -233,7 +235,11 @@ public class DieMessageIAmADie
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.IAmADie;
-    public byte id;
+
+	public byte faceCount; // Which kind of dice this is
+	DiceVariants.DesignAndColor designAndColor; // Physical look
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.VERSION_INFO_SIZE)]
+	public byte[] versionInfo; // Firmware version string, i.e. "10_05"
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -241,7 +247,7 @@ public class DieMessageState
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.State;
-    public byte state;
+    public Die.RollState state;
     public byte face;
 }
 
@@ -293,12 +299,19 @@ public class DieMessageTransferAnimSet
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSet;
-    public ushort paletteSize;
-    public ushort keyFrameCount;
-    public ushort rgbTrackCount;
-    public ushort trackCount;
-    public ushort animationCount;
-    public ushort heatTrackIndex;
+	public ushort paletteSize;
+	public ushort keyFrameCount;
+	public ushort rgbTrackCount;
+	public ushort animationCount;
+	public ushort animationSize;
+	public ushort conditionCount;
+	public ushort conditionSize;
+	public ushort actionCount;
+	public ushort actionSize;
+	public ushort ruleCount;
+	public ushort behaviorCount;
+	public ushort currentBehaviorIndex;
+	public ushort heatTrackIndex;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -89,6 +89,9 @@ public class Central : MonoBehaviour
     public DieEvent onDieConnected;
     public DieEvent onDieDisconnected;
 
+    public delegate void DieAdvertisingEvent(IDie die, byte[] customAdvertisingData);
+    public DieAdvertisingEvent onDieAdvertisingData;
+
     /// <summary>
     /// Allows dependency injection to create die instances
     /// </summary>
@@ -325,7 +328,15 @@ public class Central : MonoBehaviour
 
     void OnDeviceAdvertisingInfo(string address, string name, int dataSize, byte[] data) 
     {
-        Debug.Log("Discovered die advertising data" + data.ToString());
+        if (_dice.TryGetValue(address, out Die d))
+        {
+            Debug.Log("Die advertising data" + data.ToString());
+            onDieAdvertisingData?.Invoke(d.die, data);
+        }
+        else 
+        {
+            Debug.LogError("Received advertising data for unknown die address" + address);
+        }
     }
 
     void OnDeviceConnected(string address)

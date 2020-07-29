@@ -20,21 +20,18 @@ public class RenderDice : MonoBehaviour
 
     MaterialPropertyBlock[] propertyBlocks;
 
-    AnimationSet animationSet;
+    DataSet animationSet;
     AnimationInstance currentAnimation;
 
     public int testingAnimationIndex;
 
-    void SetAnimationSet(AnimationSet set)
+    void SetAnimationSet(DataSet set)
     {
         animationSet = set;
     }
 
     void PlayAnimation(Animations.Animation animation)
     {
-        currentAnimation = new AnimationInstance();
-        currentAnimation.animation = animation;
-        currentAnimation.time = 0.0f;
     }
 
     void Awake()
@@ -55,12 +52,12 @@ public class RenderDice : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // TESTING
-        string path = System.IO.Path.Combine(Application.persistentDataPath, "D20_animation_set.json");
-        string jsonText = File.ReadAllText(path);
-        var editAnimSet = JsonUtility.FromJson<Animations.EditAnimationSet>(jsonText);
-        animationSet = editAnimSet.ToAnimationSet();
-        PlayAnimation(animationSet.animations[testingAnimationIndex]);
+        // // TESTING
+        // string path = System.IO.Path.Combine(Application.persistentDataPath, "D20_animation_set.json");
+        // string jsonText = File.ReadAllText(path);
+        // var editAnimSet = JsonUtility.FromJson<EditDataSet>(jsonText);
+        // animationSet = editAnimSet.ToDataSet();
+        // PlayAnimation(animationSet.animations[testingAnimationIndex]);
     }
 
     // Update is called once per frame
@@ -69,31 +66,31 @@ public class RenderDice : MonoBehaviour
         if (currentAnimation != null)
         {
             // Update the animation time
-            currentAnimation.time += Time.deltaTime;
-            if (currentAnimation.time > (currentAnimation.animation.duration / 1000.0f))
-            {
-                // TEST
-                currentAnimation.time -= currentAnimation.animation.duration / 1000.0f;
-                // for (int i = 0; i < 20; ++i)
-                // {
-                //     FaceColors[i] = Color.black;
-                // }
-                // currentAnimation = null;
-            }
-            else
-            {
-                for (int t = 0; t < currentAnimation.animation.trackCount; ++t)
-                {
-                    var track = currentAnimation.animation.GetTrack(animationSet, (ushort)t);
-                    var color = track.evaluate(animationSet, (int)(currentAnimation.time * 1000.0f));
-                    Color32 color32 = new Color32(
-                        Animations.Utils.getRed(color),
-                        Animations.Utils.getGreen(color),
-                        Animations.Utils.getBlue(color),
-                        255);
-                    FaceColors[track.ledIndex] = color32;
-                }
-            }
+            // currentAnimation.time += Time.deltaTime;
+            // if (currentAnimation.time > (currentAnimation.animation.duration / 1000.0f))
+            // {
+            //     // TEST
+            //     currentAnimation.time -= currentAnimation.animation.duration / 1000.0f;
+            //     // for (int i = 0; i < 20; ++i)
+            //     // {
+            //     //     FaceColors[i] = Color.black;
+            //     // }
+            //     // currentAnimation = null;
+            // }
+            // else
+            // {
+            //     for (int t = 0; t < currentAnimation.animation.trackCount; ++t)
+            //     {
+            //         var track = currentAnimation.animation.GetTrack(animationSet, (ushort)t);
+            //         var color = track.evaluate(animationSet, (int)(currentAnimation.time * 1000.0f));
+            //         Color32 color32 = new Color32(
+            //             ColorUtils.getRed(color),
+            //             ColorUtils.getGreen(color),
+            //             ColorUtils.getBlue(color),
+            //             255);
+            //         FaceColors[track.ledIndex] = color32;
+            //     }
+            // }
         }
         else
         {

@@ -25,15 +25,12 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 		None, Duplicate, Clear, Remove,
 	}
 
-	public delegate void ApplyCallback(string name, string role, Die.SpecialColor specialColor);
+	public delegate void ApplyCallback(string name, string role, Animations.SpecialColor specialColor);
 	public delegate void UserActionCallback(UserAction action);
 
-	public void Show(string name, string role, bool hasRole, string[] roles, Die.SpecialColor specialColorType, ApplyCallback applyCallback, UserActionCallback userActionCallback)
+	public void Show(string name, Animations.SpecialColor specialColorType, ApplyCallback applyCallback, UserActionCallback userActionCallback)
 	{
         _nameInput.text = name;
-		_roleDropdown.options = roles.Select(str => new Dropdown.OptionData(str)).ToList();
-		_roleDropdown.value = System.Array.IndexOf(roles, role);
-		_roleToggle.isOn = hasRole;
         _specialColorDropdown.value = (int)specialColorType;
         _doneCb = applyCallback;
 		_userActionCb = userActionCallback;
@@ -51,7 +48,7 @@ public class AnimationPropertiesPanel : SingletonMonoBehaviour<AnimationProperti
 		string role = _roleDropdown.interactable ? _roleDropdown.options[_roleDropdown.value].text : null;
 
         Close();
-        _doneCb(name, role, (Die.SpecialColor)_specialColorDropdown.value);
+        _doneCb(name, role, (Animations.SpecialColor)_specialColorDropdown.value);
 	}
 
 	public void Close()

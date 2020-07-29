@@ -35,14 +35,13 @@ public class TimelineView : MonoBehaviour
 	[SerializeField]
 	Dropdown _namesDropdown = null;
 
-	Animations.EditAnimationSet _animationSet;
+	EditDataSet _animationSet;
 	int _animIndex = -1;
 	float _widthPadding;
 	float _animPosX0;
 	bool _playAnims;
 	float _playTime;
-	Die.AnimationEvent[] _animRoles;
-    Die.SpecialColor[] _specialColors;
+    Animations.SpecialColor[] _specialColors;
 
 	public DiceType DiceType { get; private set; }
 	public float Duration { get; private set; }
@@ -52,7 +51,7 @@ public class TimelineView : MonoBehaviour
 	public bool IsMoveStretchOn => _moveStrechToogle?.isOn ?? true;
 	public int TracksCount => _colorAnimsRoot.childCount - 1;
     public int CurrentAnimationIndex => _animIndex;
-    public Animations.EditAnimation CurrentAnimation => (_animIndex < 0 ? null : _animationSet.animations[_animIndex]);
+    public Animations.EditAnimationKeyframed CurrentAnimation => (_animIndex < 0 ? null : (Animations.EditAnimationKeyframed)_animationSet.animations[_animIndex]);
 	public bool PlayAnimations => _playAnims;
 	public ColorAnimator ActiveColorAnimator { get; private set; }
 	public ColorAnimator[] ColorAnimators => _colorAnimsRoot.GetComponentsInChildren<ColorAnimator>();
@@ -96,7 +95,7 @@ public class TimelineView : MonoBehaviour
 		Repaint();
 	}
 
-	public void SetAnimations(DiceType diceType, Animations.EditAnimationSet animationSet)
+	public void SetAnimations(DiceType diceType, EditDataSet animationSet)
 	{
 		if (animationSet.animations == null)
 		{
@@ -104,7 +103,7 @@ public class TimelineView : MonoBehaviour
 		}
 		if (animationSet.animations.Count == 0)
 		{
-			animationSet.animations.Add(new Animations.EditAnimation());
+			animationSet.animations.Add(new Animations.EditAnimationKeyframed());
 		}
 
 		// Drop current animation
@@ -120,8 +119,8 @@ public class TimelineView : MonoBehaviour
 
 	public void AddNewAnimation()
 	{
-		var anim = new Animations.EditAnimation();
-		anim.Reset();
+		var anim = new Animations.EditAnimationKeyframed();
+		//anim.Reset();
 		AddAnimation(anim);
 	}
 
@@ -152,7 +151,6 @@ public class TimelineView : MonoBehaviour
 		var anim = CurrentAnimation.Duplicate();
 
 		anim.name = null;
-		anim.@event = Die.AnimationEvent.None;
 		_animIndex = -1;
 
 		AddAnimation(anim);
@@ -172,21 +170,9 @@ public class TimelineView : MonoBehaviour
 
 	public void EditAnimationName()
 	{
-		void ChangeAnimName(string name, string role, Die.SpecialColor specialColor)
+		void ChangeAnimName(string name, string role, Animations.SpecialColor specialColor)
 		{
 			CurrentAnimation.name = name;
-			CurrentAnimation.@event = Die.AnimationEvent.None;
-			if (role != null)
-			{
-				CurrentAnimation.@event = _animRoles.First(r => r.ToString() == role);
-				foreach (var anim in _animationSet.animations)
-				{
-					if ((anim != CurrentAnimation) && (anim.@event == CurrentAnimation.@event))
-					{
-						anim.@event = Die.AnimationEvent.None;
-					}
-				}
-            }
             CurrentAnimation.specialColorType = specialColor;
 
             RefreshNames();
@@ -210,20 +196,7 @@ public class TimelineView : MonoBehaviour
 					break;
 			}
 		}
-
-		bool hasRole = CurrentAnimation.@event != Die.AnimationEvent.None;
-		string selectRole;
-		if (hasRole)
-		{
-			selectRole = CurrentAnimation.@event.ToString();
-		}
-		else
-		{
-			selectRole = _animRoles.FirstOrDefault(r => _animationSet.animations.All(a => a.@event != r)).ToString();
-		}
-		var rolesList = _animRoles.Select(r => r.ToString()).ToArray();
-
-        AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, selectRole, hasRole, rolesList, CurrentAnimation.specialColorType, ChangeAnimName, UserAction);
+        AnimationPropertiesPanel.Instance.Show(CurrentAnimation.name, CurrentAnimation.specialColorType, ChangeAnimName, UserAction);
 	}
 
 	public void TogglePlayAnimations()
@@ -246,21 +219,7 @@ public class TimelineView : MonoBehaviour
 	{
 		string GetAnimDisplayName(Animations.EditAnimation anim)
 		{
-			string name = anim.@event != Die.AnimationEvent.None ? anim.@event.ToString() : string.Empty;
-			if (!string.IsNullOrWhiteSpace(anim.name))
-			{
-				if (name.Length > 0)
-				{
-					name += " - ";
-				}
-				name += anim.name;
-			}
-			if (name.Length == 0)
-			{
-				int index = _animationSet.animations.IndexOf(anim);
-				name = anim.name = $"Animation #{index}";
-			}
-			return name;
+			return anim.name;
 		}
 		var options = _animationSet.animations
 			.Select(a => new Dropdown.OptionData(GetAnimDisplayName(a))).ToList();
@@ -291,16 +250,6 @@ public class TimelineView : MonoBehaviour
 
 	void AddAnimation(Animations.EditAnimation anim)
 	{
-		var rolesTaken = _animationSet.animations.Select(a => a.@event).ToArray();
-		foreach (var role in _animRoles)
-		{
-			if (!rolesTaken.Contains(role))
-			{
-				anim.@event = role;
-				break;
-			}
-		}
-
 		_animationSet.animations.Add(anim);
 
 		RefreshNames();
@@ -441,10 +390,7 @@ public class TimelineView : MonoBehaviour
 
 	void Awake()
 	{
-		var enumValues = (Die.AnimationEvent[])System.Enum.GetValues(typeof(Die.AnimationEvent));
-		_animRoles = enumValues.Take(enumValues.Length - 1).ToArray();
-
-        var colorEnumValues = (Die.SpecialColor[])System.Enum.GetValues(typeof(Die.SpecialColor));
+        var colorEnumValues = (Animations.SpecialColor[])System.Enum.GetValues(typeof(Animations.SpecialColor));
         _specialColors = colorEnumValues.Take(colorEnumValues.Length).ToArray();
 
         _widthPadding = (transform as RectTransform).rect.width - _ticksRoot.rect.width;
