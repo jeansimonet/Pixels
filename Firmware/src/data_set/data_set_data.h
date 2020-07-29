@@ -31,10 +31,6 @@ namespace DataSet
 		const Animations::RGBTrack* rgbTracks; // pointer to the array of tracks
 		uint32_t rgbTrackCount;
 
-		// The animations we have
-		const Animations::LEDTrack* tracks; // pointer to the array of tracks
-		uint32_t trackCount;
-
         // The animations. Because animations can be one of multiple classes (simple inheritance system)
         // The dataset stores an offset into the animations buffer for each entry. The first member of
         // The animation base class is a type enum indicating what it actually is.

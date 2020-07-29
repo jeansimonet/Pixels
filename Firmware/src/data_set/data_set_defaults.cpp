@@ -1,7 +1,7 @@
 #include "data_set.h"
 #include "data_set_data.h"
 #include "config/board_config.h"
-#include "animations/presets/animation_simple.h"
+#include "animations/animation_simple.h"
 #include "behaviors/action.h"
 #include "behaviors/behavior.h"
 #include "behaviors/condition.h"
@@ -82,7 +82,6 @@ namespace DataSet
 		int paletteSize = 0;
 		int keyframeCount = 0;
         int rgbTrackCount = 0;
-        int ledTrackCount = 0;
 		int animCount = 3 + 3;
         int animOffsetSize = Utils::roundUpTo4(animCount * sizeof(uint16_t));
         int animSize = sizeof(AnimationSimple) * animCount;
@@ -104,7 +103,6 @@ namespace DataSet
             paletteSize * sizeof(uint8_t) +
 			keyframeCount * sizeof(RGBKeyframe) +
 			rgbTrackCount * sizeof(RGBTrack) +
-			ledTrackCount * sizeof(LEDTrack) +
 			animOffsetSize + animSize +
             actionOffsetSize + actionSize +
             conditionOffsetSize + conditionsSize + 
@@ -148,11 +146,6 @@ namespace DataSet
         //auto writeRGBTracks = (RGBTrack*)(writeBufferAddress + currentOffset);
 		currentOffset += rgbTrackCount * sizeof(RGBTrack);
         newData->rgbTrackCount = rgbTrackCount;
-
-		newData->tracks = (const LEDTrack*)(dataAddress + currentOffset);
-		//auto writeLEDTracks = (LEDTrack*)(writeBufferAddress + currentOffset);
-        currentOffset += ledTrackCount * sizeof(LEDTrack);
-		newData->trackCount = ledTrackCount;
 
 		newData->animationOffsets = (const uint16_t*)(dataAddress + currentOffset);
         auto writeAnimationOffsets = (uint16_t*)(writeBufferAddress + currentOffset);

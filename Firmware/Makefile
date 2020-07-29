@@ -73,9 +73,9 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/die_init.cpp \
 	$(PROJ_DIR)/src/die_main.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
-	$(PROJ_DIR)/src/animations/presets/animation_simple.cpp \
-	$(PROJ_DIR)/src/animations/presets/animation_keyframed.cpp \
-	$(PROJ_DIR)/src/animations/presets/animation_rainbow.cpp \
+	$(PROJ_DIR)/src/animations/animation_simple.cpp \
+	$(PROJ_DIR)/src/animations/animation_keyframed.cpp \
+	$(PROJ_DIR)/src/animations/animation_rainbow.cpp \
 	$(PROJ_DIR)/src/behaviors/action.cpp \
 	$(PROJ_DIR)/src/behaviors/condition.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \

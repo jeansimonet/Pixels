@@ -1,6 +1,7 @@
 #pragma once
 
 #include "animations/animation.h"
+#include "animations/animation_keyframed.h"
 #include "behaviors/condition.h"
 #include "behaviors/action.h"
 #include "behaviors/behavior.h"
@@ -29,13 +30,9 @@ namespace DataSet
 
 	// RGB tracks, list of keyframes
 	const Animations::RGBTrack& getRGBTrack(uint16_t trackIndex);
+	Animations::RGBTrack const * const getRGBTracks(uint16_t tracksStartIndex);
 	uint16_t getRGBTrackCount();
 	const Animations::RGBTrack& getHeatTrack();
-
-	// LED track, stores an RGB animation track and associated LED index
-	const Animations::LEDTrack& getLEDTrack(uint16_t trackIndex);
-	Animations::LEDTrack const * const getLEDTracks(uint16_t tracksStartIndex);
-	uint16_t getLEDTrackCount();
 
 	// Animations
 	const Animations::Animation* getAnimation(int animationIndex);

@@ -101,8 +101,13 @@ namespace DataSet
 	}
 
 	const RGBTrack& getRGBTrack(uint16_t trackIndex) {
-		assert(CheckValid() && trackIndex < data->trackCount);
+		assert(CheckValid() && trackIndex < data->rgbTrackCount);
 		return data->rgbTracks[trackIndex];
+	}
+
+	RGBTrack const * const getRGBTracks(uint16_t tracksStartIndex) {
+		assert(CheckValid() && tracksStartIndex < data->rgbTrackCount);
+		return &(data->rgbTracks[tracksStartIndex]);
 	}
 
 	uint16_t getRGBTrackCount() {
@@ -112,21 +117,6 @@ namespace DataSet
 
 	const RGBTrack& getHeatTrack() {
 		return data->rgbTracks[data->heatTrackIndex];
-	}
-
-	const LEDTrack& getLEDTrack(uint16_t trackIndex) {
-		assert(CheckValid() && trackIndex < data->trackCount);
-		return data->tracks[trackIndex];
-	}
-
-	LEDTrack const * const getLEDTracks(uint16_t tracksStartIndex) {
-		assert(CheckValid() && tracksStartIndex < data->trackCount);
-		return &(data->tracks[tracksStartIndex]);
-	}
-
-	uint16_t getLEDTrackCount() {
-		assert(CheckValid());
-		return data->trackCount;
 	}
 
 	const Animation* getAnimation(int animationIndex) {
@@ -209,7 +199,6 @@ namespace DataSet
 			message->paletteSize * sizeof(uint8_t) +
 			message->keyFrameCount * sizeof(RGBKeyframe) +
 			message->rgbTrackCount * sizeof(RGBTrack) +
-			message->trackCount * sizeof(LEDTrack) +
 			Utils::roundUpTo4(sizeof(uint16_t) * message->animationCount) + // round up to multiple of 4
 			message->animationSize +
 			Utils::roundUpTo4(sizeof(uint16_t) * message->conditionCount) + // round up to multiple of 4
@@ -223,7 +212,6 @@ namespace DataSet
 		NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
 		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(RGBKeyframe));
 		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
-		NRF_LOG_DEBUG("Animation Tracks: %d * %d", message->trackCount, sizeof(LEDTrack));
 		NRF_LOG_DEBUG("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
 		NRF_LOG_DEBUG("Animations: %d", message->animationSize);
 		NRF_LOG_DEBUG("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
@@ -261,10 +249,6 @@ namespace DataSet
 		dabs->newData.rgbTracks = (const RGBTrack*)address;
 		dabs->newData.rgbTrackCount = message->rgbTrackCount;
 		address += message->rgbTrackCount * sizeof(RGBTrack);
-
-		dabs->newData.tracks = (const LEDTrack*)address;
-		dabs->newData.trackCount = message->trackCount;
-		address += message->trackCount * sizeof(LEDTrack);
 
 		dabs->newData.animationOffsets = (const uint16_t*)address;
 		dabs->newData.animationCount = message->animationCount;

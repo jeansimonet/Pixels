@@ -149,7 +149,6 @@ struct MessageTransferAnimSet
 	uint16_t paletteSize;
 	uint16_t keyFrameCount;
 	uint16_t rgbTrackCount;
-	uint16_t trackCount;
 	uint16_t animationCount;
 	uint16_t animationSize;
 	uint16_t conditionCount;
