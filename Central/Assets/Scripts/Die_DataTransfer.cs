@@ -149,37 +149,6 @@ public partial class Die
         }
     }
 
-    //public IEnumerator DownloadAnimationSet(AnimationSet outSet)
-    //{
-    //    // Request the anim set from the die
-    //    SendMessage(new DieMessageRequestAnimSet());
-
-    //    // Now wait for the setup message back
-    //    int animCount = 0;
-    //    yield return StartCoroutine(WaitForMessage(DieMessageType.TransferAnimSet, (msg) =>
-    //    {
-    //        var setupMsg = (DieMessageTransferAnimSet)msg;
-    //        animCount = setupMsg.count;
-    //    }));
-
-    //    // Got the message, acknowledge it
-    //    StartCoroutine(SendMessage(new DieMessageTransferAnimSetAck()));
-
-    //    outSet.animations = new RGBAnimation[animCount];
-    //    for (int i = 0; i < animCount; ++i)
-    //    {
-    //        byte[] animData = null;
-    //        yield return StartCoroutine(DownloadBulkData((buf) => animData = buf));
-    //        outSet.animations[i] = RGBAnimation.FromByteArray(animData);
-
-    //        // Tell die we're ready for next anim
-    //        StartCoroutine(SendMessage(new DieMessageTransferAnimReadyForNextAnim()));
-    //    }
-
-    //    // We've read all the anims!
-    //}
-
-
     public Coroutine UploadSettings(DieSettings settings)
     {
         return PerformBluetoothOperation(UploadSettingsCr(settings));

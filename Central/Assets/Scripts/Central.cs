@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Linq;
 using System.Text;
 
-public class Central : MonoBehaviour
+public class Central : SingletonMonoBehaviour<Central>
 {
     /// <summary>
     /// What Central cares about when it comes to dice
@@ -13,16 +13,13 @@ public class Central : MonoBehaviour
     {
         string name { get; }
         string address { get; }
-        void OnAdvertising();
-        void OnConnected();
-        void OnDisconnected();
-        void OnData(byte[] data);
     }
 
     /// <summary>
     /// Internal Die definition, stores connection-relevant data
     /// </summary>
     class Die
+        : IDie
     {
         public enum State
         {
@@ -35,28 +32,28 @@ public class Central : MonoBehaviour
         }
 
         public State state;
-        public IDie die;
+        public string name;
+        public string address;
 
         public float startTime; // Used for timing out while looking for characteristics or subscribing to one
         public bool deviceConnected;
         public bool messageWriteCharacteristicFound;
         public bool messageReadCharacteristicFound;
 
-        public Die(IDie die)
+        public Die(string address, string name)
         {
+            this.name = name;
+            this.address = address;
             this.state = State.Advertising;
-            this.die = die;
             this.startTime = float.MaxValue;
             this.deviceConnected = false;
             this.messageWriteCharacteristicFound = false;
             this.messageReadCharacteristicFound = false;
         }
 
-        public string name => die?.name;
-        public string address => die?.address;
+        string IDie.name => name;
+        string IDie.address => address;
     }
-
-    public static Central Instance { get; private set; }
 
     const string serviceGUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     const string subscribeCharacteristic = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
@@ -64,8 +61,6 @@ public class Central : MonoBehaviour
 
     const float DiscoverCharacteristicsTimeout = 5.0f; // seconds
     const float SubscribeCharacteristicsTimeout = 5.0f; // seconds
-
-    System.Func<string, string, IDie> dieCreationFunc;
 
     public enum State
     {
@@ -92,20 +87,8 @@ public class Central : MonoBehaviour
     public delegate void DieAdvertisingEvent(IDie die, byte[] customAdvertisingData);
     public DieAdvertisingEvent onDieAdvertisingData;
 
-    /// <summary>
-    /// Allows dependency injection to create die instances
-    /// </summary>
-    public void RegisterFactory(System.Func<string, string, IDie> dieCreationFunc)
-    {
-        if (this.dieCreationFunc != null)
-        {
-            Debug.LogError("die factory method already registered");
-        }
-        else
-        {
-            this.dieCreationFunc = dieCreationFunc;
-        }
-    }
+    public delegate void DieDataEvent(IDie die, byte[] data);
+    public DieDataEvent onDieData;
 
     /// <summary>
     /// Initiates a bluetooth scan
@@ -118,12 +101,6 @@ public class Central : MonoBehaviour
             return;
         }
 
-        if (dieCreationFunc == null)
-        {
-            Debug.LogError("Die Manager - No die creation factory registered");
-            return;
-        }
-
         // Begin scanning
         _state = State.Scanning;
 
@@ -132,7 +109,7 @@ public class Central : MonoBehaviour
         {
             if (die.state == Die.State.Advertising)
             {
-                onDieDiscovered?.Invoke(die.die);
+                onDieDiscovered?.Invoke(die);
             }
         }
 
@@ -241,15 +218,6 @@ public class Central : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        if (Instance != null)
-        {
-            Debug.LogError("Multiple Die Managers in scene");
-        }
-        else
-        {
-            Instance = this;
-        }
-
         _state = State.Uninitialized;
         _dice = new Dictionary<string, Die>();
     }
@@ -263,8 +231,9 @@ public class Central : MonoBehaviour
 #endif
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         BluetoothLEHardwareInterface.DeInitialize(null);
     }
 
@@ -313,16 +282,14 @@ public class Central : MonoBehaviour
         else
         {
             // We didn't know this die before, create it
-            var idie = dieCreationFunc(address, name);
-            die = new Die(idie);
+            die = new Die(address, name);
             _dice.Add(address, die);
 
             Debug.Log("Discovered new die " + die.name);
 
             // Notify die!
             die.state = Die.State.Advertising; // <-- this is the default value, but it doesn't hurt to be explicit
-            idie.OnAdvertising();
-            onDieDiscovered?.Invoke(idie);
+            onDieDiscovered?.Invoke(die);
         }
     }
 
@@ -331,7 +298,7 @@ public class Central : MonoBehaviour
         if (_dice.TryGetValue(address, out Die d))
         {
             Debug.Log("Die advertising data" + data.ToString());
-            onDieAdvertisingData?.Invoke(d.die, data);
+            onDieAdvertisingData?.Invoke(d, data);
         }
         else 
         {
@@ -369,9 +336,7 @@ public class Central : MonoBehaviour
             System.Action<Die> finishDisconnect = (d) =>
             {
                 // Notify the die!
-                d.die.OnDisconnected();
-                onDieDisconnected?.Invoke(d.die);
-
+                onDieDisconnected?.Invoke(d);
                 _dice.Remove(address);
             };
 
@@ -381,10 +346,10 @@ public class Central : MonoBehaviour
                     // This is perfectly okay
                     Debug.Log("Disconnecting die " + die.name);
                     finishDisconnect(die);
-                    Debug.Log("Disconnected " + die.die.name);
+                    Debug.Log("Disconnected " + die.name);
                     break;
                 case Die.State.Advertising:
-                    Debug.LogError("Disconnected " + die.die.name + " is in incorrect state " + die.state);
+                    Debug.LogError("Disconnected " + die.name + " is in incorrect state " + die.state);
                     break;
                 case Die.State.Connecting:
                 case Die.State.Connected:
@@ -468,13 +433,13 @@ public class Central : MonoBehaviour
             if (Time.time - die.startTime > DiscoverCharacteristicsTimeout)
             {
                 // Wrong characteristics, we can't talk to this die!
-                Debug.LogError("Timeout looking for characteristics on Die " + die.die.name);
+                Debug.LogError("Timeout looking for characteristics on Die " + die.name);
 
                 // Temporarily add the die to the connected list to avoid an error message during the disconnect
                 die.state = Die.State.Disconnecting;
 
                 // And force a disconnect
-                BluetoothLEHardwareInterface.DisconnectPeripheral(die.die.address, null);
+                BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
             }
             // Else just keep waiting
         }
@@ -534,8 +499,7 @@ public class Central : MonoBehaviour
             onBluetoothError -= OnCharacteristicSubscriptionError;
 
             sub.state = Die.State.Ready;
-            sub.die.OnConnected();
-            onDieConnected?.Invoke(sub.die);
+            onDieConnected?.Invoke(sub);
 
             StartNextSubscribeToCharacteristic();
         }
@@ -576,7 +540,7 @@ public class Central : MonoBehaviour
             }
 
             // Pass on the data
-            die.die.OnData(data);
+            onDieData?.Invoke(die, data);
         }
         else
         {

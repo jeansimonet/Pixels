@@ -15,13 +15,6 @@ public partial class Die
 	const float SCALE_8G = 8.0f;
 	const float scale = SCALE_8G;
 
-    public enum DieType
-    {
-        Unknown = 0,
-        SixSided,
-        TwentySided
-    };
-
     public enum RollState : byte
     {
         Unknown = 0,
@@ -30,56 +23,6 @@ public partial class Die
         Rolling,
         Crooked
     };
-
-    public enum AnimationEvent
-    {
-        None = 0,
-        Hello,
-        Connected,
-        Disconnected,
-        LowBattery,
-        ChargingStart,
-        ChargingDone,
-        ChargingError,
-        Handling,
-        Rolling,
-        OnFace_Default,
-		OnFace_00,
-		OnFace_01,
-		OnFace_02,
-		OnFace_03,
-		OnFace_04,
-		OnFace_05,
-		OnFace_06,
-		OnFace_07,
-		OnFace_08,
-		OnFace_09,
-		OnFace_10,
-		OnFace_11,
-		OnFace_12,
-		OnFace_13,
-		OnFace_14,
-		OnFace_15,
-		OnFace_16,
-		OnFace_17,
-		OnFace_18,
-		OnFace_19,
-        Crooked,
-        Battle_ShowTeam,
-        Battle_FaceUp,
-        Battle_WaitingForBattle,
-        Battle_Duel,
-        Battle_DuelWin,
-        Battle_DuelLose,
-        Battle_DuelDraw,
-        Battle_TeamWin,
-        Battle_TeamLoose,
-        Battle_TeamDraw,
-        AttractMode,
-        Heat,
-        // Etc...
-        Count
-    }
 
     [System.Serializable]
     public struct Settings
@@ -115,9 +58,28 @@ public partial class Die
         }
     }
 
-    public DieType dieType { get; private set; } = DieType.Unknown;
+    /// <summary>
+    /// This data structure mirrors the data in firmware/bluetooth/bluetooth_stack.cpp
+    /// </sumary>
+    [System.Serializable]
+    public struct CustomAdvertisingData
+    {
+        // Die type identification
+        public DiceVariants.DesignAndColor designAndColor; // Physical look, also only 8 bits
+        public byte faceCount; // Which kind of dice this is
+
+        // Current state
+        public Die.RollState rollState; // Indicates whether the dice is being shaken
+        public byte currentFace; // Which face is currently up
+    };
+
+    public int faceCount { get; private set; } = 0;
+    public DiceVariants.DesignAndColor designAndColor { get; private set; } = DiceVariants.DesignAndColor.Unknown;
+    public System.UInt64 deviceId { get; private set; } = 0;
+    public string firmwareVersionId { get; private set; } = "Unknown";
+    public string address { get; private set; } = ""; // name is stored on the gameObject itself
+
     public RollState state { get; private set; } = RollState.Unknown;
-    public string address { get; private set; } = "";
     public int face { get; private set; } = -1;
 
 	public delegate void TelemetryEvent(Die die, AccelFrame frame);
@@ -148,7 +110,7 @@ public partial class Die
         }
     }
 
-    public delegate void StateChangedEvent(Die die, RollState newState);
+    public delegate void StateChangedEvent(Die die, RollState newState, int newFace);
     public StateChangedEvent OnStateChanged;
 
     public delegate void ConnectionStateChangedEvent(Die die, ConnectionState newConnectionState);
@@ -156,6 +118,9 @@ public partial class Die
 
     public delegate void SettingsChangedEvent(Die die);
     public SettingsChangedEvent OnSettingsChanged;
+
+	public delegate void AppearanceChangedEvent(Die die, int newFaceCount, DiceVariants.DesignAndColor newDesign);
+    public AppearanceChangedEvent OnAppearanceChanged;
 
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
@@ -176,43 +141,38 @@ public partial class Die
         messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
     }
 
-    public void Setup(string name, string address)
+    public void Setup(string name, string address, System.UInt64 deviceId, int faceCount, DiceVariants.DesignAndColor design)
     {
+        bool appearanceChanged = faceCount != this.faceCount || design != this.designAndColor;
         this.name = name;
         this.address = address;
+        this.deviceId = deviceId;
+        this.faceCount = faceCount;
+        this.designAndColor = design;
         this.connectionState = ConnectionState.Disconnected;
     }
 
-    public void Connect()
+    public void UpdateAddress(string address)
     {
-        StartCoroutine(ConnectCr());
+        this.address = address;
     }
 
-    IEnumerator ConnectCr()
+    public void UpdateAdvertisingData(CustomAdvertisingData newData)
     {
-        // Kick off connection
-        DicePool.Instance.ConnectDie(this);
-
-        // Wait until the die is either ready or disconnected because of some error
-        yield return new WaitUntil(() => connectionState == ConnectionState.Connected || connectionState == ConnectionState.Disconnected);
-
-        if (connectionState == ConnectionState.Connected)
+        bool appearanceChanged = faceCount != newData.faceCount || designAndColor != newData.designAndColor;
+        bool rollStateChanged = state != newData.rollState || face != newData.currentFace;
+        faceCount = newData.faceCount;
+        designAndColor = newData.designAndColor;
+        state = newData.rollState;
+        face = newData.currentFace;
+        if (appearanceChanged)
         {
-            // Ask the die who it is!Upload
-            connectionState = ConnectionState.FetchingId;
-            yield return GetDieType();
-
-            // Ping the die so we know its initial state
-            connectionState = ConnectionState.FetchingState;
-            yield return Ping();
-
-            connectionState = ConnectionState.Ready;
+            OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
         }
-    }
-
-    public void Disconnect()
-    {
-        DicePool.Instance.DisconnectDie(this);
+        if (rollStateChanged)
+        {
+            OnStateChanged?.Invoke(this, state, face);
+        }
     }
 
     public void OnAdvertising()
@@ -224,6 +184,33 @@ public partial class Die
 	{
         connectionState = ConnectionState.Connected;
 	}
+
+    public void UpdateInfo(System.Action<Die, bool> onInfoUpdatedCallback)
+    {
+        if (connectionState == ConnectionState.Connected)
+        {
+            StartCoroutine(UpdateInfoCr(onInfoUpdatedCallback));
+        }
+        else
+        {
+            onInfoUpdatedCallback?.Invoke(this, false);
+        }
+    }
+
+    IEnumerator UpdateInfoCr(System.Action<Die, bool> onInfoUpdatedCallback)
+    {
+        // Ask the die who it is!
+        connectionState = ConnectionState.FetchingId;
+        yield return GetDieInfo();
+
+        // Ping the die so we know its initial state
+        connectionState = ConnectionState.FetchingState;
+        yield return Ping();
+
+        connectionState = ConnectionState.Ready;
+
+        onInfoUpdatedCallback?.Invoke(this, true);
+    }
 
     public void OnDisconnected()
     {

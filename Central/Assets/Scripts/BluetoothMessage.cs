@@ -70,7 +70,7 @@ public interface DieMessage
 public static class DieMessages
 {
     public const int maxDataSize = 100;
-    public const int VERSION_INFO_SIZE = 8;
+    public const int VERSION_INFO_SIZE = 6;
 
     public static DieMessage FromByteArray(byte[] data)
     {
@@ -237,7 +237,9 @@ public class DieMessageIAmADie
     public DieMessageType type { get; set; } = DieMessageType.IAmADie;
 
 	public byte faceCount; // Which kind of dice this is
-	DiceVariants.DesignAndColor designAndColor; // Physical look
+	public DiceVariants.DesignAndColor designAndColor; // Physical look
+	byte padding1;
+	public System.UInt64 deviceId; // A unique identifier
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.VERSION_INFO_SIZE)]
 	public byte[] versionInfo; // Firmware version string, i.e. "10_05"
 }

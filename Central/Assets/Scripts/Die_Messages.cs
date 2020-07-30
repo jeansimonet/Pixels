@@ -165,11 +165,6 @@ public partial class Die
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim() { index = (byte)animationIndex }));
     }
 
-    public Coroutine PlayAnimationEvent(AnimationEvent evt)
-    {
-        return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnimEvent() { evt = (byte)evt }));
-    }
-
     public Coroutine PlayAnimation(int animationIndex, int remapFace, bool loop)
     {
         return PerformBluetoothOperation(() => PostMessage(new DieMessagePlayAnim()
@@ -197,20 +192,30 @@ public partial class Die
         return PerformBluetoothOperation(() => PostMessage(new DieMessageRequestState()));
     }
 
-    public Coroutine GetDieType()
+    public Coroutine GetDieInfo()
     {
-        return PerformBluetoothOperation(GetDieTypeCr());
+        return PerformBluetoothOperation(GetDieInfoCr());
     }
 
-    IEnumerator GetDieTypeCr()
+    IEnumerator GetDieInfoCr()
     {
-        var whoAreYouMsg = new DieMessageWhoAreYou();
-        System.Action<DieMessage> setDieId = (msg) =>
+        void updateDieInfo(DieMessage msg)
         {
             var idMsg = (DieMessageIAmADie)msg;
-            
-        };
-        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, setDieId, null));
+	        bool appearanceChanged = faceCount != idMsg.faceCount || designAndColor != idMsg.designAndColor;
+            faceCount = idMsg.faceCount;
+	        designAndColor = idMsg.designAndColor;
+	        deviceId = idMsg.deviceId;
+            firmwareVersionId = System.Text.Encoding.UTF8.GetString(idMsg.versionInfo, 0, DieMessages.VERSION_INFO_SIZE);
+
+            if (appearanceChanged)
+            {
+                OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
+            }
+        }
+
+        var whoAreYouMsg = new DieMessageWhoAreYou();
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, updateDieInfo, null));
     }
 
     public Coroutine RequestTelemetry(bool on)
@@ -330,7 +335,7 @@ public partial class Die
             face = newFace;
 
             // Notify anyone who cares
-            OnStateChanged?.Invoke(this, state);
+            OnStateChanged?.Invoke(this, state, face);
         }
     }
 

@@ -18,8 +18,7 @@ public class SpeakNumber : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        DicePool.Instance.onDieConnected += AddDie;
-        DicePool.Instance.onDieDisconnected += RemoveDie;
+        DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
     }
 
     // Update is called once per frame
@@ -28,28 +27,34 @@ public class SpeakNumber : MonoBehaviour
         
     }
 
-    void AddDie(Die die)
+    void OnDieAvailability(Die die, DicePool.DieAvailabilityState oldState, DicePool.DieAvailabilityState newState)
     {
-        this.die = die;
-
-        die.OnStateChanged += OnDieStateChanged;
-    }
-
-    void RemoveDie(Die die)
-    {
-        if (this.die == die)
+        bool wasConnected = oldState == DicePool.DieAvailabilityState.Ready;
+        bool isConnected = newState == DicePool.DieAvailabilityState.Ready;
+        if (!wasConnected && isConnected)
         {
-            this.die = null;
+            this.die = die;
+
+            die.OnStateChanged += OnDieStateChanged;
+        }
+        else if (wasConnected && !isConnected)
+        {
+            if (this.die == die)
+            {
+                this.die = null;
+            }
         }
     }
 
-    void OnDieStateChanged(Die die, Die.RollState newState)
+
+
+    void OnDieStateChanged(Die die, Die.RollState newState, int newFace)
     {
-        numberText.text = (die.face + 1).ToString();
+        numberText.text = (newFace + 1).ToString();
         if (newState == Die.RollState.OnFace)
         {
-            Debug.Log("New Face: " + die.face);
-            source.PlayOneShot(numbers[die.face]);
+            Debug.Log("New Face: " + newFace);
+            source.PlayOneShot(numbers[newFace]);
         }
     }
 }

@@ -72,9 +72,8 @@ public class Telemetry : MonoBehaviour
 
     void StartScanning()
     {
-        DicePool.Instance.onDieDiscovered += OnDieDiscovered;
-        DicePool.Instance.onDieConnected += OnDieConnected;
-        DicePool.Instance.onDieDisconnected += OnDieDisconnected;
+        DicePool.Instance.onDieCreated += OnDieDiscovered;
+        DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
         DicePool.Instance.BeginScanForDice();
         scanButton.enabled = true;
         scanText.text = "Stop";
@@ -99,13 +98,26 @@ public class Telemetry : MonoBehaviour
         }
     }
 
-    void OnDieConnected(Die die)
+    void OnDieAvailability(Die die, DicePool.DieAvailabilityState oldState, DicePool.DieAvailabilityState newState)
     {
-        // Die is now tracked
-        trackedDice.Add(die, discoveredDice[die]);
+        bool wasConnected = oldState == DicePool.DieAvailabilityState.Ready;
+        bool isConnected = newState == DicePool.DieAvailabilityState.Ready;
+        if (!wasConnected && isConnected)
+        {
+            // Die is now tracked
+            trackedDice.Add(die, discoveredDice[die]);
 
-        // Register for telemetry events
-        die.OnTelemetry += OnDieTelemetryReceived;
+            // Register for telemetry events
+            die.OnTelemetry += OnDieTelemetryReceived;
+        }
+        else if (wasConnected && !isConnected)
+        {
+            if (trackedDice != null && trackedDice[die].gameObject != null)
+            {
+                GameObject.Destroy(trackedDice[die].gameObject);
+                trackedDice.Remove(die);
+            }
+        }
     }
 
     void StartConnecting()
@@ -118,15 +130,6 @@ public class Telemetry : MonoBehaviour
             DicePool.Instance.ConnectDie(d.Key);
         }
         StartIdle();
-    }
-
-    void OnDieDisconnected(Die die)
-    {
-        if (trackedDice != null && trackedDice[die].gameObject != null)
-        {
-            GameObject.Destroy(trackedDice[die].gameObject);
-            trackedDice.Remove(die);
-        }
     }
 
     void OnDieTelemetryReceived(Die die, AccelFrame frame)
