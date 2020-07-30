@@ -6,7 +6,7 @@
 #include "modules/accelerometer.h"
 
 #define MAX_DATA_SIZE 100
-#define VERSION_INFO_SIZE 8
+#define VERSION_INFO_SIZE 6
 
 #pragma pack(push, 1)
 
@@ -91,6 +91,8 @@ struct MessageIAmADie
 {
 	uint8_t faceCount; // Which kind of dice this is
 	Config::DiceVariants::DesignAndColor designAndColor; // Physical look
+	uint8_t padding1;
+	uint64_t deviceId; // A unique identifier
 	char versionInfo[VERSION_INFO_SIZE]; // Firmware version string, i.e. "10_05"
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) { versionInfo[0] = 0; }
 };

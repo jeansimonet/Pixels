@@ -88,7 +88,7 @@ namespace Stack
     {
         Config::DiceVariants::DesignAndColor designAndColor; // Physical look, also only 8 bits
         uint8_t faceCount; // Which kind of dice this is
-        Accelerometer::RollState rollState; // Indicates whether the dice is being shaken
+        Accelerometer::RollState rollState; // Indicates whether the dice is being shaken, 8 bits
         uint8_t currentFace; // Which face is currently up
     };
 

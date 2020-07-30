@@ -104,9 +104,10 @@ namespace Die
     void WhoAreYouHandler(void* token, const Message* message) {
         // Central asked for the die state, return it!
         Bluetooth::MessageIAmADie identityMessage;
+        identityMessage.deviceId = getDeviceID();
+        strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         identityMessage.faceCount = (uint8_t)BoardManager::getBoard()->ledCount;
         identityMessage.designAndColor = SettingsManager::getSettings()->designAndColor;
-        strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         Bluetooth::MessageService::SendMessage(&identityMessage);
     }
 
@@ -200,6 +201,11 @@ namespace Die
                 // Nothing to do
                 break;
        }
+    }
+
+	uint64_t getDeviceID()
+    {
+		return (((uint64_t)NRF_FICR->DEVICEID[1]) << 32) + (uint64_t)NRF_FICR->DEVICEID[0];
     }
 
     // Main loop!
