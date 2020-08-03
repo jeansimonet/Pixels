@@ -326,8 +326,8 @@ flash: firmware_debug settings
 # e.g. make flash_ble DICE=D_71902510
 flash_ble: zip
 	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip over BLE DFU
-	nrfutil dfu ble -cd 0 -ic NRF52 -p COM4 -snr 682511527 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
-#	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+#	nrfutil dfu ble -cd 0 -ic NRF52 -p COM4 -snr 682511527 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 
 # Flash softdevice
 flash_softdevice:
