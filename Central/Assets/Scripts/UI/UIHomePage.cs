@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIFlatButtonWithIcon : MonoBehaviour
+public class UIHomePage
+    : PixelsApp.Page
 {
     // Start is called before the first frame update
     void Start()

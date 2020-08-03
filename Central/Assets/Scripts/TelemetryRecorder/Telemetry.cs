@@ -73,8 +73,7 @@ public class Telemetry : MonoBehaviour
     void StartScanning()
     {
         DicePool.Instance.onDieCreated += OnDieDiscovered;
-        DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
-        DicePool.Instance.BeginScanForDice();
+        DicePool.Instance.RequestBeginScanForDice();
         scanButton.enabled = true;
         scanText.text = "Stop";
         scanButton.onClick.RemoveAllListeners();
@@ -98,36 +97,36 @@ public class Telemetry : MonoBehaviour
         }
     }
 
-    void OnDieAvailability(Die die, DicePool.DieAvailabilityState oldState, DicePool.DieAvailabilityState newState)
-    {
-        bool wasConnected = oldState == DicePool.DieAvailabilityState.Ready;
-        bool isConnected = newState == DicePool.DieAvailabilityState.Ready;
-        if (!wasConnected && isConnected)
-        {
-            // Die is now tracked
-            trackedDice.Add(die, discoveredDice[die]);
+    // void OnDieAvailability(Die die, DicePool.DieState oldState, DicePool.DieState newState)
+    // {
+    //     bool wasConnected = oldState == DicePool.DieState.Ready;
+    //     bool isConnected = newState == DicePool.DieState.Ready;
+    //     if (!wasConnected && isConnected)
+    //     {
+    //         // Die is now tracked
+    //         trackedDice.Add(die, discoveredDice[die]);
 
-            // Register for telemetry events
-            die.OnTelemetry += OnDieTelemetryReceived;
-        }
-        else if (wasConnected && !isConnected)
-        {
-            if (trackedDice != null && trackedDice[die].gameObject != null)
-            {
-                GameObject.Destroy(trackedDice[die].gameObject);
-                trackedDice.Remove(die);
-            }
-        }
-    }
+    //         // Register for telemetry events
+    //         die.OnTelemetry += OnDieTelemetryReceived;
+    //     }
+    //     else if (wasConnected && !isConnected)
+    //     {
+    //         if (trackedDice != null && trackedDice[die].gameObject != null)
+    //         {
+    //             GameObject.Destroy(trackedDice[die].gameObject);
+    //             trackedDice.Remove(die);
+    //         }
+    //     }
+    // }
 
     void StartConnecting()
     {
         scanButton.enabled = false;
         scanText.text = "Connecting";
-        DicePool.Instance.StopScanForDice();
+        DicePool.Instance.RequestStopScanForDice();
         foreach (var d in discoveredDice)
         {
-            DicePool.Instance.ConnectDie(d.Key);
+            //DicePool.Instance.ConnectDie(d.Key);
         }
         StartIdle();
     }

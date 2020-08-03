@@ -9,5 +9,8 @@ public class AppConstants : SingletonMonoBehaviour<AppConstants>
     public float ScanTimeout = 3.0f;
     public float DiceRotationSpeedAvg = 10.0f;
     public float DiceRotationSpeedVar = 1.0f;
+    public Color DieUnavailableColor = Color.gray;
+    public float DicePoolViewFirstScanDelay = 0.5f;
+    public float DicePoolViewScanDelay = 30.0f;
 }
 

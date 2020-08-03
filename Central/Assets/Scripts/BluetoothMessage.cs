@@ -201,12 +201,20 @@ public static class DieMessages
     static DieMessage FromByteArray<T>(byte[] data)
         where T : DieMessage
     {
-        int size = Marshal.SizeOf(typeof(T));
-        System.IntPtr ptr = Marshal.AllocHGlobal(size);
-        Marshal.Copy(data, 0, ptr, size);
-        var retMessage = (T)Marshal.PtrToStructure(ptr, typeof(T));
-        Marshal.FreeHGlobal(ptr);
-        return retMessage;
+        int size = Marshal.SizeOf<T>();
+        if (data.Length == size)
+        {
+            System.IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.Copy(data, 0, ptr, size);
+            var retMessage = (T)Marshal.PtrToStructure(ptr, typeof(T));
+            Marshal.FreeHGlobal(ptr);
+            return retMessage;
+        }
+        else
+        {
+            Debug.LogError("Wrong message length for type " + typeof(T).Name);
+            return null;
+        }
     }
 
     // For virtual dice!

@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class UIDieLargeBatteryView : MonoBehaviour
 {
+
+    public void SetAvailable(bool available)
+    {
+        
+    }
+
     // Start is called before the first frame update
     void Start()
     {

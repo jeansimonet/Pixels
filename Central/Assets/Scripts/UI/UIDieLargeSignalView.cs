@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class UIDieLargeSignalView : MonoBehaviour
 {
+    public void SetAvailable(bool available)
+    {
+        
+    }
+
     // Start is called before the first frame update
     void Start()
     {

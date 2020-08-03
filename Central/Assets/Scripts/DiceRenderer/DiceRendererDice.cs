@@ -17,6 +17,7 @@ public class DiceRendererDice : MonoBehaviour
     public Color[] FaceColors;
 
     public int testingAnimationIndex;
+    public bool rotating { get; set; }
 
     MaterialPropertyBlock[] propertyBlocks;
     DataSet animationSet;
@@ -102,7 +103,10 @@ public class DiceRendererDice : MonoBehaviour
         }
 
         UpdateColors();
-        transform.Rotate(Vector3.up, Time.deltaTime * rotationSpeedDeg, Space.Self);
+        if (rotating)
+        {
+            transform.Rotate(Vector3.up, Time.deltaTime * rotationSpeedDeg, Space.Self);
+        }
     }
 
     void UpdateColors()

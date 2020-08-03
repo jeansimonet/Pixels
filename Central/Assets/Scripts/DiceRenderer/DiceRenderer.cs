@@ -14,6 +14,11 @@ public class DiceRenderer : MonoBehaviour
 
     public RenderTexture renderTexture { get; private set; }
     public int layerIndex { get; private set; }
+    public bool rotating
+    {
+        get { return (die != null) ? die.rotating : false; }
+        set { if (die != null) die.rotating = value; }
+    }
     DiceRendererDice die;
 
     // Start is called before the first frame update

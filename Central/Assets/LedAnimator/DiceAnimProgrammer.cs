@@ -34,7 +34,7 @@ public class DiceAnimProgrammer
     void Start()
     {
         // Register to be notified of new dice getting connected
-        DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
+        //DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
 
         // Create empty anim if needed
         LoadFromJson(DiceType.D20);
@@ -42,24 +42,24 @@ public class DiceAnimProgrammer
 
     private void OnDisable()
     {
-        if (DicePool.Instance != null)
-        {
-            DicePool.Instance.onDieAvailabilityChanged -= OnDieAvailability;
-        }
+        // if (DicePool.Instance != null)
+        // {
+        //     DicePool.Instance.onDieAvailabilityChanged -= OnDieAvailability;
+        // }
     }
 
-    public void OnDieAvailability(Die die, DicePool.DieAvailabilityState oldState, DicePool.DieAvailabilityState newState)
-    {
-        if (newState == DicePool.DieAvailabilityState.Ready)
-        {
-            if (this.die == null)
-            {
-                this.die = die;
-                Debug.Log("Led animator connected to " + die.name);
-                die.SetLEDAnimatorMode();
-            }
-        }
-    }
+    // public void OnDieAvailability(Die die, DicePool.DieState oldState, DicePool.DieState newState)
+    // {
+    //     if (newState == DicePool.DieState.Ready)
+    //     {
+    //         if (this.die == null)
+    //         {
+    //             this.die = die;
+    //             Debug.Log("Led animator connected to " + die.name);
+    //             die.SetLEDAnimatorMode();
+    //         }
+    //     }
+    // }
 
 
     // Update is called once per frame

@@ -126,7 +126,7 @@ public partial class Die
 
     IEnumerator PerformBluetoothOperationCr(IEnumerator operationCr)
     {
-        if (connectionState >= ConnectionState.Connected)
+        if (connectionState >= ConnectionState.Identifying)
         {
             while (bluetoothOperationInProgress)
             {

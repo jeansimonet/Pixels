@@ -18,7 +18,7 @@ public class SpeakNumber : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
+        //DicePool.Instance.onDieAvailabilityChanged += OnDieAvailability;
     }
 
     // Update is called once per frame
@@ -27,24 +27,24 @@ public class SpeakNumber : MonoBehaviour
         
     }
 
-    void OnDieAvailability(Die die, DicePool.DieAvailabilityState oldState, DicePool.DieAvailabilityState newState)
-    {
-        bool wasConnected = oldState == DicePool.DieAvailabilityState.Ready;
-        bool isConnected = newState == DicePool.DieAvailabilityState.Ready;
-        if (!wasConnected && isConnected)
-        {
-            this.die = die;
+    // void OnDieAvailability(Die die, DicePool.DieState oldState, DicePool.DieState newState)
+    // {
+    //     bool wasConnected = oldState == DicePool.DieState.Ready;
+    //     bool isConnected = newState == DicePool.DieState.Ready;
+    //     if (!wasConnected && isConnected)
+    //     {
+    //         this.die = die;
 
-            die.OnStateChanged += OnDieStateChanged;
-        }
-        else if (wasConnected && !isConnected)
-        {
-            if (this.die == die)
-            {
-                this.die = null;
-            }
-        }
-    }
+    //         die.OnStateChanged += OnDieStateChanged;
+    //     }
+    //     else if (wasConnected && !isConnected)
+    //     {
+    //         if (this.die == die)
+    //         {
+    //             this.die = null;
+    //         }
+    //     }
+    // }
 
 
 

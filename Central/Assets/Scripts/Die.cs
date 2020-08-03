@@ -35,28 +35,19 @@ public partial class Die
 
     public enum ConnectionState
     {
-        Disconnected = 0,
-        Advertising,
-        Connecting,
-        Connected,
-        FetchingId,
-        FetchingState,
-        Ready
+        Invalid = -1,   // This is the value right after creation
+        Unknown = 0,    // After loading die info from file, we don't know if the die is there
+        New,            // This is a new die we scanned, we didn't know about
+        Available,      // This is a die we new about and scanned
+        Connecting,     // This die is in the process of being connected to
+        Identifying,    // Getting info from the die, making sure it is valid to be used (right firmware, etc...)
+        Ready,          // Die is ready for general use
+        Disconnecting,  // We are currently disconnecting from this die
+        Missing,        // Die disconnected unexpectedly or can't be reached
+        CommError,      // There was an error communicating with the die
     }
 
-    ConnectionState _connectionState = ConnectionState.Disconnected;
-    public ConnectionState connectionState
-    {
-        get { return _connectionState; }
-        private set
-        {
-            if (value != _connectionState)
-            {
-                _connectionState = value;
-                OnConnectionStateChanged?.Invoke(this, value);
-            }
-        }
-    }
+    public ConnectionState connectionState { get; private set; } = ConnectionState.Invalid;
 
     /// <summary>
     /// This data structure mirrors the data in firmware/bluetooth/bluetooth_stack.cpp
@@ -113,7 +104,7 @@ public partial class Die
     public delegate void StateChangedEvent(Die die, RollState newState, int newFace);
     public StateChangedEvent OnStateChanged;
 
-    public delegate void ConnectionStateChangedEvent(Die die, ConnectionState newConnectionState);
+    public delegate void ConnectionStateChangedEvent(Die die, ConnectionState oldState, ConnectionState newState);
     public ConnectionStateChangedEvent OnConnectionStateChanged;
 
     public delegate void SettingsChangedEvent(Die die);
@@ -141,7 +132,7 @@ public partial class Die
         messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
     }
 
-    public void Setup(string name, string address, System.UInt64 deviceId, int faceCount, DiceVariants.DesignAndColor design)
+    public System.Action<ConnectionState> Setup(string name, string address, System.UInt64 deviceId, int faceCount, DiceVariants.DesignAndColor design)
     {
         bool appearanceChanged = faceCount != this.faceCount || design != this.designAndColor;
         this.name = name;
@@ -149,7 +140,7 @@ public partial class Die
         this.deviceId = deviceId;
         this.faceCount = faceCount;
         this.designAndColor = design;
-        this.connectionState = ConnectionState.Disconnected;
+        return SetConnectionState;
     }
 
     public void UpdateAddress(string address)
@@ -175,19 +166,19 @@ public partial class Die
         }
     }
 
-    public void OnAdvertising()
+    void SetConnectionState(ConnectionState newState)
     {
-        connectionState = ConnectionState.Advertising;
+        if (newState != connectionState)
+        {
+            var oldState = connectionState;
+            connectionState = newState;
+            OnConnectionStateChanged?.Invoke(this, oldState, newState);
+        }
     }
-
-	public void OnConnected()
-	{
-        connectionState = ConnectionState.Connected;
-	}
 
     public void UpdateInfo(System.Action<Die, bool> onInfoUpdatedCallback)
     {
-        if (connectionState == ConnectionState.Connected)
+        if (connectionState == ConnectionState.Identifying)
         {
             StartCoroutine(UpdateInfoCr(onInfoUpdatedCallback));
         }
@@ -200,31 +191,25 @@ public partial class Die
     IEnumerator UpdateInfoCr(System.Action<Die, bool> onInfoUpdatedCallback)
     {
         // Ask the die who it is!
-        connectionState = ConnectionState.FetchingId;
-        yield return GetDieInfo();
+        yield return GetDieInfo();  
 
         // Ping the die so we know its initial state
-        connectionState = ConnectionState.FetchingState;
         yield return Ping();
 
-        connectionState = ConnectionState.Ready;
-
         onInfoUpdatedCallback?.Invoke(this, true);
-    }
-
-    public void OnDisconnected()
-    {
-        connectionState = ConnectionState.Disconnected;
     }
 
     public void OnData(byte[] data)
     {
         // Process the message coming from the actual die!
         var message = DieMessages.FromByteArray(data);
-        MessageReceivedDelegate del;
-        if (messageDelegates.TryGetValue(message.type, out del))
+        if (message != null)
         {
-            del.Invoke(message);
+            MessageReceivedDelegate del;
+            if (messageDelegates.TryGetValue(message.type, out del))
+            {
+                del.Invoke(message);
+            }
         }
     }
 
