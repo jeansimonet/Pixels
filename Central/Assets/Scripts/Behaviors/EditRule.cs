@@ -37,7 +37,7 @@ namespace Behaviors
             public string actionJson;
         }
 
-        public string ToJson(EditDataSet editSet)
+        public string ToJson(AppDataSet editSet)
         {
             var data = new JsonData()
             {
@@ -49,7 +49,7 @@ namespace Behaviors
             return JsonUtility.ToJson(data);
         }
 
-        public void FromJson(EditDataSet editSet, string json)
+        public void FromJson(AppDataSet editSet, string json)
         {
             // Parse json string in
             var data = JsonUtility.FromJson<JsonData>(json);

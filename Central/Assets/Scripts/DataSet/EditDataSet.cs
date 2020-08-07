@@ -15,12 +15,25 @@ public class EditDataSet
 {
     public List<EditAnimation> animations = new List<EditAnimation>();
     public List<EditBehavior> behaviors = new List<EditBehavior>();
-    public ushort currentBehaviorIndex;
-    public ushort heatTrackIndex;
+    public EditBehavior currentBehavior;
+    public EditAnimationKeyframed heatTrack;
 
     public DataSet ToDataSet()
     {
         DataSet set = new DataSet();
+
+        // Check that the heat track is in the list of animations
+        if (heatTrack != null && !animations.Contains(heatTrack))
+        {
+            Debug.LogWarning("Heat track animation not in list");
+            animations.Add(heatTrack);
+        }
+
+        // Same for current behavior
+        if (currentBehavior != null && !behaviors.Contains(currentBehavior))
+        {
+            behaviors.Add(currentBehavior);
+        }
 
         // Add animations
         for (int animIndex = 0; animIndex < animations.Count; ++animIndex)
@@ -38,143 +51,57 @@ public class EditDataSet
             set.behaviors.Add(behavior);
         }
 
+        set.currentBehaviorIndex = (ushort)behaviors.IndexOf(currentBehavior);
+        set.heatTrackIndex = (ushort)animations.IndexOf(heatTrack);
+
         return set;
     }
 
     [System.Serializable]
     struct JsonData
     {
-        [System.Serializable]
-        public struct Animation
-        {
-            public Animations.AnimationType type;
-            public string json;
-        }
-        public List<Animation> animations;
-        public List<string> behaviorJsons;
+        public List<int> animationIndices;
+        public List<int> behaviorIndices;
         public ushort currentBehaviorIndex;
         public ushort heatTrackIndex;
     }
 
-    public string ToJson()
+    public string ToJson(AppDataSet appDataSet)
     {
         var data = new JsonData();
-        data.animations = new List<JsonData.Animation>();
+        data.animationIndices = new List<int>();
         foreach (var anim in animations)
         {
-            data.animations.Add(new JsonData.Animation()
-            {
-                type = anim.type,
-                json = anim.ToJson()
-            });
+            data.animationIndices.Add(appDataSet.animations.IndexOf(anim));
         }
-        data.behaviorJsons = new List<string>();
+        data.behaviorIndices = new List<int>();
         foreach (var behavior in behaviors)
         {
-            data.behaviorJsons.Add(behavior.ToJson(this));
+            data.behaviorIndices.Add(appDataSet.behaviors.IndexOf(behavior));
         }
-        data.currentBehaviorIndex = currentBehaviorIndex;
-        data.heatTrackIndex = heatTrackIndex;
+        data.currentBehaviorIndex = (ushort)behaviors.IndexOf(currentBehavior);
+        data.heatTrackIndex = (ushort)animations.IndexOf(heatTrack);
         return JsonUtility.ToJson(data);
     }
 
-    public void FromJson(string json)
+    public void FromJson(AppDataSet appDataSet, string json)
     {
         // Parse json string in
         animations.Clear();
         behaviors.Clear();
 
         var data = JsonUtility.FromJson<JsonData>(json);
-        foreach (var animData in data.animations)
+        foreach (var animData in data.animationIndices)
         {
-            var anim = EditAnimation.Create(animData.type);
-            anim.FromJson(animData.json);
-            animations.Add(anim);
+            animations.Add(appDataSet.animations[animData]);
         }
-        foreach (var behaviorData in data.behaviorJsons)
+        foreach (var behaviorData in data.behaviorIndices)
         {
-            var behavior = new EditBehavior();
-            behavior.FromJson(this, behaviorData);
-            behaviors.Add(behavior);
+            behaviors.Add(appDataSet.behaviors[behaviorData]);
         }
-        currentBehaviorIndex = data.currentBehaviorIndex;
-        heatTrackIndex = data.heatTrackIndex;
-    }
-
-    public EditAnimation DuplicateAnimation(EditAnimation animation)
-    {
-        var newAnim = animation.Duplicate();
-        animations.Add(newAnim);
-        return newAnim;
-    }
-
-    public EditBehavior DuplicateBehavior(EditBehavior behavior)
-    {
-        var newBehavior = behavior.Duplicate();
-        behaviors.Add(newBehavior);
-        return newBehavior;
-    }
-
-    public static EditDataSet CreateTestDataSet()
-    {
-        EditDataSet ret = new EditDataSet();
-        EditAnimationSimple simpleAnim = new EditAnimationSimple();
-        simpleAnim.duration = 1.0f;
-        simpleAnim.color = Color.blue;
-        simpleAnim.ledType = Animations.AnimationSimpleLEDType.AllLEDs;
-        simpleAnim.name = "Simple Anim 1";
-        ret.animations.Add(simpleAnim);
-
-        EditAnimationKeyframed keyAnim = new EditAnimationKeyframed();
-        keyAnim.duration = 3.0f;
-        keyAnim.specialColorType = SpecialColor.None;
-        keyAnim.name = "Keyframed Anim 2";
-        keyAnim.tracks.Add(new EditTrack()
-        {
-            ledIndices = new List<int>() { 1, 5, 9 },
-            keyframes = new List<EditKeyframe>() {
-                new EditKeyframe() { time = 0.0f, color = Color.black },
-                new EditKeyframe() { time = 1.5f, color = Color.red },
-                new EditKeyframe() { time = 3.0f, color = Color.black },
-            }
-        });
-        keyAnim.tracks.Add(new EditTrack()
-        {
-            ledIndices = new List<int>() { 0, 2, 3, 4 },
-            keyframes = new List<EditKeyframe>() {
-                new EditKeyframe() { time = 0.0f, color = Color.black },
-                new EditKeyframe() { time = 1.0f, color = Color.cyan },
-                new EditKeyframe() { time = 2.0f, color = Color.cyan },
-                new EditKeyframe() { time = 3.0f, color = Color.black },
-            }
-        });
-        ret.animations.Add(keyAnim);
-
-        EditBehavior behavior = new EditBehavior();
-        behavior.rules.Add(new EditRule() {
-            condition = new EditConditionRolling(),
-            action = new EditActionPlayAnimation() { animation = simpleAnim, faceIndex = 0, loopCount = 1 }
-        });
-        behavior.rules.Add(new EditRule() {
-            condition = new EditConditionFaceCompare()
-            {
-                faceIndex = 19,
-                flags = ConditionFaceCompare_Flags.Equal
-            },
-            action = new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 19, loopCount = 1 }
-        });
-        behavior.rules.Add(new EditRule() {
-            condition = new EditConditionFaceCompare()
-            {
-                faceIndex = 0,
-                flags = ConditionFaceCompare_Flags.Less | ConditionFaceCompare_Flags.Equal | ConditionFaceCompare_Flags.Greater
-            },
-            action = new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 2, loopCount = 1 }
-        });
-        ret.behaviors.Add(behavior);
-        ret.currentBehaviorIndex = 0;
-        ret.heatTrackIndex = 0;
-
-        return ret;
+        currentBehavior = behaviors[data.currentBehaviorIndex];
+        EditAnimation heatTrackAnim = animations[data.heatTrackIndex];
+        Debug.Assert(heatTrack is EditAnimationKeyframed);
+        heatTrack = (EditAnimationKeyframed)heatTrackAnim;
     }
 }

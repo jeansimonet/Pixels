@@ -23,6 +23,11 @@ namespace Animations
 		public AnimationSimpleLEDType ledType;
         public ushort padding_ledType;
         public uint color;
+
+        public AnimationInstance CreateInstance()
+        {
+            return new AnimationInstanceSimple(this);
+        }
 	};
 
 	/// <summary>

@@ -6,6 +6,12 @@ using System.Text;
 
 namespace Animations
 {
+    [System.Serializable]
+    public class PreviewSettings
+    {
+        public DiceVariants.DesignAndColor design;
+    }
+
     /// <summary>
     /// An animation is a list of tracks!
     /// </summary>
@@ -13,7 +19,10 @@ namespace Animations
     public abstract class EditAnimation
     {
         public string name;
+        [Units("sec")]
+        [FloatRange(0.1f, 10.0f, 0.1f)]
 		public float duration;
+        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_Grey };
 
         public abstract AnimationType type { get; }
         public abstract Animation ToAnimation(EditDataSet editSet, DataSet set);

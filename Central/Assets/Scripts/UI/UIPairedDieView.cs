@@ -54,7 +54,11 @@ public class UIPairedDieView : MonoBehaviour
             dieIDText.text = "ID: Unavailable";
         }
         SetState(die.connectionState);
+        batteryView.SetLevel(0.09f);
+        signalView.SetRssi(-45);
+
         die.OnConnectionStateChanged += OnConnectionStateChanged;
+        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
     }
 
     public void BeginRefreshPool()
@@ -213,11 +217,17 @@ public class UIPairedDieView : MonoBehaviour
             this.dieRenderer = null;
         }
         die.OnConnectionStateChanged -= OnConnectionStateChanged;
+        die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
     }
 
     void OnConnectionStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
     {
         Debug.Assert(die == this.die);
         SetState(newState);
+    }
+
+    void OnBatteryLevelChanged(Die die, float level)
+    {
+        batteryView.SetLevel(level);
     }
 }

@@ -42,7 +42,7 @@ public class Central : SingletonMonoBehaviour<Central>
         public bool messageReadCharacteristicFound;
 
         // These are set and cleared depending on what is going on
-        public System.Action<IDie, byte[]> onCustomAdvertisingData;
+        public System.Action<IDie, int, byte[]> onCustomAdvertisingData;
         public System.Action<IDie, bool, string> onConnectionResult;
         public System.Action<IDie, bool, string> onWriteResult;
         public System.Action<IDie, byte[]> onData;
@@ -91,7 +91,7 @@ public class Central : SingletonMonoBehaviour<Central>
     /// <summary>
     /// Initiates a bluetooth scan
     /// </summary>
-    public bool BeginScanForDice(System.Action<IDie> onDieDiscovered, System.Action<IDie, byte[]> onCustomAdvertisingData)
+    public bool BeginScanForDice(System.Action<IDie> onDieDiscovered, System.Action<IDie, int, byte[]> onCustomAdvertisingData)
     {
         if (_state != State.Idle)
         {
@@ -372,7 +372,7 @@ public class Central : SingletonMonoBehaviour<Central>
         string address,
         string name,
         System.Action<IDie> onDieDiscovered,
-        System.Action<IDie, byte[]> onCustomAdvertisingData)
+        System.Action<IDie, int, byte[]> onCustomAdvertisingData)
     {
         if (_dice.TryGetValue(address, out Die die))
         {
@@ -406,12 +406,12 @@ public class Central : SingletonMonoBehaviour<Central>
         }
     }
 
-    void OnDeviceAdvertisingInfo(string address, string name, int dataSize, byte[] data) 
+    void OnDeviceAdvertisingInfo(string address, string name, int rssi, byte[] data) 
     {
         if (_dice.TryGetValue(address, out Die d))
         {
             Debug.Log("Die advertising data" + data.ToString());
-            d.onCustomAdvertisingData?.Invoke(d, data);
+            d.onCustomAdvertisingData?.Invoke(d, rssi, data);
         }
         else 
         {

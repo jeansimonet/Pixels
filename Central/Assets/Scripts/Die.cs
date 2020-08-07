@@ -62,6 +62,7 @@ public partial class Die
         // Current state
         public Die.RollState rollState; // Indicates whether the dice is being shaken
         public byte currentFace; // Which face is currently up
+        public byte batteryLevel; // 0 -> 255
     };
 
     public int faceCount { get; private set; } = 0;
@@ -72,6 +73,9 @@ public partial class Die
 
     public RollState state { get; private set; } = RollState.Unknown;
     public int face { get; private set; } = -1;
+
+    public float batteryLevel { get; private set; }
+    public float rssi { get; private set; }
 
 	public delegate void TelemetryEvent(Die die, AccelFrame frame);
     public TelemetryEvent _OnTelemetry;
@@ -113,6 +117,9 @@ public partial class Die
 	public delegate void AppearanceChangedEvent(Die die, int newFaceCount, DiceVariants.DesignAndColor newDesign);
     public AppearanceChangedEvent OnAppearanceChanged;
 
+    public delegate void BatteryLevelChangedEvent(Die die, float level);
+    public BatteryLevelChangedEvent OnBatteryLevelChanged;
+
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
     bool bluetoothOperationInProgress = false;
@@ -140,6 +147,10 @@ public partial class Die
         this.deviceId = deviceId;
         this.faceCount = faceCount;
         this.designAndColor = design;
+        if (appearanceChanged)
+        {
+            OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
+        }
         return SetConnectionState;
     }
 
@@ -148,7 +159,7 @@ public partial class Die
         this.address = address;
     }
 
-    public void UpdateAdvertisingData(CustomAdvertisingData newData)
+    public void UpdateAdvertisingData(int rssi, CustomAdvertisingData newData)
     {
         bool appearanceChanged = faceCount != newData.faceCount || designAndColor != newData.designAndColor;
         bool rollStateChanged = state != newData.rollState || face != newData.currentFace;
@@ -156,6 +167,11 @@ public partial class Die
         designAndColor = newData.designAndColor;
         state = newData.rollState;
         face = newData.currentFace;
+        batteryLevel = (float)newData.batteryLevel / 255.0f;
+        this.rssi = rssi;
+
+        // Trigger callbacks
+        OnBatteryLevelChanged?.Invoke(this, batteryLevel);
         if (appearanceChanged)
         {
             OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);

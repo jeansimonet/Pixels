@@ -8,14 +8,21 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 {
     public class PageHistory
     {
-        public delegate void PageEnterLeaveEvent(PixelsApp.Page page);
-        public PageEnterLeaveEvent onPageEntered;
-        public PageEnterLeaveEvent onLeavingPage;
+        public class Page
+        {
+            public PixelsApp.Page page;
+            public object context;
+        }
 
-        public PixelsApp.Page currentRoot => pages.FirstOrDefault();
-        public PixelsApp.Page currentPage => pages.LastOrDefault();
+        public delegate void PageEnterEvent(PixelsApp.Page page, object context);
+        public PageEnterEvent onPageEntered;
+        public delegate void PageLeavingEvent(PixelsApp.Page page);
+        public PageLeavingEvent onLeavingPage;
 
-        List<PixelsApp.Page> pages = new List<PixelsApp.Page>();
+        public Page currentRoot => pages.FirstOrDefault();
+        public Page currentPage => pages.LastOrDefault();
+
+        List<Page> pages = new List<Page>();
 
         public void GoToRoot(PixelsApp.Page newRootPage)
         {
@@ -25,19 +32,21 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
                 pages.Clear();
             }
             // Else no page to leave obviously
-            pages.Add(newRootPage);
-            EnterPage(newRootPage);
+            var p = new Page() { page = newRootPage, context = null };
+            pages.Add(p);
+            EnterPage(p);
         }
 
-        public void GoTo(PixelsApp.Page newPage)
+        public void GoTo(PixelsApp.Page newPage, object context)
         {
             if (pages.Count > 0)
             {
                 LeavePage(pages[pages.Count - 1]);
             }
             // Else no page to leave obviously
-            pages.Add(newPage);
-            EnterPage(newPage);
+            var p = new Page() { page = newPage, context = context };
+            pages.Add(p);
+            EnterPage(p);
         }
 
         public bool GoBack()
@@ -53,16 +62,16 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             return ret;
         }
 
-        void EnterPage(PixelsApp.Page page)
+        void EnterPage(Page page)
         {
-            page.Enter();
-            onPageEntered?.Invoke(page);
+            page.page.Enter(page.context);
+            onPageEntered?.Invoke(page.page, page.context);
         }
 
-        void LeavePage(PixelsApp.Page page)
+        void LeavePage(Page page)
         {
-            onLeavingPage?.Invoke(page);
-            page.Leave();
+            onLeavingPage?.Invoke(page.page);
+            page.page.Leave();
         }
     }
 
@@ -85,7 +94,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             pat.page.Leave();
             if (pat.button != null)
             {
-                pat.button.onClick.AddListener(() => GoToRoot(pat.page, null));
+                pat.button.onClick.AddListener(() => GoToRoot(pat.page));
                 pat.button.SetCurrent(false);
             }
         }
@@ -101,23 +110,22 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page
     /// </sumary>
-    public void GoToPage(PixelsApp.PageId pageId, System.Action<PixelsApp.Page> afterEnterAction)
+    public void GoToPage(PixelsApp.PageId pageId, object context)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
-        if (newPage != null && history.currentPage != newPage.page)
+        if (newPage != null && history.currentPage.page != newPage.page)
         {
-            history.GoTo(newPage.page);
-            afterEnterAction?.Invoke(newPage.page);
+            history.GoTo(newPage.page, context);
         }
         // Else we're already there
     }
 
-    public void GoToRoot(PixelsApp.PageId pageId, System.Action<PixelsApp.Page> afterEnterAction)
+    public void GoToRoot(PixelsApp.PageId pageId)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
-        if (newPage != null && history.currentPage != newPage.page)
+        if (newPage != null && history.currentPage.page != newPage.page)
         {
-            GoToRoot(newPage.page, afterEnterAction);
+            GoToRoot(newPage.page);
         }
         // Else we're already there
     }
@@ -125,12 +133,11 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page as root (clearing history)
     /// </sumary>
-    public void GoToRoot(PixelsApp.Page newRoot, System.Action<PixelsApp.Page> afterEnterAction)
+    public void GoToRoot(PixelsApp.Page newRoot)
     {
-        if (history.currentPage != newRoot)
+        if (history.currentPage.page != newRoot)
         {
             history.GoToRoot(newRoot);
-            afterEnterAction?.Invoke(newRoot);
         }
         // Else we're already there
     }
@@ -138,18 +145,15 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go back
     /// </sumary>
-    public void GoBack(System.Action<PixelsApp.Page> afterEnterAction)
+    public void GoBack()
     {
-        if (history.GoBack())
-        {
-            afterEnterAction?.Invoke(history.currentPage);
-        }
+        history.GoBack();
     }
 
     /// <summary>
     /// Called when the user clicks on of the root toggles
     /// </sumary>
-    void onPageEntered(PixelsApp.Page newPage)
+    void onPageEntered(PixelsApp.Page newPage, object context)
     {
         // Update the buttons to reflect whether the page is one of the roots
         foreach (var p in pages)

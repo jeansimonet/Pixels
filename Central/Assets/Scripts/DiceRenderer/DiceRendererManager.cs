@@ -18,7 +18,7 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
         CreateDiceRenderer((DiceVariants.DesignAndColor)v);
     }
 
-    public DiceRenderer CreateDiceRenderer(DiceVariants.DesignAndColor variant)
+    public DiceRenderer CreateDiceRenderer(DiceVariants.DesignAndColor variant, int widthHeight = 256)
     {
         // Find the first empty slot
         int newRendererIndex = 0;
@@ -35,7 +35,7 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
         if (newRendererIndex < renderers.Length)
         {
             renderer = GameObject.Instantiate<DiceRenderer>(DiceRendererPrefab, Vector3.zero, Quaternion.identity, transform);
-            renderer.Setup(newRendererIndex, variant);
+            renderer.Setup(newRendererIndex, variant, widthHeight);
             renderers[newRendererIndex] = renderer;
         }
         return renderer;

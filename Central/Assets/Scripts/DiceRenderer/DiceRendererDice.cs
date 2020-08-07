@@ -13,25 +13,65 @@ public class DiceRendererDice : MonoBehaviour
 {
     public MeshRenderer[] FaceRenderers;
     public Light[] FaceLights;
-
     public Color[] FaceColors;
-
-    public int testingAnimationIndex;
-    public bool rotating { get; set; }
-
     MaterialPropertyBlock[] propertyBlocks;
-    DataSet animationSet;
-    AnimationInstance currentAnimation;
+
+    public bool rotating { get; set; }
     float rotationSpeedDeg;
 
+    DataSet dataSet;
+    EditAnimation currentAnimation;
+    AnimationInstance currentInstance;
 
-    void SetAnimationSet(DataSet set)
+    public void SetAnimation(Animations.EditAnimation editAnimation)
     {
-        animationSet = set;
+        currentAnimation = editAnimation;
+        if (currentInstance != null)
+        {
+            // We're switching the animation from underneath the playback
+            // Create a new dataset and instance
+            EditDataSet tempEditSet = new EditDataSet();
+            tempEditSet.animations.Add(currentAnimation);
+            var newDataSet = tempEditSet.ToDataSet();
+            var newInstance = newDataSet.animations[0].CreateInstance();
+            newInstance.start(newDataSet, currentInstance.startTime, currentInstance.remapFace, currentInstance.loop);
+
+            dataSet = newDataSet;
+            currentInstance = newInstance;
+        }
     }
 
-    void PlayAnimation(Animations.Animation animation)
+    public void ClearAnimation()
     {
+        // Shouldn't have an instance if we don't have an animation
+        currentInstance = null;
+        dataSet = null;
+
+        // Clear the animation
+        currentAnimation = null;
+    }
+
+    public void Play(bool loop)
+    {
+        if (currentAnimation != null)
+        {
+            // Create a temporary data set so we can play the animation
+            EditDataSet tempEditSet = new EditDataSet();
+            tempEditSet.animations.Add(currentAnimation);
+            dataSet = tempEditSet.ToDataSet();
+            currentInstance = dataSet.animations[0].CreateInstance();
+            currentInstance.start(dataSet, (int)(Time.time * 1000), 0, loop);
+        }
+        else
+        {
+            Debug.LogWarning("Trying to play null animation on die renderer die");
+        }
+    }
+
+    public void Stop()
+    {
+        currentInstance = null;
+        dataSet = null;
     }
 
     void Awake()
@@ -54,45 +94,46 @@ public class DiceRendererDice : MonoBehaviour
     {
         transform.Rotate(Vector3.up, Random.Range(0.0f, 360.0f), Space.Self);
         rotationSpeedDeg = AppConstants.Instance.DiceRotationSpeedAvg + Random.Range(-AppConstants.Instance.DiceRotationSpeedVar, AppConstants.Instance.DiceRotationSpeedVar);
-        // // TESTING
-        // string path = System.IO.Path.Combine(Application.persistentDataPath, "D20_animation_set.json");
-        // string jsonText = File.ReadAllText(path);
-        // var editAnimSet = JsonUtility.FromJson<EditDataSet>(jsonText);
-        // animationSet = editAnimSet.ToDataSet();
-        // PlayAnimation(animationSet.animations[testingAnimationIndex]);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (currentAnimation != null)
+        if (currentInstance != null)
         {
             // Update the animation time
-            // currentAnimation.time += Time.deltaTime;
-            // if (currentAnimation.time > (currentAnimation.animation.duration / 1000.0f))
-            // {
-            //     // TEST
-            //     currentAnimation.time -= currentAnimation.animation.duration / 1000.0f;
-            //     // for (int i = 0; i < 20; ++i)
-            //     // {
-            //     //     FaceColors[i] = Color.black;
-            //     // }
-            //     // currentAnimation = null;
-            // }
-            // else
-            // {
-            //     for (int t = 0; t < currentAnimation.animation.trackCount; ++t)
-            //     {
-            //         var track = currentAnimation.animation.GetTrack(animationSet, (ushort)t);
-            //         var color = track.evaluate(animationSet, (int)(currentAnimation.time * 1000.0f));
-            //         Color32 color32 = new Color32(
-            //             ColorUtils.getRed(color),
-            //             ColorUtils.getGreen(color),
-            //             ColorUtils.getBlue(color),
-            //             255);
-            //         FaceColors[track.ledIndex] = color32;
-            //     }
-            // }
+            int time = (int)(Time.time * 1000);
+            if (time > (currentInstance.startTime + currentInstance.animationPreset.duration))
+            {
+                if (currentInstance.loop)
+                {
+                    currentInstance.startTime += currentInstance.animationPreset.duration;
+                }
+                else
+                {
+                    for (int i = 0; i < 20; ++i)
+                    {
+                        FaceColors[i] = Color.black;
+                    }
+                    currentInstance = null;
+                }
+            }
+            else
+            {
+                int [] retIndices = new int[20];
+                uint[] retColors = new uint[20];
+                int ledCount = currentInstance.updateLEDs(dataSet, time, retIndices, retColors);
+                for (int t = 0; t < ledCount; ++t)
+                {
+                    uint color = retColors[t];
+                    Color32 color32 = new Color32(
+                        ColorUtils.getRed(color),
+                        ColorUtils.getGreen(color),
+                        ColorUtils.getBlue(color),
+                        255);
+                    FaceColors[retIndices[t]] = color32;
+                }
+            }
         }
         else
         {

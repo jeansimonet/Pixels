@@ -31,7 +31,7 @@ namespace Behaviors
             public List<string> rulesJson;
         }
 
-        public string ToJson(EditDataSet editSet)
+        public string ToJson(AppDataSet editSet)
         {
             var data = new JsonData();
             data.rulesJson = new List<string>();
@@ -43,7 +43,7 @@ namespace Behaviors
             return JsonUtility.ToJson(data);
         }
 
-        public void FromJson(EditDataSet editSet, string json)
+        public void FromJson(AppDataSet editSet, string json)
         {
             var data = JsonUtility.FromJson<JsonData>(json);
             rules.Clear();

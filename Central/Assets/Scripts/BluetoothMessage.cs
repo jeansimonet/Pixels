@@ -492,6 +492,7 @@ public class DieMessageBatteryLevel
 {
     public DieMessageType type { get; set; } = DieMessageType.BatteryLevel;
     public float level;
+    public float voltage;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

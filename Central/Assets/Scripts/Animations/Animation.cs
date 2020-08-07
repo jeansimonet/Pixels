@@ -11,6 +11,7 @@ namespace Animations
 	/// <summary>
 	/// Defines the types of Animation Presets we have/support
 	/// </summary>
+    [EnumRange((int)AnimationType.Simple, (int)AnimationType.Keyframed)]
 	public enum AnimationType : byte
 	{
 		Unknown = 0,
@@ -28,6 +29,7 @@ namespace Animations
 		AnimationType type { get; set; }
 		byte padding_type { get; set; } // to keep duration 16-bit aligned
 		ushort duration { get; set; } // in ms
+        AnimationInstance CreateInstance();
 	};
 
 	/// <summary>

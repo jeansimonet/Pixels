@@ -13,8 +13,8 @@ namespace Behaviors
     {
         public abstract ActionType type { get; }
         public abstract Action ToAction(EditDataSet editSet, DataSet set);
-        public abstract string ToJson(EditDataSet editSet);
-        public abstract void FromJson(EditDataSet editSet, string Json);
+        public abstract string ToJson(AppDataSet editSet);
+        public abstract void FromJson(AppDataSet editSet, string Json);
         public abstract EditAction Duplicate();
 
         public static EditAction Create(ActionType type)
@@ -59,7 +59,7 @@ namespace Behaviors
             public byte loopCount;
         }
 
-        public override string ToJson(EditDataSet editSet)
+        public override string ToJson(AppDataSet editSet)
         {
             var data = new JsonData()
             {
@@ -70,7 +70,7 @@ namespace Behaviors
             return JsonUtility.ToJson(data);
         }
 
-        public override void FromJson(EditDataSet editSet, string json)
+        public override void FromJson(AppDataSet editSet, string json)
         {
             var data = JsonUtility.FromJson<JsonData>(json);
             animation = editSet.animations[data.animationIndex];

@@ -14,11 +14,11 @@ namespace Animations
         public override AnimationType type { get { return AnimationType.Simple; } }
         public override Animation ToAnimation(EditDataSet editSet, DataSet set)
         {
-            return new AnimationSimple()
-            {
-                ledType = this.ledType,
-                color = ColorUtils.toColor(this.color.r, this.color.g, this.color.b)
-            };
+            var ret = new AnimationSimple();
+            ret.duration = (ushort)(this.duration * 1000.0f);
+            ret.ledType = this.ledType;
+            ret.color = ColorUtils.toColor(this.color.r, this.color.g, this.color.b);
+            return ret;
         }
 
         public override string ToJson()

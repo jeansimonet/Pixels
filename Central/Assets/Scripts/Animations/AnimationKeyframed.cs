@@ -188,6 +188,11 @@ namespace Animations
 		public ushort trackCount;
 		public byte padding2;
 		public byte padding3;
+
+        public AnimationInstance CreateInstance()
+        {
+            return new AnimationInstanceKeyframed(this);
+        }
 	};
 
 	/// <summary>

@@ -18,14 +18,14 @@ public class DataSet
     public const int MAX_PALETTE_SIZE = MAX_COLOR_MAP_SIZE * 3;
     public const int SPECIAL_COLOR_INDEX = (MAX_COLOR_MAP_SIZE - 1);
 
-    public List<Color> palette;
-    public List<Animations.RGBKeyframe> keyframes;
-    public List<Animations.RGBTrack> rgbTracks;
-    public List<Animations.Animation> animations;
-    public List<Behaviors.Condition> conditions;
-    public List<Behaviors.Action> actions;
-    public List<Behaviors.Rule> rules;
-    public List<Behaviors.Behavior> behaviors;
+    public List<Color> palette = new List<Color>();
+    public List<Animations.RGBKeyframe> keyframes = new List<Animations.RGBKeyframe>();
+    public List<Animations.RGBTrack> rgbTracks = new List<Animations.RGBTrack>();
+    public List<Animations.Animation> animations = new List<Animations.Animation>();
+    public List<Behaviors.Condition> conditions = new List<Behaviors.Condition>();
+    public List<Behaviors.Action> actions = new List<Behaviors.Action>();
+    public List<Behaviors.Rule> rules = new List<Behaviors.Rule>();
+    public List<Behaviors.Behavior> behaviors = new List<Behaviors.Behavior>();
     public ushort currentBehaviorIndex;
     public ushort padding;
     public ushort heatTrackIndex;

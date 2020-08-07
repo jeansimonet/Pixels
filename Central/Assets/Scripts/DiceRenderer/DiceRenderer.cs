@@ -10,7 +10,6 @@ public class DiceRenderer : MonoBehaviour
     public Camera dieCamera;
     public Light[] dieLights;
     public GameObject dieRoot;
-    public int renderTextureSize = 256;
 
     public RenderTexture renderTexture { get; private set; }
     public int layerIndex { get; private set; }
@@ -21,19 +20,13 @@ public class DiceRenderer : MonoBehaviour
     }
     DiceRendererDice die;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     /// <summary>
     /// Called after instantiation to setup the camera, render texture, etc...
     /// </sumary>
-    public void Setup(int index, DiceVariants.DesignAndColor variant)
+    public void Setup(int index, DiceVariants.DesignAndColor variant, int widthHeight)
     {
         layerIndex = LayerMask.NameToLayer("Dice 0") + index;
-        renderTexture = new RenderTexture(renderTextureSize, renderTextureSize, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        renderTexture = new RenderTexture(widthHeight, widthHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         renderTexture.wrapMode = TextureWrapMode.Clamp;
         renderTexture.filterMode = FilterMode.Point;
         renderTexture.Create();
@@ -56,13 +49,17 @@ public class DiceRenderer : MonoBehaviour
         {
             tr.gameObject.layer = layerIndex;
         }
+
+        foreach (var light in die.gameObject.GetComponentsInChildren<Light>())
+        {
+            light.cullingMask = 1 << layerIndex;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public void SetAnimation(Animations.EditAnimation animation) => die.SetAnimation(animation);
+    public void ClearAnimation() => die.ClearAnimation();
+    public void Play(bool loop) => die.Play(loop);
+    public void Stop() => die.Stop();
 
     void OnDestroy()
     {

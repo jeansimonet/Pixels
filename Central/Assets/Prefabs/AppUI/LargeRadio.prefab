@@ -51,6 +51,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dff0a3f226b7b2429b9647da32cf2a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  signalImage: {fileID: 5050916144647308430}
+  signalLevelText: {fileID: 5050916144379230063}
+  signalLevelImages:
+  - {fileID: 21300000, guid: 86478bc4b20726740adf9f8905fa5900, type: 3}
+  - {fileID: 21300000, guid: ad89f524012560847b891f82ab7dd54b, type: 3}
+  - {fileID: 21300000, guid: 0f478031a450a14459848876301663a5, type: 3}
+  signalLevels:
+  - -30
+  - -65
+  notAvailableImage: {fileID: 0}
 --- !u!1 &5050916144196738865
 GameObject:
   m_ObjectHideFlags: 0
@@ -164,7 +174,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 93.2, y: 8}
-  m_SizeDelta: {x: 100, y: 47}
+  m_SizeDelta: {x: 141.79999, y: 47}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &5050916144379230062
 CanvasRenderer:
@@ -203,10 +213,10 @@ MonoBehaviour:
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 0
+    m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 60%
+  m_Text: -45 dBm
 --- !u!1 &5050916144647308428
 GameObject:
   m_ObjectHideFlags: 0

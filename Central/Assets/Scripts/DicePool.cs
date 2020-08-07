@@ -209,7 +209,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// Called by Central when it receives custom advertising data, this allows us to change the
     /// appearance of the scanned die before even connecting to it!
     /// </sumary>
-    void OnDieAdvertisingData(Central.IDie die, byte[] data)
+    void OnDieAdvertisingData(Central.IDie die, int rssi, byte[] data)
     {
         // Find the die by its address, in both lists of dice we expect to know and new dice
         var ourDie = dice.Find(d => d.address == die.address);
@@ -225,7 +225,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                 Marshal.FreeHGlobal(ptr);
 
                 // Update die data
-                ourDie.UpdateAdvertisingData(customData);
+                ourDie.UpdateAdvertisingData(rssi, customData);
             }
             else
             {

@@ -19,14 +19,14 @@ public class TestDataSet : MonoBehaviour
 
     public void TestData()
     {
-        var editSet = EditDataSet.CreateTestDataSet();
-        var jsonText = editSet.ToJson();
-        var filePath = System.IO.Path.Combine(Application.persistentDataPath, $"test_dataset.json");
-        File.WriteAllText(filePath, jsonText);
-        Debug.Log($"File written to {filePath}");
+        // var editSet = EditDataSet.CreateTestDataSet();
+        // var jsonText = editSet.ToJson();
+        // var filePath = System.IO.Path.Combine(Application.persistentDataPath, $"test_dataset.json");
+        // File.WriteAllText(filePath, jsonText);
+        // Debug.Log($"File written to {filePath}");
 
-        var editSetVerify = new EditDataSet();
-        editSetVerify.FromJson(jsonText);
-        Debug.Log($"File read from {filePath}");
+        // var editSetVerify = new EditDataSet();
+        // editSetVerify.FromJson(jsonText);
+        // Debug.Log($"File read from {filePath}");
     }
 }

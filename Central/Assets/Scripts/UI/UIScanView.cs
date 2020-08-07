@@ -21,7 +21,7 @@ public class UIScanView
 
     void Awake()
     {
-        backButton.onClick.AddListener(() => NavigationManager.Instance.GoBack(null));
+        backButton.onClick.AddListener(() => NavigationManager.Instance.GoBack());
         pairSelectedDice.onClick.AddListener(PairSelectedDice);
         clearListButton.onClick.AddListener(ClearList);
     }
@@ -103,13 +103,11 @@ public class UIScanView
     {
         var selectedDieCopy = new List<Die>(selectedDice.Select(d => d.die));
         // Tell the navigation to go back to the pool, and then start connecting to the selected dice
-        NavigationManager.Instance.GoBack(p => 
+        foreach (var die in selectedDieCopy)
         {
-            foreach (var die in selectedDieCopy)
-            {
-                DicePool.Instance.IncludeDie(die);
-            }
-        });
+            DicePool.Instance.IncludeDie(die);
+        }
+        NavigationManager.Instance.GoBack();
     }
 
     void OnDieCreated(Die newDie)

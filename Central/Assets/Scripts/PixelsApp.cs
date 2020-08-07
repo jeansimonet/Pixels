@@ -6,6 +6,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 {
     [Header("Panels")]
     public UIDialogBox dialogBox;
+    public UIColorPicker colorPicker;
 
     public enum PageId
     {
@@ -25,7 +26,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public class Page
         : MonoBehaviour
     {
-        public virtual void Enter()
+        public virtual void Enter(object context)
         {
             gameObject.SetActive(true);
         }
@@ -41,6 +42,16 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             dialogBox.Show(title, message, okMessage, cancelMessage, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowColorPicker(string title, Color previousColor, System.Action<bool, Color> closeAction)
+    {
+        bool ret = !colorPicker.isShown;
+        if (ret)
+        {
+            colorPicker.Show(title, previousColor, closeAction);
         }
         return ret;
     }

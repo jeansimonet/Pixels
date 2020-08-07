@@ -207,6 +207,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 090fc317f4a374048aad9fbf258da001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  batteryImage: {fileID: 7632322641999941791}
+  batteryLevelText: {fileID: 7632322640778540761}
+  batteryLevelImages:
+  - {fileID: 21300000, guid: c09c497a49d21414bbba63a128a06004, type: 3}
+  - {fileID: 21300000, guid: 8edd051ce91201746b3204a8dc868dc0, type: 3}
+  - {fileID: 21300000, guid: 0f356b3192887d143b5b712d519aa89b, type: 3}
+  - {fileID: 21300000, guid: 67d8d91ae48348d4399cad6d58399caa, type: 3}
+  batteryLevels:
+  - 0.75
+  - 0.4
+  - 0.1
+  notAvailableImage: {fileID: 0}
 --- !u!1 &7632322641999941785
 GameObject:
   m_ObjectHideFlags: 0
