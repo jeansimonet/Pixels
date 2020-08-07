@@ -244,6 +244,7 @@ struct MessageBatteryLevel
 : public Message
 {
 	float level;
+	float voltage;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
 };
 

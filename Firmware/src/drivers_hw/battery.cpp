@@ -58,10 +58,10 @@ namespace Battery
 		// 	NRF_GPIOTE_POLARITY_TOGGLE,
 		// 	batteryInterruptHandler);
 
-        printA2DReadings();
         Bluetooth::MessageService::RegisterMessageHandler(Bluetooth::Message::MessageType_PrintA2DReadings, nullptr, printA2DReadingsBLE);
 
         NRF_LOG_INFO("Battery initialized, Charging=%d", charging);
+        printA2DReadings();
 
         #if DICE_SELFTEST && BATTERY_SELFTEST
         selfTest();

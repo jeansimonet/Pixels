@@ -20,6 +20,7 @@ using namespace Utils;
 #define BATTERY_TIMER_MS (3000)	// ms
 #define BATTERY_TIMER_MS_QUICK (100) //ms
 #define MAX_BATTERY_CLIENTS 2
+#define MAX_LEVEL_CLIENTS 2
 #define LAZY_CHARGE_DETECT
 #define CHARGE_START_DETECTION_THRESHOLD (0.3f) // 0.3V
 #define CHARGE_VCOIL_THRESHOLD (4.0) //0.4V
@@ -34,6 +35,7 @@ namespace BatteryController
     void onBatteryEventHandler(void* context);
     void onLEDPowerEventHandler(void* context, bool powerOn);
     BatteryState computeCurrentState();
+    float LookupChargeLevel(float voltage);
 
     float vcoil = 0.0f;
     float vBat = 0.0f;
@@ -47,8 +49,46 @@ namespace BatteryController
     uint32_t chargingStartedTime = 0;
 
 	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
+    DelegateArray<BatteryLevelChangeHandler, MAX_LEVEL_CLIENTS> levelClients;
 
 	APP_TIMER_DEF(batteryControllerTimer);
+
+    static const float voltages[] =
+    {
+        4.149f,
+        4.120f,
+        4.085f,
+        3.982f,
+        3.824f,
+        3.760f,
+        3.716f,
+        3.632f,
+        3.578f,
+        3.401f,
+        3.303f,
+        3.209f,
+        3.012f,
+        2.451f,
+    };
+
+    static const float levels[] =
+    {
+        1.000f,
+        0.993f,
+        0.970f,
+        0.869f,
+        0.643f,
+        0.491f,
+        0.317f,
+        0.142f,
+        0.082f,
+        0.039f,
+        0.026f,
+        0.018f,
+        0.008f,
+        0.000f,
+    };
+    static const int ChargeLookupCount = 14;
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);
@@ -81,11 +121,18 @@ namespace BatteryController
         } else {
             NRF_LOG_INFO("Battery controller initialized - Battery %s", getChargeStateString(currentBatteryState));
         }
+        float level = LookupChargeLevel(vBat);
+        NRF_LOG_INFO("\tBattery level %d%%", (int)(level * 100));
     }
 
 	BatteryState getCurrentChargeState() {
         return currentBatteryState;
     }
+
+    float getCurrentLevel() {
+        return LookupChargeLevel(vBat);
+    }
+
 
     const char* getChargeStateString(BatteryState state) {
         switch (currentBatteryState) {
@@ -207,10 +254,12 @@ namespace BatteryController
 
     void getBatteryLevel(void* context, const Message* msg) {
         // Fetch battery level
-        float level = Battery::checkVBat();
+        float voltage = Battery::checkVBat();
+        float level = LookupChargeLevel(voltage);
         MessageBatteryLevel lvl;
+        lvl.voltage = voltage;
         lvl.level = level;
-        NRF_LOG_INFO("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(level));
+        NRF_LOG_INFO("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER " (" NRF_LOG_FLOAT_MARKER "v)", NRF_LOG_FLOAT(level), NRF_LOG_FLOAT(voltage));
         MessageService::SendMessage(&lvl);
     }
 
@@ -242,6 +291,11 @@ namespace BatteryController
             for (int i = 0; i < clients.Count(); ++i) {
     			clients[i].handler(clients[i].token, newState);
             }
+        }
+
+        float level = LookupChargeLevel(vBat);
+        for (int i = 0; i < levelClients.Count(); ++i) {
+            levelClients[i].handler(levelClients[i].token, level);
         }
 
 	    app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
@@ -279,7 +333,6 @@ namespace BatteryController
 	}
 
 	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
 	/// </summary>
 	void unHook(BatteryStateChangeHandler callback)
 	{
@@ -287,12 +340,91 @@ namespace BatteryController
 	}
 
 	/// <summary>
-	/// Method used by clients to stop getting accelerometer reading callbacks
 	/// </summary>
 	void unHookWithParam(void* param)
 	{
 		clients.UnregisterWithToken(param);
 	}
+
+	/// <summary>
+	/// </summary>
+	void hookLevel(BatteryLevelChangeHandler callback, void* parameter)
+	{
+		if (!levelClients.Register(parameter, callback))
+		{
+			NRF_LOG_ERROR("Too many battery state hooks registered.");
+		}
+	}
+
+	/// <summary>
+	/// </summary>
+	void unHookLevel(BatteryLevelChangeHandler callback)
+	{
+		levelClients.UnregisterWithHandler(callback);
+	}
+
+	/// <summary>
+	/// </summary>
+	void unHookLevelWithParam(void* param)
+	{
+		levelClients.UnregisterWithToken(param);
+	}
+
+    float LookupChargeLevel(float voltage)
+    {
+		// Find the first keyframe
+		int nextIndex = 0;
+		while (nextIndex < ChargeLookupCount && voltages[nextIndex] >= voltage) {
+		 	nextIndex++;
+		}
+
+		float level = 0.0f;
+		if (nextIndex == 0) {
+			level = 1.0f;
+		} else if (nextIndex == ChargeLookupCount) {
+			level = 0.0f;
+		} else {
+			// Grab the prev and next keyframes
+			float nextVoltage = voltages[nextIndex];
+			float prevVoltage = voltages[nextIndex - 1];
+			float nextLevel = levels[nextIndex];
+			float prevLevel = levels[nextIndex - 1];
+
+			// Compute the interpolation parameter
+    		int percent = (prevVoltage - voltage) / (prevVoltage - nextVoltage);
+            level = prevLevel * (1.0f - percent) + nextLevel * percent;
+		}
+
+		return level;
+    }
+
+    // int16_t LookupChargeLevel(int16_t scaledVoltage)
+    // {
+	// 	// Find the first keyframe
+    //     int keyFrameCount = sizeof(ChargeLookup) / sizeof(ChargeEntry);
+	// 	int nextIndex = 0;
+	// 	while (nextIndex < keyFrameCount && ChargeLookup[nextIndex].scaledVoltage >= scaledVoltage) {
+	// 		nextIndex++;
+	// 	}
+
+	// 	int16_t scaledLevel = 0.0f;
+	// 	if (nextIndex == 0) {
+	// 		scaledLevel = SCALER;
+	// 	} else if (nextIndex == keyFrameCount) {
+	// 		scaledLevel = 0;
+	// 	} else {
+	// 		// Grab the prev and next keyframes
+	// 		auto nextKeyframe = ChargeLookup[nextIndex];
+	// 		auto prevKeyframe = ChargeLookup[nextIndex - 1];
+
+	// 		// Compute the interpolation parameter
+    // 		int32_t scaledPercent = (prevKeyframe.scaledVoltage - scaledVoltage) * SCALER / (prevKeyframe.scaledVoltage - nextKeyframe.scaledVoltage);
+    //         int32_t doubleScaledLevel = (int32_t)prevKeyframe.scaledCharge * (SCALER - scaledPercent) + (int32_t)nextKeyframe.scaledCharge * scaledPercent;
+    //         scaledLevel = (int16_t)(doubleScaledLevel / SCALER);
+	// 	}
+
+	// 	return scaledLevel;
+    // }
 
 }
 }

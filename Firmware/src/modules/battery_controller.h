@@ -21,15 +21,19 @@ namespace Modules
 		};
 
 		BatteryState getCurrentChargeState();
+		float getCurrentLevel();
 
 		const char* getChargeStateString(BatteryState state);
 
 		typedef void(*BatteryStateChangeHandler)(void* param, BatteryState newState);
-
-		// Notification management
 		void hook(BatteryStateChangeHandler method, void* param);
 		void unHook(BatteryStateChangeHandler client);
 		void unHookWithParam(void* param);
+
+		typedef void(*BatteryLevelChangeHandler)(void* param, float level);
+		void hookLevel(BatteryLevelChangeHandler method, void* param);
+		void unHookLevel(BatteryLevelChangeHandler method);
+		void unHookLevelWithParam(void* param);
     }
 }
 

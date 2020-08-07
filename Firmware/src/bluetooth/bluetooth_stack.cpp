@@ -20,6 +20,7 @@
 #include "drivers_nrf/power_manager.h"
 #include "core/delegate_array.h"
 #include "modules/accelerometer.h"
+#include "modules/battery_controller.h"
 
 using namespace Config;
 using namespace DriversNRF;
@@ -58,6 +59,8 @@ namespace Stack
 
     #define MAX_CLIENTS 2
 
+    #define RSSI_THRESHOLD_DBM 5
+
     uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
     NRF_BLE_QWR_DEF(m_qwr);                                                  /**< Context for the Queued Write module.*/
     NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
@@ -67,6 +70,7 @@ namespace Stack
     bool notificationPending = false;
     bool connected = false;
     bool currentlyAdvertising = false;
+    int8_t rssi;
 
     char advertisingName[16];
 
@@ -90,6 +94,7 @@ namespace Stack
         uint8_t faceCount; // Which kind of dice this is
         Accelerometer::RollState rollState; // Indicates whether the dice is being shaken, 8 bits
         uint8_t currentFace; // Which face is currently up
+        uint8_t batteryLevel; // 8 bits, charge level 0 -> 255
     };
 
     // Global custom manufacturer data
@@ -130,7 +135,9 @@ namespace Stack
     };
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
-    void updateCustomAdvertisingData(Accelerometer::RollState newState, int newFace);
+    void onBatteryLevelChange(void* param, float newLevel);
+    void updateCustomAdvertisingDataState(Accelerometer::RollState newState, int newFace);
+    void updateCustomAdvertisingDataBattery(float newLevel);
 
     /**@brief Function for handling BLE events.
      *
@@ -150,6 +157,10 @@ namespace Stack
                 for (int i = 0; i < clients.Count(); ++i) {
                     clients[i].handler(clients[i].token, false);
                 }
+
+                // // No longer need rssi levels
+                // sd_ble_gap_rssi_stop(m_conn_handle);
+
                 break;
 
             case BLE_GAP_EVT_CONNECTED:
@@ -165,6 +176,13 @@ namespace Stack
 
                 // Unhook from accelerometer events, we don't need them
                 Accelerometer::unHookRollState(onRollStateChange);
+
+                // Unhook battery levels too
+                BatteryController::unHookLevel(onBatteryLevelChange);
+
+                // // Ask for rssi levels
+                // sd_ble_gap_rssi_start(m_conn_handle, RSSI_THRESHOLD_DBM, 1); 
+
                 break;
 
             case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -178,6 +196,10 @@ namespace Stack
                 err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
                 APP_ERROR_CHECK(err_code);
             } break;
+
+            case BLE_GAP_EVT_RSSI_CHANGED:
+                rssi = p_ble_evt->evt.gap_evt.params.rssi_changed.rssi;
+                break;
 
             case BLE_GATTC_EVT_TIMEOUT:
                 // Disconnect on GATT Client timeout event.
@@ -243,6 +265,7 @@ namespace Stack
 
                 // Register to be notified of accelerometer changes
                 Accelerometer::hookRollState(onRollStateChange, nullptr);
+                BatteryController::hookLevel(onBatteryLevelChange, nullptr);
 
                 currentlyAdvertising = true;
             }
@@ -427,15 +450,38 @@ namespace Stack
         // Initialize the custom advertising data
         customAdvertisingData.faceCount = (uint8_t)Config::BoardManager::getBoard()->ledCount;
         customAdvertisingData.designAndColor = Config::SettingsManager::getSettings()->designAndColor;
+        customAdvertisingData.batteryLevel = (uint8_t)(BatteryController::getCurrentLevel() * 255.0f);
+        customAdvertisingData.currentFace = Accelerometer::currentFace();
+        customAdvertisingData.rollState = Accelerometer::currentRollState();
 
-        updateCustomAdvertisingData(Accelerometer::currentRollState(), Accelerometer::currentFace());
+        // Update advertising data
+        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        APP_ERROR_CHECK(err_code);
+
+        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        APP_ERROR_CHECK(err_code);
+    }
+
+    void onBatteryLevelChange(void* param, float newLevel) {
+        updateCustomAdvertisingDataBattery(newLevel);
     }
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace) {
-        updateCustomAdvertisingData(newState, newFace);
+        updateCustomAdvertisingDataState(newState, newFace);
     }
 
-    void updateCustomAdvertisingData(Accelerometer::RollState newState, int newFace) {
+    void updateCustomAdvertisingDataBattery(float batteryLevel) {
+        customAdvertisingData.batteryLevel = (uint8_t)(batteryLevel * 255.0f);
+
+        // Update advertising data
+        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        APP_ERROR_CHECK(err_code);
+
+        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        APP_ERROR_CHECK(err_code);
+    }
+
+    void updateCustomAdvertisingDataState(Accelerometer::RollState newState, int newFace) {
         // Update manufacturer specific advertising data
         customAdvertisingData.currentFace = newFace;
         customAdvertisingData.rollState = newState;
