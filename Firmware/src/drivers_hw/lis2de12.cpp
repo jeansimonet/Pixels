@@ -376,15 +376,15 @@ namespace LIS2DE12
         Log::process();
 
         Timers::startTimer(readAccTimer, 1000, nullptr);
-        while (!Log::hasKey()) {
-            Log::process();
-			PowerManager::feed();
-            PowerManager::update();
-        }
-		Log::getKey();
-        NRF_LOG_INFO("Stopping to read acc!");
-        Timers::stopTimer(readAccTimer);
-        Log::process();
+        // while (!Log::hasKey()) {
+        //     Log::process();
+		// 	PowerManager::feed();
+        //     PowerManager::update();
+        // }
+		// Log::getKey();
+        // NRF_LOG_INFO("Stopping to read acc!");
+        // Timers::stopTimer(readAccTimer);
+        // Log::process();
     }
 	#endif
 

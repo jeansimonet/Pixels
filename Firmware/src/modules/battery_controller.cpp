@@ -259,7 +259,7 @@ namespace BatteryController
         MessageBatteryLevel lvl;
         lvl.voltage = voltage;
         lvl.level = level;
-        NRF_LOG_INFO("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER " (" NRF_LOG_FLOAT_MARKER "v)", NRF_LOG_FLOAT(level), NRF_LOG_FLOAT(voltage));
+        NRF_LOG_DEBUG("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER " (" NRF_LOG_FLOAT_MARKER "v)", NRF_LOG_FLOAT(level), NRF_LOG_FLOAT(voltage));
         MessageService::SendMessage(&lvl);
     }
 
