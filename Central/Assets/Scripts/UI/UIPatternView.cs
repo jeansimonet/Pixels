@@ -8,7 +8,7 @@ public class UIPatternView
 {
     [Header("Controls")]
     public Button backButton;
-    public Text animationNameText;
+    public InputField animationNameText;
     public Button menuButton;
     public RawImage previewImage;
     public UIParameterEnum animationSelector;
@@ -55,7 +55,7 @@ public class UIPatternView
         }
         animationNameText.text = anim.name;
 
-        animationSelector.Setup("Animation Type", () => editAnimation.type, (t) => { Debug.Log("New animation type: " + t); });
+        animationSelector.Setup("Animation Type", () => editAnimation.type, (t) => SetAnimationType((Animations.AnimationType)t));
 
         // Setup all other parameters
         var paramList = UIParameterManager.Instance.CreateControls(anim, parametersRoot);
@@ -68,7 +68,14 @@ public class UIPatternView
 
     void Awake()
     {
-        backButton.onClick.AddListener(() => NavigationManager.Instance.GoBack());
+        backButton.onClick.AddListener(SaveAndGoBack);
+        animationNameText.onEndEdit.AddListener(newName => editAnimation.name = newName);
+    }
+
+    void SaveAndGoBack()
+    {
+        AppDataSet.Instance.SaveData(); // Not sure about this one!
+        NavigationManager.Instance.GoBack();
     }
 
     void OnAnimParameterChanged(object animObject, UIParameter parameter, object newValue)
@@ -76,5 +83,33 @@ public class UIPatternView
         var theEditAnim = (Animations.EditAnimation)animObject;
         Debug.Assert(theEditAnim == editAnimation);
         dieRenderer.SetAnimation(theEditAnim);
+    }
+
+    void SetAnimationType(Animations.AnimationType newType)
+    {
+        if (newType != editAnimation.type)
+        {
+            // Change the type, which really means create a new animation and replace the old one
+            var newEditAnimation = Animations.EditAnimation.Create(newType);
+
+            // Copy over the few things we can
+            newEditAnimation.duration = editAnimation.duration;
+            newEditAnimation.name = editAnimation.name;
+            newEditAnimation.defaultPreviewSettings = editAnimation.defaultPreviewSettings;
+
+            // Replace the animation
+            AppDataSet.Instance.ReplaceAnimation(editAnimation, newEditAnimation);
+
+            // Setup the parameters again
+            UIParameterManager.Instance.DestroyControls(editAnimation);
+
+            var paramList = UIParameterManager.Instance.CreateControls(newEditAnimation, parametersRoot);
+            paramList.onParameterChanged += OnAnimParameterChanged;
+
+            dieRenderer.rotating = true;
+            dieRenderer.SetAnimation(newEditAnimation);
+
+            editAnimation = newEditAnimation;
+        }
     }
 }

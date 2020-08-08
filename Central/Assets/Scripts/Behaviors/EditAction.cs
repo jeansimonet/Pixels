@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Text;
 
 namespace Behaviors
 {
@@ -16,6 +17,7 @@ namespace Behaviors
         public abstract string ToJson(AppDataSet editSet);
         public abstract void FromJson(AppDataSet editSet, string Json);
         public abstract EditAction Duplicate();
+        public abstract void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation);
 
         public static EditAction Create(ActionType type)
         {
@@ -85,6 +87,36 @@ namespace Behaviors
                 faceIndex = this.faceIndex,
                 loopCount = this.loopCount
             };
+        }
+        public override void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation)
+        {
+            if (animation == oldAnimation)
+            {
+                animation = newAnimation;
+            }
+        }
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (animation != null)
+            {
+                builder.Append("play \"" + animation.name + "\"");
+                if (loopCount > 1)
+                {
+                    builder.Append("x");
+                    builder.Append(loopCount);
+                }
+                if (faceIndex != 0xFF)
+                {
+                    builder.Append(" on face ");
+                    builder.Append(faceIndex + 1);
+                }
+            }
+            else
+            {
+                builder.Append("- Please select a Pattern -");
+            }
+            return builder.ToString();
         }
     };
 }

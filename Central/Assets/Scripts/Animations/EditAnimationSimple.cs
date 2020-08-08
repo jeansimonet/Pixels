@@ -8,8 +8,8 @@ namespace Animations
     public class EditAnimationSimple
         : EditAnimation
     {
-		public AnimationSimpleLEDType ledType;
-        public Color32 color;
+		public AnimationSimpleLEDType ledType = AnimationSimpleLEDType.AllLEDs;
+        public Color32 color = new Color32(0xFF, 0x30, 0x00, 0xff);
 
         public override AnimationType type { get { return AnimationType.Simple; } }
         public override Animation ToAnimation(EditDataSet editSet, DataSet set)

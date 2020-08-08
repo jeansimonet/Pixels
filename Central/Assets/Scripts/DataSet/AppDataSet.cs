@@ -5,6 +5,12 @@ using System.IO;
 using Animations;
 using Behaviors;
 
+[System.Serializable]
+public class PreviewSettings
+{
+    public DiceVariants.DesignAndColor design;
+}
+
 public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 {
     public List<EditAnimation> animations = new List<EditAnimation>();
@@ -64,11 +70,55 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         }
     }
 
+    public EditAnimation AddNewDefaultAnimation()
+    {
+        var newAnim = new Animations.EditAnimationSimple();
+        newAnim.duration = 3.0f;
+        newAnim.color = new Color32(0xFF, 0x30, 0x00, 0xFF);
+        newAnim.ledType = AnimationSimpleLEDType.AllLEDs;
+        newAnim.name = "New Animation";
+        animations.Add(newAnim);
+        return newAnim;
+    }
+
     public EditAnimation DuplicateAnimation(EditAnimation animation)
     {
         var newAnim = animation.Duplicate();
         animations.Add(newAnim);
         return newAnim;
+    }
+
+    public void ReplaceAnimation(EditAnimation oldAnimation, EditAnimation newAnimation)
+    {
+        foreach (var behavior in behaviors)
+        {
+            behavior.ReplaceAnimation(oldAnimation, newAnimation);
+        }
+        int oldAnimIndex = animations.IndexOf(oldAnimation);
+        animations[oldAnimIndex] = newAnimation;
+    }
+
+    public EditBehavior AddNewDefaultBehavior()
+    {
+        var newBehavior = new Behaviors.EditBehavior();
+        newBehavior.name = "New Behavior";
+        newBehavior.description = "New Behavior Description";
+        newBehavior.rules.Add(new Behaviors.EditRule()
+        {
+            condition = new Behaviors.EditConditionFaceCompare()
+            {
+                flags = ConditionFaceCompare_Flags.Equal,
+                faceIndex = 19
+            },
+            action = new Behaviors.EditActionPlayAnimation()
+            {
+                animation = null,
+                faceIndex = 0,
+                loopCount = 1
+            }
+        });
+        behaviors.Add(newBehavior);
+        return newBehavior;
     }
 
     public EditBehavior DuplicateBehavior(EditBehavior behavior)
@@ -86,7 +136,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     /// <summary>
     /// Load our pool from file
     /// </sumary>
-    void LoadData()
+    public void LoadData()
     {
         var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.DataSetFilename);
         bool ret = File.Exists(path);
@@ -100,7 +150,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     /// <summary>
     /// Save our pool to file
     /// </sumary>
-    void SaveData()
+    public void SaveData()
     {
         var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.DataSetFilename);
         File.WriteAllText(path, ToJson());

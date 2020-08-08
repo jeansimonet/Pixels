@@ -48,6 +48,11 @@ public class UIPatternsView
         return ret;
     }
 
+    void Awake()
+    {
+        addPatternButton.onClick.AddListener(AddNewPattern);
+    }
+
     void DestroyPatternToken(UIPatternToken die)
     {
         GameObject.Destroy(die.gameObject);
@@ -81,4 +86,10 @@ public class UIPatternsView
         }
     }
 
+    void AddNewPattern()
+    {
+        // Create a new default animation
+        var newAnim = AppDataSet.Instance.AddNewDefaultAnimation();
+        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, newAnim);
+    }
 }

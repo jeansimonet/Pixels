@@ -6,12 +6,6 @@ using System.Text;
 
 namespace Animations
 {
-    [System.Serializable]
-    public class PreviewSettings
-    {
-        public DiceVariants.DesignAndColor design;
-    }
-
     /// <summary>
     /// An animation is a list of tracks!
     /// </summary>

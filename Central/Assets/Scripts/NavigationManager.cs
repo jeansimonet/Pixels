@@ -91,7 +91,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     {
         foreach (var pat in pages)
         {
-            pat.page.Leave();
+            pat.page.gameObject.SetActive(false);
             if (pat.button != null)
             {
                 pat.button.onClick.AddListener(() => GoToRoot(pat.page));

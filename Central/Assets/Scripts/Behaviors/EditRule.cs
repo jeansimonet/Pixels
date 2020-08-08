@@ -67,5 +67,10 @@ namespace Behaviors
                 action = action.Duplicate()
             };
         }
+
+        public void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation)
+        {
+            action.ReplaceAnimation(oldAnimation, newAnimation);
+        }
     }
 }

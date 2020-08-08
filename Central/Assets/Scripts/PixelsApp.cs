@@ -7,6 +7,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     [Header("Panels")]
     public UIDialogBox dialogBox;
     public UIColorPicker colorPicker;
+    public UIAnimationPicker animationPicker;
 
     public enum PageId
     {
@@ -52,6 +53,16 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             colorPicker.Show(title, previousColor, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowAnimationPicker(string title, Animations.EditAnimation previousAnimation, System.Action<bool, Animations.EditAnimation> closeAction)
+    {
+        bool ret = !animationPicker.isShown;
+        if (ret)
+        {
+            animationPicker.Show(title, previousAnimation, closeAction);
         }
         return ret;
     }
