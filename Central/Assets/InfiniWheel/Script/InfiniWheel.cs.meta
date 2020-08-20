@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 496b029bf04289949b896a79b313ab1c
+labels:
+- Wheel
+- UI
+- Picker
+- Date
+- Selector
+- Infinite
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
