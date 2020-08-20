@@ -136,30 +136,30 @@ namespace DataSet
         newData->headMarker = ANIMATION_SET_VALID_KEY;
 		newData->version = ANIMATION_SET_VERSION;
 
-		newData->palette = (const uint8_t*)(dataAddress + currentOffset);
+		newData->animationBits.palette = (const uint8_t*)(dataAddress + currentOffset);
         //auto writePalette = (const uint8_t*)(writeBufferAddress + currentOffset);
         currentOffset += paletteSize * sizeof(uint8_t);
-		newData->paletteSize = paletteSize;
+		newData->animationBits.paletteSize = paletteSize;
 
-		newData->rgbKeyframes = (const RGBKeyframe*)(dataAddress + currentOffset);
+		newData->animationBits.rgbKeyframes = (const RGBKeyframe*)(dataAddress + currentOffset);
         //auto writeKeyframes = (RGBKeyframe*)(writeBufferAddress + currentOffset);
         currentOffset += rgbKeyframeCount * sizeof(RGBKeyframe);
-		newData->rgbKeyFrameCount = rgbKeyframeCount;
+		newData->animationBits.rgbKeyFrameCount = rgbKeyframeCount;
 
-		newData->rgbTracks = (const RGBTrack*)(dataAddress + currentOffset);
+		newData->animationBits.rgbTracks = (const RGBTrack*)(dataAddress + currentOffset);
         //auto writeRGBTracks = (RGBTrack*)(writeBufferAddress + currentOffset);
 		currentOffset += rgbTrackCount * sizeof(RGBTrack);
-        newData->rgbTrackCount = rgbTrackCount;
+        newData->animationBits.rgbTrackCount = rgbTrackCount;
 
-		newData->keyframes = (const Keyframe*)(dataAddress + currentOffset);
+		newData->animationBits.keyframes = (const Keyframe*)(dataAddress + currentOffset);
         //auto writeKeyframes = (Keyframe*)(writeBufferAddress + currentOffset);
         currentOffset += keyframeCount * sizeof(Keyframe);
-		newData->keyFrameCount = keyframeCount;
+		newData->animationBits.keyFrameCount = keyframeCount;
 
-		newData->tracks = (const Track*)(dataAddress + currentOffset);
+		newData->animationBits.tracks = (const Track*)(dataAddress + currentOffset);
         //auto writeRGBTracks = (Track*)(writeBufferAddress + currentOffset);
 		currentOffset += trackCount * sizeof(Track);
-        newData->trackCount = trackCount;
+        newData->animationBits.trackCount = trackCount;
 
 		newData->animationOffsets = (const uint16_t*)(dataAddress + currentOffset);
         auto writeAnimationOffsets = (uint16_t*)(writeBufferAddress + currentOffset);
@@ -200,8 +200,7 @@ namespace DataSet
         auto writeBehaviors = (Behavior*)(writeBufferAddress + currentOffset);
         currentOffset += behaviorCount * sizeof(Behavior);
 		newData->behaviorsCount = 1;
-        
-		newData->heatTrackIndex = 0;
+
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 
 		// Create animations

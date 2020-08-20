@@ -7,8 +7,8 @@ namespace Animations
 	/// constructor for rainbow animations
 	/// Needs to have an associated preset passed in
 	/// </summary>
-	AnimationInstanceRainbow::AnimationInstanceRainbow(const AnimationRainbow* preset)
-		: AnimationInstance(preset) {
+	AnimationInstanceRainbow::AnimationInstanceRainbow(const AnimationRainbow* preset, const DataSet::AnimationBits* bits)
+		: AnimationInstance(preset, bits) {
 	}
 
 	/// <summary>

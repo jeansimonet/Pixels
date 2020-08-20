@@ -26,28 +26,10 @@ namespace DataSet
 	uint32_t dataSize();
 	uint32_t dataHash();
 
-	// Palette
-	uint32_t getPaletteColor(uint16_t colorIndex);
-	uint32_t getColor(void* token, uint16_t colorIndex);
-
-	// Animation keyframes (time and color)
-	const Animations::RGBKeyframe& getRGBKeyframe(uint16_t keyFrameIndex);
-	uint16_t getRGBKeyframeCount();
-
-	// RGB tracks, list of keyframes
-	const Animations::RGBTrack& getRGBTrack(uint16_t trackIndex);
-	Animations::RGBTrack const * const getRGBTracks(uint16_t tracksStartIndex);
-	uint16_t getRGBTrackCount();
 	const Animations::RGBTrack& getHeatTrack();
 
-	// Animation keyframes (time and intensity)
-	const Animations::Keyframe& getKeyframe(uint16_t keyFrameIndex);
-	uint16_t getKeyframeCount();
-
-	// RGB tracks, list of keyframes
-	const Animations::Track& getTrack(uint16_t trackIndex);
-	Animations::Track const * const getTracks(uint16_t tracksStartIndex);
-	uint16_t getTrackCount();
+	// Animation bits contain palette and keyframes for animations
+	const AnimationBits* getAnimationBits();
 
 	// Animations
 	const Animations::Animation* getAnimation(int animationIndex);

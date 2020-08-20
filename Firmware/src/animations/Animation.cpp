@@ -1,5 +1,6 @@
 #include "animation.h"
 #include "data_set/data_set.h"
+#include "data_set/data_animation_bits.h"
 
 #include "assert.h"
 #include "../utils/utils.h"
@@ -20,6 +21,7 @@ void operator delete(void* ptr, unsigned int) { free(ptr); }
 #define MAX_LEVEL (256)
 
 using namespace Utils;
+using namespace DataSet;
 
 namespace Animations
 {
@@ -33,8 +35,10 @@ namespace Animations
 		return toColor(r * intensity / MAX_LEVEL, g * intensity / MAX_LEVEL, b * intensity / MAX_LEVEL);
 	}
 
-	AnimationInstance::AnimationInstance(const Animation* preset) 
-		: animationPreset(preset) {
+	AnimationInstance::AnimationInstance(const Animation* preset, const AnimationBits* bits) 
+		: animationPreset(preset)
+		, animationBits(bits)
+	{
 	}
 
 	AnimationInstance::~AnimationInstance() {
@@ -49,24 +53,24 @@ namespace Animations
 	AnimationInstance* createAnimationInstance(int animationIndex) {
 		// Grab the preset data
 		const Animation* preset = DataSet::getAnimation(animationIndex);
-		return createAnimationInstance(preset);
+		return createAnimationInstance(preset, DataSet::getAnimationBits());
 	}
 
-	AnimationInstance* createAnimationInstance(const Animation* preset) {
+	AnimationInstance* createAnimationInstance(const Animation* preset, const AnimationBits* bits) {
 		AnimationInstance* ret = nullptr;
 		switch (preset->type) {
 			case Animation_Simple:
 				// Maybe we'll pass an allocator at some point, this is the only place I've ever used a new in the firmware...
-				ret = new AnimationInstanceSimple(static_cast<const AnimationSimple*>(preset));
+				ret = new AnimationInstanceSimple(static_cast<const AnimationSimple*>(preset), bits);
 				break;
 			case Animation_Rainbow:
-				ret = new AnimationInstanceRainbow(static_cast<const AnimationRainbow*>(preset));
+				ret = new AnimationInstanceRainbow(static_cast<const AnimationRainbow*>(preset), bits);
 				break;
 			case Animation_Keyframed:
-				ret = new AnimationInstanceKeyframed(static_cast<const AnimationKeyframed*>(preset));
+				ret = new AnimationInstanceKeyframed(static_cast<const AnimationKeyframed*>(preset), bits);
 				break;
 			case Animation_GradientPattern:
-				ret = new AnimationInstanceGradientPattern(static_cast<const AnimationGradientPattern*>(preset));
+				ret = new AnimationInstanceGradientPattern(static_cast<const AnimationGradientPattern*>(preset), bits);
 				break;
 			default:
 				NRF_LOG_ERROR("Unknown animation preset type");

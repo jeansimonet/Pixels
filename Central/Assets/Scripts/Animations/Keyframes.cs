@@ -32,9 +32,9 @@ namespace Animations
             return (ushort)(timeAndColor & 0b01111111);
         }
 
-        public uint color(DataSet set, IAnimationSpecialColorToken token)
+        public uint color(DataSet.AnimationBits bits)
         {
-            return token.getColor(set, colorIndex());
+            return bits.getColor32(colorIndex());
         }
 
         public void setTimeAndColorIndex(ushort timeInMS, ushort colorIndex)

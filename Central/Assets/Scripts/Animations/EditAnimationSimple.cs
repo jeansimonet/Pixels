@@ -18,7 +18,7 @@ namespace Animations
         public float fade = 0.1f;
 
         public override AnimationType type { get { return AnimationType.Simple; } }
-        public override Animation ToAnimation(EditDataSet editSet, DataSet set)
+        public override Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             var ret = new AnimationSimple();
             ret.duration = (ushort)(this.duration * 1000.0f);

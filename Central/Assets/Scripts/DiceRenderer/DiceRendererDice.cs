@@ -175,7 +175,7 @@ public class DiceRendererDice : MonoBehaviour
                     {
                         int [] retIndices = new int[20];
                         uint[] retColors = new uint[20];
-                        int ledCount = currentInstance.updateLEDs(dataSet, time, retIndices, retColors);
+                        int ledCount = currentInstance.updateLEDs(time, retIndices, retColors);
                         for (int t = 0; t < ledCount; ++t)
                         {
                             uint color = retColors[t];
@@ -234,8 +234,8 @@ public class DiceRendererDice : MonoBehaviour
         EditDataSet tempEditSet = new EditDataSet();
         tempEditSet.animations.Add(animations[animationIndex]);
         dataSet = tempEditSet.ToDataSet();
-        currentInstance = dataSet.animations[0].CreateInstance();
-        currentInstance.start(dataSet, startTime, remapFace, false);
+        currentInstance = dataSet.animations[0].CreateInstance(dataSet.animationBits);
+        currentInstance.start(startTime, remapFace, false);
     }
 
 }

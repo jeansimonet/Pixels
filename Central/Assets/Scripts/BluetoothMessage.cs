@@ -347,7 +347,6 @@ public class DieMessageTransferAnimSet
 	public ushort actionSize;
 	public ushort ruleCount;
 	public ushort behaviorCount;
-	public ushort heatTrackIndex;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -4,6 +4,11 @@
 
 #pragma pack(push, 1)
 
+namespace DataSet
+{
+	struct AnimationBits;
+}
+
 namespace Animations
 {
 	/// <summary>
@@ -37,12 +42,13 @@ namespace Animations
 	{
 	public:
 		Animation const * animationPreset;
+		const DataSet::AnimationBits* animationBits;
 		int startTime; //ms
 		uint8_t remapFace;
 		bool loop;
 
 	protected:
-		AnimationInstance(const Animation* preset);
+		AnimationInstance(const Animation* preset, const DataSet::AnimationBits* bits);
 
 	public:
 		virtual ~AnimationInstance();
@@ -52,17 +58,8 @@ namespace Animations
 		virtual int stop(int retIndices[]) = 0;
 	};
 
-	/// <summary>
-	/// Special interface class to let RGB keyframes access (and blend) with special colors.
-	/// </summary>
-	class IAnimationSpecialColorToken
-	{
-	public:
-		virtual uint32_t getColor(uint32_t colorIndex) const = 0;
-	};
-
 	Animations::AnimationInstance* createAnimationInstance(int animationIndex);
-	Animations::AnimationInstance* createAnimationInstance(const Animations::Animation* preset);
+	Animations::AnimationInstance* createAnimationInstance(const Animations::Animation* preset, const DataSet::AnimationBits* bits);
 	void destroyAnimationInstance(Animations::AnimationInstance* animationInstance);
 
 }

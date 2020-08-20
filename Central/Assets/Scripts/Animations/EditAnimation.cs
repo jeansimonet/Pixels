@@ -23,7 +23,7 @@ namespace Animations
         [JsonIgnore]
         public abstract AnimationType type { get; }
 
-        public abstract Animation ToAnimation(EditDataSet editSet, DataSet set);
+        public abstract Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits);
         public abstract EditAnimation Duplicate();
 
         public static EditAnimation Create(AnimationType type)

@@ -21,13 +21,13 @@ namespace Animations
             return track;
         }
 
-        public Track[] ToTracks(EditDataSet editSet, DataSet set)
+        public Track[] ToTracks(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             Track[] ret = new Track[gradients.Count];
             for (int i = 0; i < gradients.Count; ++i)
             {
                 Track t = new Track();
-                t.keyframesOffset = (ushort)set.keyframes.Count;
+                t.keyframesOffset = (ushort)bits.keyframes.Count;
                 t.keyFrameCount = (byte)gradients[i].keyframes.Count;
                 t.ledMask = 0;
                 t.ledMask = (uint)(1 << i);
@@ -35,8 +35,8 @@ namespace Animations
                 // Add the keyframes
                 foreach (var editKeyframe in gradients[i].keyframes)
                 {
-                    var kf = editKeyframe.ToKeyframe(editSet, set);
-                    set.keyframes.Add(kf);
+                    var kf = editKeyframe.ToKeyframe(editSet);
+                    bits.keyframes.Add(kf);
                 }
                 ret[i] = t;
             }
@@ -66,7 +66,6 @@ namespace Animations
     public class EditAnimationGradientPattern
         : EditAnimation
     {
-		public SpecialColor specialColorType; // is really SpecialColor
         [Pattern]
 		public EditPattern pattern = new EditPattern();
         [Gradient]
@@ -74,21 +73,20 @@ namespace Animations
 
         public override AnimationType type => AnimationType.GradientPattern;
 
-        public override Animation ToAnimation(EditDataSet editSet, DataSet set)
+        public override Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             var ret = new AnimationGradientPattern();
 		    ret.duration = (ushort)(duration * 1000); // stored in milliseconds
-		    ret.specialColorType = specialColorType;
-		    ret.tracksOffset = (ushort)set.tracks.Count;
-            var tracks = pattern.ToTracks(editSet, set);
+		    ret.tracksOffset = (ushort)bits.tracks.Count;
+            var tracks = pattern.ToTracks(editSet, bits);
 		    ret.trackCount = (ushort)tracks.Length;
-            set.tracks.AddRange(tracks);
+            bits.tracks.AddRange(tracks);
 
             // Add gradient
-            ret.gradientTrackOffset = (ushort)set.rgbTracks.Count;
+            ret.gradientTrackOffset = (ushort)bits.rgbTracks.Count;
             var tempTrack = new EditRGBTrack() { gradient = gradient };
-            var gradientTrack = tempTrack.ToTrack(editSet, set);
-            set.rgbTracks.Add(gradientTrack);
+            var gradientTrack = tempTrack.ToTrack(editSet, bits);
+            bits.rgbTracks.Add(gradientTrack);
 
             return ret;
         }
@@ -98,7 +96,6 @@ namespace Animations
             EditAnimationGradientPattern ret = new EditAnimationGradientPattern();
             ret.name = this.name;
 		    ret.duration = this.duration;
-            ret.specialColorType = this.specialColorType;
             ret.pattern = this.pattern.Duplicate();
             ret.gradient = gradient.Duplicate();
             return ret;

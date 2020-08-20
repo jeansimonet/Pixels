@@ -8,6 +8,7 @@
 #include "modules/accelerometer.h"
 #include "config/board_config.h"
 #include "config/settings.h"
+#include "data_animation_bits.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bulk_data_transfer.h"
@@ -98,74 +99,8 @@ namespace DataSet
 			data->tailMarker == ANIMATION_SET_VALID_KEY;
 	}
 
-	uint32_t getPaletteColor(uint16_t colorIndex) {
-		if (colorIndex < (data->paletteSize / 3)) {
-			return toColor(
-					data->palette[colorIndex * 3 + 0],
-					data->palette[colorIndex * 3 + 1],
-					data->palette[colorIndex * 3 + 2]);
-		} else {
-			return 0xFFFFFFFF;
-		}
-	}
-
-	uint16_t getPaletteSize() {
-		assert(CheckValid());
-		return data->paletteSize;
-	}
-
-	const RGBKeyframe& getRGBKeyframe(uint16_t keyFrameIndex) {
-		assert(CheckValid() && keyFrameIndex < data->rgbKeyFrameCount);
-		return data->rgbKeyframes[keyFrameIndex];
-	}
-
-	uint16_t getRGBKeyframeCount() {
-		assert(CheckValid());
-		return data->rgbKeyFrameCount;
-	}
-
-	const RGBTrack& getRGBTrack(uint16_t trackIndex) {
-		assert(CheckValid() && trackIndex < data->rgbTrackCount);
-		return data->rgbTracks[trackIndex];
-	}
-
-	RGBTrack const * const getRGBTracks(uint16_t tracksStartIndex) {
-		assert(CheckValid() && tracksStartIndex < data->rgbTrackCount);
-		return &(data->rgbTracks[tracksStartIndex]);
-	}
-
-	uint16_t getRGBTrackCount() {
-		assert(CheckValid());
-		return data->rgbTrackCount;
-	}
-
-	const RGBTrack& getHeatTrack() {
-		return data->rgbTracks[data->heatTrackIndex];
-	}
-
-	const Keyframe& getKeyframe(uint16_t keyFrameIndex) {
-		assert(CheckValid() && keyFrameIndex < data->keyFrameCount);
-		return data->keyframes[keyFrameIndex];
-	}
-
-	uint16_t getKeyframeCount() {
-		assert(CheckValid());
-		return data->keyFrameCount;
-	}
-
-	const Track& getTrack(uint16_t trackIndex) {
-		assert(CheckValid() && trackIndex < data->trackCount);
-		return data->tracks[trackIndex];
-	}
-
-	Track const * const getTracks(uint16_t tracksStartIndex) {
-		assert(CheckValid() && tracksStartIndex < data->trackCount);
-		return &(data->tracks[tracksStartIndex]);
-	}
-
-	uint16_t getTrackCount() {
-		assert(CheckValid());
-		return data->trackCount;
+	const AnimationBits* getAnimationBits() {
+		return &(data->animationBits);
 	}
 
 	const Animation* getAnimation(int animationIndex) {
@@ -277,20 +212,20 @@ namespace DataSet
 			message->ruleCount * sizeof(Rule) +
 			message->behaviorCount * sizeof(Behavior);
 
-		NRF_LOG_DEBUG("Animation Data to be received:");
-		NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
-		NRF_LOG_DEBUG("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
-		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
-		NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(Track));
-		NRF_LOG_DEBUG("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Animations: %d", message->animationSize);
-		NRF_LOG_DEBUG("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Conditions: %d", message->conditionSize);
-		NRF_LOG_DEBUG("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Actions: %d", message->actionSize);
-		NRF_LOG_DEBUG("Rules: %d * %d", message->ruleCount, sizeof(Rule));
-		NRF_LOG_DEBUG("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
+		NRF_LOG_INFO("Animation Data to be received:");
+		NRF_LOG_INFO("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
+		NRF_LOG_INFO("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_INFO("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
+		NRF_LOG_INFO("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
+		NRF_LOG_INFO("Tracks: %d * %d", message->trackCount, sizeof(Track));
+		NRF_LOG_INFO("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
+		NRF_LOG_INFO("Animations: %d", message->animationSize);
+		NRF_LOG_INFO("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
+		NRF_LOG_INFO("Conditions: %d", message->conditionSize);
+		NRF_LOG_INFO("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
+		NRF_LOG_INFO("Actions: %d", message->actionSize);
+		NRF_LOG_INFO("Rules: %d * %d", message->ruleCount, sizeof(Rule));
+		NRF_LOG_INFO("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
 
 		uint32_t totalSize = dabs->bufferSize + sizeof(Data);
 		uint32_t flashSize = Flash::getFlashByteSize(totalSize);
@@ -310,24 +245,24 @@ namespace DataSet
 		dabs->newData.version = ANIMATION_SET_VERSION;
 
 		uint32_t address = dataAddress;
-		dabs->newData.palette = (const uint8_t*)address;
-		dabs->newData.paletteSize = message->paletteSize;
+		dabs->newData.animationBits.palette = (const uint8_t*)address;
+		dabs->newData.animationBits.paletteSize = message->paletteSize;
 		address += message->paletteSize * sizeof(uint8_t);
 
-		dabs->newData.rgbKeyframes = (const RGBKeyframe*)address;
-		dabs->newData.rgbKeyFrameCount = message->rgbKeyFrameCount;
+		dabs->newData.animationBits.rgbKeyframes = (const RGBKeyframe*)address;
+		dabs->newData.animationBits.rgbKeyFrameCount = message->rgbKeyFrameCount;
 		address += message->rgbKeyFrameCount * sizeof(RGBKeyframe);
 
-		dabs->newData.rgbTracks = (const RGBTrack*)address;
-		dabs->newData.rgbTrackCount = message->rgbTrackCount;
+		dabs->newData.animationBits.rgbTracks = (const RGBTrack*)address;
+		dabs->newData.animationBits.rgbTrackCount = message->rgbTrackCount;
 		address += message->rgbTrackCount * sizeof(RGBTrack);
 
-		dabs->newData.keyframes = (const Keyframe*)address;
-		dabs->newData.keyFrameCount = message->keyFrameCount;
+		dabs->newData.animationBits.keyframes = (const Keyframe*)address;
+		dabs->newData.animationBits.keyFrameCount = message->keyFrameCount;
 		address += message->keyFrameCount * sizeof(Keyframe);
 
-		dabs->newData.tracks = (const Track*)address;
-		dabs->newData.trackCount = message->trackCount;
+		dabs->newData.animationBits.tracks = (const Track*)address;
+		dabs->newData.animationBits.trackCount = message->trackCount;
 		address += message->trackCount * sizeof(Track);
 
 		dabs->newData.animationOffsets = (const uint16_t*)address;
@@ -359,7 +294,6 @@ namespace DataSet
 		dabs->newData.behaviorsCount = message->behaviorCount;
 		address += message->behaviorCount * sizeof(Behavior);
 
-		dabs->newData.heatTrackIndex = message->heatTrackIndex;
 		dabs->newData.tailMarker = ANIMATION_SET_VALID_KEY;
 
 		
@@ -417,11 +351,11 @@ namespace DataSet
 
 	void printAnimationInfo() {
 		Timers::pause();
-		NRF_LOG_INFO("Palette: %d * %d", data->paletteSize, sizeof(uint8_t));
-		NRF_LOG_INFO("RGB Keyframes: %d * %d", data->rgbKeyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_INFO("RGB Tracks: %d * %d", data->rgbTrackCount, sizeof(RGBTrack));
-		NRF_LOG_INFO("Keyframes: %d * %d", data->keyFrameCount, sizeof(Keyframe));
-		NRF_LOG_INFO("Tracks: %d * %d", data->trackCount, sizeof(Track));
+		NRF_LOG_INFO("Palette: %d * %d", data->animationBits.paletteSize, sizeof(uint8_t));
+		NRF_LOG_INFO("RGB Keyframes: %d * %d", data->animationBits.rgbKeyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_INFO("RGB Tracks: %d * %d", data->animationBits.rgbTrackCount, sizeof(RGBTrack));
+		NRF_LOG_INFO("Keyframes: %d * %d", data->animationBits.keyFrameCount, sizeof(Keyframe));
+		NRF_LOG_INFO("Tracks: %d * %d", data->animationBits.trackCount, sizeof(Track));
 		NRF_LOG_INFO("Animation Offsets: %d * %d", data->animationCount, sizeof(uint16_t));
 		NRF_LOG_INFO("Animations: %d", data->animationsSize);
 		NRF_LOG_INFO("Conditions Offsets: %d * %d", data->conditionCount, sizeof(uint16_t));
@@ -436,11 +370,11 @@ namespace DataSet
 	uint32_t computeDataSetSize() {
 		// Compute the size of the needed buffer to store all that data!
 		return 
-            data->paletteSize * sizeof(uint8_t) +
-			data->rgbKeyFrameCount * sizeof(RGBKeyframe) +
-			data->rgbTrackCount * sizeof(RGBTrack) +
-			data->keyFrameCount * sizeof(Keyframe) +
-			data->trackCount * sizeof(Track) +
+            data->animationBits.paletteSize * sizeof(uint8_t) +
+			data->animationBits.rgbKeyFrameCount * sizeof(RGBKeyframe) +
+			data->animationBits.rgbTrackCount * sizeof(RGBTrack) +
+			data->animationBits.keyFrameCount * sizeof(Keyframe) +
+			data->animationBits.trackCount * sizeof(Track) +
 			Utils::roundUpTo4(data->animationCount * sizeof(uint16_t)) + data->animationsSize +
             Utils::roundUpTo4(data->actionCount * sizeof(uint16_t)) + data->actionsSize +
             Utils::roundUpTo4(data->conditionCount * sizeof(uint16_t)) + data->conditionsSize + 

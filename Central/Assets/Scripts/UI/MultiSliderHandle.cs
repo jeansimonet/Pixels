@@ -140,14 +140,4 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		_canvas = GetComponent<Canvas>();
 		buttonsRoot.gameObject.SetActive(false);
 	}
-
-	// Use this for initialization
-	void Start()
-	{
-		// If deleted before start run, we won't find the TimelineView
-		if (GetComponentInParent<TimelineView>() != null)
-		{
-			Snap();
-		}
-	}
 }

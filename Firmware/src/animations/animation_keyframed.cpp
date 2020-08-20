@@ -1,6 +1,7 @@
 #include "animation_keyframed.h"
 #include "keyframes.h"
 #include "data_set/data_set.h"
+#include "data_set/data_animation_bits.h"
 #include "assert.h"
 #include "../utils/utils.h"
 
@@ -12,99 +13,11 @@
 namespace Animations
 {
 	/// <summary>
-	/// Returns the length of the track, based on the keyframes it is storing
-	/// </sumary>
-	uint16_t RGBTrack::getDuration() const {
-		return DataSet::getRGBKeyframe(keyframesOffset + keyFrameCount - 1).time();
-	}
-
-	/// <summary>
-	/// Grab a keyframe from the track
-	/// </sumary>
-	const RGBKeyframe& RGBTrack::getRGBKeyframe(uint16_t keyframeIndex) const {
-		assert(keyframeIndex < keyFrameCount);
-		return DataSet::getRGBKeyframe(keyframesOffset + keyframeIndex);
-	}
-
-	/// <summary>
-	/// Evaluate an animation track's for a given time, in milliseconds, and fills returns arrays of led indices and colors
-	/// Values outside the track's range are clamped to first or last keyframe value.
-	/// </summary>
-	int RGBTrack::evaluate(const IAnimationSpecialColorToken* token, int time, int retIndices[], uint32_t retColors[]) const {
-		if (keyFrameCount == 0)
-			return 0;
-
-		uint32_t color = evaluateColor(token, time);
-
-		// Fill the return arrays
-		int currentCount = 0;
-		for (int i = 0; i < Config::BoardManager::getBoard()->ledCount; ++i) {
-			if (ledMask & (1 << i)) {
-				retIndices[currentCount] = i;
-				retColors[currentCount] = color;
-				currentCount++;
-			}
-		}
-		return currentCount;
-	}
-
-	/// <summary>
-	/// Evaluate an animation track's for a given time, in milliseconds
-	/// Values outside the track's range are clamped to first or last keyframe value.
-	/// </summary>
-	uint32_t RGBTrack::evaluateColor(const IAnimationSpecialColorToken* token, int time) const
-	{
-		// Find the first keyframe
-		int nextIndex = 0;
-		while (nextIndex < keyFrameCount && getRGBKeyframe(nextIndex).time() < time) {
-			nextIndex++;
-		}
-
-		uint32_t color = 0;
-		if (nextIndex == 0) {
-			// The first keyframe is already after the requested time, clamp to first value
-			color = getRGBKeyframe(nextIndex).color(token);
-		} else if (nextIndex == keyFrameCount) {
-			// The last keyframe is still before the requested time, clamp to the last value
-			color = getRGBKeyframe(nextIndex- 1).color(token);
-		} else {
-			// Grab the prev and next keyframes
-			auto nextKeyframe = getRGBKeyframe(nextIndex);
-			uint16_t nextKeyframeTime = nextKeyframe.time();
-			uint32_t nextKeyframeColor = nextKeyframe.color(token);
-
-			auto prevKeyframe = getRGBKeyframe(nextIndex - 1);
-			uint16_t prevKeyframeTime = prevKeyframe.time();
-			uint32_t prevKeyframeColor = prevKeyframe.color(token);
-
-			// Compute the interpolation parameter
-			color = Utils::interpolateColors(prevKeyframeColor, prevKeyframeTime, nextKeyframeColor, nextKeyframeTime, time);
-		}
-
-		return color;
-	}
-
-	/// <summary>
-	/// Extracts the LED indices from the led bit mask
-	/// </sumary>
-	int RGBTrack::extractLEDIndices(int retIndices[]) const {
-		// Fill the return arrays
-		int currentCount = 0;
-		for (int i = 0; i < Config::BoardManager::getBoard()->ledCount; ++i) {
-			if (ledMask & (1 << i)) {
-				retIndices[currentCount] = i;
-				currentCount++;
-			}
-		}
-		return currentCount;
-	}
-
-	/// <summary>
 	/// constructor for keyframe-based animation instances
 	/// Needs to have an associated preset passed in
 	/// </summary>
-	AnimationInstanceKeyframed::AnimationInstanceKeyframed(const AnimationKeyframed* preset)
-		: AnimationInstance(preset) {
+	AnimationInstanceKeyframed::AnimationInstanceKeyframed(const AnimationKeyframed* preset, const DataSet::AnimationBits* bits)
+		: AnimationInstance(preset, bits) {
 	}
 
 	/// <summary>
@@ -125,30 +38,6 @@ namespace Animations
 	/// </summary>
 	void AnimationInstanceKeyframed::start(int _startTime, uint8_t _remapFace, bool _loop) {
 		AnimationInstance::start(_startTime, _remapFace, _loop);
-
-		switch (getPreset()->specialColorType) {
-			case SpecialColor_Face:
-				// Store a color based on the face
-				specialColorPayload = Rainbow::faceWheel(_remapFace, Config::BoardManager::getBoard()->ledCount);
-				break;
-			case SpecialColor_ColorWheel:
-				// Store the face index
-				specialColorPayload = _remapFace;
-				break;
-			case SpecialColor_Heat_Start:
-				{
-					// Use the global heat value
-					auto& trk = DataSet::getHeatTrack();
-					// FIXME!!! Need a separate heat module
-					int heatMs = int(Modules::AnimController::getCurrentHeat() * trk.getDuration());
-					specialColorPayload = trk.evaluateColor(nullptr, heatMs);
-				}
-				break;
-			default:
-				// Other cases don't need any per-instance payload
-				specialColorPayload = 0;
-				break;
-		}
 	}
 
 	/// <summary>
@@ -163,7 +52,7 @@ namespace Animations
 	{
 		int time = ms - startTime;
 		auto preset = getPreset();
-		const RGBTrack * tracks = DataSet::getRGBTracks(preset->tracksOffset);
+		const RGBTrack * tracks = animationBits->getRGBTracks(preset->tracksOffset);
 
 		// Each track will append its led indices and colors into the return array
 		// The assumption is that led indices don't overlap between tracks of a single animation,
@@ -174,7 +63,7 @@ namespace Animations
 		for (int i = 0; i < preset->trackCount; ++i)
 		{
 			auto& track = tracks[i]; 
-			auto count = track.evaluate(this, time, indices, colors);
+			auto count = track.evaluate(animationBits, time, indices, colors);
 			indices += count;
 			colors += count;
 			totalCount += count;
@@ -187,7 +76,7 @@ namespace Animations
 	/// </summary>
 	int AnimationInstanceKeyframed::stop(int retIndices[]) {
 		auto preset = getPreset();
-		const RGBTrack * tracks = DataSet::getRGBTracks(preset->tracksOffset);
+		const RGBTrack * tracks = animationBits->getRGBTracks(preset->tracksOffset);
 		// Each track will append its led indices and colors into the return array
 		// The assumption is that led indices don't overlap between tracks of a single animation,
 		// so there will always be enough room in the return arrays.
@@ -216,37 +105,6 @@ namespace Animations
 	const RGBTrack& AnimationInstanceKeyframed::GetTrack(int index) const	{
 		auto preset = getPreset();
 		assert(index < preset->trackCount);
-		return DataSet::getRGBTrack(preset->tracksOffset + index);
+		return animationBits->getRGBTrack(preset->tracksOffset + index);
 	}
-
-	/// <summary>
-	/// returns a color RGB value for a given color index, taking into account special color indices
-	/// </summary>
-	uint32_t AnimationInstanceKeyframed::getColor(uint32_t colorIndex) const {
-		auto preset = getPreset();
-		switch (preset->specialColorType) {
-			case SpecialColor_Face:
-			case SpecialColor_Heat_Start:
-				// The payload is the color
-				return specialColorPayload;
-			case SpecialColor_ColorWheel:
-				{
-					// Use the global rainbow
-					int index = Modules::AnimController::getCurrentRainbowOffset();
-					if (index < 0) {
-						index += 256;
-					}
-					return Rainbow::wheel((uint8_t)index);
-				}
-			case SpecialColor_Heat_Current:
-				{
-					auto& trk = DataSet::getHeatTrack();
-					int heatMs = int(Modules::AnimController::getCurrentHeat() * trk.getDuration());
-					return trk.evaluateColor(nullptr, heatMs);
-				}
-			default:
-				return DataSet::getPaletteColor(colorIndex);
-		}
-	}
-
 }

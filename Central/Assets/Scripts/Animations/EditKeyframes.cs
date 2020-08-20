@@ -22,16 +22,16 @@ namespace Animations
             return keyframe;
         }
 
-        public RGBKeyframe ToKeyframe(EditDataSet editSet, DataSet set)
+        public RGBKeyframe ToKeyframe(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             RGBKeyframe ret = new RGBKeyframe();
 
             // Add the color to the palette if not already there, otherwise grab the color index
-            int colorIndex = set.palette.IndexOf(color);
+            int colorIndex = bits.palette.IndexOf(color);
             if (colorIndex == -1)
             {
-                colorIndex = set.palette.Count;
-                set.palette.Add(color);
+                colorIndex = bits.palette.Count;
+                bits.palette.Add(color);
             }
 
             ret.setTimeAndColorIndex((ushort)(time * 1000), (ushort)colorIndex);            
@@ -97,7 +97,7 @@ namespace Animations
             return keyframe;
         }
 
-        public Keyframe ToKeyframe(EditDataSet editSet, DataSet set)
+        public Keyframe ToKeyframe(EditDataSet editSet)
         {
             Keyframe ret = new Keyframe();
 

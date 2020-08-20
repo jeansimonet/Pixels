@@ -147,11 +147,11 @@ public partial class Die
         {
             // Prepare the die
             var prepareDie = new DieMessageTransferAnimSet();
-            prepareDie.paletteSize = set.getPaletteSize();;
-            prepareDie.rgbKeyFrameCount = set.getRGBKeyframeCount();
-            prepareDie.rgbTrackCount = set.getRGBTrackCount();
-            prepareDie.keyFrameCount = set.getKeyframeCount();
-            prepareDie.trackCount = set.getTrackCount();
+            prepareDie.paletteSize = set.animationBits.getPaletteSize();;
+            prepareDie.rgbKeyFrameCount = set.animationBits.getRGBKeyframeCount();
+            prepareDie.rgbTrackCount = set.animationBits.getRGBTrackCount();
+            prepareDie.keyFrameCount = set.animationBits.getKeyframeCount();
+            prepareDie.trackCount = set.animationBits.getTrackCount();
             prepareDie.animationCount = set.getAnimationCount();
             prepareDie.animationSize = (ushort)set.animations.Sum((anim) => Marshal.SizeOf(anim.GetType()));
             prepareDie.conditionCount = set.getConditionCount();
@@ -160,20 +160,17 @@ public partial class Die
             prepareDie.actionSize = (ushort)set.actions.Sum((action) => Marshal.SizeOf(action.GetType()));
             prepareDie.ruleCount = set.getRuleCount();
             prepareDie.behaviorCount = set.getBehaviorCount();
-            prepareDie.heatTrackIndex = set.heatTrackIndex;
-            // Debug.Log("Animation Data to be sent:");
-            // Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
-            // Debug.Log("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
-            // Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
-            // Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
-            // Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
-            // Debug.Log("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
-            // Debug.Log("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
-            // Debug.Log("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
-            // Debug.Log("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
-            // Debug.Log("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
-            // Debug.Log("current Behavior: " + prepareDie.currentBehaviorIndex);
-            // Debug.Log("heat track: " + prepareDie.heatTrackIndex);
+            Debug.Log("Animation Data to be sent:");
+            Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
+            Debug.Log("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+            Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
+            Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
+            Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
+            Debug.Log("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
+            Debug.Log("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
+            Debug.Log("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
+            Debug.Log("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
+            Debug.Log("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
             bool acknowledge = false;
             yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
                 prepareDie,

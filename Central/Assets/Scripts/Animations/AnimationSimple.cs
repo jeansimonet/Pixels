@@ -21,9 +21,9 @@ namespace Animations
         public byte count;
         public byte fade;
 
-        public AnimationInstance CreateInstance()
+        public AnimationInstance CreateInstance(DataSet.AnimationBits bits)
         {
-            return new AnimationInstanceSimple(this);
+            return new AnimationInstanceSimple(this, bits);
         }
 	};
 
@@ -33,17 +33,17 @@ namespace Animations
 	public class AnimationInstanceSimple
 		: AnimationInstance
 	{
-		public AnimationInstanceSimple(Animation animation)
-            : base(animation)
+		public AnimationInstanceSimple(Animation animation, DataSet.AnimationBits bits)
+            : base(animation, bits)
         {
         }
 
-		public override void start(DataSet _set, int _startTime, byte _remapFace, bool _loop)
+		public override void start(int _startTime, byte _remapFace, bool _loop)
         {
-            base.start(_set, _startTime, _remapFace, _loop);
+            base.start(_startTime, _remapFace, _loop);
         }
 
-		public override int updateLEDs(DataSet set, int ms, int[] retIndices, uint[] retColors)
+		public override int updateLEDs(int ms, int[] retIndices, uint[] retColors)
         {
             var preset = getPreset();
 
@@ -80,7 +80,7 @@ namespace Animations
             return retCount;
         }
 
-		public override int stop(DataSet set, int[] retIndices)
+		public override int stop(int[] retIndices)
         {
             var preset = getPreset();
             int retCount = 0;

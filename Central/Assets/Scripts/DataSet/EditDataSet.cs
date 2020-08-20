@@ -34,7 +34,7 @@ public class EditDataSet
             var editAnim = animations[animIndex];
             if (editAnim != null)
             {
-                var anim = editAnim.ToAnimation(this, set);
+                var anim = editAnim.ToAnimation(this, set.animationBits);
                 set.animations.Add(anim);
             }
         }

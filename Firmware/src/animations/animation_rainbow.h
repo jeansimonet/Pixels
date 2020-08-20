@@ -24,7 +24,7 @@ namespace Animations
 		: public AnimationInstance
 	{
 	public:
-		AnimationInstanceRainbow(const AnimationRainbow* preset);
+		AnimationInstanceRainbow(const AnimationRainbow* preset, const DataSet::AnimationBits* bits);
 		virtual ~AnimationInstanceRainbow();
 		virtual int animationSize() const;
 

@@ -272,7 +272,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
         EditAnimationKeyframed keyAnim = new EditAnimationKeyframed();
         keyAnim.duration = 3.0f;
-        keyAnim.specialColorType = SpecialColor.None;
         keyAnim.name = "Keyframed Anim 2";
         keyAnim.tracks.Add(new EditRGBTrack()
         {

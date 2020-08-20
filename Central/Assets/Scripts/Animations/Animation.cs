@@ -30,7 +30,7 @@ namespace Animations
 		AnimationType type { get; set; }
 		byte padding_type { get; set; } // to keep duration 16-bit aligned
 		ushort duration { get; set; } // in ms
-        AnimationInstance CreateInstance();
+        AnimationInstance CreateInstance(DataSet.AnimationBits bits);
 	};
 
 	/// <summary>
@@ -40,26 +40,27 @@ namespace Animations
 	public abstract class AnimationInstance
 	{
 		public Animation animationPreset;
+		public DataSet.AnimationBits animationBits;
 		public int startTime; //ms
 		public byte remapFace;
 		public bool loop;
 
         protected DataSet set;
 
-		public AnimationInstance(Animation animation)
+		public AnimationInstance(Animation animation, DataSet.AnimationBits bits)
         {
             animationPreset = animation;
+			animationBits = bits;
         }
 
-		public virtual void start(DataSet _set, int _startTime, byte _remapFace, bool _loop)
+		public virtual void start(int _startTime, byte _remapFace, bool _loop)
         {
-            set = _set;
             startTime = _startTime;
             remapFace = _remapFace;
             loop = _loop;
         }
 
-		public abstract int updateLEDs(DataSet set, int ms, int[] retIndices, uint[] retColors);
-		public abstract int stop(DataSet set, int[] retIndices);
+		public abstract int updateLEDs(int ms, int[] retIndices, uint[] retColors);
+		public abstract int stop(int[] retIndices);
 	};
 }

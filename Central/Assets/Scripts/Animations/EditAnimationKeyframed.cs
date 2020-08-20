@@ -27,10 +27,10 @@ namespace Animations
             return track;
         }
 
-        public RGBTrack ToTrack(EditDataSet editSet, DataSet set)
+        public RGBTrack ToTrack(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             RGBTrack ret = new RGBTrack();
-            ret.keyframesOffset = (ushort)set.rgbKeyframes.Count;
+            ret.keyframesOffset = (ushort)bits.rgbKeyframes.Count;
             ret.keyFrameCount = (byte)gradient.keyframes.Count;
             ret.ledMask = 0;
             foreach (int index in ledIndices)
@@ -41,8 +41,8 @@ namespace Animations
             // Add the keyframes
             foreach (var editKeyframe in gradient.keyframes)
             {
-                var kf = editKeyframe.ToKeyframe(editSet, set);
-                set.rgbKeyframes.Add(kf);
+                var kf = editKeyframe.ToKeyframe(editSet, bits);
+                bits.rgbKeyframes.Add(kf);
             }
 
             return ret;
@@ -53,25 +53,23 @@ namespace Animations
     public class EditAnimationKeyframed
         : EditAnimation
     {
-		public SpecialColor specialColorType; // is really SpecialColor
 		public List<EditRGBTrack> tracks = new List<EditRGBTrack>();
 
         public override AnimationType type => AnimationType.Keyframed;
         public bool empty => tracks?.Count == 0;
 
-        public override Animation ToAnimation(EditDataSet editSet, DataSet set)
+        public override Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             var ret = new AnimationKeyframed();
 		    ret.duration = (ushort)(duration * 1000); // stored in milliseconds
-		    ret.specialColorType = specialColorType;
-		    ret.tracksOffset = (ushort)set.rgbTracks.Count;
+		    ret.tracksOffset = (ushort)bits.rgbTracks.Count;
 		    ret.trackCount = (ushort)tracks.Count;
 
             // Add the tracks
             foreach (var editTrack in tracks)
             {
-                var track = editTrack.ToTrack(editSet, set);
-                set.rgbTracks.Add(track);
+                var track = editTrack.ToTrack(editSet, bits);
+                bits.rgbTracks.Add(track);
             }
 
             return ret;
@@ -82,7 +80,6 @@ namespace Animations
             EditAnimationKeyframed ret = new EditAnimationKeyframed();
             ret.name = this.name;
 		    ret.duration = this.duration;
-            ret.specialColorType = this.specialColorType;
             foreach (var track in tracks)
             {
                 ret.tracks.Add(track.Duplicate());

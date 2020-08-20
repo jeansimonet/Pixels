@@ -20,9 +20,9 @@ namespace Animations
         public byte count;
         public byte fade;
 
-        public AnimationInstance CreateInstance()
+        public AnimationInstance CreateInstance(DataSet.AnimationBits bits)
         {
-            return new AnimationInstanceRainbow(this);
+            return new AnimationInstanceRainbow(this, bits);
         }
 	};
 
@@ -32,12 +32,12 @@ namespace Animations
 	public class AnimationInstanceRainbow
 		: AnimationInstance
 	{
-		public AnimationInstanceRainbow(Animation animation)
-            : base(animation)
+		public AnimationInstanceRainbow(Animation animation, DataSet.AnimationBits bits)
+            : base(animation, bits)
         {
         }
 
-		public override int updateLEDs(DataSet set, int ms, int[] retIndices, uint[] retColors)
+		public override int updateLEDs(int ms, int[] retIndices, uint[] retColors)
         {
             var preset = getPreset();
 
@@ -72,7 +72,7 @@ namespace Animations
             return retCount;
         }
 
-		public override int stop(DataSet set, int[] retIndices)
+		public override int stop(int[] retIndices)
         {
             var preset = getPreset();
             int retCount = 0;

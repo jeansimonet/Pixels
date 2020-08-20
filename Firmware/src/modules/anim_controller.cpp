@@ -227,7 +227,7 @@ namespace AnimController
 		else if (animationCount < MAX_ANIMS)
 		{
 			// Add a new animation
-			animations[animationCount] = Animations::createAnimationInstance(animationPreset);
+			animations[animationCount] = Animations::createAnimationInstance(animationPreset, DataSet::getAnimationBits());
 			animations[animationCount]->start(ms, remapFace, loop);
 			animationCount++;
 		}

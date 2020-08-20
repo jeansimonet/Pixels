@@ -20,11 +20,34 @@ public class DataSet
     public const int MAX_PALETTE_SIZE = MAX_COLOR_MAP_SIZE * 3;
     public const int SPECIAL_COLOR_INDEX = (MAX_COLOR_MAP_SIZE - 1);
 
-    public List<Color> palette = new List<Color>();
-    public List<Animations.RGBKeyframe> rgbKeyframes = new List<Animations.RGBKeyframe>();
-    public List<Animations.RGBTrack> rgbTracks = new List<Animations.RGBTrack>();
-    public List<Animations.Keyframe> keyframes = new List<Animations.Keyframe>();
-    public List<Animations.Track> tracks = new List<Animations.Track>();
+    [System.Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public class AnimationBits
+    {
+        public List<Color> palette = new List<Color>();
+        public List<Animations.RGBKeyframe> rgbKeyframes = new List<Animations.RGBKeyframe>();
+        public List<Animations.RGBTrack> rgbTracks = new List<Animations.RGBTrack>();
+        public List<Animations.Keyframe> keyframes = new List<Animations.Keyframe>();
+        public List<Animations.Track> tracks = new List<Animations.Track>();
+
+        public uint getColor32(ushort colorIndex)
+        {
+            var cl32 = (Color32)(palette[colorIndex]);
+            return ColorUtils.toColor(cl32.r, cl32.g, cl32.b);
+        }
+
+        public Color getColor(ushort colorIndex) => palette[colorIndex];
+        public Animations.RGBKeyframe getRGBKeyframe(ushort keyFrameIndex) => rgbKeyframes[keyFrameIndex];
+        public Animations.Keyframe getKeyframe(ushort keyFrameIndex) => keyframes[keyFrameIndex];
+        public ushort getPaletteSize() => (ushort)(palette.Count * 3);
+        public ushort getRGBKeyframeCount() => (ushort)rgbKeyframes.Count;
+        public Animations.RGBTrack getRGBTrack(ushort trackIndex) => rgbTracks[trackIndex];
+        public ushort getRGBTrackCount() => (ushort)rgbTracks.Count;
+        public ushort getKeyframeCount() => (ushort)keyframes.Count;
+        public Animations.Track getTrack(ushort trackIndex) => tracks[trackIndex];
+        public ushort getTrackCount() => (ushort)tracks.Count;
+    }
+    public AnimationBits animationBits = new AnimationBits();
     public List<Animations.Animation> animations = new List<Animations.Animation>();
     public List<Behaviors.Condition> conditions = new List<Behaviors.Condition>();
     public List<Behaviors.Action> actions = new List<Behaviors.Action>();
@@ -35,11 +58,11 @@ public class DataSet
 
     public int ComputeDataSetDataSize()
     {
-        return palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
-            rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
-            rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
-            keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +
-            tracks.Count * Marshal.SizeOf<Animations.Track>() +
+        return animationBits.palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
+            animationBits.rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
+            animationBits.rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
+            animationBits.keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +
+            animationBits.tracks.Count * Marshal.SizeOf<Animations.Track>() +
             Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>()) + // offsets
             animations.Sum((anim) => Marshal.SizeOf(anim.GetType())) + // actual animations
             Utils.roundUpTo4(conditions.Count * Marshal.SizeOf<ushort>()) + // offsets
@@ -56,117 +79,16 @@ public class DataSet
         return Utils.computeHash(dataSetDataBytes);
     }
 
-    public uint getColor32(ushort colorIndex)
-    {
-        var cl32 = (Color32)(palette[colorIndex]);
-        return ColorUtils.toColor(cl32.r, cl32.g, cl32.b);
-    }
-
-    public Color getColor(ushort colorIndex)
-    {
-        return palette[colorIndex];
-    }
-
-    public Animations.RGBKeyframe getRGBKeyframe(ushort keyFrameIndex)
-    {
-        return rgbKeyframes[keyFrameIndex];
-    }
-
-    public Animations.Keyframe getKeyframe(ushort keyFrameIndex)
-    {
-        return keyframes[keyFrameIndex];
-    }
-
-    public ushort getPaletteSize()
-    {
-        return (ushort)(palette.Count * 3);
-    }
-
-    public ushort getRGBKeyframeCount()
-    {
-        return (ushort)rgbKeyframes.Count;
-    }
-
-    public Animations.RGBTrack getRGBTrack(ushort trackIndex)
-    {
-        return rgbTracks[trackIndex];
-    }
-
-    public ushort getRGBTrackCount()
-    {
-        return (ushort)rgbTracks.Count;
-    }
-
-    public ushort getKeyframeCount()
-    {
-        return (ushort)keyframes.Count;
-    }
-
-    public Animations.Track getTrack(ushort trackIndex)
-    {
-        return tracks[trackIndex];
-    }
-
-    public ushort getTrackCount()
-    {
-        return (ushort)tracks.Count;
-    }
-
-    public Animations.Animation getAnimation(ushort animIndex)
-    {
-        return animations[animIndex];
-    }
-
-    public ushort getAnimationCount()
-    {
-        return (ushort)animations.Count;
-    }
-
-	public Behaviors.Condition getCondition(int conditionIndex)
-    {
-        return conditions[conditionIndex];
-    }
-
-	public ushort getConditionCount()
-    {
-        return (ushort)conditions.Count;
-    }
-
-	public Behaviors.Action getAction(int actionIndex)
-    {
-        return actions[actionIndex];
-    }
-
-	public ushort getActionCount()
-    {
-        return (ushort)actions.Count;
-    }
-
-	// Rules
-	public Behaviors.Rule getRule(int ruleIndex)
-    {
-        return rules[ruleIndex];
-    }
-
-	public ushort getRuleCount()
-    {
-        return (ushort)rules.Count;
-    }
-
-	public Behaviors.Behavior getBehavior(int behaviorIndex)
-    {
-        return behaviors[behaviorIndex];
-    }
-
-	public ushort getBehaviorCount()
-    {
-        return (ushort)behaviors.Count;
-    }
-
-    public Animations.RGBTrack getHeatTrack()
-    {
-        return rgbTracks[heatTrackIndex];
-    }
+    public Animations.Animation getAnimation(ushort animIndex) => animations[animIndex];
+    public ushort getAnimationCount() => (ushort)animations.Count;
+	public Behaviors.Condition getCondition(int conditionIndex) => conditions[conditionIndex];
+	public ushort getConditionCount() => (ushort)conditions.Count;
+	public Behaviors.Action getAction(int actionIndex) => actions[actionIndex];
+	public ushort getActionCount() => (ushort)actions.Count;
+	public Behaviors.Rule getRule(int ruleIndex) => rules[ruleIndex];
+	public ushort getRuleCount() => (ushort)rules.Count;
+	public Behaviors.Behavior getBehavior(int behaviorIndex) => behaviors[behaviorIndex];
+	public ushort getBehaviorCount() => (ushort)behaviors.Count;
 
     public byte[] ToByteArray()
     {
@@ -175,7 +97,7 @@ public class DataSet
 
         // Copy palette
         System.IntPtr current = ptr;
-        foreach (var color in palette)
+        foreach (var color in animationBits.palette)
         {
             Color32 cl32 = color; 
             Marshal.WriteByte(current, cl32.r);
@@ -187,28 +109,28 @@ public class DataSet
         }
 
         // Copy keyframes
-        foreach (var keyframe in rgbKeyframes)
+        foreach (var keyframe in animationBits.rgbKeyframes)
         {
             Marshal.StructureToPtr(keyframe, current, false);
             current += Marshal.SizeOf<Animations.RGBKeyframe>();
         }
 
         // Copy rgb tracks
-        foreach (var track in rgbTracks)
+        foreach (var track in animationBits.rgbTracks)
         {
             Marshal.StructureToPtr(track, current, false);
             current += Marshal.SizeOf<Animations.RGBTrack>();
         }
 
         // Copy keyframes
-        foreach (var keyframe in keyframes)
+        foreach (var keyframe in animationBits.keyframes)
         {
             Marshal.StructureToPtr(keyframe, current, false);
             current += Marshal.SizeOf<Animations.Keyframe>();
         }
 
         // Copy tracks
-        foreach (var track in tracks)
+        foreach (var track in animationBits.tracks)
         {
             Marshal.StructureToPtr(track, current, false);
             current += Marshal.SizeOf<Animations.Track>();

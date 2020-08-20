@@ -25,7 +25,7 @@ namespace Animations
 		: public AnimationInstance
 	{
 	public:
-		AnimationInstanceSimple(const AnimationSimple* preset);
+		AnimationInstanceSimple(const AnimationSimple* preset, const DataSet::AnimationBits* bits);
 		virtual ~AnimationInstanceSimple();
 		virtual int animationSize() const;
 

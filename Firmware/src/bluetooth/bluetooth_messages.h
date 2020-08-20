@@ -168,7 +168,6 @@ struct MessageTransferAnimSet
 	uint16_t actionSize;
 	uint16_t ruleCount;
 	uint16_t behaviorCount;
-	uint16_t heatTrackIndex;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
 };

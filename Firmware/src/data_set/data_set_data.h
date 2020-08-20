@@ -3,6 +3,7 @@
 #include "behaviors/condition.h"
 #include "behaviors/action.h"
 #include "behaviors/behavior.h"
+#include "data_animation_bits.h"
 
 #define ANIMATION_SET_VALID_KEY (0x600DF00D) // Good Food ;)
 #define ANIMATION_SET_VERSION 1
@@ -15,28 +16,9 @@ namespace DataSet
 	{
 		// Indicates whether there is valid data
 		uint32_t headMarker;
-		int version;
+		uint32_t version;
 
-		// The palette for all animations, stored in RGB RGB RGB etc...
-		// Maximum 128 * 3 = 376 bytes
-		const uint8_t* palette;
-		uint32_t paletteSize; // In bytes (divide by 3 for colors)
-
-		// The individual RGB keyframes we have, i.e. time and color, packed in
-		const Animations::RGBKeyframe* rgbKeyframes; // pointer to the array of tracks
-		uint32_t rgbKeyFrameCount;
-
-		// The RGB tracks we have
-		const Animations::RGBTrack* rgbTracks; // pointer to the array of tracks
-		uint32_t rgbTrackCount;
-
-		// The individual intensity keyframes we have, i.e. time and intensity, packed in
-		const Animations::Keyframe* keyframes; // pointer to the array of tracks
-		uint32_t keyFrameCount;
-
-		// The RGB tracks we have
-		const Animations::Track* tracks; // pointer to the array of tracks
-		uint32_t trackCount;
+		AnimationBits animationBits;
 
         // The animations. Because animations can be one of multiple classes (simple inheritance system)
         // The dataset stores an offset into the animations buffer for each entry. The first member of
@@ -69,9 +51,6 @@ namespace DataSet
         // Behaviors, or collection of condition->action pairs
 		const Behaviors::Behavior* behaviors;
 		uint32_t behaviorsCount;
-
-		// Heat Animation
-		uint32_t heatTrackIndex;
 
 		// Indicates whether there is valid data
 		uint32_t tailMarker;

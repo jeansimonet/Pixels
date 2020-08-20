@@ -8,8 +8,8 @@ namespace Animations
 	/// constructor for simple animations
 	/// Needs to have an associated preset passed in
 	/// </summary>
-	AnimationInstanceSimple::AnimationInstanceSimple(const AnimationSimple* preset)
-		: AnimationInstance(preset) {
+	AnimationInstanceSimple::AnimationInstanceSimple(const AnimationSimple* preset, const DataSet::AnimationBits* bits)
+		: AnimationInstance(preset, bits) {
 	}
 
 	/// <summary>
