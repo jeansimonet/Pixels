@@ -9,13 +9,16 @@ public class UIPatternView
     [Header("Controls")]
     public Button backButton;
     public InputField animationNameText;
-    public Button menuButton;
+    public Button saveButton;
     public RawImage previewImage;
     public UIParameterEnum animationSelector;
     public RectTransform parametersRoot;
 
     public Animations.EditAnimation editAnimation { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
+    
+    UIParameterManager.ObjectParameterList parameters;
+    bool patternDirty = false;
 
     public override void Enter(object context)
     {
@@ -25,6 +28,8 @@ public class UIPatternView
         {
             Setup(anim);
         }
+        patternDirty = false;
+        saveButton.gameObject.SetActive(false);
     }
 
     void OnEnable()
@@ -39,10 +44,11 @@ public class UIPatternView
             this.dieRenderer = null;
         }
 
-        if (UIParameterManager.Instance != null && editAnimation != null)
+        foreach (var parameter in parameters.parameters)
         {
-            UIParameterManager.Instance.DestroyControls(editAnimation);
+            GameObject.Destroy(parameter.gameObject);
         }
+        parameters = null;
     }
 
     void Setup(Animations.EditAnimation anim)
@@ -58,8 +64,8 @@ public class UIPatternView
         animationSelector.Setup("Animation Type", () => editAnimation.type, (t) => SetAnimationType((Animations.AnimationType)t));
 
         // Setup all other parameters
-        var paramList = UIParameterManager.Instance.CreateControls(anim, parametersRoot);
-        paramList.onParameterChanged += OnAnimParameterChanged;
+        parameters = UIParameterManager.Instance.CreateControls(anim, parametersRoot);
+        parameters.onParameterChanged += OnAnimParameterChanged;
 
         dieRenderer.rotating = true;
         dieRenderer.SetAnimation(anim);
@@ -68,21 +74,50 @@ public class UIPatternView
 
     void Awake()
     {
-        backButton.onClick.AddListener(SaveAndGoBack);
+        backButton.onClick.AddListener(DiscardAndGoBack);
         animationNameText.onEndEdit.AddListener(newName => editAnimation.name = newName);
+        saveButton.gameObject.SetActive(false);
+        saveButton.onClick.AddListener(SaveAndGoBack);
+    }
+
+    void DiscardAndGoBack()
+    {
+        if (patternDirty)
+        {
+            PixelsApp.Instance.ShowDialogBox(
+                "Discard Changes",
+                "You have unsaved changes, are you sure you want to discard them?",
+                "Discard",
+                "Cancel", discard => 
+                {
+                    if (discard)
+                    {
+                        // Reload from file
+                        AppDataSet.Instance.LoadData();
+                        NavigationManager.Instance.GoBack();
+                    }
+                });
+        }
+        else
+        {
+            NavigationManager.Instance.GoBack();
+        }
     }
 
     void SaveAndGoBack()
     {
-        AppDataSet.Instance.SaveData(); // Not sure about this one!
+        Debug.Assert(patternDirty);
+        AppDataSet.Instance.SaveData();
         NavigationManager.Instance.GoBack();
     }
 
-    void OnAnimParameterChanged(object animObject, UIParameter parameter, object newValue)
+    void OnAnimParameterChanged(EditObject animObject, UIParameter parameter, object newValue)
     {
         var theEditAnim = (Animations.EditAnimation)animObject;
         Debug.Assert(theEditAnim == editAnimation);
         dieRenderer.SetAnimation(theEditAnim);
+        patternDirty = true;
+        saveButton.gameObject.SetActive(true);
     }
 
     void SetAnimationType(Animations.AnimationType newType)
@@ -101,10 +136,13 @@ public class UIPatternView
             AppDataSet.Instance.ReplaceAnimation(editAnimation, newEditAnimation);
 
             // Setup the parameters again
-            UIParameterManager.Instance.DestroyControls(editAnimation);
+            foreach (var parameter in parameters.parameters)
+            {
+                GameObject.Destroy(parameter.gameObject);
+            }
 
-            var paramList = UIParameterManager.Instance.CreateControls(newEditAnimation, parametersRoot);
-            paramList.onParameterChanged += OnAnimParameterChanged;
+            parameters = UIParameterManager.Instance.CreateControls(newEditAnimation, parametersRoot);
+            parameters.onParameterChanged += OnAnimParameterChanged;
 
             dieRenderer.rotating = true;
             dieRenderer.SetAnimation(newEditAnimation);

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 public abstract class UIParameter : MonoBehaviour
 {
-    public abstract System.Type parameterType { get; }
+    public abstract bool CanEdit(System.Type parameterType, IEnumerable<object> attributes);
 
     public delegate void ParameterModifiedEvent(UIParameter ui, object newValue);
     public ParameterModifiedEvent onParameterModified;

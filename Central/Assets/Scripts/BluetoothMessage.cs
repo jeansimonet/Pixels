@@ -22,8 +22,10 @@ public enum DieMessageType : byte
 	BulkDataAck,
 	TransferAnimSet,
 	TransferAnimSetAck,
+	TransferAnimSetFinished,
 	TransferSettings,
 	TransferSettingsAck,
+	TransferSettingsFinished,
 	DebugLog,
 	PlayAnim,
 	PlayAnimEvent,
@@ -50,7 +52,11 @@ public enum DieMessageType : byte
 	SetBattleState,
 	ProgramDefaultParameters,
 	ProgramDefaultParametersFinished,
-	
+    SetDesignAndColor,
+    SetDesignAndColorAck,
+    SetCurrentBehavior,
+    SetCurrentBehaviorAck,
+
     // Testing
     TestBulkSend, 
 	TestBulkReceive,
@@ -110,11 +116,17 @@ public static class DieMessages
                 case DieMessageType.TransferAnimSetAck:
                     ret = FromByteArray<DieMessageTransferAnimSetAck>(data);
                     break;
+                case DieMessageType.TransferAnimSetFinished:
+                    ret = FromByteArray<DieMessageTransferAnimSetFinished>(data);
+                    break;
                 case DieMessageType.TransferSettings:
                     ret = FromByteArray<DieMessageTransferSettings>(data);
                     break;
                 case DieMessageType.TransferSettingsAck:
                     ret = FromByteArray<DieMessageTransferSettingsAck>(data);
+                    break;
+                case DieMessageType.TransferSettingsFinished:
+                    ret = FromByteArray<DieMessageTransferSettingsFinished>(data);
                     break;
                 case DieMessageType.DebugLog:
                     ret = FromByteArray<DieMessageDebugLog>(data);
@@ -191,6 +203,18 @@ public static class DieMessages
                 case DieMessageType.PrintNormals:
                     ret = FromByteArray<DieMessagePrintNormals>(data);
                     break;
+                case DieMessageType.SetDesignAndColor:
+                    ret = FromByteArray<DieMessageSetDesignAndColor>(data);
+                    break;
+                case DieMessageType.SetDesignAndColorAck:
+                    ret = FromByteArray<DieMessageSetDesignAndColorAck>(data);
+                    break;
+                case DieMessageType.SetCurrentBehavior:
+                    ret = FromByteArray<DieMessageSetCurrentBehavior>(data);
+                    break;
+                case DieMessageType.SetCurrentBehaviorAck:
+                    ret = FromByteArray<DieMessageSetCurrentBehaviorAck>(data);
+                    break;
                 default:
                     throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
             }
@@ -246,7 +270,8 @@ public class DieMessageIAmADie
 
 	public byte faceCount; // Which kind of dice this is
 	public DiceVariants.DesignAndColor designAndColor; // Physical look
-	byte padding1;
+	public byte currentBehaviorIndex;
+    public uint dataSetHash;
 	public System.UInt64 deviceId; // A unique identifier
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.VERSION_INFO_SIZE)]
 	public byte[] versionInfo; // Firmware version string, i.e. "10_05"
@@ -310,8 +335,10 @@ public class DieMessageTransferAnimSet
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSet;
 	public ushort paletteSize;
-	public ushort keyFrameCount;
+	public ushort rgbKeyFrameCount;
 	public ushort rgbTrackCount;
+	public ushort keyFrameCount;
+	public ushort trackCount;
 	public ushort animationCount;
 	public ushort animationSize;
 	public ushort conditionCount;
@@ -320,7 +347,6 @@ public class DieMessageTransferAnimSet
 	public ushort actionSize;
 	public ushort ruleCount;
 	public ushort behaviorCount;
-	public ushort currentBehaviorIndex;
 	public ushort heatTrackIndex;
 }
 
@@ -329,6 +355,13 @@ public class DieMessageTransferAnimSetAck
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSetAck;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTransferAnimSetFinished
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TransferAnimSetFinished;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -352,6 +385,13 @@ public class DieMessageTransferSettingsAck
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferSettingsAck;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTransferSettingsFinished
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TransferSettingsFinished;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -592,5 +632,35 @@ public class DieMessagePrintNormals
 {
     public DieMessageType type { get; set; } = DieMessageType.PrintNormals;
     public byte face;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetDesignAndColor
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetDesignAndColor;
+    public DiceVariants.DesignAndColor designAndColor;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetDesignAndColorAck
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetDesignAndColorAck;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetCurrentBehavior
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetCurrentBehavior;
+    public byte currentBehaviorIndex;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageSetCurrentBehaviorAck
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.SetCurrentBehaviorAck;
 }
 

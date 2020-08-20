@@ -13,9 +13,12 @@ public class UIParameterAnimation
     public RawImage animationRender;
     public Button selectAnimationButton;
 
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
-    public override System.Type parameterType { get { return typeof(Animations.EditAnimation); } }
+    public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
+    {
+        return parameterType == typeof(Animations.EditAnimation);
+    }
 
     void OnDestroy()
     {
@@ -33,7 +36,12 @@ public class UIParameterAnimation
         // Set name
         nameText.text = name;
 
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(initialAnim.defaultPreviewSettings.design, 160);
+        var design = DiceVariants.DesignAndColor.V5_Grey;
+        if (initialAnim != null)
+        {
+            design = initialAnim.defaultPreviewSettings.design;
+        }
+        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(design, 160);
         if (dieRenderer != null)
         {
             animationRender.texture = dieRenderer.renderTexture;
@@ -48,12 +56,11 @@ public class UIParameterAnimation
             }
         }));
 
-        dieRenderer.SetAnimation(initialAnim);
-        dieRenderer.Play(true);
-
         // Set animation name field
         if (initialAnim != null)
         {
+            dieRenderer.SetAnimation(initialAnim);
+            dieRenderer.Play(true);
             animationNameText.text = initialAnim.name;
             dieRenderer.rotating = true;
         }
@@ -65,7 +72,15 @@ public class UIParameterAnimation
 
     void SetAnimation(EditAnimation newAnimation)
     {
-        dieRenderer.rotating = true;
-        dieRenderer.SetAnimation(newAnimation);
+        if (newAnimation != null)
+        {
+            dieRenderer.rotating = true;
+            dieRenderer.SetAnimation(newAnimation);
+        }
+        else
+        {
+            dieRenderer.ClearAnimations();
+            dieRenderer.rotating = false;
+        }
     }
 }

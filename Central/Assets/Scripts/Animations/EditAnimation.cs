@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Animations
 {
@@ -11,17 +13,17 @@ namespace Animations
     /// </summary>
     [System.Serializable]
     public abstract class EditAnimation
+        : EditObject
     {
         public string name;
-        [Units("sec")]
-        [FloatRange(0.1f, 10.0f, 0.1f)]
+        [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
 		public float duration;
         public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_Grey };
 
+        [JsonIgnore]
         public abstract AnimationType type { get; }
+
         public abstract Animation ToAnimation(EditDataSet editSet, DataSet set);
-        public abstract string ToJson();
-        public abstract void FromJson(string Json);
         public abstract EditAnimation Duplicate();
 
         public static EditAnimation Create(AnimationType type)
@@ -32,9 +34,62 @@ namespace Animations
                     return new EditAnimationSimple();
                 case AnimationType.Keyframed:
                     return new EditAnimationKeyframed();
+                case AnimationType.Rainbow:
+                    return new EditAnimationRainbow();
+                case AnimationType.GradientPattern:
+                    return new EditAnimationGradientPattern();
+                default:
+                    throw new System.Exception("Unknown animation type");
+            }
+        }
+
+        public static System.Type GetAnimationType(AnimationType type)
+        {
+            switch (type)
+            {
+                case AnimationType.Simple:
+                    return typeof(EditAnimationSimple);
+                case AnimationType.Keyframed:
+                    return typeof(EditAnimationKeyframed);
+                case AnimationType.Rainbow:
+                    return typeof(EditAnimationRainbow);
+                case AnimationType.GradientPattern:
+                    return typeof(EditAnimationGradientPattern);
                 default:
                     throw new System.Exception("Unknown animation type");
             }
         }
     }
+
+    public class EditAnimationConverter
+        : JsonConverter<EditAnimation>
+    {
+        public override void WriteJson(JsonWriter writer, EditAnimation value, JsonSerializer serializer)
+        {
+            using (new IgnoreThisConverter(serializer, this))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("type");
+                serializer.Serialize(writer, value.type);
+                writer.WritePropertyName("data");
+                serializer.Serialize(writer, value);
+                writer.WriteEndObject();
+            }
+        }
+
+        public override EditAnimation ReadJson(JsonReader reader, System.Type objectType, EditAnimation existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (hasExistingValue)
+                throw(new System.NotImplementedException());
+
+            using (new IgnoreThisConverter(serializer, this))
+            {
+                JObject editAnimObject = JObject.Load(reader);
+                var type = editAnimObject["type"].ToObject<Animations.AnimationType>();
+                var ret = (EditAnimation)editAnimObject["data"].ToObject(EditAnimation.GetAnimationType(type), serializer);
+                return ret;
+            }
+        }
+    }
+
 }

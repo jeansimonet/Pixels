@@ -6,88 +6,32 @@ using System.Linq;
 namespace Animations
 {
     /// <summary>
-    /// Simple anition keyframe, time in seconds and color!
-    /// </summary>
-    [System.Serializable]
-    public class EditKeyframe
-    {
-        public float time = -1;
-        public Color32 color;
-
-        public EditKeyframe Duplicate()
-        {
-            var keyframe = new EditKeyframe();
-            keyframe.time = time;
-            keyframe.color = color;
-            return keyframe;
-        }
-
-        public RGBKeyframe ToKeyframe(EditDataSet editSet, DataSet set)
-        {
-            RGBKeyframe ret = new RGBKeyframe();
-
-            // Add the color to the palette if not already there, otherwise grab the color index
-            int colorIndex = set.palette.IndexOf(color);
-            if (colorIndex == -1)
-            {
-                colorIndex = set.palette.Count;
-                set.palette.Add(color);
-            }
-
-            ret.setTimeAndColorIndex((ushort)(time * 1000), (ushort)colorIndex);            
-            return ret;
-        }
-
-        public class EqualityComparer
-            : IEqualityComparer<EditKeyframe>
-        {
-            public bool Equals(EditKeyframe x, EditKeyframe y)
-            {
-                return x.time == y.time && x.color.Equals(y.color);
-            }
-
-            public int GetHashCode(EditKeyframe obj)
-            {
-                return obj.time.GetHashCode() ^ obj.color.GetHashCode();
-            }
-        }
-        public static EqualityComparer DefaultComparer = new EqualityComparer();
-    }
-
-    /// <summary>
     /// Simple list of keyframes for a led
     /// </summary>
     [System.Serializable]
-    public class EditTrack
+    public class EditRGBTrack
     {
         public List<int> ledIndices = new List<int>();
-        public List<EditKeyframe> keyframes = new List<EditKeyframe>();
+        public EditRGBGradient gradient = new EditRGBGradient();
 
-        public bool empty => keyframes?.Count == 0;
-        public float duration => keyframes.Count == 0 ? 0 : keyframes.Max(k => k.time);
-        public float firstTime => keyframes.Count == 0 ? 0 : keyframes.First().time;
-        public float lastTime => keyframes.Count == 0 ? 0 : keyframes.Last().time;
+        public bool empty => gradient.empty;
+        public float duration => gradient.duration;
+        public float firstTime => gradient.firstTime;
+        public float lastTime => gradient.lastTime;
 
-        public EditTrack Duplicate()
+        public EditRGBTrack Duplicate()
         {
-            var track = new EditTrack();
+            var track = new EditRGBTrack();
             track.ledIndices = new List<int>(ledIndices);
-            if (keyframes != null)
-            {
-                track.keyframes = new List<EditKeyframe>(keyframes.Count);
-                foreach (var keyframe in keyframes)
-                {
-                    track.keyframes.Add(keyframe.Duplicate());
-                }
-            }
+            track.gradient = gradient.Duplicate();
             return track;
         }
 
         public RGBTrack ToTrack(EditDataSet editSet, DataSet set)
         {
             RGBTrack ret = new RGBTrack();
-            ret.keyframesOffset = (ushort)set.keyframes.Count;
-            ret.keyFrameCount = (byte)keyframes.Count;
+            ret.keyframesOffset = (ushort)set.rgbKeyframes.Count;
+            ret.keyFrameCount = (byte)gradient.keyframes.Count;
             ret.ledMask = 0;
             foreach (int index in ledIndices)
             {
@@ -95,10 +39,10 @@ namespace Animations
             }
 
             // Add the keyframes
-            foreach (var editKeyframe in keyframes)
+            foreach (var editKeyframe in gradient.keyframes)
             {
                 var kf = editKeyframe.ToKeyframe(editSet, set);
-                set.keyframes.Add(kf);
+                set.rgbKeyframes.Add(kf);
             }
 
             return ret;
@@ -110,7 +54,7 @@ namespace Animations
         : EditAnimation
     {
 		public SpecialColor specialColorType; // is really SpecialColor
-		public List<EditTrack> tracks = new List<EditTrack>();
+		public List<EditRGBTrack> tracks = new List<EditRGBTrack>();
 
         public override AnimationType type => AnimationType.Keyframed;
         public bool empty => tracks?.Count == 0;
@@ -131,16 +75,6 @@ namespace Animations
             }
 
             return ret;
-        }
-
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
 
         public override EditAnimation Duplicate()

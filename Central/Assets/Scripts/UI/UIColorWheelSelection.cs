@@ -16,25 +16,20 @@ public class UIColorWheelSelection : MaskableGraphic
     float radius => Mathf.Min(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
     float radiusInc => radius / (radialWedgeCount + 1);
 
-    int _selectedHueIndex = -1;
-    int _selectedSatIndex = -1;
-    public int selectedHueIndex
+    int selectedHueIndex = -1;
+    int selectedSatIndex = -1;
+
+    protected override void Awake()
     {
-        get { return _selectedHueIndex; }
-        set
-        {
-            _selectedHueIndex = value;
-            SetVerticesDirty();
-        }
+        base.Awake();
+        colorWheel.onClicked += SetSelection;
     }
-    public int selectedSatIndex
+
+    public void SetSelection(Color color, int hueIndex, int saturationIndex)
     {
-        get { return _selectedSatIndex; }
-        set
-        {
-            _selectedSatIndex = value;
-            SetVerticesDirty();
-        }
+        selectedHueIndex = hueIndex;
+        selectedSatIndex = saturationIndex;
+        SetVerticesDirty();
     }
 
     protected override void OnRectTransformDimensionsChange()

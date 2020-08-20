@@ -12,7 +12,7 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
     public Text animNameText;
 
     public EditAnimation editAnimation { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 

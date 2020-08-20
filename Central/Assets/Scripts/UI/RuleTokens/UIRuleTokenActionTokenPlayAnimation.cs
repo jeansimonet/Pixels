@@ -12,7 +12,7 @@ public class UIRuleTokenActionTokenPlayAnimation
     public Text actionText;
     public RawImage dieRenderImage;
 
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     static readonly ActionType[] supportedActionTypes = new ActionType[]
     {
@@ -39,14 +39,22 @@ public class UIRuleTokenActionTokenPlayAnimation
         actionText.text = action.ToString();
         labelText.text = first ? "Then" : "And";
 
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(playAnimAction.animation.defaultPreviewSettings.design, 160);
+        var design = DiceVariants.DesignAndColor.V5_Grey;
+        if (playAnimAction.animation != null)
+        {
+            design = playAnimAction.animation.defaultPreviewSettings.design;
+        }
+        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(design, 160);
         if (dieRenderer != null)
         {
             dieRenderImage.texture = dieRenderer.renderTexture;
         }
 
         dieRenderer.rotating = true;
-        dieRenderer.SetAnimation(playAnimAction.animation);
-        dieRenderer.Play(true);
+        if (playAnimAction.animation != null)
+        {
+            dieRenderer.SetAnimation(playAnimAction.animation);
+            dieRenderer.Play(true);
+        }
     }
 }

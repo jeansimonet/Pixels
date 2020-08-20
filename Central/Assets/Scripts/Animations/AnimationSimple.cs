@@ -1,28 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 namespace Animations
 {
-    public enum AnimationSimpleLEDType : byte
-    {
-        OneLED,
-        AllLEDs,
-    };
-
 	/// <summary>
 	/// Procedural on off animation
 	/// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
 	public class AnimationSimple
 		: Animation
 	{
 		public AnimationType type { get; set; } = AnimationType.Simple;
 		public byte padding_type { get; set; }
 		public ushort duration { get; set; }
-
-		public AnimationSimpleLEDType ledType;
-        public ushort padding_ledType;
+		public uint faceMask;
         public uint color;
+        public byte count;
+        public byte fade;
 
         public AnimationInstance CreateInstance()
         {
@@ -53,32 +50,32 @@ namespace Animations
             // Compute color
             uint black = 0;
             uint color = 0;
-            int halfTime = preset.duration / 2;
-            int time = ms - startTime;
+            int period = preset.duration / preset.count;
+            int fadeTime = period * preset.fade / (255 * 2);
+            int onOffTime = (period - fadeTime * 2) / 2;
+            int time = (ms - startTime) % period;
 
-            if (time <= halfTime) {
+            if (time <= fadeTime) {
                 // Ramp up
-                color = ColorUtils.interpolateColors(black, 0, preset.color, halfTime, time);
-            } else {
+                color = ColorUtils.interpolateColors(black, 0, preset.color, fadeTime, time);
+            } else if (time <= fadeTime + onOffTime) {
+                color = preset.color;
+            } else if (time <= fadeTime * 2 + onOffTime) {
                 // Ramp down
-                color = ColorUtils.interpolateColors(preset.color, halfTime, black, preset.duration, time);
+                color = ColorUtils.interpolateColors(preset.color, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
+            } else {
+                color = black;
             }
 
             // Fill the indices and colors for the anim controller to know how to update leds
             int retCount = 0;
-            switch (preset.ledType) {
-                case AnimationSimpleLEDType.OneLED:
-                    retIndices[0] = 0; // this will get remapped to the current up face
-                    retColors[0] = color;
-                    retCount = 1;
-                    break;
-                case AnimationSimpleLEDType.AllLEDs:
-                    retCount = 20; //Config::BoardManager::getBoard()->ledCount;
-                    for (int i = 0; i < retCount; ++i) {
-                        retIndices[i] = i;
-                        retColors[i] = color;
-                    }
-                    break;
+            for (int i = 0; i < 20; ++i) {
+                if ((preset.faceMask & (1 << i)) != 0)
+                {
+                    retIndices[retCount] = i;
+                    retColors[retCount] = color;
+                    retCount++;
+                }
             }
             return retCount;
         }
@@ -87,17 +84,12 @@ namespace Animations
         {
             var preset = getPreset();
             int retCount = 0;
-            switch (preset.ledType) {
-                case AnimationSimpleLEDType.OneLED:
-                    retIndices[0] = 0;
-                    retCount = 1;
-                    break;
-                case AnimationSimpleLEDType.AllLEDs:
-                    retCount = 20;
-                    for (int i = 0; i < retCount; ++i) {
-                        retIndices[i] = i;
-                    }
-                    break;
+            for (int i = 0; i < 20; ++i) {
+                if ((preset.faceMask & (1 << i)) != 0)
+                {
+                    retIndices[retCount] = i;
+                    retCount++;
+                }
             }
             return retCount;
         }

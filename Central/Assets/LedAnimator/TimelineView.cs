@@ -88,7 +88,7 @@ public class TimelineView : MonoBehaviour
 		});
 	}
 
-	public void AddTrack(Animations.EditTrack track)
+	public void AddTrack(Animations.EditRGBTrack track)
 	{
 		var colorAnim = CreateTrack(null);
 		colorAnim.FromAnimationTrack(track, Unit);

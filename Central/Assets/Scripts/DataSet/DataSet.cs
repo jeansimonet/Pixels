@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using System.Linq;
+using System.Text;
 
 /// <summary>
 /// Data Set is the set of all behaviors, conditions, rules, animations and colors
@@ -12,6 +13,7 @@ using System.Linq;
 /// 'their' keyframes using an offset and count into that array.
 /// </summary>
 [System.Serializable]
+[StructLayout(LayoutKind.Sequential)]
 public class DataSet
 {
     public const int MAX_COLOR_MAP_SIZE = (1 << 7);
@@ -19,22 +21,25 @@ public class DataSet
     public const int SPECIAL_COLOR_INDEX = (MAX_COLOR_MAP_SIZE - 1);
 
     public List<Color> palette = new List<Color>();
-    public List<Animations.RGBKeyframe> keyframes = new List<Animations.RGBKeyframe>();
+    public List<Animations.RGBKeyframe> rgbKeyframes = new List<Animations.RGBKeyframe>();
     public List<Animations.RGBTrack> rgbTracks = new List<Animations.RGBTrack>();
+    public List<Animations.Keyframe> keyframes = new List<Animations.Keyframe>();
+    public List<Animations.Track> tracks = new List<Animations.Track>();
     public List<Animations.Animation> animations = new List<Animations.Animation>();
     public List<Behaviors.Condition> conditions = new List<Behaviors.Condition>();
     public List<Behaviors.Action> actions = new List<Behaviors.Action>();
     public List<Behaviors.Rule> rules = new List<Behaviors.Rule>();
     public List<Behaviors.Behavior> behaviors = new List<Behaviors.Behavior>();
-    public ushort currentBehaviorIndex;
     public ushort padding;
     public ushort heatTrackIndex;
 
     public int ComputeDataSetDataSize()
     {
         return palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
-            keyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
+            rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
             rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
+            keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +
+            tracks.Count * Marshal.SizeOf<Animations.Track>() +
             Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>()) + // offsets
             animations.Sum((anim) => Marshal.SizeOf(anim.GetType())) + // actual animations
             Utils.roundUpTo4(conditions.Count * Marshal.SizeOf<ushort>()) + // offsets
@@ -43,6 +48,12 @@ public class DataSet
             actions.Sum((action) => Marshal.SizeOf(action.GetType())) + // actual actions
             rules.Count * Marshal.SizeOf<Behaviors.Rule>() + 
             behaviors.Count * Marshal.SizeOf<Behaviors.Behavior>();
+    }
+
+    public uint ComputeHash()
+    {
+        byte[] dataSetDataBytes = ToByteArray();
+        return Utils.computeHash(dataSetDataBytes);
     }
 
     public uint getColor32(ushort colorIndex)
@@ -56,19 +67,24 @@ public class DataSet
         return palette[colorIndex];
     }
 
-    public Animations.RGBKeyframe getKeyframe(ushort keyFrameIndex)
+    public Animations.RGBKeyframe getRGBKeyframe(ushort keyFrameIndex)
+    {
+        return rgbKeyframes[keyFrameIndex];
+    }
+
+    public Animations.Keyframe getKeyframe(ushort keyFrameIndex)
     {
         return keyframes[keyFrameIndex];
     }
 
     public ushort getPaletteSize()
     {
-        return (ushort)palette.Count;
+        return (ushort)(palette.Count * 3);
     }
 
-    public ushort getKeyframeCount()
+    public ushort getRGBKeyframeCount()
     {
-        return (ushort)keyframes.Count;
+        return (ushort)rgbKeyframes.Count;
     }
 
     public Animations.RGBTrack getRGBTrack(ushort trackIndex)
@@ -79,6 +95,21 @@ public class DataSet
     public ushort getRGBTrackCount()
     {
         return (ushort)rgbTracks.Count;
+    }
+
+    public ushort getKeyframeCount()
+    {
+        return (ushort)keyframes.Count;
+    }
+
+    public Animations.Track getTrack(ushort trackIndex)
+    {
+        return tracks[trackIndex];
+    }
+
+    public ushort getTrackCount()
+    {
+        return (ushort)tracks.Count;
     }
 
     public Animations.Animation getAnimation(ushort animIndex)
@@ -146,7 +177,7 @@ public class DataSet
         System.IntPtr current = ptr;
         foreach (var color in palette)
         {
-            Color32 cl32 = color;
+            Color32 cl32 = color; 
             Marshal.WriteByte(current, cl32.r);
             current += 1;
             Marshal.WriteByte(current, cl32.g);
@@ -156,7 +187,7 @@ public class DataSet
         }
 
         // Copy keyframes
-        foreach (var keyframe in keyframes)
+        foreach (var keyframe in rgbKeyframes)
         {
             Marshal.StructureToPtr(keyframe, current, false);
             current += Marshal.SizeOf<Animations.RGBKeyframe>();
@@ -169,9 +200,24 @@ public class DataSet
             current += Marshal.SizeOf<Animations.RGBTrack>();
         }
 
+        // Copy keyframes
+        foreach (var keyframe in keyframes)
+        {
+            Marshal.StructureToPtr(keyframe, current, false);
+            current += Marshal.SizeOf<Animations.Keyframe>();
+        }
+
+        // Copy tracks
+        foreach (var track in tracks)
+        {
+            Marshal.StructureToPtr(track, current, false);
+            current += Marshal.SizeOf<Animations.Track>();
+        }
+
         // Copy animations
         // Offsets first
         short offset = 0;
+        var currentCopy = current;
         foreach (var anim in animations)
         {
             Marshal.WriteInt16(current, offset);
@@ -180,7 +226,7 @@ public class DataSet
         }
 
         // Round up to nearest multiple of 4
-        current += (int)(current.ToInt64() % 4);
+        current = currentCopy + Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>());
 
         // Then animations
         foreach (var anim in animations)
@@ -192,6 +238,7 @@ public class DataSet
         // Copy conditions
         // Offsets first
         offset = 0;
+        currentCopy = current;
         foreach (var cond in conditions)
         {
             Marshal.WriteInt16(current, offset);
@@ -200,7 +247,7 @@ public class DataSet
         }
 
         // Round up to nearest multiple of 4
-        current += (int)(current.ToInt64() % 4);
+        current = currentCopy + Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>());
 
         // Then animations
         foreach (var cond in conditions)
@@ -212,6 +259,7 @@ public class DataSet
         // Copy actions
         // Offsets first
         offset = 0;
+        currentCopy = current;
         foreach (var action in actions)
         {
             Marshal.WriteInt16(current, offset);
@@ -220,7 +268,7 @@ public class DataSet
         }
 
         // Round up to nearest multiple of 4
-        current += (int)(current.ToInt64() % 4);
+        current = currentCopy + Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>());
 
         // Then animations
         foreach (var action in actions)
@@ -246,6 +294,7 @@ public class DataSet
         byte[] ret = new byte[size];
         Marshal.Copy(ptr, ret, 0, size);
         Marshal.FreeHGlobal(ptr);
+
         return ret;
     }
 

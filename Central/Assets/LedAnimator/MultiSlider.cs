@@ -6,15 +6,8 @@ using UnityEngine.UI;
 
 public class MultiSlider : MonoBehaviour, IFocusable
 {
-	struct ColorAndPos
-	{
-		public Color Color;
-		public float Pos;
-		public ColorAndPos(Color color, float pos)
-		{
-			Color = color; Pos = pos;
-		}
-	}
+	[Header("Controls")]
+	public RawImage gradientImage;
 
 	public enum SliderDirection { Horizontal, Verical }
 
@@ -28,15 +21,13 @@ public class MultiSlider : MonoBehaviour, IFocusable
 	public MultiSliderHandle[] AllHandles => transform.GetComponentsInChildren<MultiSliderHandle>();
 
 	Texture2D _texture;
-	Sprite _sprite;
 	bool _suspendRepaint;
-	float _sliderPosX => transform.parent.InverseTransformPoint(transform.position).x;
 	float _sliderWidth => (transform as RectTransform).rect.width;
 
 	public void GiveFocus()
 	{
 		HasFocus = true;
-		GetComponentsInParent<IFocusable>().First(f => (object)f != this).GiveFocus();
+		//GetComponentsInParent<IFocusable>().First(f => (object)f != this).GiveFocus();
 		GetComponent<Outline>().enabled = HasFocus;
 	}
 
@@ -80,22 +71,15 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		}
 	}
 
-	public List<Animations.EditKeyframe> ToAnimationKeyFrames(float unitSize)
+	public Animations.EditRGBGradient ToGradient()
 	{
-        var ret = new List<Animations.EditKeyframe>(
-            GetColorAndPos().Select(colPos =>
-            {
-                float time = (colPos.Pos * _sliderWidth + _sliderPosX) / unitSize;
-                return new Animations.EditKeyframe()
-				{
-                    time = time,
-                    color = colPos.Color
-				};
-            }));
-        return ret;
+		return new Animations.EditRGBGradient()
+		{
+			keyframes = GetColorAndPos()
+		};
 	}
 
-	public void FromAnimationKeyframes(List<Animations.EditKeyframe> keyframes, float unitSize)
+	public void FromGradient(Animations.EditRGBGradient gradient)
 	{
 		_suspendRepaint = true;
 
@@ -103,21 +87,21 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		{
 			Clear();
 
-			float startTime = _sliderPosX / unitSize;
-			float endTime = (_sliderPosX + _sliderWidth) / unitSize;
+			float startTime = 0.0f;
+			float endTime = 1.0f;
 			float eps = 0.0001f;
 
 			bool dupHandle = false;
-            for (int i = 0; i < keyframes.Count; ++i)
+            for (int i = 0; i < gradient.keyframes.Count; ++i)
             {
-				var kf = keyframes[i];
+				var kf = gradient.keyframes[i];
 
 				// Skip automatically inserted keyframes
 				if ((i == 0) && (Mathf.Abs(kf.time - startTime) < eps) && (kf.color == Color.black))
 				{
 					continue;
 				}
-				if (((i + 1) == keyframes.Count) && (Mathf.Abs(kf.time - endTime) < eps) && (kf.color == Color.black))
+				if (((i + 1) == gradient.keyframes.Count) && (Mathf.Abs(kf.time - endTime) < eps) && (kf.color == Color.black))
 				{
 					continue;
 				}
@@ -132,7 +116,7 @@ public class MultiSlider : MonoBehaviour, IFocusable
 
                 var rect = (transform as RectTransform).rect;
                 Vector2 pos = handle.transform.localPosition;
-                pos.x = kf.time * unitSize - _sliderPosX;
+                pos.x = kf.time * _sliderWidth;
                 handle.transform.localPosition = pos;
 
                 dupHandle = true;
@@ -143,6 +127,7 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		finally
 		{
 			_suspendRepaint = false;
+			Repaint();
 		}
 	}
 
@@ -154,12 +139,12 @@ public class MultiSlider : MonoBehaviour, IFocusable
 
 		Color[] pixels = _texture.GetPixels();
 		int x = 0, lastMax = 0;
-		for (int i = 1; i < colorsAndPos.Length; ++i)
+		for (int i = 1; i < colorsAndPos.Count; ++i)
 		{
-			int max = Mathf.RoundToInt(colorsAndPos[i].Pos * pixels.Length);
+			int max = Mathf.RoundToInt(colorsAndPos[i].time * pixels.Length);
 			for (; x < max; ++x)
 			{
-				pixels[x] = Color.Lerp(colorsAndPos[i - 1].Color, colorsAndPos[i].Color, ((float)x - lastMax) / (max - lastMax));
+				pixels[x] = Color.Lerp(colorsAndPos[i - 1].color, colorsAndPos[i].color, ((float)x - lastMax) / (max - lastMax));
 			}
 			lastMax = max;
 		}
@@ -177,12 +162,12 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		{
 			var colorsAndPos = GetColorAndPos();
 			float lastMax = 0;
-			for (int i = 1; i < colorsAndPos.Length; ++i)
+			for (int i = 1; i < colorsAndPos.Count; ++i)
 			{
-				float max = colorsAndPos[i].Pos;
+				float max = colorsAndPos[i].time;
 				if (cursorPercent <= max)
 				{
-					return Color.Lerp(colorsAndPos[i - 1].Color, colorsAndPos[i].Color, (cursorPercent - lastMax) / (max - lastMax));
+					return Color.Lerp(colorsAndPos[i - 1].color, colorsAndPos[i].color, (cursorPercent - lastMax) / (max - lastMax));
 				}
 				lastMax = max;
 			}
@@ -228,22 +213,34 @@ public class MultiSlider : MonoBehaviour, IFocusable
 		}
 	}
 
-	ColorAndPos[] GetColorAndPos()
+	List<Animations.EditRGBKeyframe> GetColorAndPos()
 	{
 		float width = (transform as RectTransform).rect.width;
 		var list = AllHandles
 			.OrderBy(h => h.transform.localPosition.x)
-			.Select(h => new ColorAndPos(h.Color, h.transform.localPosition.x / width)).ToList();
+			.Select(h => new Animations.EditRGBKeyframe()
+			{
+				color = h.Color,
+				time = h.transform.localPosition.x / width
+			}).ToList();
 		// Insert key at beginning and end to transion from black color
-		if (list[0].Pos > 0)
+		if (list[0].time > 0)
 		{
-			list.Insert(0, new ColorAndPos(Color.black, 0));
+			list.Insert(0, new Animations.EditRGBKeyframe()
+			{
+				color = Color.black,
+				time = 0
+			});
 		}
-		if (list.Last().Pos < 1)
+		if (list.Last().time < 1)
 		{
-			list.Add(new ColorAndPos(Color.black, 1));
+			list.Add(new Animations.EditRGBKeyframe()
+			{
+				color = Color.black,
+				time = 1
+			});
 		}
-		return list.ToArray();
+		return list;
 	}
 
 	void Clear()
@@ -261,26 +258,16 @@ public class MultiSlider : MonoBehaviour, IFocusable
 
 	void OnDestroy()
 	{
-		Object.Destroy(_sprite);
-		_sprite = null;
+		gradientImage.texture = null;
 		Object.Destroy(_texture);
 		_texture = null;
 	}
 
 	void Awake()
 	{
-		var img = GetComponent<Image>();
-		var texture = img.sprite.texture;
-		if (texture.mipmapCount != 1)
-		{
-			Debug.LogWarning("Texture used for color gradient should have only one mipmap level");
-		}
-
 		// Create owned texture because it will modify it
-		_texture = new Texture2D(texture.width, texture.height, texture.format, false);
-		Graphics.CopyTexture(texture, _texture);
-		_sprite = Sprite.Create(_texture, img.sprite.rect, img.sprite.pivot);
-		img.sprite = _sprite;
+		_texture = new Texture2D(512, 1, TextureFormat.ARGB32, false);
+		gradientImage.texture = _texture;
 	}
 
 	// Use this for initialization

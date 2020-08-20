@@ -8,6 +8,7 @@ namespace Behaviors
     /// <summary>
     /// The types of conditions we support!
     /// </summary>
+    [SkipEnum(1)]
     public enum ConditionType : byte
     {
         Unknown = 0,

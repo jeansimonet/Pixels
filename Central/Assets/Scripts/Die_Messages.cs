@@ -64,7 +64,7 @@ public partial class Die
         }
     }
 
-    IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut, System.Action<DieMessage> ackAction, System.Action timeoutAction)
+    IEnumerator SendMessageWithAckOrTimeoutCr<T>(T message, DieMessageType ackType, float timeOut, System.Action<DieMessage> ackAction, System.Action timeoutAction, System.Action errorAction)
         where T : DieMessage
     {
         DieMessage ackMessage = null;
@@ -76,7 +76,13 @@ public partial class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, (res) =>
+        {
+            if (!res)
+            {
+                errorAction?.Invoke();
+            }
+        });
         while (ackMessage == null && Time.time < startTime + timeOut)
         {
             yield return null;
@@ -92,20 +98,21 @@ public partial class Die
         }
     }
 
-    IEnumerator SendMessageWithAckRetryCr<T>(T message, DieMessageType ackType, System.Action<DieMessage> ackAction)
+    IEnumerator SendMessageWithAckRetryCr<T>(T message, DieMessageType ackType, int retryCount, System.Action<DieMessage> ackAction, System.Action timeoutAction, System.Action errorAction)
         where T : DieMessage
     {
-        DieMessage msgReceived = null;
+        bool msgReceived = false;
         System.Action<DieMessage> msgAction = (msg) =>
         {
-            msgReceived = msg;
+            ackAction?.Invoke(msg);
         };
-        while (msgReceived == null)
+        int count = 0;
+        while (!msgReceived && count < retryCount)
         {
             // Retry every half second if necessary
-            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 0.5f, msgAction, null));
+            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 0.5f, msgAction, timeoutAction, errorAction));
+            count++;
         }
-        ackAction?.Invoke(msgReceived);
     }
 
     Coroutine PerformBluetoothOperation(IEnumerator operationCr)
@@ -206,6 +213,8 @@ public partial class Die
             faceCount = idMsg.faceCount;
 	        designAndColor = idMsg.designAndColor;
 	        deviceId = idMsg.deviceId;
+            currentBehaviorIndex = idMsg.currentBehaviorIndex;
+            dataSetHash = idMsg.dataSetHash;
             firmwareVersionId = System.Text.Encoding.UTF8.GetString(idMsg.versionInfo, 0, DieMessages.VERSION_INFO_SIZE);
 
             if (appearanceChanged)
@@ -215,7 +224,7 @@ public partial class Die
         }
 
         var whoAreYouMsg = new DieMessageWhoAreYou();
-        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, updateDieInfo, null));
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, updateDieInfo, null, null));
     }
 
     public Coroutine RequestTelemetry(bool on)
@@ -251,12 +260,12 @@ public partial class Die
         return PerformBluetoothOperation(() => PostMessage(msg));
     }
 
-    public Coroutine GetBatteryLevel(System.Action<float?> outLevelAction)
+    public Coroutine GetBatteryLevel(System.Action<Die, float?> outLevelAction)
     {
         return PerformBluetoothOperation(GetBatteryLevelCr(outLevelAction));
     }
 
-    IEnumerator GetBatteryLevelCr(System.Action<float?> outLevelAction)
+    IEnumerator GetBatteryLevelCr(System.Action<Die, float?> outLevelAction)
     {
         yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
             new DieMessageRequestBatteryLevel(),
@@ -265,12 +274,39 @@ public partial class Die
             (msg) =>
             {
                 var lvlMsg = (DieMessageBatteryLevel)msg;
-                outLevelAction?.Invoke(lvlMsg.level);
+                OnBatteryLevelChanged?.Invoke(this, lvlMsg.level);
+                outLevelAction?.Invoke(this, lvlMsg.level);
             },
             () =>
             {
-                outLevelAction?.Invoke(null);
+                outLevelAction?.Invoke(this, null);
+            },
+            () =>
+            {
+                outLevelAction?.Invoke(this, null);
             }));
+    }
+
+    public Coroutine SetCurrentDesignAndColor(DiceVariants.DesignAndColor design, System.Action<bool> callback)
+    {
+       return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+           new DieMessageSetDesignAndColor() { designAndColor = design },
+           DieMessageType.SetDesignAndColorAck,
+           3,
+           (ignore) => callback(true),
+           () => callback(false),
+           () => callback(false)));
+    }
+
+    public Coroutine SetCurrentBehavior(int behaviorIndex, System.Action<bool> callback)
+    {
+       return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+           new DieMessageSetCurrentBehavior() { currentBehaviorIndex = (byte)behaviorIndex },
+           DieMessageType.SetCurrentBehaviorAck,
+           3,
+           (ignore) => callback(true),
+           () => callback(false),
+           () => callback(false)));
     }
 
     public void StartHardwareTest()

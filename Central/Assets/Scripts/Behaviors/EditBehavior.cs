@@ -1,16 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace Behaviors
 {
+    [System.Serializable]
     public class EditBehavior
+        : EditObject
     {
         public string name;
         public string description;
         public List<EditRule> rules = new List<EditRule>();
 
-        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_White };
+        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_Grey };
 
         public Behavior ToBehavior(EditDataSet editSet, DataSet set)
         {
@@ -27,42 +31,6 @@ namespace Behaviors
                 rulesOffset = (ushort)rulesOffset,
                 rulesCount = (ushort)rules.Count
             };
-        }
-
-        [System.Serializable]
-        struct JsonData
-        {
-            public string name;
-            public string description;
-            public List<string> rulesJson;
-        }
-
-        public string ToJson(AppDataSet editSet)
-        {
-            var data = new JsonData();
-            data.name = name;
-            data.description = description;
-            data.rulesJson = new List<string>();
-            foreach (var rule in rules)
-            {
-                data.rulesJson.Add(rule.ToJson(editSet));
-            }
-
-            return JsonUtility.ToJson(data);
-        }
-
-        public void FromJson(AppDataSet editSet, string json)
-        {
-            var data = JsonUtility.FromJson<JsonData>(json);
-            rules.Clear();
-            foreach (var ruleJson in data.rulesJson)
-            {
-                var editRule = new EditRule();
-                editRule.FromJson(editSet, ruleJson);
-                rules.Add(editRule);
-            }
-            name = data.name;
-            description = data.description;
         }
 
         public EditBehavior Duplicate()
@@ -99,6 +67,17 @@ namespace Behaviors
             foreach (var rule in rules)
             {
                 rule.ReplaceAnimation(oldAnimation, newAnimation);
+            }
+        }
+
+        public IEnumerable<Animations.EditAnimation> CollectAnimations()
+        {
+            foreach (var action in rules.Select(r => r.action))
+            {
+                foreach (var anim in action.CollectAnimations())
+                {
+                    yield return anim;
+                }
             }
         }
     }

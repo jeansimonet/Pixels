@@ -14,7 +14,7 @@ public class UIBehaviorToken : MonoBehaviour
     public Button menuButton;
 
     public EditBehavior editBehavior { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
@@ -29,9 +29,9 @@ public class UIBehaviorToken : MonoBehaviour
         behaviorNameText.text = bh.name;
         behaviorDescriptionText.text = bh.description;
 
-        //dieRenderer.rotating = true;
-        //dieRenderer.SetAnimation(anim);
-        //dieRenderer.Play(true);
+        dieRenderer.rotating = true;
+        dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());
+        dieRenderer.Play(true);
     }
 
     // Start is called before the first frame update

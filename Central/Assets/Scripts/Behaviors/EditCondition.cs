@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Behaviors
 {
     [System.Serializable]
     public abstract class EditCondition
+        : EditObject
     {
+        [JsonIgnore]
         public abstract ConditionType type { get; }
         public abstract Condition ToCondition(EditDataSet editSet, DataSet set);
-        public abstract string ToJson();
-        public abstract void FromJson(string Json);
         public abstract EditCondition Duplicate();
 
         public static EditCondition Create(ConditionType type)
@@ -36,6 +38,60 @@ namespace Behaviors
                     throw new System.Exception("Unknown condition type");
             }
         }
+
+        public static System.Type GetConditionType(ConditionType type)
+        {
+            switch (type)
+            {
+                case ConditionType.Handling:
+                    return typeof(EditConditionHandling);
+                case ConditionType.Rolling:
+                    return typeof(EditConditionRolling);
+                case ConditionType.Crooked:
+                    return typeof(EditConditionCrooked);
+                case ConditionType.FaceCompare:
+                    return typeof(EditConditionFaceCompare);
+                case ConditionType.HelloGoodbye:
+                    return typeof(EditConditionHelloGoodbye);
+                case ConditionType.ConnectionState:
+                    return typeof(EditConditionConnectionState);
+                case ConditionType.BatteryState:
+                    return typeof(EditConditionBatteryState);
+                default:
+                    throw new System.Exception("Unknown condition type");
+            }
+        }
+    }
+
+    public class EditConditionConverter
+        : JsonConverter<EditCondition>
+    {
+        public override void WriteJson(JsonWriter writer, EditCondition value, JsonSerializer serializer)
+        {
+            using (new IgnoreThisConverter(serializer, this))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("type");
+                serializer.Serialize(writer, value.type);
+                writer.WritePropertyName("data");
+                serializer.Serialize(writer, value);
+                writer.WriteEndObject();
+            }
+        }
+
+        public override EditCondition ReadJson(JsonReader reader, System.Type objectType, EditCondition existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (hasExistingValue)
+                throw(new System.NotImplementedException());
+
+            using (new IgnoreThisConverter(serializer, this))
+            {
+                JObject jsonObject = JObject.Load(reader);
+                var type = jsonObject["type"].ToObject<ConditionType>();
+                var ret = (EditCondition)jsonObject["data"].ToObject(EditCondition.GetConditionType(type), serializer);
+                return ret;
+            }
+        }
     }
 
     /// <summary>
@@ -49,15 +105,6 @@ namespace Behaviors
         public override Condition ToCondition(EditDataSet editSet, DataSet set)
         {
             return new ConditionHandling();
-        }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
         public override EditCondition Duplicate()
         {
@@ -81,15 +128,6 @@ namespace Behaviors
         {
             return new ConditionRolling();
         }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
-        }
         public override EditCondition Duplicate()
         {
             return new EditConditionRolling();
@@ -112,15 +150,6 @@ namespace Behaviors
         {
             return new ConditionCrooked();
         }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
-        }
         public override EditCondition Duplicate()
         {
             return new EditConditionCrooked();
@@ -138,7 +167,9 @@ namespace Behaviors
     public class EditConditionFaceCompare
         : EditCondition
     {
-        public byte faceIndex;
+        [Index, IntRange(0, 19)]
+        public int faceIndex;
+        [Bitfield]
         public ConditionFaceCompare_Flags flags;
 
         public override ConditionType type { get { return ConditionType.FaceCompare; } }
@@ -146,18 +177,9 @@ namespace Behaviors
         {
             return new ConditionFaceCompare()
             {
-                faceIndex = this.faceIndex,
+                faceIndex = (byte)this.faceIndex,
                 flags = this.flags
             };
-        }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
         public override EditCondition Duplicate()
         {
@@ -223,6 +245,7 @@ namespace Behaviors
     public class EditConditionHelloGoodbye
         : EditCondition
     {
+        [Bitfield]
         public ConditionHelloGoodbye_Flags flags;
 
         public override ConditionType type { get { return ConditionType.HelloGoodbye; } }
@@ -232,15 +255,6 @@ namespace Behaviors
             {
                 flags = this.flags
             };
-        }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
         public override EditCondition Duplicate()
         {
@@ -281,6 +295,7 @@ namespace Behaviors
     public class EditConditionConnectionState
         : EditCondition
     {
+        [Bitfield]
         public ConditionConnectionState_Flags flags;
 
         public override ConditionType type { get { return ConditionType.ConnectionState; } }
@@ -290,15 +305,6 @@ namespace Behaviors
             {
                 flags = this.flags
             };
-        }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
         public override EditCondition Duplicate()
         {
@@ -339,6 +345,7 @@ namespace Behaviors
     public class EditConditionBatteryState
         : EditCondition
     {
+        [Bitfield]
         public ConditionBatteryState_Flags flags;
 
         public override ConditionType type { get { return ConditionType.BatteryState; } }
@@ -348,15 +355,6 @@ namespace Behaviors
             {
                 flags = this.flags
             };
-        }
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
         public override EditCondition Duplicate()
         {

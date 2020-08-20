@@ -45,6 +45,7 @@ public partial class Die
         Disconnecting,  // We are currently disconnecting from this die
         Missing,        // Die disconnected unexpectedly or can't be reached
         CommError,      // There was an error communicating with the die
+        Removed,        // Die was removed (but it may still be pointed at by presets)
     }
 
     public ConnectionState connectionState { get; private set; } = ConnectionState.Invalid;
@@ -67,15 +68,17 @@ public partial class Die
 
     public int faceCount { get; private set; } = 0;
     public DiceVariants.DesignAndColor designAndColor { get; private set; } = DiceVariants.DesignAndColor.Unknown;
+    public byte currentBehaviorIndex { get; private set; } = 0;
     public System.UInt64 deviceId { get; private set; } = 0;
     public string firmwareVersionId { get; private set; } = "Unknown";
     public string address { get; private set; } = ""; // name is stored on the gameObject itself
+    public uint dataSetHash { get; private set; } = 0;
 
     public RollState state { get; private set; } = RollState.Unknown;
     public int face { get; private set; } = -1;
 
-    public float batteryLevel { get; private set; }
-    public float rssi { get; private set; }
+    public float? batteryLevel { get; private set; } = null;
+    public int? rssi { get; private set; } = null;
 
 	public delegate void TelemetryEvent(Die die, AccelFrame frame);
     public TelemetryEvent _OnTelemetry;
@@ -117,7 +120,7 @@ public partial class Die
 	public delegate void AppearanceChangedEvent(Die die, int newFaceCount, DiceVariants.DesignAndColor newDesign);
     public AppearanceChangedEvent OnAppearanceChanged;
 
-    public delegate void BatteryLevelChangedEvent(Die die, float level);
+    public delegate void BatteryLevelChangedEvent(Die die, float? level);
     public BatteryLevelChangedEvent OnBatteryLevelChanged;
 
     // Lock so that only one 'operation' can happen at a time on a die

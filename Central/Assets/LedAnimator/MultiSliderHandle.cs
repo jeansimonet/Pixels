@@ -10,21 +10,15 @@ using static MultiSlider;
 
 public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandler
 {
-	[SerializeField]
-	RectTransform _selectedOvr = null;
-
-	[SerializeField]
-	Text _valueTxt = null;
-
+	public RectTransform buttonsRoot;
+	public Image selectionImage;
+	public Image colorImage;
 	Canvas _canvas = null;
-
-	Image _image;
 	MultiSlider _slider;
 	Vector2 _dragOffset;
 
-	//public bool IsSelected => EventSystem.current.currentSelectedGameObject == gameObject;
 	public bool Selected => _slider.ActiveHandle == this;
-	public Color Color => _image.color;
+	public Color Color => colorImage.color;
 
 	public void ChangeColor(Color color)
 	{
@@ -33,7 +27,7 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 	public void ChangeColor(Color color, bool noRepaint)
 	{
-		_image.color = color;
+		colorImage.color = color;
 		if (!noRepaint)
 		{
 			_slider.Repaint();
@@ -43,7 +37,6 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	public MultiSliderHandle Duplicate()
 	{
 		var dupHandle = GameObject.Instantiate<MultiSliderHandle>(this, transform.parent);
-		//Keep same color dupHandle.ChangeColor(Palette.Instance.ActiveColor);
 		_slider.Repaint(); //TODO slider should be notified instead
 		_slider.SelectHandle(dupHandle);
 		return dupHandle;
@@ -87,26 +80,21 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 		Snap();
 
-		RepaintValue();
 		_slider.Repaint();
 	}
 
 	void OnHandleSelected(MultiSliderHandle handle)
 	{
+		selectionImage.color = (handle == this) ? Color.white : new Color(1.0f, 1.0f, 1.0f, 0.25f);
+		buttonsRoot.gameObject.SetActive(handle == this);
 		Repaint();
-
-		Palette.Instance.ColorSelected -= ChangeColor;
-		if (Selected)
-		{
-			Palette.Instance.SelectColor(Color);
-			Palette.Instance.ColorSelected += ChangeColor;
-		}
 	}
 
 	void Snap()
 	{
-		float unit = GetComponentInParent<TimelineView>().Unit; //TODO
-		float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+		// float unit = GetComponentInParent<TimelineView>().Unit; //TODO
+		// float snap = GetComponentInParent<TimelineView>().SnapInterval * unit;
+		float snap = 0.1f;
 
 		var rect = (_slider.transform as RectTransform).rect;
 		Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
@@ -128,40 +116,10 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 
 	void Repaint()
 	{
-		transform.localScale = Vector2.one * (Selected ? 1.2f : 1f);
-		if (_selectedOvr != null)
-		{
-			_selectedOvr.gameObject.SetActive(Selected);
-		}
+		//transform.localScale = Vector2.one * (Selected ? 1.2f : 1f);
 		if (_canvas != null)
 		{
 			_canvas.overrideSorting = Selected;
-		}
-		RepaintValue();
-	}
-
-	void RepaintValue()
-	{
-		if (_valueTxt != null)
-		{
-			float unit = GetComponentInParent<TimelineView>().Unit; //TODO
-
-			var rect = (_slider.transform as RectTransform).rect;
-			Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
-
-			// Slider value
-			float value;
-			if (_slider.Direction == SliderDirection.Horizontal)
-			{
-				float x = transform.position.x - min.x;
-				value = (_slider.transform.localPosition.x + x) / unit;
-			}
-			else
-			{
-				float y = transform.position.y - min.y;
-				value = (_slider.transform.localPosition.y + y) / unit;
-			}
-			_valueTxt.text = value.ToString();
 		}
 	}
 
@@ -169,12 +127,10 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	{
 		_slider = GetComponentInParent<MultiSlider>();
 		_slider.HandleSelected += OnHandleSelected;
-		//Repaint();
 	}
 
 	void OnDisable()
 	{
-		Palette.Instance.ColorSelected -= ChangeColor;
 		_slider.HandleSelected -= OnHandleSelected;
 		_slider = null;
 	}
@@ -182,8 +138,7 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	void Awake()
 	{
 		_canvas = GetComponent<Canvas>();
-		_image = GetComponent<Image>();
-		_selectedOvr.gameObject.SetActive(false);
+		buttonsRoot.gameObject.SetActive(false);
 	}
 
 	// Use this for initialization
@@ -193,7 +148,6 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 		if (GetComponentInParent<TimelineView>() != null)
 		{
 			Snap();
-			RepaintValue();
 		}
 	}
 }

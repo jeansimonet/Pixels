@@ -17,7 +17,7 @@ public class UIBehaviorView
     public RectTransform spacer;
 
     public Behaviors.EditBehavior editBehavior { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     [Header("Prefabs")]
     public UIRuleToken ruleTokenPrefab;
@@ -67,9 +67,9 @@ public class UIBehaviorView
 
         RefreshView();
 
-        // dieRenderer.rotating = true;
-        // dieRenderer.SetAnimation(anim);
-        // dieRenderer.Play(true);
+        dieRenderer.rotating = true;
+        dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());
+        dieRenderer.Play(true);
     }
 
     void Awake()

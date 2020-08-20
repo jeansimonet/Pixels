@@ -8,27 +8,25 @@ namespace Animations
     public class EditAnimationSimple
         : EditAnimation
     {
-		public AnimationSimpleLEDType ledType = AnimationSimpleLEDType.AllLEDs;
+        [FaceMask, IntRange(0, 19)]
+		public int faces = 0xFFFFF;
         public Color32 color = new Color32(0xFF, 0x30, 0x00, 0xff);
+        [Index, IntRange(1, 10)]
+        public int count = 1;
+        [Slider]
+        [FloatRange(0.1f, 1.0f)]
+        public float fade = 0.1f;
 
         public override AnimationType type { get { return AnimationType.Simple; } }
         public override Animation ToAnimation(EditDataSet editSet, DataSet set)
         {
             var ret = new AnimationSimple();
             ret.duration = (ushort)(this.duration * 1000.0f);
-            ret.ledType = this.ledType;
+            ret.faceMask = (uint)this.faces;
             ret.color = ColorUtils.toColor(this.color.r, this.color.g, this.color.b);
+            ret.fade = (byte)(255.0f * fade);
+            ret.count = (byte)count;
             return ret;
-        }
-
-        public override string ToJson()
-        {
-            return JsonUtility.ToJson(this);
-        }
-
-        public override void FromJson(string json)
-        {
-            JsonUtility.FromJsonOverwrite(json, this);
         }
  
         public override EditAnimation Duplicate()
@@ -36,8 +34,9 @@ namespace Animations
             EditAnimationSimple ret = new EditAnimationSimple();
             ret.name = this.name;
 		    ret.duration = this.duration;
-            ret.ledType = this.ledType;
+            ret.faces = this.faces;
             ret.color = this.color;
+            ret.count = this.count;
             return ret;
         }
    }

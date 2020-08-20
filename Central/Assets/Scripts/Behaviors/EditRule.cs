@@ -1,10 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace Behaviors
 {
+    [System.Serializable]
     public class EditRule
+        : EditObject
     {
         public EditCondition condition;
         public EditAction action;
@@ -26,37 +29,6 @@ namespace Behaviors
                 condition = (ushort)conditionIndex,
                 action = (ushort)actionIndex
             };
-        }
-
-        [System.Serializable]
-        struct JsonData
-        {
-            public ConditionType conditionType;
-            public string conditionJson;
-            public ActionType actionType;
-            public string actionJson;
-        }
-
-        public string ToJson(AppDataSet editSet)
-        {
-            var data = new JsonData()
-            {
-                conditionType = condition.type,
-                conditionJson = condition.ToJson(),
-                actionType = action.type,
-                actionJson = action.ToJson(editSet)
-            };
-            return JsonUtility.ToJson(data);
-        }
-
-        public void FromJson(AppDataSet editSet, string json)
-        {
-            // Parse json string in
-            var data = JsonUtility.FromJson<JsonData>(json);
-            condition = EditCondition.Create(data.conditionType);
-            condition.FromJson(data.conditionJson);
-            action = EditAction.Create(data.actionType);
-            action.FromJson(editSet, data.actionJson);
         }
 
         public EditRule Duplicate()

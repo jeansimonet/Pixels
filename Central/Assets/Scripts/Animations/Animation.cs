@@ -11,13 +11,14 @@ namespace Animations
 	/// <summary>
 	/// Defines the types of Animation Presets we have/support
 	/// </summary>
-    [EnumRange((int)AnimationType.Simple, (int)AnimationType.Keyframed)]
+    [SkipEnum(1)]
 	public enum AnimationType : byte
 	{
 		Unknown = 0,
 		Simple,
 		Rainbow,
 		Keyframed,
+		GradientPattern,
 	};
 
 	/// <summary>

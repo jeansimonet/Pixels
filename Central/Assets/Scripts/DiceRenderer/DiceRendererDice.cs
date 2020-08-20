@@ -8,6 +8,7 @@ using UnityEditor;
 #endif
 
 using Animations;
+using Behaviors;
 
 public class DiceRendererDice : MonoBehaviour
 {
@@ -16,56 +17,81 @@ public class DiceRendererDice : MonoBehaviour
     public Color[] FaceColors;
     MaterialPropertyBlock[] propertyBlocks;
 
-    public bool rotating { get; set; }
+    public float delay { get; set; } = 1.0f;
+    public bool rotating { get; set; } = false;
     float rotationSpeedDeg;
 
     DataSet dataSet;
-    EditAnimation currentAnimation;
+    List<EditAnimation> animations = new List<EditAnimation>();
     AnimationInstance currentInstance;
+    int currentAnimationIndex;
 
-    public void SetAnimation(Animations.EditAnimation editAnimation)
+    enum State
     {
-        currentAnimation = editAnimation;
-        if (currentInstance != null)
-        {
-            // We're switching the animation from underneath the playback
-            // Create a new dataset and instance
-            EditDataSet tempEditSet = new EditDataSet();
-            tempEditSet.animations.Add(currentAnimation);
-            var newDataSet = tempEditSet.ToDataSet();
-            var newInstance = newDataSet.animations[0].CreateInstance();
-            newInstance.start(newDataSet, currentInstance.startTime, currentInstance.remapFace, currentInstance.loop);
+        Idle,
+        Playing,
+        Waiting,
+    }
+    State currentState = State.Idle;
+    float timeLeft;
 
-            dataSet = newDataSet;
-            currentInstance = newInstance;
+    public void SetAnimations(IEnumerable<EditAnimation> animations)
+    {
+        this.animations.Clear();
+        this.animations.AddRange(animations);
+        if (this.animations.Count > 0)
+        {
+            if (currentAnimationIndex >= this.animations.Count)
+            {
+                currentAnimationIndex = 0;
+            }
+
+            if (currentInstance != null)
+            {
+                // We're switching the animation from underneath the playback
+                SetupInstance(currentAnimationIndex, currentInstance.startTime, currentInstance.remapFace);
+            }
+        }
+        else
+        {
+            Stop();
         }
     }
 
-    public void ClearAnimation()
+    public void SetAnimation(Animations.EditAnimation editAnimation)
+    {
+        if (editAnimation != null)
+        {
+            animations.Clear();
+            animations.Add(editAnimation);
+            currentAnimationIndex = 0;
+            if (currentInstance != null)
+            {
+                // We're switching the animation from underneath the playback
+                SetupInstance(currentAnimationIndex, currentInstance.startTime, currentInstance.remapFace);
+            }
+        }
+        else
+        {
+            ClearAnimations();
+        }
+    }
+
+    public void ClearAnimations()
     {
         // Shouldn't have an instance if we don't have an animation
         currentInstance = null;
         dataSet = null;
+        currentState = State.Idle;
 
         // Clear the animation
-        currentAnimation = null;
+        animations.Clear();
     }
 
     public void Play(bool loop)
     {
-        if (currentAnimation != null)
-        {
-            // Create a temporary data set so we can play the animation
-            EditDataSet tempEditSet = new EditDataSet();
-            tempEditSet.animations.Add(currentAnimation);
-            dataSet = tempEditSet.ToDataSet();
-            currentInstance = dataSet.animations[0].CreateInstance();
-            currentInstance.start(dataSet, (int)(Time.time * 1000), 0, loop);
-        }
-        else
-        {
-            Debug.LogWarning("Trying to play null animation on die renderer die");
-        }
+        currentState = State.Waiting;
+        timeLeft = 0.0f;
     }
 
     public void Stop()
@@ -87,6 +113,8 @@ public class DiceRendererDice : MonoBehaviour
             FaceRenderers[i].SetPropertyBlock(block);
             FaceLights[i].color = FaceColors[i];
         }
+        currentState = State.Idle;
+        timeLeft = 0.0f;
     }
 
     // Start is called before the first frame update
@@ -99,48 +127,70 @@ public class DiceRendererDice : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (currentInstance != null)
+        for (int i = 0; i < 20; ++i)
         {
-            // Update the animation time
-            int time = (int)(Time.time * 1000);
-            if (time > (currentInstance.startTime + currentInstance.animationPreset.duration))
-            {
-                if (currentInstance.loop)
-                {
-                    currentInstance.startTime += currentInstance.animationPreset.duration;
-                }
-                else
-                {
-                    for (int i = 0; i < 20; ++i)
-                    {
-                        FaceColors[i] = Color.black;
-                    }
-                    currentInstance = null;
-                }
-            }
-            else
-            {
-                int [] retIndices = new int[20];
-                uint[] retColors = new uint[20];
-                int ledCount = currentInstance.updateLEDs(dataSet, time, retIndices, retColors);
-                for (int t = 0; t < ledCount; ++t)
-                {
-                    uint color = retColors[t];
-                    Color32 color32 = new Color32(
-                        ColorUtils.getRed(color),
-                        ColorUtils.getGreen(color),
-                        ColorUtils.getBlue(color),
-                        255);
-                    FaceColors[retIndices[t]] = color32;
-                }
-            }
+            FaceColors[i] = Color.black;
         }
-        else
+        switch (currentState)
         {
-            for (int i = 0; i < 20; ++i)
-            {
-                FaceColors[i] = Color.black;
-            }
+            case State.Waiting:
+                {
+                    Debug.Assert(animations.Count > 0);
+                    timeLeft -= Time.deltaTime;
+                    if (timeLeft <= 0.0f)
+                    {
+                        currentState = State.Playing;
+                        currentAnimationIndex++;
+                        if (currentAnimationIndex >= animations.Count)
+                        {
+                            currentAnimationIndex = 0;
+                        }
+                        if (animations[currentAnimationIndex] != null)
+                        {
+                            SetupInstance(currentAnimationIndex, (int)(Time.time * 1000), 0xFF);
+                        }
+                        else
+                        {
+                            currentState = State.Waiting;
+                        }
+                    }
+                }
+                break;
+            case State.Playing:
+                {
+                    Debug.Assert(currentInstance != null);
+                    // Update the animation time
+                    int time = (int)(Time.time * 1000);
+                    if (time > (currentInstance.startTime + currentInstance.animationPreset.duration))
+                    {
+                        for (int i = 0; i < 20; ++i)
+                        {
+                            FaceColors[i] = Color.black;
+                        }
+                        currentInstance = null;
+                        currentState = State.Waiting;
+                        timeLeft = delay;
+                    }
+                    else
+                    {
+                        int [] retIndices = new int[20];
+                        uint[] retColors = new uint[20];
+                        int ledCount = currentInstance.updateLEDs(dataSet, time, retIndices, retColors);
+                        for (int t = 0; t < ledCount; ++t)
+                        {
+                            uint color = retColors[t];
+                            Color32 color32 = new Color32(
+                                ColorUtils.getRed(color),
+                                ColorUtils.getGreen(color),
+                                ColorUtils.getBlue(color),
+                                255);
+                            FaceColors[retIndices[t]] = color32;
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
         }
 
         UpdateColors();
@@ -177,4 +227,15 @@ public class DiceRendererDice : MonoBehaviour
     {
         UpdateColors();
     }
+
+    void SetupInstance(int animationIndex, int startTime, byte remapFace)
+    {
+        currentAnimationIndex = animationIndex;
+        EditDataSet tempEditSet = new EditDataSet();
+        tempEditSet.animations.Add(animations[animationIndex]);
+        dataSet = tempEditSet.ToDataSet();
+        currentInstance = dataSet.animations[0].CreateInstance();
+        currentInstance.start(dataSet, startTime, remapFace, false);
+    }
+
 }

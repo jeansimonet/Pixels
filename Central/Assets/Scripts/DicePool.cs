@@ -19,6 +19,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
     List<Die> dice = new List<Die>();
     Dictionary<Die, System.Action<Die.ConnectionState>> setState = new Dictionary<Die, System.Action<Die.ConnectionState>>();
+    Dictionary<Die, int> connectionCount = new Dictionary<Die, int>();
 
     // Multiple things may request bluetooth scanning, so we need to arbitrate when
     // we actually ask Central to scan or not. This counter will let us know
@@ -70,16 +71,63 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
     }
 
+    public Die FindDie(Presets.EditDie editDie)
+    {
+        return allDice.FirstOrDefault(d =>
+        {
+            // We should only use device Id
+            if (d.deviceId == 0 || editDie.deviceId == 0)
+            {
+                return d.name == editDie.name;
+            }
+            else
+            {
+                return d.deviceId == editDie.deviceId;
+            }
+        });
+    }
+
     public void IncludeDie(Die die)
     {
         if (die.connectionState == Die.ConnectionState.New)
         {
             setState[die].Invoke(Die.ConnectionState.Unknown);
         }
-        SavePool();
+        UpdateDataSet();
+        AppDataSet.Instance.SaveData();
     }
 
-    public void ConnectDie(Die die)
+    public void RequestConnectDie(Die die)
+    {
+        int cc = 0;
+        connectionCount.TryGetValue(die, out cc);
+        cc++;
+        connectionCount[die] = cc;
+        if (cc == 1)
+        {
+            ConnectDie(die);
+        }
+    }
+
+    public void RequestDisconnectDie(Die die)
+    {
+        int cc = 0;
+        if (!connectionCount.TryGetValue(die, out cc))
+        {
+            Debug.LogError("Mismatched connection count for die " + die.name);
+        }
+        else
+        {
+            cc--;
+            connectionCount[die] = cc;
+            if (cc == 0)
+            {
+                DisconnectDie(die);
+            }
+        }
+    }
+
+    void ConnectDie(Die die)
     {
         if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.New)
         {
@@ -95,10 +143,20 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// <summary>
     /// Disconnects a die, doesn't remove it from the pool though
     /// </sumary>
-    public void DisconnectDie(Die die)
+    void DisconnectDie(Die die)
     {
         setState[die].Invoke(Die.ConnectionState.Disconnecting);
-        Central.Instance.DisconnectDie(die, null);
+        Central.Instance.DisconnectDie(die, (_, res, errorMsg) =>
+        {
+            if (res)
+            {
+                setState[die].Invoke(Die.ConnectionState.Available);
+            }
+            else
+            {
+                setState[die].Invoke(Die.ConnectionState.CommError);
+            }
+        });
     }
 
     /// <summary>
@@ -114,7 +172,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         DestroyDie(die);
 
         // And make sure we save the pool data
-        SavePool();
+        UpdateDataSet();
+        AppDataSet.Instance.SaveData();
     }
 
     /// <summary>
@@ -123,7 +182,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     public void DoubtDie(Die die)
     {
-        if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.Missing)
+        if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.Missing || die.connectionState == Die.ConnectionState.CommError)
         {
             setState[die].Invoke(Die.ConnectionState.Unknown);
         }
@@ -145,7 +204,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
     void Start()
     {
-        LoadPool();
+        Initialize();
     }
 
     void OnBluetoothError(string message)
@@ -303,7 +362,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             {
                 // Die is finally ready, awesome!
                 setState[ourDie].Invoke(Die.ConnectionState.Ready);
-                SavePool();
+                UpdateDataSet();
+                AppDataSet.Instance.SaveData();
             }
             else
             {
@@ -417,56 +477,48 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     }
 
     /// <summary>
-    /// Small data structure used to write out our pool of dice to json
-    /// </sumary>
-    [System.Serializable]
-    struct JsonData
-    {
-        [System.Serializable]
-        public struct Dice
-        {
-            public string name;
-            public System.UInt64 deviceId;
-            public int faceCount; // Which kind of dice this is
-            public DiceVariants.DesignAndColor designAndColor; // Physical look
-        }
-        public List<Dice> dice;
-    }
-
-    /// <summary>
     /// Save our pool to JSON!
     /// </sumary>
-    string ToJson()
+    void UpdateDataSet()
     {
-        JsonData data = new JsonData();
-        data.dice = new List<JsonData.Dice>();
         // We only save the dice that we have indicated to be in the pool
         // (i.e. ignore dice that are 'new' and we didn't connect to)
-        foreach (var dice in dice.Where(d => d.connectionState != Die.ConnectionState.New))
+        var toRemove = new List<Presets.EditDie>(AppDataSet.Instance.dice);
+        foreach (var die in dice.Where(d => d.connectionState != Die.ConnectionState.New))
         {
-            data.dice.Add(new JsonData.Dice()
+            var editDie = AppDataSet.Instance.FindDie(die);
+            if (editDie == null)
             {
-                name = dice.name,
-                deviceId = dice.deviceId,
-                faceCount = dice.faceCount,
-                designAndColor = dice.designAndColor
-            });
+                // Create a new die
+                editDie = AppDataSet.Instance.AddNewDie(die);
+            }
+            else
+            {
+                // Update die info
+                editDie.name = die.name;
+                editDie.deviceId = die.deviceId;
+                editDie.faceCount = die.faceCount;
+                editDie.designAndColor = die.designAndColor;
+                toRemove.Remove(editDie);
+            }
         }
-        return JsonUtility.ToJson(data);
+
+        foreach (var editDie in toRemove)
+        {
+            AppDataSet.Instance.dice.Remove(editDie);
+        }
     }
 
     /// <summary>
     /// Load our pool from JSON!
     /// </sumary>
-    void FromJson(string json)
+    void Initialize()
     {
-        var data = JsonUtility.FromJson<JsonData>(json);
-
         // Clear and recreate the list of dice
         ClearPool();
-        if (data.dice != null)
+        if (AppDataSet.Instance.dice != null)
         {
-            foreach (var ddie in data.dice)
+            foreach (var ddie in AppDataSet.Instance.dice)
             {
                 // Create a disconnected die
                 Die die = CreateDie(null, ddie.name, ddie.deviceId, ddie.faceCount, ddie.designAndColor);
@@ -474,67 +526,5 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                 setState[die].Invoke(Die.ConnectionState.Unknown);
             }
         }
-    }
-
-    /// <summary>
-    /// Load our pool from file
-    /// </sumary>
-    void LoadPool()
-    {
-        var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.PoolFilename);
-        bool ret = File.Exists(path);
-        if (ret)
-        {
-            string jsonText = File.ReadAllText(path);
-            FromJson(jsonText);
-        }
-    }
-
-    /// <summary>
-    /// Save our pool to file
-    /// </sumary>
-    void SavePool()
-    {
-        var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.PoolFilename);
-        File.WriteAllText(path, ToJson());
-    }
-
-    public void CreateTestPool()
-    {
-        JsonData data = new JsonData();
-        data.dice = new List<JsonData.Dice>();
-        // We only save the dice that we have indicated to be in the pool
-        // (i.e. ignore dice that are 'new' and we didn't connect to)
-        data.dice.Add(new JsonData.Dice()
-        {
-            name = "Die 000",
-            deviceId = 0x123456789ABCDEF0,
-            faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V3_Orange
-        });
-        data.dice.Add(new JsonData.Dice()
-        {
-            name = "Die 001",
-            deviceId = 0xABCDEF0123456789,
-            faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Black
-        });
-        data.dice.Add(new JsonData.Dice()
-        {
-            name = "Die 002",
-            deviceId = 0xCDEF0123456789AB,
-            faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Grey
-        });
-        data.dice.Add(new JsonData.Dice()
-        {
-            name = "Die 003",
-            deviceId = 0xEF0123456789ABCD,
-            faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Gold
-        });
-        string json = JsonUtility.ToJson(data);
-        var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.PoolFilename);
-        File.WriteAllText(path, json);
     }
 }

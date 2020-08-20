@@ -36,4 +36,14 @@ public static class Utils
 	public static int roundUpTo4(int address) {
 		return 4 * ((address + 3) / 4);
 	}
+
+	/* D. J. Bernstein hash function */
+	public static uint computeHash(byte[] data) {
+		uint hash = 5381;
+		for (int i = 0; i < data.Length; ++i) {
+			hash = 33 * hash ^ data[i];
+		}
+		return hash;
+	}
+
 }

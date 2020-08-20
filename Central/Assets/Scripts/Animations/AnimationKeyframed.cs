@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Animations
 {
-    public enum SpecialColor
+    public enum SpecialColor : byte
     {
         None = 0,
         Face,           // Uses the color of the face (based on a rainbow)
@@ -21,52 +21,8 @@ namespace Animations
     }
 
     /// <summary>
-    /// Stores a single keyframe of an LED animation
-    /// size: 2 bytes, split this way:
-    /// - 9 bits: time 0 - 511 in 50th of a second (i.e )
-    ///   + 1    -> 0.02s
-    ///   + 500  -> 10s
-    /// - 7 bits: color lookup (128 values)
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    [System.Serializable]
-    public struct RGBKeyframe
-    {
-		public ushort timeAndColor;
-
-        public ushort time()
-        {
-            // Unpack
-            uint time50th = ((uint)timeAndColor & 0b1111111110000000) >> 7;
-            return (ushort)(time50th * 20);
-        }
-
-        public ushort colorIndex()
-        {
-            // Unpack
-            return (ushort)(timeAndColor & 0b01111111);
-        }
-
-        public uint color(DataSet set, IAnimationSpecialColorToken token)
-        {
-            return token.getColor(set, colorIndex());
-        }
-
-        public void setTimeAndColorIndex(ushort timeInMS, ushort colorIndex)
-        {
-            timeAndColor = (ushort)(((((uint)timeInMS / 20) & 0b111111111) << 7) |
-                           ((uint)colorIndex & 0b1111111));
-        }
-
-        public bool Equals(RGBKeyframe other)
-        {
-            return timeAndColor == other.timeAndColor;
-        }
-    }
-
-    /// <summary>
     /// An animation track is essentially an animation curve for a specific LED.
-    /// size: 4 bytes (+ the actual keyframe data)
+    /// size: 8 bytes (+ the actual keyframe data)
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     [System.Serializable]
@@ -79,14 +35,14 @@ namespace Animations
 
         public ushort getDuration(DataSet set)
         {
-            var kf = set.getKeyframe((ushort)(keyframesOffset + keyFrameCount - 1));
+            var kf = set.getRGBKeyframe((ushort)(keyframesOffset + keyFrameCount - 1));
             return kf.time();
         }
 
         public RGBKeyframe getKeyframe(DataSet set, ushort keyframeIndex)
         {
             Debug.Assert(keyframeIndex < keyFrameCount);
-            return set.getKeyframe((ushort)(keyframesOffset + keyframeIndex));
+            return set.getRGBKeyframe((ushort)(keyframesOffset + keyframeIndex));
         }
 
         /// <summary>
@@ -118,6 +74,10 @@ namespace Animations
         /// </summary>
         public uint evaluateColor(DataSet set, IAnimationSpecialColorToken token, int time)
         {
+            if (keyFrameCount == 0) {
+                return 0;
+            }
+            
             // Find the first keyframe
             int nextIndex = 0;
             while (nextIndex < keyFrameCount && getKeyframe(set, (ushort)nextIndex).time() < time) {
@@ -176,6 +136,8 @@ namespace Animations
 	/// A keyframe-based animation
 	/// size: 8 bytes (+ actual track and keyframe data)
 	/// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
 	public class AnimationKeyframed
 		: Animation
 	{

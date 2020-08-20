@@ -12,22 +12,25 @@ public class UIRuleConditionToken : MonoBehaviour
     public Behaviors.EditRule parentRule { get; private set; }
     public Behaviors.EditCondition editCondition { get; private set; }
 
+    UIParameterManager.ObjectParameterList parameters;
+
     void OnDestroy()
     {
-        if (UIParameterManager.Instance != null && editCondition != null)
+        foreach (var parameter in parameters.parameters)
         {
-            UIParameterManager.Instance.DestroyControls(editCondition);
+            GameObject.Destroy(parameter.gameObject);
         }
+        parameters = null;
     }
 
     public void Setup(Behaviors.EditRule rule, Behaviors.EditCondition condition)
     {
         parentRule = rule;
         editCondition = condition;
-        conditionSelector.Setup("Condition", () => editCondition.type, (t) => SetConditionType((Behaviors.ConditionType)t));
+        conditionSelector.Setup("Condition Type", () => editCondition.type, (t) => SetConditionType((Behaviors.ConditionType)t));
 
         // Setup all other parameters
-        var paramList = UIParameterManager.Instance.CreateControls(condition, parametersRoot);
+        parameters = UIParameterManager.Instance.CreateControls(condition, parametersRoot);
     }
 
     void SetConditionType(Behaviors.ConditionType newType)
@@ -41,9 +44,11 @@ public class UIRuleConditionToken : MonoBehaviour
             parentRule.condition = newCondition;
 
             // Setup the parameters again
-            UIParameterManager.Instance.DestroyControls(editCondition);
-
-            var paramList = UIParameterManager.Instance.CreateControls(newCondition, parametersRoot);
+            foreach (var parameter in parameters.parameters)
+            {
+                GameObject.Destroy(parameter.gameObject);
+            }
+            parameters = UIParameterManager.Instance.CreateControls(newCondition, parametersRoot);
 
             editCondition = newCondition;
         }

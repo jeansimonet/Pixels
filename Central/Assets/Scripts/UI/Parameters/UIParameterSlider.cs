@@ -35,6 +35,11 @@ public class UnitsAttribute
     }
 }
 
+public class SliderAttribute
+    : System.Attribute
+{
+}
+
 public class UIParameterSlider
     : UIParameter
 {
@@ -43,7 +48,10 @@ public class UIParameterSlider
     public Slider valueSlider;
     public Text valueText;
 
-    public override System.Type parameterType { get { return typeof(float); } }
+    public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
+    {
+        return parameterType == typeof(float) && attributes.Any(a => a.GetType() == typeof(SliderAttribute));
+    }
 
     protected override void SetupControls(string name, System.Func<object> getterFunc, System.Action<object> setterAction, IEnumerable<object> attributes = null)
     {

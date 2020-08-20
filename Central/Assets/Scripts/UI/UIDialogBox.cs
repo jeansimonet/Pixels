@@ -54,6 +54,9 @@ public class UIDialogBox : MonoBehaviour
             Hide(true);
         });
 
+        titleText.text = title;
+        messageText.text = message;
+
         this.closeAction = closeAction;
     }
 

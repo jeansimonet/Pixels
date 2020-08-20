@@ -11,7 +11,10 @@ public class UIParameterColor : UIParameter
     public Image colorImage;
     public Text valueText;
 
-    public override System.Type parameterType { get { return typeof(Color32); } }
+    public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
+    {
+        return parameterType == typeof(Color32);
+    }
 
     protected override void SetupControls(string name, System.Func<object> getterFunc, System.Action<object> setterAction, IEnumerable<object> attributes = null)
     {

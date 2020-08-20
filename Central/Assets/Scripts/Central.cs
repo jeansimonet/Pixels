@@ -453,7 +453,7 @@ public class Central : SingletonMonoBehaviour<Central>
                     // This is perfectly okay
                     die.onDisconnectionResult?.Invoke(die,true, null);
                     die.onDisconnectionResult = null;
-                    _dice.Remove(address);
+                    die.state = Die.State.Advertising;
                     Debug.Log("Disconnected " + die.name);
                     break;
                 case Die.State.Advertising:

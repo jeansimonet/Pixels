@@ -34,7 +34,7 @@ public class UIPairedDieView : MonoBehaviour
 
     public bool expanded => expandGroup.activeSelf;
     public Die die { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     public void Setup(Die die)
     {
@@ -53,9 +53,9 @@ public class UIPairedDieView : MonoBehaviour
         {
             dieIDText.text = "ID: Unavailable";
         }
+        batteryView.SetLevel(null);
+        signalView.SetRssi(null);
         SetState(die.connectionState);
-        batteryView.SetLevel(0.09f);
-        signalView.SetRssi(-45);
 
         die.OnConnectionStateChanged += OnConnectionStateChanged;
         die.OnBatteryLevelChanged += OnBatteryLevelChanged;
@@ -91,8 +91,8 @@ public class UIPairedDieView : MonoBehaviour
                 gameObject.SetActive(true);
                 dieRenderer.rotating = false;
                 dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(false);
-                signalView.gameObject.SetActive(false);
+                batteryView.gameObject.SetActive(true);
+                signalView.gameObject.SetActive(true);
                 statusText.text = "Disconnected";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -102,9 +102,7 @@ public class UIPairedDieView : MonoBehaviour
                 dieRenderer.rotating = true;
                 dieRenderImage.color = Color.white;
                 batteryView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 signalView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 statusText.text = "New die";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -114,9 +112,7 @@ public class UIPairedDieView : MonoBehaviour
                 dieRenderer.rotating = true;
                 dieRenderImage.color = Color.white;
                 batteryView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 signalView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 statusText.text = "Available";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -125,8 +121,8 @@ public class UIPairedDieView : MonoBehaviour
                 gameObject.SetActive(true);
                 dieRenderer.rotating = false;
                 dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(false);
-                signalView.gameObject.SetActive(false);
+                batteryView.gameObject.SetActive(true);
+                signalView.gameObject.SetActive(true);
                 statusText.text = "Identifying";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -136,9 +132,7 @@ public class UIPairedDieView : MonoBehaviour
                 dieRenderer.rotating = true;
                 dieRenderImage.color = Color.white;
                 batteryView.gameObject.SetActive(true);
-                batteryView.SetAvailable(true);
                 signalView.gameObject.SetActive(true);
-                batteryView.SetAvailable(true);
                 statusText.text = "Identifying";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -148,9 +142,7 @@ public class UIPairedDieView : MonoBehaviour
                 dieRenderer.rotating = true;
                 dieRenderImage.color = Color.white;
                 batteryView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 signalView.gameObject.SetActive(true);
-                batteryView.SetAvailable(false);
                 statusText.text = "Ready";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
@@ -226,7 +218,7 @@ public class UIPairedDieView : MonoBehaviour
         SetState(newState);
     }
 
-    void OnBatteryLevelChanged(Die die, float level)
+    void OnBatteryLevelChanged(Die die, float? level)
     {
         batteryView.SetLevel(level);
     }

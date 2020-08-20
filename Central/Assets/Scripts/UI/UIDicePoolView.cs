@@ -20,6 +20,7 @@ public class UIDicePoolView
         Disabled = 0,
         Idle,
         RefreshingPool,
+        IdentifyingDice,
     }
 
     State state = State.Disabled;
@@ -34,7 +35,6 @@ public class UIDicePoolView
     // confise the user. So instead we tell these dice UIs to stop updating their status, and then tell
     // to return to normal after the refresh (updating at that time).
     List<UIPairedDieView> doubtedDice = new List<UIPairedDieView>();
-
 
     void Awake()
     {
@@ -58,9 +58,12 @@ public class UIDicePoolView
                 {
                     // Done!
                     FinishRefreshPool();
-                    BeginIdle(AppConstants.Instance.DicePoolViewScanDelay);
+                    BeginIdentifyingDice();
                 }
                 // Else continue waiting
+                break;
+            case State.IdentifyingDice:
+                // Just wait!
                 break;
             case State.Idle:
                 if (Time.time >= endTime)
@@ -132,6 +135,71 @@ public class UIDicePoolView
         endTime = Time.time + delay;
     }
 
+    void BeginIdentifyingDice()
+    {
+        state = State.IdentifyingDice;
+        
+        var die = DicePool.Instance.allDice.FirstOrDefault(d => d.connectionState == Die.ConnectionState.Available);
+
+        // Kick off the upload chain
+        if (die != null)
+        {
+            CheckDie(die);
+        }
+        else
+        {
+            BeginIdle(AppConstants.Instance.DicePoolViewScanDelay);
+        }
+    }
+
+    void CheckDie(Die die)
+    {
+        die.OnConnectionStateChanged += OnDieConnectionStateChanged;
+        DicePool.Instance.RequestConnectDie(die);
+    }
+
+    void DisconnectDie(Die die)
+    {
+        DicePool.Instance.RequestDisconnectDie(die);
+    }
+
+    void OnDieConnectionStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
+    {
+        if (state == State.IdentifyingDice)
+        {
+            switch (newState)
+            {
+                case Die.ConnectionState.Ready:
+                    die.OnConnectionStateChanged -= OnDieConnectionStateChanged;
+
+                    // Get battery and signal strength from die
+                    die.GetBatteryLevel(OnDieBatteryLevelReceived);
+                    break;
+                case Die.ConnectionState.CommError:
+                    die.OnConnectionStateChanged -= OnDieConnectionStateChanged;
+                    BeginIdle(AppConstants.Instance.DicePoolViewScanDelay);
+                    break;
+                default:
+                    // Ignore
+                    break;
+            }
+        }
+        // Else the page was disabled underneath us, stop
+    }
+
+    void OnDieBatteryLevelReceived(Die die, float? batteryLevel)
+    {
+        if (state == State.IdentifyingDice)
+        {
+            // Disconnect previous die
+            DisconnectDie(die);
+
+            // Connect to the next one
+            BeginIdentifyingDice();
+        }
+        // Else the page was disabled underneath us, stop
+    }
+
     void ManualRefreshPool()
     {
         if (state == State.Idle)
@@ -174,7 +242,10 @@ public class UIDicePoolView
         DicePool.Instance.RequestStopScanForDice();
         foreach (var uidie in doubtedDice)
         {
-            uidie.FinishRefreshPool();
+            if (DicePool.Instance.allDice.Contains(uidie.die))
+            {
+                uidie.FinishRefreshPool();
+            }
         }
         doubtedDice.Clear();
     }

@@ -2393,8 +2393,6 @@ MonoBehaviour:
   - {r: 0, g: 0, b: 0, a: 0}
   - {r: 0, g: 0, b: 0, a: 0}
   - {r: 0, g: 0, b: 0, a: 1}
-  rotationSpeedDeg: 10
-  testingAnimationIndex: 18
 --- !u!1001 &7102765426189145161
 PrefabInstance:
   m_ObjectHideFlags: 0

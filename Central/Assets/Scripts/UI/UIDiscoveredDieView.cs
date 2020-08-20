@@ -21,7 +21,7 @@ public class UIDiscoveredDieView : MonoBehaviour
     public Sprite backgroundUnselectedSprite;
 
     public Die die { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
     public delegate void SelectedEvent(UIDiscoveredDieView uidie, bool selected);
@@ -38,8 +38,8 @@ public class UIDiscoveredDieView : MonoBehaviour
         }
         dieNameText.text = die.name;
         dieIDText.text = "ID: " + die.deviceId.ToString("X016");
-        batteryView.SetAvailable(true);
-        signalView.SetAvailable(true);
+        batteryView.SetLevel(die.batteryLevel);
+        signalView.SetRssi(die.rssi);
         SetSelected(false);
     }
 

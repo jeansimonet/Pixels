@@ -14,34 +14,26 @@ public class UIDieLargeBatteryView : MonoBehaviour
     public float[] batteryLevels;
     public Sprite notAvailableImage;
 
-    public void SetLevel(float level)
+    public void SetLevel(float? level)
     {
-        // Find the first keyframe
-        int index = 0;
-        while (index < batteryLevels.Length && batteryLevels[index] > level) {
-            index++;
+        if (level.HasValue)
+        {
+            // Find the first keyframe
+            int index = 0;
+            while (index < batteryLevels.Length && batteryLevels[index] > level.Value) {
+                index++;
+            }
+
+            var sprite = batteryLevelImages[index];
+            batteryImage.sprite = sprite;
+            batteryLevelText.text = level.Value.ToString("P0");
         }
-
-        var sprite = batteryLevelImages[index];
-        batteryImage.sprite = sprite;
-
-        batteryLevelText.text = level.ToString("P0");
-    }
-
-    public void SetAvailable(bool available)
-    {
-
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        else
+        {
+            int index = batteryLevels.Length-1;
+            var sprite = batteryLevelImages[index];
+            batteryImage.sprite = sprite;
+            batteryLevelText.text = "Unknown";
+        }
     }
 }

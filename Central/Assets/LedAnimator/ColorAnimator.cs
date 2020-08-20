@@ -109,17 +109,17 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		}
 	}
 
-    public Animations.EditTrack ToAnimationTrack(float unitSize)
+    public Animations.EditRGBTrack ToAnimationTrack(float unitSize)
     {
         var rect = (ColorSlider.transform as RectTransform).rect;
-        return new Animations.EditTrack()
+        return new Animations.EditRGBTrack()
         {
             ledIndices = new List<int>(LedNumbers),
-            keyframes = ColorSlider.ToAnimationKeyFrames(unitSize),
+            gradient = ColorSlider.ToGradient()
         };
     }
 
-    public void FromAnimationTrack(Animations.EditTrack track, float unitSize)
+    public void FromAnimationTrack(Animations.EditRGBTrack track, float unitSize)
     {
         ShowConfirmRemove(false);
 		SetLedNumbers(track.ledIndices);
@@ -132,7 +132,7 @@ public class ColorAnimator : MonoBehaviour, IFocusable
 		{
 			LeftBound = track.firstTime * unitSize;
 			RightBound = track.lastTime * unitSize;
-			ColorSlider.FromAnimationKeyframes(track.keyframes, unitSize);
+			ColorSlider.FromGradient(track.gradient);
 		}
     }
 

@@ -13,7 +13,7 @@ public class UIPatternToken : MonoBehaviour
     public Button menuButton;
 
     public EditAnimation editAnimation { get; private set; }
-    public DiceRenderer dieRenderer { get; private set; }
+    public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
@@ -30,18 +30,6 @@ public class UIPatternToken : MonoBehaviour
         dieRenderer.rotating = true;
         dieRenderer.SetAnimation(anim);
         dieRenderer.Play(true);
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     void OnDestroy()

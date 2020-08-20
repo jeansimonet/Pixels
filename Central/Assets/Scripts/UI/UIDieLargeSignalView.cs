@@ -14,34 +14,28 @@ public class UIDieLargeSignalView : MonoBehaviour
     public float[] signalLevels;
     public Sprite notAvailableImage;
 
-    public void SetRssi(int rssi)
+    public void SetRssi(int? rssi)
     {
-        // Find the first keyframe
-        int index = 0;
-        while (index < signalLevels.Length && signalLevels[index] > rssi) {
-            index++;
+        if (rssi.HasValue)
+        {
+            // Find the first keyframe
+            int index = 0;
+            while (index < signalLevels.Length && signalLevels[index] > rssi.Value) {
+                index++;
+            }
+
+            var sprite = signalLevelImages[index];
+            signalImage.sprite = sprite;
+
+            signalLevelText.text = rssi.Value.ToString("D0") + " dBm";
         }
+        else
+        {
+            int index = signalLevels.Length - 1;
+            var sprite = signalLevelImages[index];
+            signalImage.sprite = sprite;
 
-        var sprite = signalLevelImages[index];
-        signalImage.sprite = sprite;
-
-        signalLevelText.text = rssi.ToString("D0") + " dBm";
-    }
-
-    public void SetAvailable(bool available)
-    {
-        
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+            signalLevelText.text = "Unknown";
+        }
     }
 }
