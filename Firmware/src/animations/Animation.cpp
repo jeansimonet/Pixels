@@ -8,6 +8,7 @@
 #include "animation_simple.h"
 #include "animation_keyframed.h"
 #include "animation_rainbow.h"
+#include "animation_gradientpattern.h"
 
 
 // Define new and delete
@@ -64,8 +65,11 @@ namespace Animations
 			case Animation_Keyframed:
 				ret = new AnimationInstanceKeyframed(static_cast<const AnimationKeyframed*>(preset));
 				break;
+			case Animation_GradientPattern:
+				ret = new AnimationInstanceGradientPattern(static_cast<const AnimationGradientPattern*>(preset));
+				break;
 			default:
-			NRF_LOG_ERROR("Unknown animation preset type");
+				NRF_LOG_ERROR("Unknown animation preset type");
 				break;
 		}
 		return ret;

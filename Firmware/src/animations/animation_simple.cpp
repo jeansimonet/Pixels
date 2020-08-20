@@ -46,34 +46,34 @@ namespace Animations
         // Compute color
         uint32_t black = 0;
         uint32_t color = 0;
-        int halfTime = preset->duration / 2;
-        int time = ms - startTime;
+        int period = preset->duration / preset->count;
+        int fadeTime = period * preset->fade / (255 * 2);
+        int onOffTime = (period - fadeTime * 2) / 2;
+        int time = (ms - startTime) % period;
 
-        if (time <= halfTime) {
+        if (time <= fadeTime) {
             // Ramp up
-            color = Utils::interpolateColors(black, 0, preset->color, halfTime, time);
-        } else {
+            color = Utils::interpolateColors(black, 0, preset->color, fadeTime, time);
+        } else if (time <= fadeTime + onOffTime) {
+            color = preset->color;
+        } else if (time <= fadeTime * 2 + onOffTime) {
             // Ramp down
-            color = Utils::interpolateColors(preset->color, halfTime, black, preset->duration, time);
+            color = Utils::interpolateColors(preset->color, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
+        } else {
+            color = black;
         }
 
         // Fill the indices and colors for the anim controller to know how to update leds
         int retCount = 0;
-		switch (preset->ledType) {
-            case AnimationSimple_OneLED:
-                retIndices[0] = 0; // this will get remapped to the current up face
-                retColors[0] = color;
-                retCount = 1;
-                break;
-            case AnimationSimple_AllLEDs:
-                retCount = Config::BoardManager::getBoard()->ledCount;
-                for (int i = 0; i < retCount; ++i) {
-                    retIndices[i] = i;
-                    retColors[i] = color;
-                }
-                break;
+        for (int i = 0; i < 20; ++i) {
+            if ((preset->faceMask & (1 << i)) != 0)
+            {
+                retIndices[retCount] = i;
+                retColors[retCount] = color;
+                retCount++;
+            }
         }
-		return retCount;
+        return retCount;
 	}
 
 	/// <summary>
@@ -82,17 +82,12 @@ namespace Animations
 	int AnimationInstanceSimple::stop(int retIndices[]) {
         auto preset = getPreset();
         int retCount = 0;
-		switch (preset->ledType) {
-            case AnimationSimple_OneLED:
-                retIndices[0] = 0;
-                retCount = 1;
-                break;
-            case AnimationSimple_AllLEDs:
-                retCount = Config::BoardManager::getBoard()->ledCount;
-                for (int i = 0; i < retCount; ++i) {
-                    retIndices[i] = i;
-                }
-                break;
+        for (int i = 0; i < 20; ++i) {
+            if ((preset->faceMask & (1 << i)) != 0)
+            {
+                retIndices[retCount] = i;
+                retCount++;
+            }
         }
         return retCount;
 	}

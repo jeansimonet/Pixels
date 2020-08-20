@@ -358,13 +358,13 @@ namespace Stack
 
         // Generate our name
         advertisingName[0] = '\0';
-        strcpy(advertisingName, "D_");
+        strcpy(advertisingName, "D");
 		uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
         for (int i = 0; i < 8; ++i) {
-            advertisingName[2+i] = '0' + uniqueId % 10;
+            advertisingName[1+i] = '0' + uniqueId % 10;
             uniqueId /= 10;
         }
-        advertisingName[2+8] = '\0';
+        advertisingName[1+8] = '\0';
 
         //  GAP Params
         ble_gap_conn_params_t   gap_conn_params;

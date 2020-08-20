@@ -290,6 +290,15 @@ namespace Utils
 		return false;
 	}
 
+	/* D. J. Bernstein hash function */
+	uint32_t computeHash(const uint8_t* data, int size) {
+		uint32_t hash = 5381;
+		for (int i = 0; i < size; ++i) {
+			hash = 33 * hash ^ data[i];
+		}
+		return hash;
+	}
+
 	// Originals: https://github.com/andyherbert/lz1
 	
 	uint32_t lz77_compress (uint8_t *uncompressed_text, uint32_t uncompressed_size, uint8_t *compressed_text)
@@ -363,4 +372,18 @@ namespace Utils
 		
 		return coding_pos;
 	}	
+
+	uint8_t interpolateIntensity(uint8_t intensity1, int time1, uint8_t intensity2, int time2, int time) {
+		int scaler = 1024;
+		int scaledPercent = (time - time1) * scaler / (time2 - time1);
+		return (uint8_t)((intensity1 * (scaler - scaledPercent) + intensity2 * scaledPercent) / scaler);
+    }
+
+    uint32_t modulateColor(uint32_t color, uint8_t intensity) {
+		int red = getRed(color) * intensity / 255;
+		int green = getGreen(color) * intensity / 255;
+		int blue = getBlue(color) * intensity / 255;
+		return toColor((uint8_t)red, (uint8_t)green, (uint8_t)blue);
+    }
+
 }

@@ -21,15 +21,22 @@ namespace DataSet
 		// Maximum 128 * 3 = 376 bytes
 		const uint8_t* palette;
 		uint32_t paletteSize; // In bytes (divide by 3 for colors)
-		// Size is constant: PALETTE_SIZE
 
 		// The individual RGB keyframes we have, i.e. time and color, packed in
-		const Animations::RGBKeyframe* keyframes; // pointer to the array of tracks
-		uint32_t keyFrameCount;
+		const Animations::RGBKeyframe* rgbKeyframes; // pointer to the array of tracks
+		uint32_t rgbKeyFrameCount;
 
 		// The RGB tracks we have
 		const Animations::RGBTrack* rgbTracks; // pointer to the array of tracks
 		uint32_t rgbTrackCount;
+
+		// The individual intensity keyframes we have, i.e. time and intensity, packed in
+		const Animations::Keyframe* keyframes; // pointer to the array of tracks
+		uint32_t keyFrameCount;
+
+		// The RGB tracks we have
+		const Animations::Track* tracks; // pointer to the array of tracks
+		uint32_t trackCount;
 
         // The animations. Because animations can be one of multiple classes (simple inheritance system)
         // The dataset stores an offset into the animations buffer for each entry. The first member of
@@ -62,8 +69,6 @@ namespace DataSet
         // Behaviors, or collection of condition->action pairs
 		const Behaviors::Behavior* behaviors;
 		uint32_t behaviorsCount;
-        uint16_t currentBehaviorIndex;
-        uint16_t padding;
 
 		// Heat Animation
 		uint32_t heatTrackIndex;

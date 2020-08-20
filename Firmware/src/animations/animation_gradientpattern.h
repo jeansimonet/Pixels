@@ -6,23 +6,13 @@
 
 namespace Animations
 {
-	enum SpecialColor : uint8_t
-	{
-		SpecialColor_None = 0,
-		SpecialColor_Face,
-		SpecialColor_ColorWheel,
-		SpecialColor_Heat_Current,
-		SpecialColor_Heat_Start,
-	};
-
-	class IAnimationSpecialColorToken;
-	class RGBKeyframe;
+    class Keyframe;
 
 	/// <summary>
 	/// An animation track is essentially an animation curve and a set of leds.
 	/// size: 8 bytes (+ the actual keyframe data).
 	/// </summary>
-	struct RGBTrack
+	struct Track
 	{
 	public:
 		uint16_t keyframesOffset;	// offset into a global keyframe buffer
@@ -31,30 +21,30 @@ namespace Animations
 		uint32_t ledMask; 			// indicates which leds to drive
 
 		uint16_t getDuration() const;
-		const RGBKeyframe& getRGBKeyframe(uint16_t keyframeIndex) const;
-		int evaluate(const IAnimationSpecialColorToken* token, int time, int retIndices[], uint32_t retColors[]) const;
-		uint32_t evaluateColor(const IAnimationSpecialColorToken* token, int time) const;
+		const Keyframe& getKeyframe(uint16_t keyframeIndex) const;
+		int evaluate(uint32_t color, int time, int retIndices[], uint32_t retColors[]) const;
+        uint32_t modulateColor(uint32_t color, int time) const;
 		int extractLEDIndices(int retIndices[]) const;
 	};
 
 	/// <summary>
-	/// A keyframe-based animation
+	/// A keyframe-based animation with a gradient applied over
 	/// size: 8 bytes (+ actual track and keyframe data)
 	/// </summary>
-	struct AnimationKeyframed
+	struct AnimationGradientPattern
 		: public Animation
 	{
 		uint8_t specialColorType; // is really SpecialColor
+        uint8_t padding_specialColor;
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
-		uint8_t padding2;
-		uint8_t padding3;
+		uint16_t gradientTrackOffset;
 	};
 
 	/// <summary>
 	/// Keyframe-based animation instance data
 	/// </summary>
-	class AnimationInstanceKeyframed
+	class AnimationInstanceGradientPattern
 		: public IAnimationSpecialColorToken
 		, public AnimationInstance
 	{
@@ -62,8 +52,8 @@ namespace Animations
 		uint32_t specialColorPayload; // meaning varies
 
 	public:
-		AnimationInstanceKeyframed(const AnimationKeyframed* preset);
-		virtual ~AnimationInstanceKeyframed();
+		AnimationInstanceGradientPattern(const AnimationGradientPattern* preset);
+		virtual ~AnimationInstanceGradientPattern();
 
 	public:
 		virtual int animationSize() const;
@@ -73,8 +63,8 @@ namespace Animations
 		virtual int stop(int retIndices[]);
 
 	private:
-		const AnimationKeyframed* getPreset() const;
-		const RGBTrack& GetTrack(int index) const;
+		const AnimationGradientPattern* getPreset() const;
+		const Track& GetTrack(int index) const;
 
 	public:
 		virtual uint32_t getColor(uint32_t colorIndex) const;

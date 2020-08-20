@@ -4,6 +4,7 @@
 #include "utils/utils.h"
 #include "core/ring_buffer.h"
 #include "config/board_config.h"
+#include "config/settings.h"
 #include "config/dice_variants.h"
 #include "app_timer.h"
 #include "app_error.h"
@@ -53,10 +54,15 @@ namespace Accelerometer
 
     void CalibrateHandler(void* context, const Message* msg);
 	void CalibrateFaceHandler(void* context, const Message* msg);
+	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
+
+	void update(void* context);
 
     void init() {
         MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
         MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
+
+		SettingsManager::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
 
 		face = 0;
 		confidence = 0.0f;
@@ -70,6 +76,10 @@ namespace Accelerometer
 		newFrame.sigma = 0.0f;
 		newFrame.smoothAcc = newFrame.acc;
 		buffer.push(newFrame);
+
+		// Create the accelerometer timer
+		ret_code_t ret_code = app_timer_create(&accelControllerTimer, APP_TIMER_MODE_REPEATED, update);
+		APP_ERROR_CHECK(ret_code);
 
 		start();
 		NRF_LOG_INFO("Accelerometer initialized");
@@ -202,6 +212,8 @@ namespace Accelerometer
 	/// </summary>
 	void start()
 	{
+		NRF_LOG_INFO("Starting accelerometer");
+		// Set initial value
 		LIS2DE12::read();
 		float3 acc(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
 		face = determineFace(acc, &confidence);
@@ -215,10 +227,7 @@ namespace Accelerometer
             rollState = RollState_Crooked;
         }
 
-		ret_code_t ret_code = app_timer_create(&accelControllerTimer, APP_TIMER_MODE_REPEATED, Accelerometer::update);
-		APP_ERROR_CHECK(ret_code);
-
-		ret_code = app_timer_start(accelControllerTimer, APP_TIMER_TICKS(TIMER2_RESOLUTION), NULL);
+		ret_code_t ret_code = app_timer_start(accelControllerTimer, APP_TIMER_TICKS(TIMER2_RESOLUTION), NULL);
 		APP_ERROR_CHECK(ret_code);
 	}
 
@@ -229,6 +238,7 @@ namespace Accelerometer
 	{
 		ret_code_t ret_code = app_timer_stop(accelControllerTimer);
 		APP_ERROR_CHECK(ret_code);
+		NRF_LOG_INFO("Stopped accelerometer");
 	}
 
 	/// <summary>
@@ -524,5 +534,14 @@ namespace Accelerometer
 			MessageService::NotifyUser("Face is calibrated.", true, false, 5, nullptr);
 		});
 	}
+
+	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt){
+		if (evt == SettingsManager::ProgrammingEventType_Begin) {
+			stop();
+		} else {
+			start();
+		}
+	}
+
 }
 }

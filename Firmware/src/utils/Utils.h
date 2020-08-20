@@ -77,5 +77,10 @@ namespace Utils
 	uint32_t lz77_compress (uint8_t *uncompressed_text, uint32_t uncompressed_size, uint8_t *compressed_text);
 	uint32_t lz77_decompress (uint8_t *compressed_text, uint8_t *uncompressed_text);
 
+	uint32_t computeHash(const uint8_t* data, int size);
+
+	uint8_t interpolateIntensity(uint8_t intensity1, int time1, uint8_t intensity2, int time2, int time);
+    uint32_t modulateColor(uint32_t color, uint8_t intensity);
+
 }
 

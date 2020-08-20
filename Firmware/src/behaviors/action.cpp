@@ -14,6 +14,7 @@ namespace Behaviors
             case Action_PlayAnimation:
                 {
                     auto playAnimAction = static_cast<const ActionPlayAnimation*>(action);
+                    NRF_LOG_INFO("Playing anim %d on face %d", playAnimAction->animIndex, playAnimAction->faceIndex);
                     if (playAnimAction->faceIndex == FACE_INDEX_CURRENT_FACE) {
                         AnimController::play(playAnimAction->animIndex, Accelerometer::currentFace(), false); // FIXME, handle remapFace and loopCount properly
                     } else {

@@ -18,6 +18,9 @@
 using namespace DriversNRF;
 using namespace Bluetooth;
 using namespace Config;
+using namespace Modules;
+
+#define MAX_ACC_CLIENTS 2
 
 namespace Config
 {
@@ -26,8 +29,12 @@ namespace SettingsManager
 {
 	Settings const * settings = nullptr;
 
+	DelegateArray<ProgrammingEventMethod, MAX_ACC_CLIENTS> programmingClients;
+
 	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void ProgramDefaultParametersHandler(void* context, const Message* msg);
+	void SetDesignTypeAndColorHandler(void* context, const Message* msg);
+	void SetCurrentBehaviorHandler(void* context, const Message* msg);
 	
 	#if BLE_LOG_ENABLED
 	void PrintNormals(void* context, const Message* msg);
@@ -41,7 +48,9 @@ namespace SettingsManager
 		auto finishInit = [](bool success) {
 			// Register as a handler to program settings
 			MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
-			MessageService::RegisterMessageHandler(Message::MessateType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
+			MessageService::RegisterMessageHandler(Message::MessageType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
+			MessageService::RegisterMessageHandler(Message::MessageType_SetDesignAndColor, nullptr, SetDesignTypeAndColorHandler);
+			MessageService::RegisterMessageHandler(Message::MessageType_SetCurrentBehavior, nullptr, SetCurrentBehaviorHandler);
 			
 			#if BLE_LOG_ENABLED
 			MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
@@ -102,6 +111,8 @@ namespace SettingsManager
 					[](void* context, bool success, uint16_t size) {
 						if (success) {
 							NRF_LOG_DEBUG("Finished flashing settings");
+							MessageService::SendMessage(Message::MessageType_TransferSettingsFinished);
+							// TODO may need to wait!
 							// Restart the bluetooth stack
 							Stack::disconnect();
 							Stack::stopAdvertising();
@@ -118,11 +129,34 @@ namespace SettingsManager
 	void ProgramDefaultParametersHandler(void* context, const Message* msg) {
 		programDefaultParameters([] (bool result) {
 			// Ignore result for now
-			Bluetooth::MessageService::SendMessage(Message::MessateType_ProgramDefaultParametersFinished);
+			Bluetooth::MessageService::SendMessage(Message::MessageType_ProgramDefaultParametersFinished);
 		});
 	}
 
-	void writeToFlash(Settings* sourceSettings, SettingsWrittenCallback callback) {
+	void SetDesignTypeAndColorHandler(void* context, const Message* msg) {
+		auto designMsg = (const MessageSetDesignAndColor*)msg;
+		NRF_LOG_INFO("Received request to set design to %d", designMsg->designAndColor);
+		programDesignAndColor(designMsg->designAndColor, [](bool result) {
+			MessageService::SendMessage(Message::MessageType_SetDesignAndColorAck);
+		});
+	}
+
+	void SetCurrentBehaviorHandler(void* context, const Message* msg) {
+		auto behaviorMsg = (const MessageSetCurrentBehavior*)msg;
+		NRF_LOG_INFO("Received request to set active behavior to %d", behaviorMsg->currentBehavior);
+		programCurrentBehavior(behaviorMsg->currentBehavior, [](bool result) {
+			MessageService::SendMessage(Message::MessageType_SetCurrentBehaviorAck);
+		});
+	}
+
+	void writeToFlash(const Settings* sourceSettings, SettingsWrittenCallback callback) {
+
+		// Notify clients
+		for (int i = 0; i < programmingClients.Count(); ++i)
+		{
+			programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_Begin);
+		}
+
 		// Temporary holders used in callbacks
 		static SettingsWrittenCallback _writeToFlashCallback;  // Don't initialize this static inline because it would only do it on first call!
 		_writeToFlashCallback = callback;
@@ -134,6 +168,12 @@ namespace SettingsManager
 		static auto finishWrite = [] (bool result) {
 			free(_sourceSettings);
 			_sourceSettings = nullptr;
+
+			// Notify clients
+			for (int i = 0; i < programmingClients.Count(); ++i)
+			{
+				programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_End);
+			}
 
 			// Clear callback pointer before invoking it, in case the callback decides to trigger another write to flash!
 			auto callbackCopy = _writeToFlashCallback;
@@ -164,6 +204,7 @@ namespace SettingsManager
 
 	void setDefaultParameters(Settings& outSettings) {
 		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Unknown;
+		outSettings.currentBehaviorIndex = 0;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
 		outSettings.startMovingThreshold = 5.0f;
@@ -246,6 +287,20 @@ namespace SettingsManager
 		writeToFlash(&settingsCopy, callback);
 	}
 
+	void programDesignAndColor(DiceVariants::DesignAndColor design, SettingsWrittenCallback callback) {
+		Settings settingsCopy;
+		memcpy(&settingsCopy, settings, sizeof(Settings));
+		settingsCopy.designAndColor = design;
+		writeToFlash(&settingsCopy, callback);
+	}
+
+	void programCurrentBehavior(uint8_t behaviorIndex, SettingsWrittenCallback callback) {
+		Settings settingsCopy;
+		memcpy(&settingsCopy, settings, sizeof(Settings));
+		settingsCopy.currentBehaviorIndex = behaviorIndex;
+		writeToFlash(&settingsCopy, callback);
+	}
+
 	#if BLE_LOG_ENABLED
 	void PrintNormals(void* context, const Message* msg) {
 		auto m = static_cast<const MessagePrintNormals*>(msg);
@@ -254,6 +309,19 @@ namespace SettingsManager
 		BLE_LOG_INFO("Face %d: %d, %d, %d", i, (int)(settings->faceNormals[i].x * 100), (int)(settings->faceNormals[i].y * 100), (int)(settings->faceNormals[i].z * 100));
 	}
 	#endif
+
+	void hookProgrammingEvent(ProgrammingEventMethod client, void* param)
+	{
+		if (!programmingClients.Register(param, client))
+		{
+			NRF_LOG_ERROR("Too many hooks registered.");
+		}
+	}
+
+	void unhookProgrammingEvent(ProgrammingEventMethod client)
+	{
+		programmingClients.UnregisterWithHandler(client);
+	}
 
 }
 }

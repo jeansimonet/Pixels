@@ -3,10 +3,12 @@
 #include "modules/battery_controller.h"
 #include "modules/accelerometer.h"
 #include "data_set/data_set.h"
+#include "config/settings.h"
 #include "nrf_log.h"
 
 using namespace Bluetooth;
 using namespace Animations;
+using namespace Config;
 
 namespace Modules
 {
@@ -28,7 +30,7 @@ namespace BehaviorController
 
     void onDiceInitialized() {
         // Do we have a hello goodbye condition
-        auto bhv = DataSet::getBehavior(DataSet::getCurrentBehaviorIndex());
+        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -51,7 +53,7 @@ namespace BehaviorController
 
 	void onConnectionEvent(void* param, bool connected) {
         // Do we have a connection event condition?
-        auto bhv = DataSet::getBehavior(DataSet::getCurrentBehaviorIndex());
+        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -74,7 +76,7 @@ namespace BehaviorController
 
     void onBatterystateChange(void* param, BatteryController::BatteryState newState) {
         // Do we have a battery event condition?
-        auto bhv = DataSet::getBehavior(DataSet::getCurrentBehaviorIndex());
+        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -97,7 +99,7 @@ namespace BehaviorController
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace) {
         // Do we have a roll state event condition?
-        auto bhv = DataSet::getBehavior(DataSet::getCurrentBehaviorIndex());
+        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {

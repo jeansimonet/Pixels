@@ -18,6 +18,7 @@ namespace Modules
 
 		void init();
 		void stop();
+		void start();
 
 		void play(int animIndex, uint8_t remapFace = 0, bool loop = false);
 		void stop(int animIndex, uint8_t remapFace = 0);

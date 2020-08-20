@@ -39,6 +39,8 @@ namespace AnimController
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame);
 	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace);
 
+	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
+	void onDatasetProgrammingEvent(void* context, DataSet::ProgrammingEventType evt);
 
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
@@ -52,15 +54,15 @@ namespace AnimController
 	/// </summary>
 	void init()
 	{
-		Accelerometer::hookFrameData(onAccelFrame, nullptr);
+		DataSet::hookProgrammingEvent(onDatasetProgrammingEvent, nullptr);
+		SettingsManager::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
 
 		heat = 0.0f;
 		currentRainbowIndex = 0;
 
 		animationCount = 0;
 		Timers::createTimer(&animControllerTimer, APP_TIMER_MODE_REPEATED, animationControllerUpdate);
-		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
-
+		start();
 		NRF_LOG_INFO("Anim Controller Initialized");
 	}
 
@@ -129,7 +131,7 @@ namespace AnimController
 					// Gamma correct and map face index to led index
 					//NRF_LOG_INFO("track_count = %d", animTrackCount);
 					for (int j = 0; j < animTrackCount; ++j) {
-						colors[j] = Utils::gamma(colors[j]);
+						//colors[j] = Utils::gamma(colors[j]);
 
 						// The transformation is:
 						// animFaceIndex (what face the animation says it wants to light up)
@@ -162,7 +164,18 @@ namespace AnimController
 	/// </summary>
 	void stop()
 	{
+		Accelerometer::unHookFrameData(onAccelFrame);
 		Timers::stopTimer(animControllerTimer);
+		// Clear all data
+		stopAll();
+		NRF_LOG_INFO("Stopped anim controller");
+	}
+
+	void start()
+	{
+		Accelerometer::hookFrameData(onAccelFrame, nullptr);
+		NRF_LOG_INFO("Starting anim controller");
+		Timers::startTimer(animControllerTimer, TIMER2_RESOLUTION, NULL);
 	}
 
 	/// <summary>
@@ -182,7 +195,7 @@ namespace AnimController
 			auto& rgbTrack = track.getLEDTrack();
 			NRF_LOG_DEBUG("  RGB Keyframe count: %d", rgbTrack.keyFrameCount);
 			for (int k = 0; k < rgbTrack.keyFrameCount; ++k) {
-				auto& keyframe = rgbTrack.getKeyframe(k);
+				auto& keyframe = rgbTrack.getRGBKeyframe(k);
 				int time = keyframe.time();
 				uint32_t color = keyframe.color(0);
 				NRF_LOG_DEBUG("    Offset %d: %d -> %06x", (rgbTrack.keyframesOffset + k), time, color);
@@ -350,6 +363,22 @@ namespace AnimController
 		return heat;
 	}
 	
+
+	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt){
+		if (evt == SettingsManager::ProgrammingEventType_Begin) {
+			stop();
+		} else {
+			start();
+		}
+	}
+
+	void onDatasetProgrammingEvent(void* context, DataSet::ProgrammingEventType evt){
+		if (evt == DataSet::ProgrammingEventType_Begin) {
+			stop();
+		} else {
+			start();
+		}
+	}
 
 }
 }

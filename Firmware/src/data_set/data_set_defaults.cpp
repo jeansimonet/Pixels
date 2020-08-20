@@ -80,8 +80,10 @@ namespace DataSet
 #else
 
 		int paletteSize = 0;
-		int keyframeCount = 0;
+		int rgbKeyframeCount = 0;
         int rgbTrackCount = 0;
+		int keyframeCount = 0;
+        int trackCount = 0;
 		int animCount = 3 + 3;
         int animOffsetSize = Utils::roundUpTo4(animCount * sizeof(uint16_t));
         int animSize = sizeof(AnimationSimple) * animCount;
@@ -101,8 +103,10 @@ namespace DataSet
 		// Compute the size of the needed buffer to store all that data!
 		bufferSize =
             paletteSize * sizeof(uint8_t) +
-			keyframeCount * sizeof(RGBKeyframe) +
+			rgbKeyframeCount * sizeof(RGBKeyframe) +
 			rgbTrackCount * sizeof(RGBTrack) +
+			keyframeCount * sizeof(Keyframe) +
+			trackCount * sizeof(Track) +
 			animOffsetSize + animSize +
             actionOffsetSize + actionSize +
             conditionOffsetSize + conditionsSize + 
@@ -137,15 +141,25 @@ namespace DataSet
         currentOffset += paletteSize * sizeof(uint8_t);
 		newData->paletteSize = paletteSize;
 
-		newData->keyframes = (const RGBKeyframe*)(dataAddress + currentOffset);
+		newData->rgbKeyframes = (const RGBKeyframe*)(dataAddress + currentOffset);
         //auto writeKeyframes = (RGBKeyframe*)(writeBufferAddress + currentOffset);
-        currentOffset += keyframeCount * sizeof(RGBKeyframe);
-		newData->keyFrameCount = keyframeCount;
+        currentOffset += rgbKeyframeCount * sizeof(RGBKeyframe);
+		newData->rgbKeyFrameCount = rgbKeyframeCount;
 
 		newData->rgbTracks = (const RGBTrack*)(dataAddress + currentOffset);
         //auto writeRGBTracks = (RGBTrack*)(writeBufferAddress + currentOffset);
 		currentOffset += rgbTrackCount * sizeof(RGBTrack);
         newData->rgbTrackCount = rgbTrackCount;
+
+		newData->keyframes = (const Keyframe*)(dataAddress + currentOffset);
+        //auto writeKeyframes = (Keyframe*)(writeBufferAddress + currentOffset);
+        currentOffset += keyframeCount * sizeof(Keyframe);
+		newData->keyFrameCount = keyframeCount;
+
+		newData->tracks = (const Track*)(dataAddress + currentOffset);
+        //auto writeRGBTracks = (Track*)(writeBufferAddress + currentOffset);
+		currentOffset += trackCount * sizeof(Track);
+        newData->trackCount = trackCount;
 
 		newData->animationOffsets = (const uint16_t*)(dataAddress + currentOffset);
         auto writeAnimationOffsets = (uint16_t*)(writeBufferAddress + currentOffset);
@@ -187,7 +201,6 @@ namespace DataSet
         currentOffset += behaviorCount * sizeof(Behavior);
 		newData->behaviorsCount = 1;
         
-        newData->currentBehaviorIndex = 0;
 		newData->heatTrackIndex = 0;
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 
@@ -195,14 +208,18 @@ namespace DataSet
 		for (int c = 0; c < 3; ++c) {
             writeAnimations[c].type = Animation_Simple;
             writeAnimations[c].duration = 1000;
-		    writeAnimations[c].ledType = AnimationSimple_OneLED;
+		    writeAnimations[c].faceMask = 0x80000;
+            writeAnimations[c].count = 1;
+            writeAnimations[c].fade = 255;
             writeAnimations[c].color = 0xFF0000 >> (c * 8);
 		}
 
 		for (int c = 0; c < 3; ++c) {
             writeAnimations[3 + c].type = Animation_Simple;
             writeAnimations[3 + c].duration = 1000;
-		    writeAnimations[3 + c].ledType = AnimationSimple_AllLEDs;
+		    writeAnimations[3 + c].faceMask = 0xFFFFF;
+            writeAnimations[3 + c].count = 2;
+            writeAnimations[3 + c].fade = 255;
             writeAnimations[3 + c].color = 0xFF0000 >> (c * 8);
 		}
 

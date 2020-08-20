@@ -2,23 +2,20 @@
 
 #include "animations/Animation.h"
 
+#pragma pack(push, 1)
+
 namespace Animations
 {
-    enum AnimationSimpleLEDType : uint8_t
-    {
-        AnimationSimple_OneLED,
-        AnimationSimple_AllLEDs,
-    };
-
 	/// <summary>
 	/// Procedural on off animation
 	/// </summary>
 	struct AnimationSimple
 		: public Animation
 	{
-		AnimationSimpleLEDType ledType;
-        uint16_t padding_ledType;
+		uint32_t faceMask;
         uint32_t color;
+        uint8_t count;
+        uint8_t fade;
 	};
 
 	/// <summary>
@@ -40,3 +37,5 @@ namespace Animations
 		const AnimationSimple* getPreset() const;
 	};
 }
+
+#pragma pack(pop)

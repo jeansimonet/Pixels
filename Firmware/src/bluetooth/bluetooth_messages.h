@@ -30,8 +30,10 @@ struct Message
 		MessageType_BulkDataAck,
 		MessageType_TransferAnimSet,
 		MessageType_TransferAnimSetAck,
+		MessageType_TransferAnimSetFinished,
 		MessageType_TransferSettings,
 		MessageType_TransferSettingsAck,
+		MessageType_TransferSettingsFinished,
 		MessageType_DebugLog,
 
 		MessageType_PlayAnim,
@@ -57,8 +59,12 @@ struct Message
 		MessageType_SetStandardState,
 		MessageType_SetLEDAnimState,
 		MessageType_SetBattleState,
-		MessateType_ProgramDefaultParameters,
-		MessateType_ProgramDefaultParametersFinished,
+		MessageType_ProgramDefaultParameters,
+		MessageType_ProgramDefaultParametersFinished,
+		MessageType_SetDesignAndColor,
+		MessageType_SetDesignAndColorAck,
+		MessageType_SetCurrentBehavior,
+		MessageType_SetCurrentBehaviorAck,
 
 		// TESTING 
 		MessageType_TestBulkSend, 
@@ -91,7 +97,8 @@ struct MessageIAmADie
 {
 	uint8_t faceCount; // Which kind of dice this is
 	Config::DiceVariants::DesignAndColor designAndColor; // Physical look
-	uint8_t padding1;
+	uint8_t currentBehaviorIndex;
+	uint32_t dataSetHash;
 	uint64_t deviceId; // A unique identifier
 	char versionInfo[VERSION_INFO_SIZE]; // Firmware version string, i.e. "10_05"
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) { versionInfo[0] = 0; }
@@ -149,8 +156,10 @@ struct MessageTransferAnimSet
 	: Message
 {
 	uint16_t paletteSize;
-	uint16_t keyFrameCount;
+	uint16_t rgbKeyFrameCount;
 	uint16_t rgbTrackCount;
+	uint16_t keyFrameCount;
+	uint16_t trackCount;
 	uint16_t animationCount;
 	uint16_t animationSize;
 	uint16_t conditionCount;
@@ -159,7 +168,6 @@ struct MessageTransferAnimSet
 	uint16_t actionSize;
 	uint16_t ruleCount;
 	uint16_t behaviorCount;
-	uint16_t currentBehaviorIndex;
 	uint16_t heatTrackIndex;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
@@ -246,6 +254,20 @@ struct MessageBatteryLevel
 	float level;
 	float voltage;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
+};
+
+struct MessageSetDesignAndColor
+: public Message
+{
+	Config::DiceVariants::DesignAndColor designAndColor;
+	inline MessageSetDesignAndColor() : Message(Message::MessageType_SetDesignAndColor) {}
+};
+
+struct MessageSetCurrentBehavior
+: public Message
+{
+	uint8_t currentBehavior;
+	inline MessageSetCurrentBehavior() : Message(Message::MessageType_SetCurrentBehavior) {}
 };
 
 struct MessageNotifyUser

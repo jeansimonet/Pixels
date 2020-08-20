@@ -3,14 +3,14 @@ TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
 PUBLISH_DIRECTORY := binaries
 
-VERSION			 := 06_23
+VERSION			 := 08_13
 
 SDK_ROOT := C:/nRF5_SDK
 PROJ_DIR := .
 
 $(OUTPUT_DIRECTORY)/firmware.out: \
 	LINKER_SCRIPT  := Firmware.ld
-
+ 
 # Source files common to all targets
 SRC_FILES += \
 	$(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
@@ -76,6 +76,8 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/animations/animation_simple.cpp \
 	$(PROJ_DIR)/src/animations/animation_keyframed.cpp \
 	$(PROJ_DIR)/src/animations/animation_rainbow.cpp \
+	$(PROJ_DIR)/src/animations/animation_gradientpattern.cpp \
+	$(PROJ_DIR)/src/animations/keyframes.cpp \
 	$(PROJ_DIR)/src/behaviors/action.cpp \
 	$(PROJ_DIR)/src/behaviors/condition.cpp \
 	$(PROJ_DIR)/src/bluetooth/bluetooth_stack.cpp \
@@ -234,9 +236,9 @@ firmware_debug: DEBUG_FLAGS += -DNRF_LOG_ENABLED=1
 
 COMMON_FLAGS += $(DEBUG_FLAGS)
 
-FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x2A000
+FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x2B000
 
-firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x25000
+firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x26000
 
 COMMON_FLAGS += $(FSTORAGE_ADDR_DEFINES)
 
@@ -322,6 +324,13 @@ flash: firmware_debug settings
 	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware_settings.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
+# Flash the program
+flash_release: firmware_release settings
+	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware.hex
+	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --program $(OUTPUT_DIRECTORY)/firmware_settings.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --reset
+
 # Flash over BLE, you must use DICE=D_XXXXXXX argument to make flash_ble
 # e.g. make flash_ble DICE=D_71902510
 flash_ble: zip
@@ -344,3 +353,5 @@ flash_board: erase flash_softdevice flash_bootloader flash
 
 
 reflash:  erase  flash  flash_softdevice
+
+reflash_release: erase flash_release flash_softdevice

@@ -2,6 +2,8 @@
 
 #include "animations/Animation.h"
 
+#pragma pack(push, 1)
+
 namespace Animations
 {
 	/// <summary>
@@ -10,10 +12,9 @@ namespace Animations
 	struct AnimationRainbow
 		: public Animation
 	{
-        uint8_t padding1;
-        uint8_t padding2;
-        uint8_t padding3;
-		// TBD
+		uint32_t faceMask;
+        uint8_t count;
+        uint8_t fade;
 	};
 
 	/// <summary>
@@ -30,5 +31,10 @@ namespace Animations
 		virtual void start(int _startTime, uint8_t _remapFace, bool _loop);
 		virtual int updateLEDs(int ms, int retIndices[], uint32_t retColors[]);
 		virtual int stop(int retIndices[]);
+
+	private:
+		const AnimationRainbow* getPreset() const;
 	};
 }
+
+#pragma pack(pop)
