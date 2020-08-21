@@ -13,5 +13,6 @@ public class AppConstants : SingletonMonoBehaviour<AppConstants>
     public float DicePoolViewScanDelay = 30.0f;
     public float MultiDiceRootRotationSpeedAvg = 2.0f;
     public float MultiDiceRootRotationSpeedVar = 0.4f;
+    public float DicePoolDisconnectDelay = 5.0f;
 }
 

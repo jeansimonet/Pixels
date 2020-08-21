@@ -34,6 +34,9 @@ struct Message
 		MessageType_TransferSettings,
 		MessageType_TransferSettingsAck,
 		MessageType_TransferSettingsFinished,
+		MessageType_TransferTestAnimSet,
+		MessageType_TransferTestAnimSetAck,
+		MessageType_TransferTestAnimSetFinished,
 		MessageType_DebugLog,
 
 		MessageType_PlayAnim,
@@ -170,6 +173,37 @@ struct MessageTransferAnimSet
 	uint16_t behaviorCount;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
+};
+
+struct MessageTransferTestAnimSet
+	: Message
+{
+	uint16_t paletteSize;
+	uint16_t rgbKeyFrameCount;
+
+	uint16_t rgbTrackCount;
+	uint16_t keyFrameCount;
+
+	uint16_t trackCount;
+	uint16_t animationSize;
+
+	uint32_t hash;
+
+	inline MessageTransferTestAnimSet() : Message(Message::MessageType_TransferTestAnimSet) {}
+};
+
+enum TransferTestAnimSetAckType : uint8_t
+{
+	TransferTestAnimSetAck_Download = 0,
+	TransferTestAnimSetAck_UpToDate,
+	TransferTestAnimSetAck_NoMemory
+};
+
+struct MessageTransferTestAnimSetAck
+	: Message
+{
+	TransferTestAnimSetAckType ackType;
+	inline MessageTransferTestAnimSetAck() : Message(Message::MessageType_TransferTestAnimSetAck) {}
 };
 
 struct MessageDebugLog

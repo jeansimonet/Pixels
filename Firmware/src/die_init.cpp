@@ -32,6 +32,7 @@
 #include "modules/led_color_tester.h"
 #include "modules/accelerometer.h"
 #include "modules/anim_controller.h"
+#include "modules/animation_preview.h"
 #include "modules/battery_controller.h"
 #include "modules/behavior_controller.h"
 #include "modules/hardware_test.h"
@@ -172,6 +173,9 @@ namespace Die
 
                 // Behavior Controller relies on all the modules
                 BehaviorController::init();
+
+                // Animation preview depends on bluetooth
+                AnimationPreview::init();
 
                 //HardwareTest::init();
 

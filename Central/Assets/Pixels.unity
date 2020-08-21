@@ -20040,6 +20040,7 @@ MonoBehaviour:
   previewImage: {fileID: 353433352}
   animationSelector: {fileID: 920451812904786846}
   parametersRoot: {fileID: 1285193237}
+  playOnDieButton: {fileID: 1714543713}
 --- !u!1 &1606618751
 GameObject:
   m_ObjectHideFlags: 0

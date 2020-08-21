@@ -15,11 +15,16 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     public DieCreationEvent onWillDestroyDie;
     public BluetoothErrorEvent onBluetoothError;
 
-    public IEnumerable<Die> allDice => dice;
+    class PoolDie
+    {
+        public Die die;
+        public int count;
+        public float lastRequestDisconnectTime;
+        public System.Action<Die.ConnectionState> setState;
+    }
+    List<PoolDie> dice = new List<PoolDie>();
 
-    List<Die> dice = new List<Die>();
-    Dictionary<Die, System.Action<Die.ConnectionState>> setState = new Dictionary<Die, System.Action<Die.ConnectionState>>();
-    Dictionary<Die, int> connectionCount = new Dictionary<Die, int>();
+    public IEnumerable<Die> allDice => dice.Select(d => d.die);
 
     // Multiple things may request bluetooth scanning, so we need to arbitrate when
     // we actually ask Central to scan or not. This counter will let us know
@@ -60,10 +65,10 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                 Central.Instance.StopScanForDice();
 
                 // When we stop scanning, if there is any 'unknown' die left, considering missing instead
-                foreach (var pd in dice.Where(d => d.connectionState == Die.ConnectionState.Unknown))
+                foreach (var pd in dice.Where(d => d.die.connectionState == Die.ConnectionState.Unknown))
                 {
                     // The die is no longer just unknown, it's missing
-                    setState[pd].Invoke(Die.ConnectionState.Missing);
+                    pd.setState.Invoke(Die.ConnectionState.Missing);
                 }
 
             }
@@ -91,7 +96,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     {
         if (die.connectionState == Die.ConnectionState.New)
         {
-            setState[die].Invoke(Die.ConnectionState.Unknown);
+            var pd = dice.First(p => p.die == die);
+            pd.setState.Invoke(Die.ConnectionState.Unknown);
         }
         UpdateDataSet();
         AppDataSet.Instance.SaveData();
@@ -99,39 +105,37 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
     public void RequestConnectDie(Die die)
     {
-        int cc = 0;
-        connectionCount.TryGetValue(die, out cc);
-        cc++;
-        connectionCount[die] = cc;
-        if (cc == 1)
+        var dt = dice.First(p => p.die == die);
+        Debug.Log("Before request connect: " + dt.count);
+        dt.count++;
+        if (dt.count == 1)
         {
+            // Bump the count once, we will use this to trigger the disconnect timer
+            dt.count = 2;
             ConnectDie(die);
         }
+        Debug.Log("After request connect: " + dt.count);
     }
 
     public void RequestDisconnectDie(Die die)
     {
-        int cc = 0;
-        if (!connectionCount.TryGetValue(die, out cc))
+        var dt = dice.First(p => p.die == die);
+        Debug.Log("Before request disconnect: " + dt.count);
+        dt.count--;
+        if (dt.count == 1)
         {
-            Debug.LogError("Mismatched connection count for die " + die.name);
+            // Now we set the timer and only disconnect after a while
+            dt.lastRequestDisconnectTime = Time.time;
         }
-        else
-        {
-            cc--;
-            connectionCount[die] = cc;
-            if (cc == 0)
-            {
-                DisconnectDie(die);
-            }
-        }
+        Debug.Log("After request disconnect: " + dt.count);
     }
 
     void ConnectDie(Die die)
     {
         if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.New)
         {
-            setState[die].Invoke(Die.ConnectionState.Connecting);
+            var dt = dice.First(p => p.die == die);
+            dt.setState.Invoke(Die.ConnectionState.Connecting);
             Central.Instance.ConnectDie(die, OnDieConnected, OnDieData, OnDieDisconnected);
         }
         else
@@ -145,16 +149,17 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void DisconnectDie(Die die)
     {
-        setState[die].Invoke(Die.ConnectionState.Disconnecting);
+        var dt = dice.First(p => p.die == die);
+        dt.setState.Invoke(Die.ConnectionState.Disconnecting);
         Central.Instance.DisconnectDie(die, (_, res, errorMsg) =>
         {
             if (res)
             {
-                setState[die].Invoke(Die.ConnectionState.Available);
+                dt.setState.Invoke(Die.ConnectionState.Available);
             }
             else
             {
-                setState[die].Invoke(Die.ConnectionState.CommError);
+                dt.setState.Invoke(Die.ConnectionState.CommError);
             }
         });
     }
@@ -166,10 +171,11 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     public void ForgetDie(Die die)
     {
         // Remove the die from our pool
-        dice.Remove(die);
+        var dt = dice.First(p => p.die == die);
+        dice.Remove(dt);
 
         // Destroy it (this will cleanly disconnect if necessary)
-        DestroyDie(die);
+        DestroyDie(dt);
 
         // And make sure we save the pool data
         UpdateDataSet();
@@ -184,7 +190,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     {
         if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.Missing || die.connectionState == Die.ConnectionState.CommError)
         {
-            setState[die].Invoke(Die.ConnectionState.Unknown);
+            var dt = dice.First(p => p.die == die);
+            dt.setState.Invoke(Die.ConnectionState.Unknown);
         }
     }
 
@@ -207,6 +214,24 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         Initialize();
     }
 
+    void Update()
+    {
+        foreach (var ourDie in dice)
+        {
+            if (ourDie.count == 1)
+            {
+                // This die is waiting to be disconnected
+                if (Time.time > (ourDie.lastRequestDisconnectTime + AppConstants.Instance.DicePoolDisconnectDelay))
+                {
+                    Debug.Log("Update: 1 -> 0");
+                    // Really disconnect
+                    ourDie.count = 0;
+                    DisconnectDie(ourDie.die);
+                }
+            }
+        }
+    }
+
     void OnBluetoothError(string message)
     {
         onBluetoothError?.Invoke(message);
@@ -219,29 +244,28 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     {
         // If the die exists, tell it that it's advertising now
         // otherwise create it (and tell it that its advertising :)
-        var ourDie = dice.Find(d => {
-            if (!string.IsNullOrEmpty(d.address))
-                return d.address == die.address;
+        var ourDie = dice.FirstOrDefault(d => {
+            if (!string.IsNullOrEmpty(d.die.address))
+                return d.die.address == die.address;
             else
-                return d.name == die.name;
+                return d.die.name == die.name;
             });
 
         if (ourDie == null)
         {
             // Never seen this die before
             ourDie = CreateDie(die.address, die.name);
-            dice.Add(ourDie);
-            setState[ourDie].Invoke(Die.ConnectionState.New);
+            ourDie.setState.Invoke(Die.ConnectionState.New);
         }
         else
         {
             // Update die address if necessary
-            if (string.IsNullOrEmpty(ourDie.address))
+            if (string.IsNullOrEmpty(ourDie.die.address))
             {
-                ourDie.UpdateAddress(die.address);
+                ourDie.die.UpdateAddress(die.address);
             }
 
-            switch (ourDie.connectionState)
+            switch (ourDie.die.connectionState)
             {
                 case Die.ConnectionState.New:
                 case Die.ConnectionState.Available:
@@ -252,12 +276,12 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                 case Die.ConnectionState.Missing:
                     {
                         // Tell the die that it's advertising now!
-                        setState[ourDie].Invoke(Die.ConnectionState.Available);
+                        ourDie.setState.Invoke(Die.ConnectionState.Available);
                     }
                     break;
                 default:
                     // All other are errors
-                    Debug.LogError("Die " + ourDie.name + " in invalid state " + ourDie.connectionState);
+                    Debug.LogError("Die " + ourDie.die.name + " in invalid state " + ourDie.die.connectionState);
                     break;
             }
         }
@@ -271,7 +295,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     void OnDieAdvertisingData(Central.IDie die, int rssi, byte[] data)
     {
         // Find the die by its address, in both lists of dice we expect to know and new dice
-        var ourDie = dice.Find(d => d.address == die.address);
+        var ourDie = dice.FirstOrDefault(d => d.die.address == die.address);
         if (ourDie != null)
         {
             // Marshall the data into the struct we expect
@@ -284,7 +308,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                 Marshal.FreeHGlobal(ptr);
 
                 // Update die data
-                ourDie.UpdateAdvertisingData(rssi, customData);
+                ourDie.die.UpdateAdvertisingData(rssi, customData);
             }
             else
             {
@@ -299,10 +323,10 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     void OnDieData(Central.IDie die, byte[] data)
     {
         // Pass on the data
-        var ourDie = dice.Find(d => d.address == die.address);
+        var ourDie = dice.FirstOrDefault(d => d.die.address == die.address);
         if (ourDie != null)
         {
-            ourDie.OnData(data);
+            ourDie.die.OnData(data);
         }
         else
         {
@@ -316,32 +340,32 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void OnDieConnected(Central.IDie die, bool result, string errorMessage)
     {
-        var ourDie = dice.Find(d => d.address == die.address);
+        var ourDie = dice.Find(d => d.die.address == die.address);
         if (ourDie != null)
         {
-            var prevState = ourDie.connectionState;
+            var prevState = ourDie.die.connectionState;
             if (result)
             {
                 // If we successfully connected to a new die, then it is no longer new, and should be
                 // considered part of the persistent pool, so save the config
-                if (ourDie.connectionState == Die.ConnectionState.New)
+                if (ourDie.die.connectionState == Die.ConnectionState.New)
                 {
                     // Changing the state to available implies that this is now a persistent die
                     // and it will be saved by the SavePool() call below.
-                    setState[ourDie].Invoke(Die.ConnectionState.Available);
+                    ourDie.setState.Invoke(Die.ConnectionState.Available);
                 }
 
                 // Remember that the die was just connected to (and trigger events)
-                setState[ourDie].Invoke(Die.ConnectionState.Identifying);
+                ourDie.setState.Invoke(Die.ConnectionState.Identifying);
 
                 // And have it update its info (unique Id, appearance, etc...) so it can finally be ready
-                ourDie.UpdateInfo(OnDieReady);
+                ourDie.die.UpdateInfo(OnDieReady);
             }
             else
             {
                 // Could not connect to the die, indicate that!
                 // Remember that the die was just connected to (and trigger events)
-                setState[ourDie].Invoke(Die.ConnectionState.CommError);
+                ourDie.setState.Invoke(Die.ConnectionState.CommError);
             }
         }
         else
@@ -355,13 +379,13 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void OnDieReady(Die die, bool ready)
     {
-        var ourDie = dice.Find(d => d.address == die.address);
+        var ourDie = dice.FirstOrDefault(d => d.die.address == die.address);
         if (ourDie != null)
         {
             if (ready)
             {
                 // Die is finally ready, awesome!
-                setState[ourDie].Invoke(Die.ConnectionState.Ready);
+                ourDie.setState.Invoke(Die.ConnectionState.Ready);
                 UpdateDataSet();
                 AppDataSet.Instance.SaveData();
             }
@@ -382,45 +406,52 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void OnDieDisconnected(Central.IDie die, string errorMessage)
     {
-        var ourDie = dice.FirstOrDefault(d => d.address == die.address);
+        var ourDie = dice.FirstOrDefault(d => d.die.address == die.address);
         if (ourDie != null)
         {
-            setState[ourDie].Invoke(Die.ConnectionState.Missing);
+            ourDie.setState.Invoke(Die.ConnectionState.Missing);
         }
     }
 
     /// <summary>
     /// Creates a new die for the pool
     /// </sumary>
-    Die CreateDie(string address, string name, System.UInt64 deviceId = 0, int faceCount = 0, DiceVariants.DesignAndColor design = DiceVariants.DesignAndColor.Unknown)
+    PoolDie CreateDie(string address, string name, System.UInt64 deviceId = 0, int faceCount = 0, DiceVariants.DesignAndColor design = DiceVariants.DesignAndColor.Unknown)
     {
         var dieObj = new GameObject(name);
         dieObj.transform.SetParent(transform);
-        Die ret = dieObj.AddComponent<Die>();
-        var setStateAction = ret.Setup(name, address, deviceId, faceCount, design);
-        setState.Add(ret, setStateAction);
+        Die die = dieObj.AddComponent<Die>();
+        var setStateAction = die.Setup(name, address, deviceId, faceCount, design);
+        var ourDie = new PoolDie()
+        {
+            die = die,
+            setState = setStateAction,
+            count = 0,
+            lastRequestDisconnectTime = 0.0f
+        };
+        dice.Add(ourDie);
 
         // Trigger event
-        onDieCreated?.Invoke(ret);
+        onDieCreated?.Invoke(die);
 
-        return ret;
+        return ourDie;
     }
 
     /// <summary>
     /// Cleanly destroys a die, disconnecting if necessary and triggering events in the process
     /// Does not remove it from the list though
     /// </sumary>
-    void DestroyDie(Die die)
+    void DestroyDie(PoolDie ourDie)
     {
         // Disconnect first
-        CheckDisconnectDie(die);
+        CheckDisconnectDie(ourDie.die);
 
         // Trigger event
-        onWillDestroyDie?.Invoke(die);
+        onWillDestroyDie?.Invoke(ourDie.die);
 
-        setState[die].Invoke(Die.ConnectionState.Invalid);
-        setState.Remove(die);
-        GameObject.Destroy(die.gameObject);
+        ourDie.setState.Invoke(Die.ConnectionState.Invalid);
+        GameObject.Destroy(ourDie.die.gameObject);
+        dice.Remove(ourDie);
     }
 
     /// <summary>
@@ -428,25 +459,17 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void DestroyAll(System.Predicate<Die> predicate = null)
     {
-        if (predicate != null)
+        if (predicate == null)
         {
-            var diceCopy = new List<Die>(dice);
-            foreach (var die in diceCopy)
-            {
-                if (predicate(die))
-                {
-                    DestroyDie(die);
-                    dice.Remove(die);
-                }
-            }
+            predicate = (d) => true;
         }
-        else
+        var diceCopy = new List<PoolDie>(dice);
+        foreach (var die in diceCopy)
         {
-            foreach (var die in dice)
+            if (predicate(die.die))
             {
                 DestroyDie(die);
             }
-            dice.Clear();
         }
     }
 
@@ -484,21 +507,21 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         // We only save the dice that we have indicated to be in the pool
         // (i.e. ignore dice that are 'new' and we didn't connect to)
         var toRemove = new List<Presets.EditDie>(AppDataSet.Instance.dice);
-        foreach (var die in dice.Where(d => d.connectionState != Die.ConnectionState.New))
+        foreach (var ourDie in dice.Where(d => d.die.connectionState != Die.ConnectionState.New))
         {
-            var editDie = AppDataSet.Instance.FindDie(die);
+            var editDie = AppDataSet.Instance.FindDie(ourDie.die);
             if (editDie == null)
             {
                 // Create a new die
-                editDie = AppDataSet.Instance.AddNewDie(die);
+                editDie = AppDataSet.Instance.AddNewDie(ourDie.die);
             }
             else
             {
                 // Update die info
-                editDie.name = die.name;
-                editDie.deviceId = die.deviceId;
-                editDie.faceCount = die.faceCount;
-                editDie.designAndColor = die.designAndColor;
+                editDie.name = ourDie.die.name;
+                editDie.deviceId = ourDie.die.deviceId;
+                editDie.faceCount = ourDie.die.faceCount;
+                editDie.designAndColor = ourDie.die.designAndColor;
                 toRemove.Remove(editDie);
             }
         }
@@ -521,9 +544,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             foreach (var ddie in AppDataSet.Instance.dice)
             {
                 // Create a disconnected die
-                Die die = CreateDie(null, ddie.name, ddie.deviceId, ddie.faceCount, ddie.designAndColor);
-                dice.Add(die);
-                setState[die].Invoke(Die.ConnectionState.Unknown);
+                var ourDie = CreateDie(null, ddie.name, ddie.deviceId, ddie.faceCount, ddie.designAndColor);
+                ourDie.setState.Invoke(Die.ConnectionState.Unknown);
             }
         }
     }

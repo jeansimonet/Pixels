@@ -79,7 +79,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         bool ret = !diePicker.isShown;
         if (ret)
         {
-            diePicker.Show(title, previousDie, closeAction);
+            diePicker.Show(title, previousDie, null, closeAction);
         }
         return ret;
     }
@@ -200,6 +200,8 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
             switch (newState)
             {
                 case Die.ConnectionState.Ready:
+                    // This won't do anything but it will make sure the die doesn't get disconnected from underneath us
+                    DicePool.Instance.RequestConnectDie(die);
                     // call our own callback directly
                     dieReady(true, null);
                     break;

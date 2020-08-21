@@ -13,12 +13,15 @@ public class UIPatternView
     public RawImage previewImage;
     public UIParameterEnum animationSelector;
     public RectTransform parametersRoot;
+    public Button playOnDieButton;
 
     public Animations.EditAnimation editAnimation { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
     
     UIParameterManager.ObjectParameterList parameters;
     bool patternDirty = false;
+    Presets.EditDie previewDie = null;
+    Die connectedDie = null;
 
     public override void Enter(object context)
     {
@@ -49,6 +52,15 @@ public class UIPatternView
             GameObject.Destroy(parameter.gameObject);
         }
         parameters = null;
+
+        if (connectedDie != null)
+        {
+            connectedDie.SetStandardMode(_ =>
+            {
+                DicePool.Instance.RequestDisconnectDie(connectedDie);
+                connectedDie = null;
+            });
+        }
     }
 
     void Setup(Animations.EditAnimation anim)
@@ -78,6 +90,7 @@ public class UIPatternView
         animationNameText.onEndEdit.AddListener(newName => editAnimation.name = newName);
         saveButton.gameObject.SetActive(false);
         saveButton.onClick.AddListener(SaveAndGoBack);
+        playOnDieButton.onClick.AddListener(PreviewOnDie);
     }
 
     void DiscardAndGoBack()
@@ -148,6 +161,77 @@ public class UIPatternView
             dieRenderer.SetAnimation(newEditAnimation);
 
             editAnimation = newEditAnimation;
+        }
+    }
+
+    void PreviewOnDie()
+    {
+        void handleError(string title, string message)
+        {
+            PixelsApp.Instance.ShowDialogBox(title, message, "Ok", null, null);
+            connectedDie = null;
+            previewDie = null;
+        }
+
+        void playOnConnectedDie()
+        {
+            PixelsApp.Instance.GetDieReady(connectedDie, (_, res2, errorMsg) =>
+            {
+                if (res2)
+                {
+                    connectedDie.SetLEDAnimatorMode(__ =>
+                    {
+                        var editSet = AppDataSet.Instance.ExtractEditSetForAnimation(editAnimation);
+                        var dataSet = editSet.ToDataSet();
+                        connectedDie.PlayTestAnimation(dataSet, (res3) =>
+                        {
+                            if (!res3)
+                            {
+                                DicePool.Instance.RequestDisconnectDie(connectedDie);
+                                handleError("Transfer Error", "Could not play animation on " + previewDie.name);
+                            }
+                        });
+                    });
+                }
+                else
+                {
+                    handleError("Connection Error", "Could not connect to " + previewDie.name);
+                }
+            });
+        }
+
+        void connectAndPlay()
+        {
+            if (connectedDie == null)
+            {
+                connectedDie = DicePool.Instance.FindDie(previewDie);
+            }
+
+            if (connectedDie != null)
+            {
+                playOnConnectedDie();
+            }
+            else
+            {
+                handleError("Missing Die", "Could not find die " + previewDie.name + " in dice bag");
+            }
+        }
+
+        if (previewDie == null)
+        {
+            PixelsApp.Instance.ShowDiePicker("Select Die for Preview", null, (res, newDie) =>
+            {
+                if (res)
+                {
+                    previewDie = newDie;
+                    connectAndPlay();
+                }
+                // Cancelled
+            });
+        }
+        else
+        {
+            connectAndPlay();
         }
     }
 }

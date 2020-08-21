@@ -15,6 +15,7 @@ public class UIDiePicker : MonoBehaviour
     public UIDiePickerDieToken dieTokenPrefab;
 
     EditDie currentDie;
+    System.Func<EditDie, bool> predicateFunc;
     System.Action<bool, EditDie> closeAction;
 
     // The list of controls we have created to display dice
@@ -25,7 +26,7 @@ public class UIDiePicker : MonoBehaviour
     /// <summary>
     /// Invoke the die picker
     /// </sumary>
-    public void Show(string title, EditDie previousDie, System.Action<bool, EditDie> closeAction)
+    public void Show(string title, EditDie previousDie, System.Func<EditDie, bool> predicateFunc, System.Action<bool, EditDie> closeAction)
     {
         if (isShown)
         {
@@ -44,7 +45,7 @@ public class UIDiePicker : MonoBehaviour
         currentDie = previousDie;
         titleText.text = title;
 
-
+        this.predicateFunc = predicateFunc;
         this.closeAction = closeAction;
     }
 

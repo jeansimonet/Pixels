@@ -3,6 +3,11 @@
 #include "stdint.h"
 #include "animations/Animation.h"
 
+namespace Animations
+{
+	struct Animation;
+}
+
 namespace Modules
 {
 	/// <summary>
@@ -21,7 +26,9 @@ namespace Modules
 		void start();
 
 		void play(int animIndex, uint8_t remapFace = 0, bool loop = false);
+		void play(const Animations::Animation* animationPreset, const DataSet::AnimationBits* animationBits, uint8_t remapFace = 0, bool loop = false);
 		void stop(int animIndex, uint8_t remapFace = 0);
+		void stop(const Animations::Animation* animationPreset, uint8_t remapFace = 0);
 		void stopAll();
 
 		int getCurrentRainbowOffset();

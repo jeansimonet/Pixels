@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using System.Linq;
 
-
 public partial class Die
 	: MonoBehaviour
     , Central.IDie
@@ -160,17 +159,17 @@ public partial class Die
             prepareDie.actionSize = (ushort)set.actions.Sum((action) => Marshal.SizeOf(action.GetType()));
             prepareDie.ruleCount = set.getRuleCount();
             prepareDie.behaviorCount = set.getBehaviorCount();
-            Debug.Log("Animation Data to be sent:");
-            Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
-            Debug.Log("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
-            Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
-            Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
-            Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
-            Debug.Log("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
-            Debug.Log("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
-            Debug.Log("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
-            Debug.Log("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
-            Debug.Log("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
+            // Debug.Log("Animation Data to be sent:");
+            // Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
+            // Debug.Log("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+            // Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
+            // Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
+            // Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
+            // Debug.Log("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
+            // Debug.Log("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
+            // Debug.Log("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
+            // Debug.Log("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
+            // Debug.Log("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
             bool acknowledge = false;
             yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
                 prepareDie,
@@ -214,6 +213,92 @@ public partial class Die
             else
             {
                 Debug.Log("TimedOut");
+            }
+        }
+        finally
+        {
+            callBack?.Invoke(result);
+        }
+    }
+
+    public Coroutine PlayTestAnimation(DataSet testAnimSet, System.Action<bool> callBack)
+    {
+        return PerformBluetoothOperation(PlayTestAnimationCr(testAnimSet, callBack));
+    }
+
+    IEnumerator PlayTestAnimationCr(DataSet testAnimSet, System.Action<bool> callBack)
+    {
+        bool result = false;
+        try
+        {
+            // Prepare the die
+            var prepareDie = new DieMessageTransferTestAnimSet();
+            prepareDie.paletteSize = testAnimSet.animationBits.getPaletteSize();;
+            prepareDie.rgbKeyFrameCount = testAnimSet.animationBits.getRGBKeyframeCount();
+            prepareDie.rgbTrackCount = testAnimSet.animationBits.getRGBTrackCount();
+            prepareDie.keyFrameCount = testAnimSet.animationBits.getKeyframeCount();
+            prepareDie.trackCount = testAnimSet.animationBits.getTrackCount();
+            prepareDie.animationSize = (ushort)Marshal.SizeOf(testAnimSet.animations[0].GetType());
+
+            var setData = testAnimSet.ToTestAnimationByteArray();
+            var hash = Utils.computeHash(setData);
+
+            prepareDie.hash = hash;
+            // Debug.Log("Animation Data to be sent:");
+            // Debug.Log("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
+            // Debug.Log("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+            // Debug.Log("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
+            // Debug.Log("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
+            // Debug.Log("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
+            TransferTestAnimSetAckType acknowledge = TransferTestAnimSetAckType.NoMemory;
+            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+                prepareDie,
+                DieMessageType.TransferTestAnimSetAck,
+                3.0f,
+                (ack) => acknowledge = ((DieMessageTransferTestAnimSetAck)ack).ackType,
+                null,
+                null));
+
+            switch (acknowledge)
+            {
+                case TransferTestAnimSetAckType.Download:
+                    {
+                        Debug.Log("Die is ready to receive test dataset, byte array should be: " + setData.Length + " bytes and hash 0x" + hash.ToString("X8"));
+
+                        bool programmingFinished = false; 
+                        MessageReceivedDelegate programmingFinishedCallback = (finishedMsg) =>
+                        {
+                            programmingFinished = true;
+                        };
+
+                        AddMessageHandler(DieMessageType.TransferTestAnimSetFinished, programmingFinishedCallback);
+
+                        yield return StartCoroutine(UploadBulkDataCr(
+                            setData,
+                            null,
+                            (res) => result = res));
+
+                        if (result)
+                        {
+                            // We're done sending data, wait for the die to say its finished programming it!
+                            Debug.Log("Done sending data, waiting for die to finish programming!");
+                            yield return new WaitUntil(() => programmingFinished);
+                            RemoveMessageHandler(DieMessageType.TransferTestAnimSetFinished, programmingFinishedCallback);
+                        }
+                        else
+                        {
+                            RemoveMessageHandler(DieMessageType.TransferTestAnimSetFinished, programmingFinishedCallback);
+                            Debug.Log("Error!");
+                        }
+                    }
+                    break;
+                case TransferTestAnimSetAckType.UpToDate:
+                    {
+                        result = true;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
         finally

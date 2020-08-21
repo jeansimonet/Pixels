@@ -26,6 +26,9 @@ public enum DieMessageType : byte
 	TransferSettings,
 	TransferSettingsAck,
 	TransferSettingsFinished,
+    TransferTestAnimSet,
+    TransferTestAnimSetAck,
+    TransferTestAnimSetFinished,
 	DebugLog,
 	PlayAnim,
 	PlayAnimEvent,
@@ -118,6 +121,15 @@ public static class DieMessages
                     break;
                 case DieMessageType.TransferAnimSetFinished:
                     ret = FromByteArray<DieMessageTransferAnimSetFinished>(data);
+                    break;
+                case DieMessageType.TransferTestAnimSet:
+                    ret = FromByteArray<DieMessageTransferTestAnimSet>(data);
+                    break;
+                case DieMessageType.TransferTestAnimSetAck:
+                    ret = FromByteArray<DieMessageTransferTestAnimSetAck>(data);
+                    break;
+                case DieMessageType.TransferTestAnimSetFinished:
+                    ret = FromByteArray<DieMessageTransferTestAnimSetFinished>(data);
                     break;
                 case DieMessageType.TransferSettings:
                     ret = FromByteArray<DieMessageTransferSettings>(data);
@@ -361,6 +373,43 @@ public class DieMessageTransferAnimSetFinished
     : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.TransferAnimSetFinished;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTransferTestAnimSet
+	: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TransferTestAnimSet;
+
+	public ushort paletteSize;
+	public ushort rgbKeyFrameCount;
+	public ushort rgbTrackCount;
+	public ushort keyFrameCount;
+	public ushort trackCount;
+	public ushort animationSize;
+	public uint hash;
+}
+
+public enum TransferTestAnimSetAckType : byte
+{
+	Download = 0,
+	UpToDate,
+    NoMemory
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTransferTestAnimSetAck
+	: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TransferTestAnimSetAck;
+	public TransferTestAnimSetAckType ackType;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageTransferTestAnimSetFinished
+    : DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.TransferTestAnimSetFinished;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -212,20 +212,20 @@ namespace DataSet
 			message->ruleCount * sizeof(Rule) +
 			message->behaviorCount * sizeof(Behavior);
 
-		NRF_LOG_INFO("Animation Data to be received:");
-		NRF_LOG_INFO("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
-		NRF_LOG_INFO("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_INFO("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
-		NRF_LOG_INFO("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
-		NRF_LOG_INFO("Tracks: %d * %d", message->trackCount, sizeof(Track));
-		NRF_LOG_INFO("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
-		NRF_LOG_INFO("Animations: %d", message->animationSize);
-		NRF_LOG_INFO("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
-		NRF_LOG_INFO("Conditions: %d", message->conditionSize);
-		NRF_LOG_INFO("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
-		NRF_LOG_INFO("Actions: %d", message->actionSize);
-		NRF_LOG_INFO("Rules: %d * %d", message->ruleCount, sizeof(Rule));
-		NRF_LOG_INFO("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
+		NRF_LOG_DEBUG("Animation Data to be received:");
+		NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
+		NRF_LOG_DEBUG("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
+		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
+		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
+		NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(Track));
+		NRF_LOG_DEBUG("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
+		NRF_LOG_DEBUG("Animations: %d", message->animationSize);
+		NRF_LOG_DEBUG("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
+		NRF_LOG_DEBUG("Conditions: %d", message->conditionSize);
+		NRF_LOG_DEBUG("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
+		NRF_LOG_DEBUG("Actions: %d", message->actionSize);
+		NRF_LOG_DEBUG("Rules: %d * %d", message->ruleCount, sizeof(Rule));
+		NRF_LOG_DEBUG("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
 
 		uint32_t totalSize = dabs->bufferSize + sizeof(Data);
 		uint32_t flashSize = Flash::getFlashByteSize(totalSize);

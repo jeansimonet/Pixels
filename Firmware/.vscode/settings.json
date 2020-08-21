@@ -53,6 +53,7 @@
         "iosfwd": "cpp",
         "new": "cpp",
         "*.inc": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "utility": "cpp"
     },
 }

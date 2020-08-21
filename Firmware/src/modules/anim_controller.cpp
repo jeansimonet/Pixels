@@ -183,6 +183,13 @@ namespace AnimController
 	/// </summary>
 	void play(int animIndex, uint8_t remapFace, bool loop)
 	{
+		// Find the preset for this animation Index
+		auto animationPreset = DataSet::getAnimation(animIndex);
+		play(animationPreset, DataSet::getAnimationBits(), remapFace, loop);
+	}
+
+	void play(const Animation* animationPreset, const DataSet::AnimationBits* animationBits, uint8_t remapFace, bool loop)
+	{
 		#if (NRF_LOG_DEFAULT_LEVEL == 4)
 		NRF_LOG_DEBUG("Playing Anim!");
 		NRF_LOG_DEBUG("  Track count: %d", anim->trackCount);
@@ -202,9 +209,6 @@ namespace AnimController
 			}
 		}
 		#endif
-
-		// Find the preset for this animation Index
-		auto animationPreset = DataSet::getAnimation(animIndex);
 
 		// Is there already an animation for this?
 		int prevAnimIndex = 0;
@@ -227,7 +231,7 @@ namespace AnimController
 		else if (animationCount < MAX_ANIMS)
 		{
 			// Add a new animation
-			animations[animationCount] = Animations::createAnimationInstance(animationPreset, DataSet::getAnimationBits());
+			animations[animationCount] = Animations::createAnimationInstance(animationPreset, animationBits);
 			animations[animationCount]->start(ms, remapFace, loop);
 			animationCount++;
 		}
@@ -237,10 +241,15 @@ namespace AnimController
 	/// <summary>
 	/// Forcibly stop a currently running animation
 	/// </summary>
-	void stop(int animIndex, uint8_t remapFace)
-	{
+	void stop(int animIndex, uint8_t remapFace)	{
+
 		// Find the preset for this animation Index
 		auto animationPreset = DataSet::getAnimation(animIndex);
+
+		stop(animationPreset, remapFace);
+	}
+
+	void stop(const Animation* animationPreset, uint8_t remapFace) {
 
 		// Find the animation with that preset and remap face
 		int prevAnimIndex = 0;

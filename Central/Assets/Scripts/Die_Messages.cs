@@ -45,6 +45,13 @@ public partial class Die
         DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
     }
 
+    void WriteMessage<T>(T message, System.Action<bool> callback)
+        where T : DieMessage
+    {
+        byte[] msgBytes = DieMessages.ToByteArray(message);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, callback);
+    }
+
     IEnumerator WaitForMessageCr(DieMessageType msgType, System.Action<DieMessage> msgReceivedCallback)
     {
         bool msgReceived = false; 
@@ -324,14 +331,19 @@ public partial class Die
         PostMessage(new DieMessageCalibrateFace() {face = (byte)face});
     }
 
-    public void SetLEDAnimatorMode()
+    public void SetStandardMode(System.Action<bool> callback)
     {
-        PostMessage(new DieMessageSetLEDAnimState());
+        WriteMessage(new DieMessageSetStandardState(), callback);
     }
 
-    public void SetBattleMode()
+    public void SetLEDAnimatorMode(System.Action<bool> callback)
     {
-        PostMessage(new DieMessageSetBattleState());
+        WriteMessage(new DieMessageSetLEDAnimState(), callback);
+    }
+
+    public void SetBattleMode(System.Action<bool> callback)
+    {
+        WriteMessage(new DieMessageSetBattleState(), callback);
     }
 
     public void PrintNormals()

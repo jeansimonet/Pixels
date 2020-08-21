@@ -46,7 +46,63 @@ public class DataSet
         public ushort getKeyframeCount() => (ushort)keyframes.Count;
         public Animations.Track getTrack(ushort trackIndex) => tracks[trackIndex];
         public ushort getTrackCount() => (ushort)tracks.Count;
+
+        public int ComputeDataSize()
+        {
+            return palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
+                rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
+                rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
+                keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +
+                tracks.Count * Marshal.SizeOf<Animations.Track>();
+        }
+
+        public System.IntPtr WriteBytes(System.IntPtr ptr)
+        {
+            // Copy palette
+            System.IntPtr current = ptr;
+            foreach (var color in palette)
+            {
+                Color32 cl32 = color; 
+                Marshal.WriteByte(current, cl32.r);
+                current += 1;
+                Marshal.WriteByte(current, cl32.g);
+                current += 1;
+                Marshal.WriteByte(current, cl32.b);
+                current += 1;
+            }
+
+            // Copy keyframes
+            foreach (var keyframe in rgbKeyframes)
+            {
+                Marshal.StructureToPtr(keyframe, current, false);
+                current += Marshal.SizeOf<Animations.RGBKeyframe>();
+            }
+
+            // Copy rgb tracks
+            foreach (var track in rgbTracks)
+            {
+                Marshal.StructureToPtr(track, current, false);
+                current += Marshal.SizeOf<Animations.RGBTrack>();
+            }
+
+            // Copy keyframes
+            foreach (var keyframe in keyframes)
+            {
+                Marshal.StructureToPtr(keyframe, current, false);
+                current += Marshal.SizeOf<Animations.Keyframe>();
+            }
+
+            // Copy tracks
+            foreach (var track in tracks)
+            {
+                Marshal.StructureToPtr(track, current, false);
+                current += Marshal.SizeOf<Animations.Track>();
+            }
+
+            return current;
+        }
     }
+
     public AnimationBits animationBits = new AnimationBits();
     public List<Animations.Animation> animations = new List<Animations.Animation>();
     public List<Behaviors.Condition> conditions = new List<Behaviors.Condition>();
@@ -58,11 +114,7 @@ public class DataSet
 
     public int ComputeDataSetDataSize()
     {
-        return animationBits.palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
-            animationBits.rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
-            animationBits.rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
-            animationBits.keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +
-            animationBits.tracks.Count * Marshal.SizeOf<Animations.Track>() +
+        return animationBits.ComputeDataSize() +
             Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>()) + // offsets
             animations.Sum((anim) => Marshal.SizeOf(anim.GetType())) + // actual animations
             Utils.roundUpTo4(conditions.Count * Marshal.SizeOf<ushort>()) + // offsets
@@ -90,51 +142,40 @@ public class DataSet
 	public Behaviors.Behavior getBehavior(int behaviorIndex) => behaviors[behaviorIndex];
 	public ushort getBehaviorCount() => (ushort)behaviors.Count;
 
+    public byte[] ToTestAnimationByteArray()
+    {
+        Debug.Assert(animations.Count == 1);
+        int size = animationBits.ComputeDataSize() + Marshal.SizeOf(animations[0].GetType());
+        System.IntPtr ptr = Marshal.AllocHGlobal(size);
+
+        System.IntPtr current = animationBits.WriteBytes(ptr);
+        Marshal.StructureToPtr(animations[0], current, false);
+
+        byte[] ret = new byte[size];
+        Marshal.Copy(ptr, ret, 0, size);
+        Marshal.FreeHGlobal(ptr);
+        return ret;
+    }
+
     public byte[] ToByteArray()
     {
         int size = ComputeDataSetDataSize();
         System.IntPtr ptr = Marshal.AllocHGlobal(size);
 
+        WriteBytes(ptr);
+
+        byte[] ret = new byte[size];
+        Marshal.Copy(ptr, ret, 0, size);
+        Marshal.FreeHGlobal(ptr);
+
+        return ret;
+    }
+
+    public System.IntPtr WriteBytes(System.IntPtr ptr)
+    {
         // Copy palette
         System.IntPtr current = ptr;
-        foreach (var color in animationBits.palette)
-        {
-            Color32 cl32 = color; 
-            Marshal.WriteByte(current, cl32.r);
-            current += 1;
-            Marshal.WriteByte(current, cl32.g);
-            current += 1;
-            Marshal.WriteByte(current, cl32.b);
-            current += 1;
-        }
-
-        // Copy keyframes
-        foreach (var keyframe in animationBits.rgbKeyframes)
-        {
-            Marshal.StructureToPtr(keyframe, current, false);
-            current += Marshal.SizeOf<Animations.RGBKeyframe>();
-        }
-
-        // Copy rgb tracks
-        foreach (var track in animationBits.rgbTracks)
-        {
-            Marshal.StructureToPtr(track, current, false);
-            current += Marshal.SizeOf<Animations.RGBTrack>();
-        }
-
-        // Copy keyframes
-        foreach (var keyframe in animationBits.keyframes)
-        {
-            Marshal.StructureToPtr(keyframe, current, false);
-            current += Marshal.SizeOf<Animations.Keyframe>();
-        }
-
-        // Copy tracks
-        foreach (var track in animationBits.tracks)
-        {
-            Marshal.StructureToPtr(track, current, false);
-            current += Marshal.SizeOf<Animations.Track>();
-        }
+        current = animationBits.WriteBytes(current);
 
         // Copy animations
         // Offsets first
@@ -213,11 +254,7 @@ public class DataSet
             current += Marshal.SizeOf<Behaviors.Behavior>();
         }
 
-        byte[] ret = new byte[size];
-        Marshal.Copy(ptr, ret, 0, size);
-        Marshal.FreeHGlobal(ptr);
-
-        return ret;
+        return current;
     }
 
     public void Compress()

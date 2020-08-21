@@ -80,6 +80,13 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         return ret;
     }
 
+    public EditDataSet ExtractEditSetForAnimation(EditAnimation animation)
+    {
+        EditDataSet ret = new EditDataSet();
+        ret.animations.Add(animation);
+        return ret;
+    }
+
     public EditDie AddNewDie(Die die)
     {
         return new EditDie()

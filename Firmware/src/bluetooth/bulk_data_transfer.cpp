@@ -202,6 +202,7 @@ namespace Bluetooth
 		uint16_t currentOffset;
 
 		int retryCount;
+		receiveAllocator allocator;
 		receiveResultCallback callback;
 		receiveToFlashResultCallback flashCallback;
 		void* context;
@@ -230,14 +231,16 @@ namespace Bluetooth
 			MessageService::SendMessage(&ackMsg);
 		}
 
+
 		/// <summary>
 		/// Bulk data transfer
 		/// </summary>
-		void receive(void* theContext, receiveResultCallback theCallback)
+		void receive(void* theContext, receiveAllocator theAllocator, receiveResultCallback theCallback)
 		{
 			data = nullptr;
 			size = 0;
 			retryCount = 0;
+			allocator = theAllocator;
 			callback = theCallback;
 			context = theContext;
 
@@ -267,7 +270,7 @@ namespace Bluetooth
 
 					// Allocate memory for the data
 					auto msg = (const MessageBulkSetup*)message;
-					data = (uint8_t*)malloc(msg->size);
+					data = allocator(context, msg->size);
 					size = msg->size;
 					if (data == nullptr) {
 						// Not enough memory
@@ -303,8 +306,6 @@ namespace Bluetooth
 						// Copy the data
 						auto msg = (const MessageBulkData*)message;
 						memcpy(&data[msg->offset], msg->data, msg->size);
-
-						NRF_LOG_INFO("Received Bulk Data (offset: %d)", msg->offset);
 
 						if (msg->offset + msg->size >= size) {
 							// Done
