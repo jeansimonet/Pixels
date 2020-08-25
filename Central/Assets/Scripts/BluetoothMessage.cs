@@ -45,6 +45,8 @@ public enum DieMessageType : byte
 	DefaultAnimSetColor,
 	RequestBatteryLevel,
 	BatteryLevel,
+	RequestRssi,
+	Rssi,
 	Calibrate,
 	CalibrateFace,
 	NotifyUser,
@@ -178,6 +180,12 @@ public static class DieMessages
                     break;
                 case DieMessageType.RequestBatteryLevel:
                     ret = FromByteArray<DieMessageRequestBatteryLevel>(data);
+                    break;
+                case DieMessageType.RequestRssi:
+                    ret = FromByteArray<DieMessageRequestRssi>(data);
+                    break;
+                case DieMessageType.Rssi:
+                    ret = FromByteArray<DieMessageRssi>(data);
                     break;
                 case DieMessageType.Calibrate:
                     ret = FromByteArray<DieMessageCalibrate>(data);
@@ -588,6 +596,21 @@ public class DieMessageRequestBatteryLevel
 : DieMessage
 {
     public DieMessageType type { get; set; } = DieMessageType.RequestBatteryLevel;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageRssi
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.Rssi;
+    public short rssi;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public class DieMessageRequestRssi
+: DieMessage
+{
+    public DieMessageType type { get; set; } = DieMessageType.RequestRssi;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

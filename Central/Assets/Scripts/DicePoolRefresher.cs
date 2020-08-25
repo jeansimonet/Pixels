@@ -59,6 +59,11 @@ public class DicePoolRefresher : MonoBehaviour
                 bool battLevelReceived = false;
                 die.GetBatteryLevel((d, f) => battLevelReceived = true);
                 yield return new WaitUntil(() => battLevelReceived == true);
+
+                // Fetch rssi
+                bool rssiReceived = false;
+                die.GetRssi((d, i) => rssiReceived = true);
+                yield return new WaitUntil(() => rssiReceived == true);
             }
 
             DicePool.Instance.RequestDisconnectDie(die);

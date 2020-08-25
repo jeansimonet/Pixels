@@ -123,6 +123,9 @@ public partial class Die
     public delegate void BatteryLevelChangedEvent(Die die, float? level);
     public BatteryLevelChangedEvent OnBatteryLevelChanged;
 
+    public delegate void RssiChangedEvent(Die die1, int? rssi);
+    public RssiChangedEvent OnRssiChanged;
+
     // Lock so that only one 'operation' can happen at a time on a die
     // Note: lock is not a real multithreaded lock!
     bool bluetoothOperationInProgress = false;

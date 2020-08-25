@@ -112,6 +112,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/modules/led_color_tester.cpp \
 	$(PROJ_DIR)/src/modules/battery_controller.cpp \
 	$(PROJ_DIR)/src/modules/hardware_test.cpp \
+	$(PROJ_DIR)/src/modules/rssi_controller.cpp \
 	$(PROJ_DIR)/src/utils/abi.cpp \
 	$(PROJ_DIR)/src/utils/rainbow.cpp \
 	$(PROJ_DIR)/src/utils/utils.cpp \

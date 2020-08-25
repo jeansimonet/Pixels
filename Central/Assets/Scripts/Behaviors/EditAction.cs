@@ -89,10 +89,10 @@ namespace Behaviors
         : EditAction
     {
         public Animations.EditAnimation animation;
-        [Index, IntRange(0, 19)]
-        public byte faceIndex;
-        [Index, IntRange(1, 10)]
-        public byte loopCount;
+        [PlaybackFace]
+        public int faceIndex = -1;
+        [IntSlider, IntRange(1, 10)]
+        public int loopCount = 1;
 
         public override ActionType type { get { return ActionType.PlayAnimation; } }
         public override Action ToAction(EditDataSet editSet, DataSet set)
@@ -100,8 +100,8 @@ namespace Behaviors
             return new ActionPlayAnimation()
             {
                 animIndex = (byte)editSet.animations.IndexOf(animation),
-                faceIndex = this.faceIndex,
-                loopCount = this.loopCount
+                faceIndex = (byte)this.faceIndex,
+                loopCount = (byte)this.loopCount
             };
         }
 
@@ -146,8 +146,8 @@ namespace Behaviors
                         ret.animation = dataSet.animations[animationIndex];
                     else
                         ret.animation = null;
-                    ret.faceIndex = jsonObject["faceIndex"].Value<byte>();
-                    ret.loopCount = jsonObject["loopCount"].Value<byte>();
+                    ret.faceIndex = jsonObject["faceIndex"].Value<int>();
+                    ret.loopCount = jsonObject["loopCount"].Value<int>();
                     return ret;
                 }
             }
@@ -198,7 +198,7 @@ namespace Behaviors
                     builder.Append("x");
                     builder.Append(loopCount);
                 }
-                if (faceIndex != 0xFF)
+                if (faceIndex != -1)
                 {
                     builder.Append(" on face ");
                     builder.Append(faceIndex + 1);

@@ -10,7 +10,8 @@ public class FaceMaskAttribute
 {
 }
 
-public class UIParameterFaceMask : UIParameter
+public class UIParameterFaceMask
+    : UIParameter
 {
     [Header("Controls")]
     public Text nameText;

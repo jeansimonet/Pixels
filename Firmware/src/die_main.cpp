@@ -53,6 +53,7 @@ namespace Die
 	void EnterLEDAnimState(void* context, const Message* msg);
 	void EnterBattleState(void* context, const Message* msg);
     void StartAttractMode(void* context, const Message* msg);
+
     void onConnection(void* token, bool connected);
 
     void initMainLogic() {
@@ -139,7 +140,9 @@ namespace Die
     }
 
     void onConnection(void* token, bool connected) {
-        if (!connected) {
+        if (connected) {
+            // Nothing
+        } else {
             // Return to solo play
             EnterStandardState(nullptr, nullptr);
         }

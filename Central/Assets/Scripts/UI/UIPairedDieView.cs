@@ -49,6 +49,8 @@ public class UIPairedDieView : MonoBehaviour
 
         die.OnConnectionStateChanged += OnConnectionStateChanged;
         die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        die.OnRssiChanged += OnRssiChanged;
+
     }
 
     public void BeginRefreshPool()
@@ -189,6 +191,7 @@ public class UIPairedDieView : MonoBehaviour
         }
         die.OnConnectionStateChanged -= OnConnectionStateChanged;
         die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
+        die.OnRssiChanged -= OnRssiChanged;
     }
 
     void OnConnectionStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
@@ -204,5 +207,10 @@ public class UIPairedDieView : MonoBehaviour
     void OnBatteryLevelChanged(Die die, float? level)
     {
         batteryView.SetLevel(level);
+    }
+
+    void OnRssiChanged(Die die, int? rssi)
+    {
+        signalView.SetRssi(rssi);
     }
 }

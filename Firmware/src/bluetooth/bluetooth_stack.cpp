@@ -59,7 +59,7 @@ namespace Stack
 
     #define MAX_CLIENTS 2
 
-    #define RSSI_THRESHOLD_DBM 5
+    #define RSSI_THRESHOLD_DBM 1
 
     uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
     NRF_BLE_QWR_DEF(m_qwr);                                                  /**< Context for the Queued Write module.*/
@@ -86,6 +86,7 @@ namespace Stack
     };
 
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
+	DelegateArray<RssiEventMethod, MAX_CLIENTS> rssiClients;
 
     // Custom advertising data, so the Pixel app can identify dice before they're even connected
     struct CustomAdvertisingData
@@ -158,9 +159,6 @@ namespace Stack
                     clients[i].handler(clients[i].token, false);
                 }
 
-                // // No longer need rssi levels
-                // sd_ble_gap_rssi_stop(m_conn_handle);
-
                 break;
 
             case BLE_GAP_EVT_CONNECTED:
@@ -180,9 +178,6 @@ namespace Stack
                 // Unhook battery levels too
                 BatteryController::unHookLevel(onBatteryLevelChange);
 
-                // // Ask for rssi levels
-                // sd_ble_gap_rssi_start(m_conn_handle, RSSI_THRESHOLD_DBM, 1); 
-
                 break;
 
             case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -199,6 +194,9 @@ namespace Stack
 
             case BLE_GAP_EVT_RSSI_CHANGED:
                 rssi = p_ble_evt->evt.gap_evt.params.rssi_changed.rssi;
+                for (int i = 0; i < rssiClients.Count(); ++i) {
+                    rssiClients[i].handler(rssiClients[i].token, rssi);
+                }
                 break;
 
             case BLE_GATTC_EVT_TIMEOUT:
@@ -535,6 +533,10 @@ namespace Stack
         ble_advertising_modes_config_set(&m_advertising, &config);
     }
 
+    void requestRssi() {
+
+    }
+
     bool canSend() {
         return !notificationPending;
     }
@@ -595,5 +597,21 @@ namespace Stack
 	void unHookWithParam(void* param) {
 		clients.UnregisterWithToken(param);
 	}
+
+    void hookRssi(RssiEventMethod method, void* param) {
+        if (rssiClients.Count() == 0) {
+            sd_ble_gap_rssi_start(m_conn_handle, RSSI_THRESHOLD_DBM, 1); 
+        }
+        rssiClients.Register(param, method);
+    }
+	
+    void unHookRssi(RssiEventMethod client) {
+        rssiClients.UnregisterWithHandler(client);
+        if (rssiClients.Count() == 0) {
+            // No longer need rssi levels
+            sd_ble_gap_rssi_stop(m_conn_handle);
+        }
+    }
+
 }
 }

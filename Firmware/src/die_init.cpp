@@ -36,6 +36,7 @@
 #include "modules/battery_controller.h"
 #include "modules/behavior_controller.h"
 #include "modules/hardware_test.h"
+#include "modules/rssi_controller.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
@@ -176,6 +177,9 @@ namespace Die
 
                 // Animation preview depends on bluetooth
                 AnimationPreview::init();
+
+                // Rssi controller requires the bluetooth stack
+                RssiController::init();
 
                 //HardwareTest::init();
 

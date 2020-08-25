@@ -295,6 +295,33 @@ public partial class Die
             }));
     }
 
+    public Coroutine GetRssi(System.Action<Die, int?> outRssiAction)
+    {
+        return PerformBluetoothOperation(GetRssiCr(outRssiAction));
+    }
+
+    IEnumerator GetRssiCr(System.Action<Die, int?> outRssiAction)
+    {
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+            new DieMessageRequestRssi(),
+            DieMessageType.Rssi,
+            5.0f,
+            (msg) =>
+            {
+                var rssiMsg = (DieMessageRssi)msg;
+                OnRssiChanged?.Invoke(this, rssiMsg.rssi);
+                outRssiAction?.Invoke(this, rssiMsg.rssi);
+            },
+            () =>
+            {
+                outRssiAction?.Invoke(this, null);
+            },
+            () =>
+            {
+                outRssiAction?.Invoke(this, null);
+            }));
+    }
+
     public Coroutine SetCurrentDesignAndColor(DiceVariants.DesignAndColor design, System.Action<bool> callback)
     {
        return StartCoroutine(SendMessageWithAckOrTimeoutCr(

@@ -54,6 +54,8 @@ struct Message
 		MessageType_DefaultAnimSetColor,
 		MessageType_RequestBatteryLevel,
 		MessageType_BatteryLevel,
+		MessageType_RequestRssi,
+		MessageType_Rssi,
 		MessageType_Calibrate,
 		MessageType_CalibrateFace,
 		MessageType_NotifyUser,
@@ -287,6 +289,13 @@ struct MessageBatteryLevel
 	float level;
 	float voltage;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
+};
+
+struct MessageRssi
+: public Message
+{
+	int16_t rssi;
+	inline MessageRssi() : Message(Message::MessageType_Rssi) {}
 };
 
 struct MessageSetDesignAndColor
