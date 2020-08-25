@@ -85,7 +85,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 8d26c6eace450404693ed0ec18aa37a9, type: 3}
   - {fileID: 21300000, guid: dbe2e2f5d3c6e574ca69d2b9cd9439da, type: 3}
   bitColor: {r: 0.09019608, g: 0.09411766, b: 0.17254902, a: 1}
-  bitColorSelected: {r: 0.3064935, g: 0.3220779, b: 0.4, a: 1}
+  bitColorSelected: {r: 0.41568628, g: 0.47058824, b: 1, a: 1}
 --- !u!1 &3416305795715073495
 GameObject:
   m_ObjectHideFlags: 0

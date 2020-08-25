@@ -5,6 +5,7 @@ using UnityEngine;
 public class AppConstants : SingletonMonoBehaviour<AppConstants>
 {
     public string DataSetFilename = "dice_data.json";
+    public string SettingsFilename = "settings.json";
     public float ScanTimeout = 3.0f;
     public float DiceRotationSpeedAvg = 10.0f;
     public float DiceRotationSpeedVar = 1.0f;

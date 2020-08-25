@@ -26,7 +26,7 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
         }
         animNameText.text = anim.name;
 
-        dieRenderer.rotating = true;
+        dieRenderer.SetAuto(true);
         dieRenderer.SetAnimation(anim);
         dieRenderer.Play(true);
     }

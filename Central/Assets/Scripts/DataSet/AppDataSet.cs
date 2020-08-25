@@ -20,6 +20,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     [System.Serializable]
     public class Data
     {
+        public int jsonVersion = 1;
         public List<Presets.EditDie> dice = new List<Presets.EditDie>();
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
@@ -89,7 +90,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public EditDie AddNewDie(Die die)
     {
-        return new EditDie()
+        var ret = new EditDie()
         {
             name = die.name,
             deviceId = die.deviceId,
@@ -97,6 +98,8 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
             designAndColor = die.designAndColor,
             dataSetHash = die.dataSetHash
         };
+        dice.Add(ret);
+        return ret;
     }
 
     public EditDie FindDie(Die die)
@@ -121,7 +124,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         newAnim.duration = 3.0f;
         newAnim.color = new Color32(0xFF, 0x30, 0x00, 0xFF);
         newAnim.faces = 0b11111111111111111111;
-        newAnim.name = "New Animation";
+        newAnim.name = "New Lighting Pattern";
         animations.Add(newAnim);
         return newAnim;
     }
@@ -143,6 +146,20 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         animations[oldAnimIndex] = newAnimation;
     }
 
+    public void DeleteAnimation(EditAnimation animation)
+    {
+        foreach (var behavior in behaviors)
+        {
+            behavior.DeleteAnimation(animation);
+        }
+        animations.Remove(animation);
+    }
+
+    public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAnimation(Animations.EditAnimation anim)
+    {
+        return behaviors.Where(b => b.DependsOnAnimation(anim));
+    }
+
     public EditBehavior AddNewDefaultBehavior()
     {
         var newBehavior = new Behaviors.EditBehavior();
@@ -155,11 +172,13 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
                 flags = ConditionFaceCompare_Flags.Equal,
                 faceIndex = 19
             },
-            action = new Behaviors.EditActionPlayAnimation()
-            {
-                animation = null,
-                faceIndex = 0,
-                loopCount = 1
+            actions = new List<Behaviors.EditAction> () {
+                new Behaviors.EditActionPlayAnimation()
+                {
+                    animation = null,
+                    faceIndex = 0,
+                    loopCount = 1
+                }
             }
         });
         behaviors.Add(newBehavior);
@@ -171,6 +190,20 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         var newBehavior = behavior.Duplicate();
         behaviors.Add(newBehavior);
         return newBehavior;
+    }
+
+    public void DeleteBehavior(EditBehavior behavior)
+    {
+        foreach (var preset in presets)
+        {
+            preset.DeleteBehavior(behavior);
+        }
+        behaviors.Remove(behavior);
+    }
+
+    public IEnumerable<Presets.EditPreset> CollectPresetsForBehavior(Behaviors.EditBehavior behavior)
+    {
+        return presets.Where(b => b.DependsOnBehavior(behavior));
     }
 
     public bool CheckDependency(EditDie die)
@@ -186,7 +219,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public EditPreset AddNewDefaultPreset()
     {
         var newPreset = new EditPreset();
-        newPreset.name = "New Preset";
+        newPreset.name = "New Profile";
         newPreset.dieAssignments.Add(new EditDieAssignment()
         {
             die = null,
@@ -194,6 +227,18 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         });
         presets.Add(newPreset);
         return newPreset;
+    }
+
+    public EditPreset DuplicatePreset(EditPreset editPreset)
+    {
+        var newPreset = editPreset.Duplicate();
+        presets.Add(newPreset);
+        return newPreset;
+    }
+
+    public void DeletePreset(EditPreset editPreset)
+    {
+        presets.Remove(editPreset);
     }
 
     void OnEnable()
@@ -308,7 +353,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         EditBehavior behavior = new EditBehavior();
         behavior.rules.Add(new EditRule() {
             condition = new EditConditionRolling(),
-            action = new EditActionPlayAnimation() { animation = simpleAnim, faceIndex = 0, loopCount = 1 }
+            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = simpleAnim, faceIndex = 0, loopCount = 1 }}
         });
         behavior.rules.Add(new EditRule() {
             condition = new EditConditionFaceCompare()
@@ -316,7 +361,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
                 faceIndex = 19,
                 flags = ConditionFaceCompare_Flags.Equal
             },
-            action = new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 19, loopCount = 1 }
+            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 19, loopCount = 1 }}
         });
         behavior.rules.Add(new EditRule() {
             condition = new EditConditionFaceCompare()
@@ -324,7 +369,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
                 faceIndex = 0,
                 flags = ConditionFaceCompare_Flags.Less | ConditionFaceCompare_Flags.Equal | ConditionFaceCompare_Flags.Greater
             },
-            action = new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 2, loopCount = 1 }
+            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 2, loopCount = 1 }}
         });
         ret.behaviors.Add(behavior);
 

@@ -35,7 +35,7 @@ public class UIParameterGradient : UIParameter
         valueButton.onClick.AddListener(
         () =>
         {
-            PixelsApp.Instance.ShowGradientEditor("Edit Gradient", (EditRGBGradient)getterFunc(),
+            PixelsApp.Instance.ShowGradientEditor("Edit " + name, (EditRGBGradient)getterFunc(),
             (res, gradient) =>
             {
                 if (res)

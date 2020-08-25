@@ -64,7 +64,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             {
                 Central.Instance.StopScanForDice();
 
-                // When we stop scanning, if there is any 'unknown' die left, considering missing instead
+                // When we stop scanning, if there is any 'unknown' die left, consider it missing instead
                 foreach (var pd in dice.Where(d => d.die.connectionState == Die.ConnectionState.Unknown))
                 {
                     // The die is no longer just unknown, it's missing
@@ -98,10 +98,120 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             var pd = dice.First(p => p.die == die);
             pd.setState.Invoke(Die.ConnectionState.Unknown);
+            UpdateDataSet();
         }
-        UpdateDataSet();
-        AppDataSet.Instance.SaveData();
     }
+
+    void scanForDieWithTimeout(Die d, float timeout)
+    {
+        StartCoroutine(scanForDieWithTimeoutCr(d, timeout));
+    }
+
+    IEnumerator scanForDieWithTimeoutCr(Die d, float timeout)
+    {
+        bool connStateChanged = false;
+        void connStateChangedWatcher(Die dd, Die.ConnectionState oldState, Die.ConnectionState newState)
+        {
+            connStateChanged = true;
+        }
+        d.OnConnectionStateChanged += connStateChangedWatcher;
+        RequestBeginScanForDice();
+
+        float startTime = Time.time;
+        yield return new WaitUntil(() => connStateChanged || (Time.time > startTime + timeout));
+
+        d.OnConnectionStateChanged -= connStateChangedWatcher;
+        RequestStopScanForDice();
+    }
+
+    public void GetDieReady(Die die, System.Action<Die, bool, string> dieReadyCallback)
+    {
+        void dieReady(bool result, string errorMessage)
+        {
+            die.OnConnectionStateChanged -= connectionStateWatcher;
+            dieReadyCallback?.Invoke(die, result, errorMessage);
+        }
+
+        bool ignoreFirstCommError = true;
+        void connectionStateWatcher(Die d, Die.ConnectionState ignoreOldState, Die.ConnectionState newState)
+        {
+            switch (newState)
+            {
+                case Die.ConnectionState.Ready:
+                    // call our own callback directly
+                    dieReady(true, null);
+                    break;
+                case Die.ConnectionState.New:
+                    ignoreFirstCommError = false;
+                    IncludeDie(die); // This will trigger a switch to "unknown"
+                    break;
+                case Die.ConnectionState.Available:
+                    // Die must first be connected to
+                    ignoreFirstCommError = false;
+                    RequestConnectDie(die); // This will move through "connecting", "identifying" and "ready"
+                    break;
+                case Die.ConnectionState.Connecting:
+                case Die.ConnectionState.Identifying:
+                    // Just be notified when done
+                    break;
+                case Die.ConnectionState.Unknown:
+                    // Must first scan to see if the die is there
+                    ignoreFirstCommError = false;
+                    scanForDieWithTimeout(die, 5.0f); // This will move the die to "available"
+                    break;
+                case Die.ConnectionState.Missing:
+                case Die.ConnectionState.CommError:
+                    // Must first scan to see if the die is there, but only if it's the first time we see this state
+                    if (ignoreFirstCommError)
+                    {
+                        ignoreFirstCommError = false;
+                        DoubtDie(die); // This will move the die back to Unknown
+                    }
+                    else
+                    {
+                        // Tried to scan and we coouldn't find the die
+                        // TODO: Ask the user if they want to try again
+                        dieReady(false, "Could not connect to Die " + die.name + ". Make sure it is charged and in range");
+                    }
+                    break;
+                case Die.ConnectionState.Disconnecting:
+                    // Wait to reconnect
+                    break;
+                case Die.ConnectionState.Invalid:
+                    // Bug
+                    Debug.LogError("Invalid Die " + die.name);
+                    dieReady(false, "Die " + die.name + " is an invalid state");
+                    break;
+                case Die.ConnectionState.Removed:
+                    // Error
+                    dieReady(false, "Die " + die.name + " has been removed from your dice bag.");
+                    break;
+            }
+        }
+
+        if (die.connectionState == Die.ConnectionState.Ready)
+        {
+            // This won't do anything but it will make sure the die doesn't get disconnected from underneath us
+            RequestConnectDie(die);
+        }
+
+        die.OnConnectionStateChanged += connectionStateWatcher;
+
+        // Call the connection watcher once to trigger the initial connection / scanning, etc...
+        connectionStateWatcher(die, die.connectionState, die.connectionState);
+    }
+
+    public void GetDieReady(Presets.EditDie editDie, System.Action<Die, bool, string> dieReadyCallback)
+    {
+        var die = DicePool.Instance.FindDie(editDie);
+        if (die != null)
+        {
+            // Make sure the die is ready!
+            GetDieReady(die, dieReadyCallback);
+        }
+    }
+
+
 
     public void RequestConnectDie(Die die)
     {
@@ -149,19 +259,15 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void DisconnectDie(Die die)
     {
-        var dt = dice.First(p => p.die == die);
-        dt.setState.Invoke(Die.ConnectionState.Disconnecting);
-        Central.Instance.DisconnectDie(die, (_, res, errorMsg) =>
+        if (die.connectionState == Die.ConnectionState.Ready)
         {
-            if (res)
+            var dt = dice.FirstOrDefault(p => p.die == die); // When disconnecting from a destroy, the die will have already been removed
+            dt?.setState.Invoke(Die.ConnectionState.Disconnecting);
+            Central.Instance.DisconnectDie(die, (_, res, errorMsg) =>
             {
-                dt.setState.Invoke(Die.ConnectionState.Available);
-            }
-            else
-            {
-                dt.setState.Invoke(Die.ConnectionState.CommError);
-            }
-        });
+                dt?.setState.Invoke(res ? Die.ConnectionState.Available : Die.ConnectionState.CommError);
+            });
+        }
     }
 
     /// <summary>

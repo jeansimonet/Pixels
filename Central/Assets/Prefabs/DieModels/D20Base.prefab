@@ -1646,6 +1646,7 @@ MonoBehaviour:
   - {r: 0, g: 0, b: 0, a: 0}
   - {r: 0, g: 0, b: 0, a: 0}
   - {r: 0, g: 0, b: 0, a: 1}
+  deceleration: 180
 --- !u!1 &7993462019418224006
 GameObject:
   m_ObjectHideFlags: 0

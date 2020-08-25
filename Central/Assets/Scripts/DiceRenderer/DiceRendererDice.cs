@@ -15,11 +15,19 @@ public class DiceRendererDice : MonoBehaviour
     public MeshRenderer[] FaceRenderers;
     public Light[] FaceLights;
     public Color[] FaceColors;
+    public float deceleration = 180.0f; // deg/s/s
     MaterialPropertyBlock[] propertyBlocks;
 
     public float delay { get; set; } = 1.0f;
-    public bool rotating { get; set; } = false;
     float rotationSpeedDeg;
+
+    float _currentAngle = 0.0f;
+    public float currentAngle
+    {
+        get { return _currentAngle; }
+    }
+
+    float _currentSpeed = 0.0f;
 
     DataSet dataSet;
     List<EditAnimation> animations = new List<EditAnimation>();
@@ -34,6 +42,17 @@ public class DiceRendererDice : MonoBehaviour
     }
     State currentState = State.Idle;
     float timeLeft;
+
+    public enum RotationState
+    {
+        Auto,
+        Drag,
+        Idle
+    }
+    public RotationState rotationState { get; private set; } = RotationState.Idle;
+
+    public delegate void RotationStateEvent(RotationState newState);
+    public RotationStateEvent onRotationStateChange;
 
     public void SetAnimations(IEnumerable<EditAnimation> animations)
     {
@@ -120,8 +139,30 @@ public class DiceRendererDice : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        transform.Rotate(Vector3.up, Random.Range(0.0f, 360.0f), Space.Self);
+        _currentAngle = Random.Range(0.0f, 360.0f);
+        transform.Rotate(Vector3.up, currentAngle, Space.Self);
         rotationSpeedDeg = AppConstants.Instance.DiceRotationSpeedAvg + Random.Range(-AppConstants.Instance.DiceRotationSpeedVar, AppConstants.Instance.DiceRotationSpeedVar);
+    }
+
+    public void SetCurrentAngle(float newAngle)
+    {
+        _currentSpeed = (newAngle - _currentAngle) / Time.deltaTime;
+        _currentAngle = newAngle;
+        rotationState = RotationState.Drag;
+        onRotationStateChange?.Invoke(rotationState);
+    }
+
+    public void SetAuto(bool auto)
+    {
+        if (auto)
+        {
+            rotationState = RotationState.Auto;
+        }
+        else
+        {
+            rotationState = RotationState.Idle;
+        }
+        onRotationStateChange?.Invoke(rotationState);
     }
 
     // Update is called once per frame
@@ -194,10 +235,43 @@ public class DiceRendererDice : MonoBehaviour
         }
 
         UpdateColors();
-        if (rotating)
+        switch (rotationState)
         {
-            transform.Rotate(Vector3.up, Time.deltaTime * rotationSpeedDeg, Space.Self);
+            case RotationState.Auto:
+                {
+                    _currentAngle += Time.deltaTime * rotationSpeedDeg;
+                }
+                break;
+            case RotationState.Drag:
+                {
+                    // Angle is set externally;
+                }
+                break;
+            case RotationState.Idle:
+                {
+                    if (_currentSpeed > 0.0f)
+                    {
+                        _currentSpeed -= Time.deltaTime * deceleration;
+                        if (_currentSpeed < 0.0f)
+                        {
+                            _currentSpeed = 0.0f;
+                        }
+                    }
+                    else if (_currentSpeed < 0.0f)
+                    {
+                        _currentSpeed += Time.deltaTime * deceleration;
+                        if (_currentSpeed > 0.0f)
+                        {
+                            _currentSpeed = 0.0f;
+                        }
+                    }
+                    _currentAngle += Time.deltaTime * _currentSpeed;
+                }
+                break;
         }
+
+        var quat = Quaternion.AngleAxis(_currentAngle, Vector3.up);
+        transform.localRotation = quat;
     }
 
     void UpdateColors()

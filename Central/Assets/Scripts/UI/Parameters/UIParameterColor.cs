@@ -23,7 +23,7 @@ public class UIParameterColor : UIParameter
 
         // Set initial value
         SetColor((Color32)getterFunc.Invoke());
-        colorButton.onClick.AddListener(() => PixelsApp.Instance.ShowColorPicker(name, (Color32)getterFunc.Invoke(), (res, newColor) => 
+        colorButton.onClick.AddListener(() => PixelsApp.Instance.ShowColorPicker("Select " + name, (Color32)getterFunc.Invoke(), (res, newColor) => 
         {
             if (res)
             {

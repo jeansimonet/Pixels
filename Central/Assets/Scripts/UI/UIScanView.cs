@@ -172,6 +172,7 @@ public class UIScanView
     void ClearList()
     {
         DicePool.Instance.RequestStopScanForDice();
+        RefreshView();
         DicePool.Instance.RequestBeginScanForDice();
     }
 }

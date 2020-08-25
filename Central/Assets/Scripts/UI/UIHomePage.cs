@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Presets;
+using System.Linq;
 
 public class UIHomePage
     : PixelsApp.Page
@@ -22,7 +23,7 @@ public class UIHomePage
     void OnEnable()
     {
         RefreshView();
-        //AppDataSet.Instance.OnChange += OnDataSetChange;
+        StartCoroutine(UpdatePresetStatusesCr());
     }
 
     void OnDisable()
@@ -56,8 +57,14 @@ public class UIHomePage
 
     void Awake()
     {
-        dismissMessagesButton.onClick.AddListener(() => newsSection.gameObject.SetActive(false));
+        dismissMessagesButton.onClick.AddListener(CloseWhatsNew);
         editPresetsButton.onClick.AddListener(() => NavigationManager.Instance.GoToRoot(PixelsApp.PageId.Presets));
+    }
+
+    IEnumerator UpdatePresetStatusesCr()
+    {
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
+        UpdatePresetsStatus();
     }
 
     void DestroyPresetToken(UIHomePresetToken die)
@@ -67,6 +74,7 @@ public class UIHomePage
 
     void RefreshView()
     {
+        newsSection.gameObject.SetActive(AppSettings.Instance.displayWhatsNew);
         List<UIHomePresetToken> toDestroy = new List<UIHomePresetToken>(presets);
         foreach (var preset in AppDataSet.Instance.presets)
         {
@@ -113,15 +121,118 @@ public class UIHomePage
                     // Attempt to activate the preset
                     PixelsApp.Instance.UploadPreset(editPreset, (res2) =>
                     {
-                        if (res2)
-                        {
-                            foreach (var t in presets)
-                            {
-                                t.SetSelected(t.editPreset == editPreset);
-                            }
-                        }
+                        UpdatePresetsStatus();
+                        // if (res2)
+                        // {
+                        //     foreach (var t in presets)
+                        //     {
+                        //         t.SetSelected(t.editPreset == editPreset);
+                        //     }
+                        // }
                     });
                 }
             });
+    }
+
+    void CloseWhatsNew()
+    {
+        newsSection.gameObject.SetActive(false);
+        AppSettings.Instance.SetDisplayWhatsNew(false);
+    }
+
+    class EditDieInfo
+    {
+        public Die die;
+        public EditDataSet editDataSet;
+        public DataSet dataSet;
+        public bool upToDate;
+    }
+
+    void UpdatePresetsStatus()
+    {
+        foreach (var uipresetToken in presets)
+        {
+            uipresetToken.SetState(UIHomePresetToken.State.Unknown);
+        }
+
+        // Collect all the dice in all the presets
+        var editDice = new HashSet<Presets.EditDie>();
+        foreach (var editPreset in AppDataSet.Instance.presets)
+        {
+            foreach (var editDie in editPreset.dieAssignments.Select(da => da.die).Where(d => d != null))
+            {
+                editDice.Add(editDie);
+            }
+        }
+
+        // Now we have all the dice, try to connect to get their dataset and and active behavior
+        int testedDieCount = 0;
+        foreach (var editDie in editDice)
+        {
+            var editDieInfos = new Dictionary<EditDie, EditDieInfo>();
+
+            PixelsApp.Instance.GetDieReady(editDie, (die, res, errorMsg) =>
+            {
+                die.GetDieInfo((res2) =>
+                {
+                    var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDie);
+                    var dataSet = editSet.ToDataSet();
+                    editDieInfos[editDie] = new EditDieInfo()
+                    {
+                        die = die,
+                        editDataSet = editSet,
+                        dataSet = dataSet,
+                        upToDate = die.connectionState == Die.ConnectionState.Ready && (die.dataSetHash == dataSet.ComputeHash()),
+                    };
+                    testedDieCount++;
+
+                    if (testedDieCount == editDice.Count)
+                    {
+                        // We've tried to connect to all the dice, and either succeeded or not
+                        // Now derive the state of each preset
+                        foreach (var uip in presets)
+                        {
+                            var presetDice = uip.editPreset.dieAssignments.Select(da => da.die);
+
+
+
+                            bool allPresetDiceReady = presetDice.All(ed => ed != null && editDieInfos[ed] != null && editDieInfos[ed].die.connectionState == Die.ConnectionState.Ready);
+                            if (allPresetDiceReady)
+                            {
+                                uip.SetState(UIHomePresetToken.State.Reachable);
+
+                                // Check the dataset
+                                bool allPresetDiceUpToDate = presetDice.All(ed => editDieInfos[ed].upToDate);
+                                if (allPresetDiceUpToDate)
+                                {
+                                    uip.SetState(UIHomePresetToken.State.UpToDate);
+
+                                    // Check that the active behavior is correct too
+                                    bool allBehaviorsActive = uip.editPreset.dieAssignments.All(da => editDieInfos[da.die].die.currentBehaviorIndex == editDieInfos[da.die].editDataSet.behaviors.IndexOf(da.behavior));
+                                    if (allBehaviorsActive)
+                                    {
+                                        uip.SetState(UIHomePresetToken.State.Active);
+                                    }
+                                    // Else leave as uptodate
+                                }
+                                // Else leave as available
+                            }
+                            // Else leave as unknown
+                        }
+
+                        // Now that we're done we can disconnect all
+                        foreach (var di in editDieInfos.Values)
+                        {
+                            if (di.die.connectionState == Die.ConnectionState.Ready)
+                            {
+                                DicePool.Instance.RequestDisconnectDie(di.die);
+                            }
+                        }
+                    }
+                    // Else keep waiting
+
+                });
+            });
+        }
     }
 }

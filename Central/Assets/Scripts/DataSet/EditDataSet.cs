@@ -15,18 +15,10 @@ public class EditDataSet
 {
     public List<EditAnimation> animations = new List<EditAnimation>();
     public List<EditBehavior> behaviors = new List<EditBehavior>();
-    public EditAnimationKeyframed heatTrack;
 
     public DataSet ToDataSet()
     {
         DataSet set = new DataSet();
-
-        // Check that the heat track is in the list of animations
-        if (heatTrack != null && !animations.Contains(heatTrack))
-        {
-            Debug.LogWarning("Heat track animation not in list");
-            animations.Add(heatTrack);
-        }
 
         // Add animations
         for (int animIndex = 0; animIndex < animations.Count; ++animIndex)
@@ -46,8 +38,6 @@ public class EditDataSet
             var behavior = editBehavior.ToBehavior(this, set);
             set.behaviors.Add(behavior);
         }
-
-        set.heatTrackIndex = (ushort)animations.IndexOf(heatTrack);
 
         return set;
     }

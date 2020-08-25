@@ -33,11 +33,18 @@ public class UIDiscoveredDieView : MonoBehaviour
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.designAndColor);
         if (dieRenderer != null)
         {
-            dieRenderer.rotating = true;
+            dieRenderer.SetAuto(true);
             dieRenderImage.texture = dieRenderer.renderTexture;
         }
         dieNameText.text = die.name;
-        dieIDText.text = "ID: " + die.deviceId.ToString("X016");
+        if (die.deviceId != 0)
+        {
+            dieIDText.text = "ID: " + die.deviceId.ToString("X016");
+        }
+        else
+        {
+            dieIDText.text = "ID: Unavailable";
+        }
         batteryView.SetLevel(die.batteryLevel);
         signalView.SetRssi(die.rssi);
         SetSelected(false);

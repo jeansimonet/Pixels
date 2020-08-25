@@ -62,11 +62,11 @@ public class UIParameterAnimation
             dieRenderer.SetAnimation(initialAnim);
             dieRenderer.Play(true);
             animationNameText.text = initialAnim.name;
-            dieRenderer.rotating = true;
+            dieRenderer.SetAuto(true);
         }
         else
         {
-            dieRenderer.rotating = false;
+            dieRenderer.SetAuto(false);
         }
     }
 
@@ -74,13 +74,15 @@ public class UIParameterAnimation
     {
         if (newAnimation != null)
         {
-            dieRenderer.rotating = true;
+            dieRenderer.SetAuto(true);
             dieRenderer.SetAnimation(newAnimation);
+            animationNameText.text = newAnimation.name;
         }
         else
         {
             dieRenderer.ClearAnimations();
-            dieRenderer.rotating = false;
+            dieRenderer.SetAuto(false);
+            animationNameText.text = "- Please select a Pattern -";
         }
     }
 }

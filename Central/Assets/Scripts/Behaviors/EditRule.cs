@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace Behaviors
 {
@@ -10,7 +11,7 @@ namespace Behaviors
         : EditObject
     {
         public EditCondition condition;
-        public EditAction action;
+        public List<EditAction> actions = new List<EditAction>();
 
         public Rule ToRule(EditDataSet editSet, DataSet set)
         {
@@ -20,7 +21,7 @@ namespace Behaviors
             int conditionIndex = set.conditions.Count - 1;
 
             // Create our action
-            var act = action.ToAction(editSet, set);
+            var act = actions[0].ToAction(editSet, set);
             set.actions.Add(act);
             int actionIndex = set.actions.Count - 1;
 
@@ -33,16 +34,43 @@ namespace Behaviors
 
         public EditRule Duplicate()
         {
+            var actionsCopy = new List<EditAction>();
+            foreach (var action in actions)
+            {
+                actionsCopy.Add(action.Duplicate());
+            }
             return new EditRule()
             {
                 condition = condition.Duplicate(),
-                action = action.Duplicate()
+                actions = actionsCopy
             };
+        }
+
+        public void ReplaceAction(EditAction prevAction, EditAction newAction)
+        {
+            int index = actions.IndexOf(prevAction);
+            actions[index] = newAction;
         }
 
         public void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation)
         {
-            action.ReplaceAnimation(oldAnimation, newAnimation);
+            foreach (var action in actions)
+            {
+                action.ReplaceAnimation(oldAnimation, newAnimation);
+            }
+        }
+
+        public void DeleteAnimation(Animations.EditAnimation animation)
+        {
+            foreach (var action in actions)
+            {
+                action.DeleteAnimation(animation);
+            }
+        }
+
+        public bool DependsOnAnimation(Animations.EditAnimation animation)
+        {
+            return actions.Any(a => a.DependsOnAnimation(animation));
         }
     }
 }

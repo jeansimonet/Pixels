@@ -66,6 +66,30 @@ namespace Presets
         {
             return dieAssignments.Any(ass => ass.die == die);
         }
+
+        public EditPreset Duplicate()
+        {
+            var ret = new EditPreset();
+            ret.name = name;
+            ret.dieAssignments = new List<EditDieAssignment>(dieAssignments);
+            return ret;
+        }
+
+        public void DeleteBehavior(Behaviors.EditBehavior behavior)
+        {
+            foreach (var ass in dieAssignments)
+            {
+                if (ass.behavior == behavior)
+                {
+                    ass.behavior = null;
+                }
+            }
+        }
+
+        public bool DependsOnBehavior(Behaviors.EditBehavior behavior)
+        {
+            return dieAssignments.Any(d => d.behavior == behavior);
+        }
     }
 }
 

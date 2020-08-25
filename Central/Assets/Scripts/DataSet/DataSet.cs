@@ -110,7 +110,6 @@ public class DataSet
     public List<Behaviors.Rule> rules = new List<Behaviors.Rule>();
     public List<Behaviors.Behavior> behaviors = new List<Behaviors.Behavior>();
     public ushort padding;
-    public ushort heatTrackIndex;
 
     public int ComputeDataSetDataSize()
     {

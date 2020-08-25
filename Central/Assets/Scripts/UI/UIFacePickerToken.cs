@@ -20,4 +20,9 @@ public class UIFacePickerToken : MonoBehaviour
         faceText.text = (faceIndex + 1).ToString();
         mainToggle.isOn = selected;
     }
+
+    public void Toggle(bool newValue)
+    {
+        mainToggle.isOn = newValue;
+    }
 }

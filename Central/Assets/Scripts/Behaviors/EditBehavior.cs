@@ -37,6 +37,7 @@ namespace Behaviors
         {
             var ret = new EditBehavior();
             ret.name = name;
+            ret.description = description;
             foreach (var r in rules)
             {
                 ret.rules.Add(r.Duplicate());
@@ -52,11 +53,14 @@ namespace Behaviors
                 flags = ConditionFaceCompare_Flags.Equal,
                 faceIndex = 19
             };
-            ret.action = new EditActionPlayAnimation()
+            ret.actions = new List<EditAction> ()
             {
-                animation = null,
-                faceIndex = 0xFF,
-                loopCount = 1
+                new EditActionPlayAnimation()
+                {
+                    animation = null,
+                    faceIndex = 0xFF,
+                    loopCount = 1
+                }
             };
             rules.Add(ret);
             return ret;
@@ -70,9 +74,22 @@ namespace Behaviors
             }
         }
 
+        public void DeleteAnimation(Animations.EditAnimation animation)
+        {
+            foreach (var rule in rules)
+            {
+                rule.DeleteAnimation(animation);
+            }
+        }
+
+        public bool DependsOnAnimation(Animations.EditAnimation animation)
+        {
+            return rules.Any(r => r.DependsOnAnimation(animation));
+        }
+
         public IEnumerable<Animations.EditAnimation> CollectAnimations()
         {
-            foreach (var action in rules.Select(r => r.action))
+            foreach (var action in rules.SelectMany(r => r.actions))
             {
                 foreach (var anim in action.CollectAnimations())
                 {

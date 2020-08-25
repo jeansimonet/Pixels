@@ -9,14 +9,16 @@ public class UIEnumPicker : MonoBehaviour
     [Header("Controls")]
     public Button backButton;
     public Text titleText;
-    public Button saveButton;
-    public InfiniWheel wheel;
-    public LayoutElement wheelElement;
-    public float elementHeight = 140.0f;
+    public RectTransform contentRoot;
+
+    [Header("Parameters")]
+    public UIEnumPickerToken enumPickerTokenPrefab;
 
     System.Enum currentValue;
     System.Enum newValue;
     System.Action<bool, System.Enum> closeAction;
+
+    List<UIEnumPickerToken> tokens = new List<UIEnumPickerToken>();
 
     public bool isShown => gameObject.activeSelf;
 
@@ -45,22 +47,13 @@ public class UIEnumPicker : MonoBehaviour
         System.Array.Copy(System.Enum.GetValues(enumType), min, enumValues, 0, count);
         enumValueNames = System.Enum.GetNames(enumType).ToList().GetRange(min, count);
 
-        int visibleItemCount = Mathf.Clamp((enumValueNames.Count-1)|1, 1, 9);
-        wheel.itemCount = visibleItemCount;
-        wheelElement.minHeight = visibleItemCount * elementHeight;
-        wheel.SetData(enumValueNames.ToArray());
-        wheel.Select(System.Array.IndexOf(enumValues, previousValue));
-
-        wheel.ValueChange += (index, text) =>
+        for (int i = 0; i < enumValues.Length; ++i)
         {
-            if (index >= 0 && index < enumValues.Length)
-            {
-                newValue = (System.Enum)enumValues.GetValue(index);
-                saveButton.gameObject.SetActive(true);
-            }
-        };
-
-        saveButton.gameObject.SetActive(false);
+            var value = (System.Enum)enumValues.GetValue(i);
+            var token = CreateEnumToken(enumValueNames[i], value);
+            tokens.Add(token);
+            token.SetSelected(value.Equals(currentValue));
+        }
     }
 
     /// <summary>
@@ -75,14 +68,20 @@ public class UIEnumPicker : MonoBehaviour
     void Awake()
     {
         backButton.onClick.AddListener(DiscardAndBack);
-        saveButton.onClick.AddListener(SaveAndBack);
     }
 
     void Hide(bool result, System.Enum value)
     {
+        foreach (var ui in tokens)
+        {
+            DestroyEnumToken(ui);
+        }
+        tokens.Clear();
+
         gameObject.SetActive(false);
-        closeAction?.Invoke(result, value);
+        var closeActionCopy = closeAction;
         closeAction = null;
+        closeActionCopy?.Invoke(result, value);
     }
 
     void DiscardAndBack()
@@ -90,8 +89,25 @@ public class UIEnumPicker : MonoBehaviour
         Hide(false, currentValue);
     }
 
-    void SaveAndBack()
+    UIEnumPickerToken CreateEnumToken(string enumString, System.Enum enumValue)
     {
-        Hide(true, newValue);
+        // Create the gameObject
+        var ret = GameObject.Instantiate<UIEnumPickerToken>(enumPickerTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot);
+
+        // Initialize it
+        ret.Setup(enumString, enumValue);
+        ret.onEnumSelected += SelectEnum;
+
+        return ret;
+    }
+
+    void DestroyEnumToken(UIEnumPickerToken token)
+    {
+        GameObject.Destroy(token.gameObject);
+    }
+
+    void SelectEnum(string enumString, System.Enum enumValue)
+    {
+        Hide(true, enumValue);
     }
 }

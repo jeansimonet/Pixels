@@ -206,12 +206,12 @@ public partial class Die
         return PerformBluetoothOperation(() => PostMessage(new DieMessageRequestState()));
     }
 
-    public Coroutine GetDieInfo()
+    public Coroutine GetDieInfo(System.Action<bool> callback)
     {
-        return PerformBluetoothOperation(GetDieInfoCr());
+        return PerformBluetoothOperation(GetDieInfoCr(callback));
     }
 
-    IEnumerator GetDieInfoCr()
+    IEnumerator GetDieInfoCr(System.Action<bool> callback)
     {
         void updateDieInfo(DieMessage msg)
         {
@@ -228,10 +228,11 @@ public partial class Die
             {
                 OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
             }
+            callback?.Invoke(true);
         }
 
         var whoAreYouMsg = new DieMessageWhoAreYou();
-        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, updateDieInfo, null, null));
+        yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(whoAreYouMsg, DieMessageType.IAmADie, 5, updateDieInfo, () => callback?.Invoke(false), () => callback?.Invoke(false)));
     }
 
     public Coroutine RequestTelemetry(bool on)

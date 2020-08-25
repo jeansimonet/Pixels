@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
+using System.Linq;
 
 public class UIBehaviorsView
     : PixelsApp.Page
@@ -43,6 +45,10 @@ public class UIBehaviorsView
 
         // When we click on the pattern main button, go to the edit page
         ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, behavior));
+        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, behavior));
+        ret.onDuplicate.AddListener(() => DuplicateBehavior(behavior));
+        ret.onRemove.AddListener(() => DeleteBehavior(behavior));
+        ret.onExpand.AddListener(() => ExpandBehavior(behavior));
 
         addBehaviorButton.transform.SetAsLastSibling();
         // Initialize it
@@ -92,6 +98,70 @@ public class UIBehaviorsView
     {
         // Create a new default behavior
         var newBehavior = AppDataSet.Instance.AddNewDefaultBehavior();
+        AppDataSet.Instance.SaveData();
         NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, newBehavior);
+    }
+
+    void DuplicateBehavior(Behaviors.EditBehavior behavior)
+    {
+        AppDataSet.Instance.DuplicateBehavior(behavior);
+        behaviors.Find(p => p.editBehavior == behavior).Expand(false);
+        AppDataSet.Instance.SaveData();
+        RefreshView();
+    }
+
+    void DeleteBehavior(Behaviors.EditBehavior behavior)
+    {
+        PixelsApp.Instance.ShowDialogBox("Delete Behavior?", "Are you sure you want to delete " + behavior.name + "?", "Ok", "Cancel", res =>
+        {
+            if (res)
+            {
+                var dependentPresets = AppDataSet.Instance.CollectPresetsForBehavior(behavior);
+                if (dependentPresets.Any())
+                {
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append("The following presets depend on ");
+                    builder.Append(behavior.name);
+                    builder.AppendLine(":");
+                    foreach (var b in dependentPresets)
+                    {
+                        builder.Append("\t");
+                        builder.AppendLine(b.name);
+                    }
+                    builder.Append("Are you sure you want to delete it?");
+
+                    PixelsApp.Instance.ShowDialogBox("Behavior In Use!", builder.ToString(), "Ok", "Cancel", res2 =>
+                    {
+                        if (res2)
+                        {
+                            AppDataSet.Instance.DeleteBehavior(behavior);
+                            AppDataSet.Instance.SaveData();
+                            RefreshView();
+                        }
+                    });
+                }
+                else
+                {
+                    AppDataSet.Instance.DeleteBehavior(behavior);
+                    AppDataSet.Instance.SaveData();
+                    RefreshView();
+                }
+            }
+        });
+    }
+
+    void ExpandBehavior(Behaviors.EditBehavior behavior)
+    {
+        foreach (var uip in behaviors)
+        {
+            if (uip.editBehavior == behavior)
+            {
+                uip.Expand(!uip.isExpanded);
+            }
+            else
+            {
+                uip.Expand(false);
+            }
+        }
     }
 }

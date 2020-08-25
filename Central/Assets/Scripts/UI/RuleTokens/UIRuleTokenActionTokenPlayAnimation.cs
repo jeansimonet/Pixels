@@ -50,7 +50,7 @@ public class UIRuleTokenActionTokenPlayAnimation
             dieRenderImage.texture = dieRenderer.renderTexture;
         }
 
-        dieRenderer.rotating = true;
+        dieRenderer.SetAuto(true);
         if (playAnimAction.animation != null)
         {
             dieRenderer.SetAnimation(playAnimAction.animation);

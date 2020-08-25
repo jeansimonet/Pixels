@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
+using System.Text;
 
 public class UIPatternsView
     : PixelsApp.Page
@@ -41,6 +43,10 @@ public class UIPatternsView
 
         // When we click on the pattern main button, go to the edit page
         ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, anim));
+        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, anim));
+        ret.onDuplicate.AddListener(() => DuplicateAnimation(anim));
+        ret.onRemove.AddListener(() => DeleteAnimation(anim));
+        ret.onExpand.AddListener(() => ExpandAnimation(anim));
 
         addPatternButton.transform.SetAsLastSibling();
         // Initialize it
@@ -90,6 +96,70 @@ public class UIPatternsView
     {
         // Create a new default animation
         var newAnim = AppDataSet.Instance.AddNewDefaultAnimation();
+        AppDataSet.Instance.SaveData();
         NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, newAnim);
+    }
+
+    void DuplicateAnimation(Animations.EditAnimation anim)
+    {
+        AppDataSet.Instance.DuplicateAnimation(anim);
+        patterns.Find(p => p.editAnimation == anim).Expand(false);
+        AppDataSet.Instance.SaveData();
+        RefreshView();
+    }
+
+    void DeleteAnimation(Animations.EditAnimation anim)
+    {
+        PixelsApp.Instance.ShowDialogBox("Delete Pattern?", "Are you sure you want to delete " + anim.name + "?", "Ok", "Cancel", res =>
+        {
+            if (res)
+            {
+                var dependentBehaviors = AppDataSet.Instance.CollectBehaviorsForAnimation(anim);
+                if (dependentBehaviors.Any())
+                {
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append("The following behaviors depend on ");
+                    builder.Append(anim.name);
+                    builder.AppendLine(":");
+                    foreach (var b in dependentBehaviors)
+                    {
+                        builder.Append("\t");
+                        builder.AppendLine(b.name);
+                    }
+                    builder.Append("Are you sure you want to delete it?");
+
+                    PixelsApp.Instance.ShowDialogBox("Pattern In Use!", builder.ToString(), "Ok", "Cancel", res2 =>
+                    {
+                        if (res2)
+                        {
+                            AppDataSet.Instance.DeleteAnimation(anim);
+                            AppDataSet.Instance.SaveData();
+                            RefreshView();
+                        }
+                    });
+                }
+                else
+                {
+                    AppDataSet.Instance.DeleteAnimation(anim);
+                    AppDataSet.Instance.SaveData();
+                    RefreshView();
+                }
+            }
+        });
+    }
+
+    void ExpandAnimation(Animations.EditAnimation anim)
+    {
+        foreach (var uip in patterns)
+        {
+            if (uip.editAnimation == anim)
+            {
+                uip.Expand(!uip.isExpanded);
+            }
+            else
+            {
+                uip.Expand(false);
+            }
+        }
     }
 }

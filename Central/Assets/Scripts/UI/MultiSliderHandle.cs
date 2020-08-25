@@ -45,7 +45,22 @@ public class MultiSliderHandle : MonoBehaviour, IPointerDownHandler, IDragHandle
 	public void DuplicateSelf()
 	{
 		var dupHandle = Duplicate();
-		dupHandle.transform.localPosition = transform.localPosition;
+		// Move the new handle, but clamp it intelligently
+		var rect = (_slider.transform as RectTransform).rect;
+		Vector2 min = _slider.transform.TransformPoint(rect.xMin, rect.yMin, 0);
+		Vector2 max = _slider.transform.TransformPoint(rect.xMax, rect.yMax, 0);
+		float width = max.x - min.x;
+
+		float newX = transform.position.x;
+		if (newX >= max.x - width * 0.1f)
+		{
+			newX -= width * 0.1f;
+		}
+		else
+		{
+			newX += width * 0.1f;
+		}
+		dupHandle.transform.position = new Vector2(newX, transform.position.y);
 	}
 
 	public void RemoveSelf()

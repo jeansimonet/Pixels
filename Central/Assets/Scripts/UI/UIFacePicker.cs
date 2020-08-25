@@ -10,6 +10,8 @@ public class UIFacePicker : MonoBehaviour
     public Button saveButton;
     public Text titleText;
     public RectTransform contentRoot;
+    public Button allFaces;
+    public Button noFace;
 
     [Header("Prefabs")]
     public UIFacePickerToken faceTokenPrefab;
@@ -73,6 +75,8 @@ public class UIFacePicker : MonoBehaviour
     {
         backButton.onClick.AddListener(DiscardAndBack);
         saveButton.onClick.AddListener(SaveAndBack);
+        allFaces.onClick.AddListener(ToggleAllFaces);
+        noFace.onClick.AddListener(ToggleNoFace);
     }
 
     void Hide(bool result, int faceMask)
@@ -119,5 +123,23 @@ public class UIFacePicker : MonoBehaviour
     void DestroyFaceToken(UIFacePickerToken token)
     {
         GameObject.Destroy(token.gameObject);
+    }
+
+    void ToggleAllFaces()
+    {
+        foreach (var btn in faces)
+        {
+            btn.Toggle(true);
+        }
+        UpdateButtons(true);
+    }
+
+    void ToggleNoFace()
+    {
+        foreach (var btn in faces)
+        {
+            btn.Toggle(false);
+        }
+        UpdateButtons(false);
     }
 }

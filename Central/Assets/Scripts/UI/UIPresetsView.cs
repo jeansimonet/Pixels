@@ -42,6 +42,10 @@ public class UIPresetsView
 
         // When we click on the pattern main button, go to the edit page
         ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, preset));
+        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, preset));
+        ret.onDuplicate.AddListener(() => DuplicatePreset(preset));
+        ret.onRemove.AddListener(() => DeletePreset(preset));
+        ret.onExpand.AddListener(() => ExpandPreset(preset));
 
         addPresetButton.transform.SetAsLastSibling();
 
@@ -58,6 +62,42 @@ public class UIPresetsView
     void DestroyPresetToken(UIPresetToken die)
     {
         GameObject.Destroy(die.gameObject);
+    }
+
+    void DuplicatePreset(EditPreset editPreset)
+    {
+        AppDataSet.Instance.DuplicatePreset(editPreset);
+        presets.Find(p => p.editPreset == editPreset).Expand(false);
+        AppDataSet.Instance.SaveData();
+        RefreshView();
+    }
+
+    void DeletePreset(EditPreset editPreset)
+    {
+        PixelsApp.Instance.ShowDialogBox("Delete Preset?", "Are you sure you want to delete " + editPreset.name + "?", "Ok", "Cancel", res =>
+        {
+            if (res)
+            {
+                AppDataSet.Instance.DeletePreset(editPreset);
+                AppDataSet.Instance.SaveData();
+                RefreshView();
+            }
+        });
+    }
+
+    void ExpandPreset(EditPreset editPreset)
+    {
+        foreach (var uip in presets)
+        {
+            if (uip.editPreset == editPreset)
+            {
+                uip.Expand(!uip.isExpanded);
+            }
+            else
+            {
+                uip.Expand(false);
+            }
+        }
     }
 
     void RefreshView()
@@ -93,4 +133,5 @@ public class UIPresetsView
         var newPreset = AppDataSet.Instance.AddNewDefaultPreset();
         NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, newPreset);
     }
+
 }

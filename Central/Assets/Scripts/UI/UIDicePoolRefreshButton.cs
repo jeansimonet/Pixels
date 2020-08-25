@@ -19,7 +19,7 @@ public class UIDicePoolRefreshButton : MonoBehaviour
         Idle,
         Rotating
     }
-    State state;
+    State state = State.Idle;
 
     public void StartRotating()
     {

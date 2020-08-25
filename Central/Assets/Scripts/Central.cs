@@ -95,7 +95,7 @@ public class Central : SingletonMonoBehaviour<Central>
     {
         if (_state != State.Idle)
         {
-            Debug.LogError("Die Manager not ready to start scanning, state: " + _state);
+            Debug.LogError("Central not ready to start scanning, state: " + _state);
             return false;
         }
 

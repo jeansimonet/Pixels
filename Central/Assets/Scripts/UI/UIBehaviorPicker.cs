@@ -12,13 +12,13 @@ public class UIBehaviorPicker : MonoBehaviour
     public RectTransform contentRoot;
 
     [Header("Prefabs")]
-    public UIBehaviorToken behaviorTokenPrefab;
+    public UIBehaviorPickerBehaviorToken behaviorTokenPrefab;
 
     EditBehavior currentBehavior;
     System.Action<bool, EditBehavior> closeAction;
 
     // The list of controls we have created to display dice
-    List<UIBehaviorToken> behaviors = new List<UIBehaviorToken>();
+    List<UIBehaviorPickerBehaviorToken> behaviors = new List<UIBehaviorPickerBehaviorToken>();
 
     public bool isShown => gameObject.activeSelf;
 
@@ -37,6 +37,7 @@ public class UIBehaviorPicker : MonoBehaviour
         {
             // New pattern
             var newBehaviorUI = CreateBehaviorToken(behavior);
+            newBehaviorUI.SetSelected(behavior == previousBehavior);
             behaviors.Add(newBehaviorUI);
         }
 
@@ -47,10 +48,10 @@ public class UIBehaviorPicker : MonoBehaviour
         this.closeAction = closeAction;
     }
 
-    UIBehaviorToken CreateBehaviorToken(EditBehavior behavior)
+    UIBehaviorPickerBehaviorToken CreateBehaviorToken(EditBehavior behavior)
     {
         // Create the gameObject
-        var ret = GameObject.Instantiate<UIBehaviorToken>(behaviorTokenPrefab, contentRoot.transform);
+        var ret = GameObject.Instantiate<UIBehaviorPickerBehaviorToken>(behaviorTokenPrefab, contentRoot.transform);
 
         // When we click on the pattern main button, go to the edit page
         ret.onClick.AddListener(() => Hide(true, ret.editBehavior));
@@ -92,7 +93,7 @@ public class UIBehaviorPicker : MonoBehaviour
         Hide(false, currentBehavior);
     }
 
-    void DestroyBehaviorToken(UIBehaviorToken token)
+    void DestroyBehaviorToken(UIBehaviorPickerBehaviorToken token)
     {
         GameObject.Destroy(token.gameObject);
     }

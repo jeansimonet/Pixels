@@ -12,11 +12,33 @@ public class UIPresetToken : MonoBehaviour
     public RawImage presetRenderImage;
     public Text presetNameText;
     public Button menuButton;
+    public Image menuButtonImage;
+    public Canvas overrideCanvas;
+    public Image backgroundImage;
+    public RectTransform expandedRoot;
+    public Button removeButton;
+    public Button duplicateButton;
+    public Button editButton;
+
+    [Header("Properties")]
+    public Sprite expandImage;
+    public Sprite contractImage;
+    public Color backgroundColor;
+    public Color expandedColor;
+    public Sprite backgroundSprite;
+    public Sprite expandedSprite;
 
     public EditPreset editPreset { get; private set; }
     public MultiDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
+    public Button.ButtonClickedEvent onRemove => removeButton.onClick;
+    public Button.ButtonClickedEvent onDuplicate => duplicateButton.onClick;
+    public Button.ButtonClickedEvent onEdit => editButton.onClick;
+    public Button.ButtonClickedEvent onExpand => menuButton.onClick;
+
+
+    public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
     public void Setup(EditPreset preset)
     {
@@ -35,6 +57,27 @@ public class UIPresetToken : MonoBehaviour
         {
             dieRenderer.SetDieAnimations(i, preset.dieAssignments[i].behavior.CollectAnimations().Where(anim => anim != null));
             dieRenderer.Play(i, false);
+        }
+        Expand(false);
+    }
+
+    public void Expand(bool expand)
+    {
+        if (expand)
+        {
+            menuButtonImage.sprite = contractImage;
+            overrideCanvas.overrideSorting = true;
+            backgroundImage.sprite = expandedSprite;
+            backgroundImage.color = expandedColor;
+            expandedRoot.gameObject.SetActive(true);
+        }
+        else
+        {
+            menuButtonImage.sprite = expandImage;
+            overrideCanvas.overrideSorting = false;
+            backgroundImage.sprite = backgroundSprite;
+            backgroundImage.color = backgroundColor;
+            expandedRoot.gameObject.SetActive(false);
         }
     }
 

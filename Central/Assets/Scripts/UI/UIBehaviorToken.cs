@@ -12,11 +12,33 @@ public class UIBehaviorToken : MonoBehaviour
     public Text behaviorNameText;
     public Text behaviorDescriptionText;
     public Button menuButton;
+    public Image menuButtonImage;
+    public Image backgroundImage;
+    public RectTransform expandedRoot;
+    public Button removeButton;
+    public Button duplicateButton;
+    public Button editButton;
+
+    [Header("Properties")]
+    public Sprite expandImage;
+    public Sprite contractImage;
+    public Color backgroundColor;
+    public Color expandedColor;
+    public Sprite backgroundSprite;
+    public Sprite expandedSprite;
 
     public EditBehavior editBehavior { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
+    public Button.ButtonClickedEvent onRemove => removeButton.onClick;
+    public Button.ButtonClickedEvent onDuplicate => duplicateButton.onClick;
+    public Button.ButtonClickedEvent onEdit => editButton.onClick;
+    public Button.ButtonClickedEvent onExpand => menuButton.onClick;
+
+
+    public bool isExpanded => expandedRoot.gameObject.activeSelf;
+
 
     public void Setup(EditBehavior bh)
     {
@@ -29,21 +51,28 @@ public class UIBehaviorToken : MonoBehaviour
         behaviorNameText.text = bh.name;
         behaviorDescriptionText.text = bh.description;
 
-        dieRenderer.rotating = true;
+        dieRenderer.SetAuto(true);
         dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());
         dieRenderer.Play(true);
+        Expand(false);
     }
 
-    // Start is called before the first frame update
-    void Start()
+    public void Expand(bool expand)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        if (expand)
+        {
+            menuButtonImage.sprite = contractImage;
+            backgroundImage.sprite = expandedSprite;
+            backgroundImage.color = expandedColor;
+            expandedRoot.gameObject.SetActive(true);
+        }
+        else
+        {
+            menuButtonImage.sprite = expandImage;
+            backgroundImage.sprite = backgroundSprite;
+            backgroundImage.color = backgroundColor;
+            expandedRoot.gameObject.SetActive(false);
+        }
     }
 
     void OnDestroy()

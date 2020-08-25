@@ -210,7 +210,7 @@ public partial class Die
     IEnumerator UpdateInfoCr(System.Action<Die, bool> onInfoUpdatedCallback)
     {
         // Ask the die who it is!
-        yield return GetDieInfo();  
+        yield return GetDieInfo(null);
 
         // Ping the die so we know its initial state
         yield return Ping();

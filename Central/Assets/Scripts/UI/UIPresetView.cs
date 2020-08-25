@@ -9,7 +9,7 @@ public class UIPresetView : PixelsApp.Page
     [Header("Controls")]
     public Button backButton;
     public InputField presetNameText;
-    public Button menuButton;
+    public Button saveButton;
     public RawImage previewImage;
     public RectTransform assignmentsRoot;
     public Button addAssignmentButton;
@@ -20,6 +20,8 @@ public class UIPresetView : PixelsApp.Page
     public MultiDiceRenderer dieRenderer { get; private set; }
     public Presets.EditPreset editPreset { get; private set; }
     List<UIAssignmentToken> assignments = new List<UIAssignmentToken>();
+
+    bool presetDirty = false;
 
     public override void Enter(object context)
     {
@@ -73,20 +75,46 @@ public class UIPresetView : PixelsApp.Page
         }
         presetNameText.text = preset.name;
         dieRenderer.rotating = true;
-
+        presetDirty = false;
+        saveButton.gameObject.SetActive(false);
         RefreshView();
     }
 
     void Awake()
     {
-        backButton.onClick.AddListener(SaveAndGoBack);
+        backButton.onClick.AddListener(DiscardAndGoBack);
+        saveButton.onClick.AddListener(SaveAndGoBack);
         presetNameText.onEndEdit.AddListener(newName => editPreset.name = newName);
         addAssignmentButton.onClick.AddListener(AddNewAssignment);
     }
 
+    void DiscardAndGoBack()
+    {
+        if (presetDirty)
+        {
+            PixelsApp.Instance.ShowDialogBox(
+                "Discard Changes",
+                "You have unsaved changes, are you sure you want to discard them?",
+                "Discard",
+                "Cancel", discard => 
+                {
+                    if (discard)
+                    {
+                        // Reload from file
+                        AppDataSet.Instance.LoadData();
+                        NavigationManager.Instance.GoBack();
+                    }
+                });
+        }
+        else
+        {
+            NavigationManager.Instance.GoBack();
+        }
+    }
+
     void SaveAndGoBack()
     {
-        AppDataSet.Instance.SaveData(); // Not sure about this one!
+        AppDataSet.Instance.SaveData();
         NavigationManager.Instance.GoBack();
     }
 
@@ -97,6 +125,8 @@ public class UIPresetView : PixelsApp.Page
             die = null,
             behavior = null
         });
+        presetDirty = true;
+        saveButton.gameObject.SetActive(true);
         RefreshView();
     }
 
@@ -132,12 +162,29 @@ public class UIPresetView : PixelsApp.Page
     UIAssignmentToken CreateAssignmentToken(Presets.EditDieAssignment assignment)
     {
         var uiass = GameObject.Instantiate<UIAssignmentToken>(assignmentTokenPrefab, assignmentsRoot);
-        uiass.Setup(assignment);
+        uiass.Setup(assignment, d => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == d.deviceId));
+        uiass.onDelete.AddListener(() => DeleteAssignment(assignment));
         return uiass;
     }
 
     void DestroyAssignmentToken(UIAssignmentToken uiass)
     {
         GameObject.Destroy(uiass.gameObject);
+    }
+
+    void DeleteAssignment(Presets.EditDieAssignment assignment)
+    {
+        PixelsApp.Instance.ShowDialogBox(
+            "Delete Assignment?",
+            "Are you sure you want to delete this assignment?",
+            "Yes",
+            "Cancel",
+            (res) =>
+            {
+                presetDirty = true;
+                saveButton.gameObject.SetActive(true);
+                editPreset.dieAssignments.Remove(assignment);
+                RefreshView();
+            });
     }
 }

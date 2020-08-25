@@ -8,36 +8,47 @@ public class UIDiePickerDieToken : MonoBehaviour
 {
     // Controls
     [Header("Controls")]
-    public RawImage dieRenderImage;
-    public Text dieNameText;
-    public Text dieIDText;
+    public UIPairedDieView dieView;
     public Button mainButton;
+    public Image frame;
 
-    public EditDie die { get; private set; }
+    [Header("Parameters")]
+    public Color defaultFrameColor;
+    public Color selectedColor;
+
+    public Die die => dieView.die;
     public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
-    public void Setup(EditDie die)
+    public void Setup(Die die)
     {
-        this.die = die;
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.designAndColor);
-        if (dieRenderer != null)
-        {
-            dieRenderer.rotating = true;
-            dieRenderImage.texture = dieRenderer.renderTexture;
-        }
-        dieNameText.text = die.name;
-        dieIDText.text = "ID: " + die.deviceId.ToString("X016");
+        dieView.Setup(die);
+        SetSelected(false);
     }
 
-    void OnDestroy()
+    public void SetSelected(bool selected)
     {
-        if (this.dieRenderer != null)
+        this.selected = selected;
+        if (selected)
         {
-            DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);
-            this.dieRenderer = null;
+            frame.color = selectedColor;
         }
+        else
+        {
+            frame.color = defaultFrameColor;
+        }
+        dieView.SetSelected(selected);
+    }
+
+    public void BeginRefreshPool()
+    {
+        dieView.BeginRefreshPool();
+    }
+
+    public void FinishRefreshPool()
+    {
+        dieView.FinishRefreshPool();
     }
 }

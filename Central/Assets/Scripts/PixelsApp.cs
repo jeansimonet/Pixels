@@ -74,12 +74,12 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    public bool ShowDiePicker(string title, Presets.EditDie previousDie, System.Action<bool, Presets.EditDie> closeAction)
+    public bool ShowDiePicker(string title, Die previousDie, System.Func<Die, bool> selector, System.Action<bool, Die> closeAction)
     {
         bool ret = !diePicker.isShown;
         if (ret)
         {
-            diePicker.Show(title, previousDie, null, closeAction);
+            diePicker.Show(title, previousDie, selector, closeAction);
         }
         return ret;
     }
@@ -164,99 +164,14 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    void scanForDieWithTimeout(Die d, float timeout)
+    public void GetDieReady(Presets.EditDie editDie, System.Action<Die, bool, string> dieReadyCallback)
     {
-        StartCoroutine(scanForDieWithTimeoutCr(d, timeout));
-    }
-
-    IEnumerator scanForDieWithTimeoutCr(Die d, float timeout)
-    {
-        bool connStateChanged = false;
-        void connStateChangedWatcher(Die dd, Die.ConnectionState oldState, Die.ConnectionState newState)
+        var die = DicePool.Instance.FindDie(editDie);
+        if (die != null)
         {
-            connStateChanged = true;
+            // Make sure the die is ready!
+            DicePool.Instance.GetDieReady(die, dieReadyCallback);
         }
-        d.OnConnectionStateChanged += connStateChangedWatcher;
-        DicePool.Instance.RequestBeginScanForDice();
-
-        float startTime = Time.time;
-        yield return new WaitUntil(() => connStateChanged || (Time.time > startTime + timeout));
-
-        d.OnConnectionStateChanged -= connStateChangedWatcher;
-        DicePool.Instance.RequestStopScanForDice();
-    }
-
-    public void GetDieReady(Die die, System.Action<Die, bool, string> dieReadyCallback)
-    {
-        void dieReady(bool result, string errorMessage)
-        {
-            die.OnConnectionStateChanged -= connectionStateWatcher;
-            dieReadyCallback?.Invoke(die, result, errorMessage);
-        }
-
-        bool ignoreFirstCommError = true;
-        void connectionStateWatcher(Die d, Die.ConnectionState ignoreOldState, Die.ConnectionState newState)
-        {
-            switch (newState)
-            {
-                case Die.ConnectionState.Ready:
-                    // This won't do anything but it will make sure the die doesn't get disconnected from underneath us
-                    DicePool.Instance.RequestConnectDie(die);
-                    // call our own callback directly
-                    dieReady(true, null);
-                    break;
-                case Die.ConnectionState.New:
-                    ignoreFirstCommError = false;
-                    DicePool.Instance.IncludeDie(die); // This will trigger a switch to "unknown"
-                    break;
-                case Die.ConnectionState.Available:
-                    // Die must first be connected to
-                    ignoreFirstCommError = false;
-                    DicePool.Instance.RequestConnectDie(die); // This will move through "connecting", "identifying" and "ready"
-                    break;
-                case Die.ConnectionState.Connecting:
-                case Die.ConnectionState.Identifying:
-                    // Just be notified when done
-                    break;
-                case Die.ConnectionState.Unknown:
-                    // Must first scan to see if the die is there
-                    ignoreFirstCommError = false;
-                    scanForDieWithTimeout(die, 5.0f); // This will move the die to "available"
-                    break;
-                case Die.ConnectionState.Missing:
-                case Die.ConnectionState.CommError:
-                    // Must first scan to see if the die is there, but only if it's the first time we see this state
-                    if (ignoreFirstCommError)
-                    {
-                        ignoreFirstCommError = false;
-                        DicePool.Instance.DoubtDie(die); // This will move the die back to Unknown
-                    }
-                    else
-                    {
-                        // Tried to scan and we coouldn't find the die
-                        // TODO: Ask the user if they want to try again
-                        dieReady(false, "Could not connect to Die " + die.name + ". Make sure it is charged and in range");
-                    }
-                    break;
-                case Die.ConnectionState.Disconnecting:
-                    // Wait to reconnect
-                    break;
-                case Die.ConnectionState.Invalid:
-                    // Bug
-                    Debug.LogError("Invalid Die " + die.name);
-                    dieReady(false, "Die " + die.name + " is an invalid state");
-                    break;
-                case Die.ConnectionState.Removed:
-                    // Error
-                    dieReady(false, "Die " + die.name + " has been removed from your dice bag.");
-                    break;
-            }
-        }
-
-        die.OnConnectionStateChanged += connectionStateWatcher;
-
-        // Call the connection watcher once to trigger the initial connection / scanning, etc...
-        connectionStateWatcher(die, die.connectionState, die.connectionState);
     }
 
     public void UpdateDieDataSet(Presets.EditDieAssignment editDieAssignment, System.Action<bool> callback)
@@ -266,7 +181,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         {
             // Make sure the die is ready!
             ShowProgrammingBox("Connecting to " + die.name + "...");
-            GetDieReady(die, (d, res, message) =>
+            DicePool.Instance.GetDieReady(die, (d, res, message) =>
             {
                 if (res)
                 {
@@ -285,7 +200,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         if (currentBehaviorIndex != die.currentBehaviorIndex)
                         {
                             Debug.Log("Setting active behavior on " + die.name + " to " + currentBehaviorIndex);
-                            UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior + " on " + die.name);
+                            UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior.name + " on " + die.name);
                             die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
                         }
                         else

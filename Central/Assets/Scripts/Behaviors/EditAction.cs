@@ -20,6 +20,8 @@ namespace Behaviors
         public abstract Action ToAction(EditDataSet editSet, DataSet set);
         public abstract EditAction Duplicate();
         public abstract void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation);
+        public abstract void DeleteAnimation(Animations.EditAnimation animation);
+        public abstract bool DependsOnAnimation(Animations.EditAnimation animation);
         public virtual IEnumerable<Animations.EditAnimation> CollectAnimations()
         {
             yield break;
@@ -167,6 +169,20 @@ namespace Behaviors
                 animation = newAnimation;
             }
         }
+
+        public override void DeleteAnimation(Animations.EditAnimation animation)
+        {
+            if (this.animation == animation)
+            {
+                this.animation = null;
+            }
+        }
+
+        public override bool DependsOnAnimation(Animations.EditAnimation animation)
+        {
+            return this.animation == animation;
+        }
+
         public override IEnumerable<Animations.EditAnimation> CollectAnimations()
         {
             yield return animation;

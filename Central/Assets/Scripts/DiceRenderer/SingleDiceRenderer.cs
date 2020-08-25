@@ -8,12 +8,8 @@ public class SingleDiceRenderer : DiceRenderer
     public Light[] dieLights;
     public GameObject dieRoot;
 
-    public bool rotating
-    {
-        get { return (die != null) ? die.rotating : false; }
-        set { if (die != null) die.rotating = value; }
-    }
-    DiceRendererDice die;
+    public void SetAuto(bool auto) => die.SetAuto(auto);
+    public DiceRendererDice die { get; private set; }
 
     /// <summary>
     /// Called after instantiation to setup the camera, render texture, etc...

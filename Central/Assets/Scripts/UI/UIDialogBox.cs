@@ -16,7 +16,7 @@ public class UIDialogBox : MonoBehaviour
     public Text cancelText;
     public Text okText;
 
-    public bool isShown => gameObject.activeSelf;
+    public bool isShown { get; private set; } = false;
 
     System.Action<bool> closeAction;
 
@@ -31,6 +31,8 @@ public class UIDialogBox : MonoBehaviour
             ForceHide();
         }
 
+        isShown = true;
+
         gameObject.SetActive(true);
         if (string.IsNullOrEmpty(cancelMessage))
         {
@@ -41,23 +43,27 @@ public class UIDialogBox : MonoBehaviour
         {
             cancelButton.gameObject.SetActive(true);
             cancelText.text = cancelMessage;
-            cancelButton.onClick.AddListener(() =>
-            {
-                Hide(false);
-            });
         }
 
         Debug.Assert(!string.IsNullOrEmpty(okMessage));
         okText.text = okMessage;
-        okButton.onClick.AddListener(() =>
-        {
-            Hide(true);
-        });
 
         titleText.text = title;
         messageText.text = message;
 
         this.closeAction = closeAction;
+    }
+
+    void Awake()
+    {
+        cancelButton.onClick.AddListener(() =>
+        {
+            Hide(false);
+        });
+        okButton.onClick.AddListener(() =>
+        {
+            Hide(true);
+        });
     }
 
     /// <summary>
@@ -72,7 +78,9 @@ public class UIDialogBox : MonoBehaviour
     void Hide(bool result)
     {
         gameObject.SetActive(false);
-        closeAction?.Invoke(result);
+        isShown = false;
+        var closeActionCopy = closeAction;
         closeAction = null;
+        closeActionCopy?.Invoke(result);
     }
 }

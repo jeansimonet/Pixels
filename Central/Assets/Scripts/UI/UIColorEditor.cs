@@ -2,18 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class UIColorEditor : MonoBehaviour
 {
     [Header("Controls")]
     public UIColorWheel colorWheel;
     public UIColorWheelSelection colorWheelSelection;
-    public Button whiteButton;
-    public Button brightButton;
     public Button dimButton;
-    public Button blackButton;
-    public Image whiteButtonSelection;
-    public Image blackButtonSelection;
+    public Button brightButton;
+    public List<UIColorButton> colorButtons;
 
     [Header("Parameters")]
     public float valueDimColors = 0.35f;
@@ -35,19 +33,12 @@ public class UIColorEditor : MonoBehaviour
         float hue, sat, val;
         Color.RGBToHSV(previousColor, out hue, out sat, out val);
         const float valueEpsilon = 0.01f;
-        if (previousColor == Color.white)
+        var btn = colorButtons.FirstOrDefault(b => b.color == previousColor);
+        if (btn != null)
         {
             colorWheel.colorValue = 1.0f;
             colorWheelSelection.SetSelection(Color.black, -1, -1);
-            whiteButtonSelection.gameObject.SetActive(true);
-            blackButtonSelection.gameObject.SetActive(false);
-        }
-        else if (previousColor == Color.black)
-        {
-            colorWheel.colorValue = 1.0f;
-            colorWheelSelection.SetSelection(Color.black, -1, -1);
-            whiteButtonSelection.gameObject.SetActive(false);
-            blackButtonSelection.gameObject.SetActive(true);
+            SetSelectedColorButton(btn);
         }
         else
         {
@@ -60,8 +51,7 @@ public class UIColorEditor : MonoBehaviour
                 // Any other case, initialize the color wheel to the bright one
                 SwitchColorWheel(1.0f);
             }
-            whiteButtonSelection.gameObject.SetActive(false);
-            blackButtonSelection.gameObject.SetActive(false);
+            SetSelectedColorButton(null);
         }
     }
 
@@ -69,16 +59,17 @@ public class UIColorEditor : MonoBehaviour
     {
         // Any other case, initialize the color wheel to the bright one
         SwitchColorWheel(1.0f);
-        whiteButtonSelection.gameObject.SetActive(false);
-        blackButtonSelection.gameObject.SetActive(false);
+        SetSelectedColorButton(null);
         colorWheelSelection.SetSelection(Color.black, -1, -1);
     }
 
     void Awake()
     {
         colorWheel.onClicked += OnColorWheelClicked;
-        whiteButton.onClick.AddListener(() => onColorSelected?.Invoke(Color.white));
-        blackButton.onClick.AddListener(() => onColorSelected?.Invoke(Color.black));
+        foreach (var btn in colorButtons)
+        {
+            btn.onClick.AddListener(() => onColorSelected?.Invoke(btn.color));
+        }
         brightButton.onClick.AddListener(() => SwitchColorWheel(1.0f));
         dimButton.onClick.AddListener(() => SwitchColorWheel(valueDimColors));
     }
@@ -100,5 +91,14 @@ public class UIColorEditor : MonoBehaviour
         }
         colorWheelSelection.SetSelection(currentColor, selectedHueIndex, selectedSatIndex);
     }
+
+    void SetSelectedColorButton(UIColorButton btn)
+    {
+        foreach (var b in colorButtons)
+        {
+            b.SetSelected(b == btn);
+        }
+    }
+
 
 }

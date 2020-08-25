@@ -25,6 +25,8 @@ public class UIBehaviorView
     // The list of controls we have created to display rules
     List<UIRuleToken> rules = new List<UIRuleToken>();
 
+    bool behaviorDirty = false;
+
     public override void Enter(object context)
     {
         base.Enter(context);
@@ -67,7 +69,7 @@ public class UIBehaviorView
 
         RefreshView();
 
-        dieRenderer.rotating = true;
+        dieRenderer.SetAuto(true);
         dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());
         dieRenderer.Play(true);
     }
@@ -106,13 +108,25 @@ public class UIBehaviorView
                 var ruleui = GameObject.Instantiate<UIRuleToken>(ruleTokenPrefab, Vector3.zero, Quaternion.identity, rulesRoot);
                 ruleui.Setup(rule);
                 ruleui.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Rule, rule));
+                ruleui.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Rule, rule));
+                ruleui.onMoveUp.AddListener(() => MoveUp(rule));
+                ruleui.onMoveDown.AddListener(() => MoveDown(rule));
+                ruleui.onDuplicate.AddListener(() => DuplicateRule(rule));
+                ruleui.onRemove.AddListener(() => DeleteRule(rule));
+                ruleui.onExpand.AddListener(() => ExpandRule(rule));
                 rules.Add(ruleui);
                 spacer.SetAsLastSibling();
             }
             else
             {
+                var ruleui = toDestroy[prevIndex];
+
                 // Still there, don't update it
                 toDestroy.RemoveAt(prevIndex);
+
+                // Fix the sibling index
+                int order = editBehavior.rules.IndexOf(rule);
+                ruleui.transform.SetSiblingIndex(order);
             }
         }
 
@@ -123,4 +137,61 @@ public class UIBehaviorView
             GameObject.Destroy(ruleui.gameObject);
         }
     }
+
+    void MoveUp(Behaviors.EditRule rule)
+    {
+        int index = editBehavior.rules.IndexOf(rule);
+        if (index > 0)
+        {
+            editBehavior.rules.RemoveAt(index);
+            editBehavior.rules.Insert(index - 1, rule);
+            RefreshView();
+        }
+    }
+
+    void MoveDown(Behaviors.EditRule rule)
+    {
+        int index = editBehavior.rules.IndexOf(rule);
+        if (index < editBehavior.rules.Count - 1)
+        {
+            editBehavior.rules.RemoveAt(index);
+            editBehavior.rules.Insert(index + 1, rule);
+            RefreshView();
+        }
+    }
+
+    void DuplicateRule(Behaviors.EditRule rule)
+    {
+        var newRule = rule.Duplicate();
+        editBehavior.rules.Add(newRule);
+        RefreshView();
+    }
+
+    void DeleteRule(Behaviors.EditRule rule)
+    {
+        PixelsApp.Instance.ShowDialogBox("Delete Rule?", "Are you sure you want to delete this rule?", "Ok", "Cancel", res =>
+        {
+            if (res)
+            {
+                editBehavior.rules.Remove(rule);
+                RefreshView();
+            }
+        });
+    }
+
+    void ExpandRule(Behaviors.EditRule rule)
+    {
+        foreach (var uip in rules)
+        {
+            if (uip.editRule == rule)
+            {
+                uip.Expand(!uip.isExpanded);
+            }
+            else
+            {
+                uip.Expand(false);
+            }
+        }
+    }
+
 }

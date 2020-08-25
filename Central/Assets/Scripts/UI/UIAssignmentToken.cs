@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class UIAssignmentToken : MonoBehaviour
 {
     [Header("Controls")]
-    public Button mainButton;
+    public Button deleteButton;
     public RawImage diePreview;
     public Button selectDieDropdown;
     public Text dieName;
@@ -16,12 +16,22 @@ public class UIAssignmentToken : MonoBehaviour
     public Presets.EditDieAssignment editAssignment { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
-    public Button.ButtonClickedEvent onClick => mainButton.onClick;
+    public Button.ButtonClickedEvent onDelete => deleteButton.onClick;
 
-    public void Setup(Presets.EditDieAssignment ass)
+    public void Setup(Presets.EditDieAssignment ass, System.Func<Die, bool> dieSelector)
     {
         this.editAssignment = ass;
-        selectDieDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowDiePicker("Select Die", this.editAssignment.die, OnDieSelected));
+        Die die = null;
+        if (this.editAssignment.die != null)
+        {
+            die = DicePool.Instance.FindDie(this.editAssignment.die);
+        }
+
+        selectDieDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowDiePicker(
+            "Select Die",
+            die,
+            dieSelector,
+            OnDieSelected));
         selectBehaviorDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowBehaviorPicker("Select Behavior", this.editAssignment.behavior, OnBehaviorSelected));
         UpdateView();
     }
@@ -35,11 +45,11 @@ public class UIAssignmentToken : MonoBehaviour
         }
     }
 
-    void OnDieSelected(bool result, Presets.EditDie newDie)
+    void OnDieSelected(bool result, Die newDie)
     {
         if (result)
         {
-            editAssignment.die = newDie;
+            editAssignment.die = AppDataSet.Instance.FindDie(newDie);
             UpdateView();
         }
     }
@@ -80,7 +90,7 @@ public class UIAssignmentToken : MonoBehaviour
         {
             diePreview.texture = dieRenderer.renderTexture;
         }
-        dieRenderer.rotating = true;
+        dieRenderer.SetAuto(true);
         if (editAssignment.behavior != null)
         {
             dieRenderer.SetAnimations(editAssignment.behavior.CollectAnimations());
