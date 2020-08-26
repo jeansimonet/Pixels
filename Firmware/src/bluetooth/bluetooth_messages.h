@@ -42,6 +42,7 @@ struct Message
 		MessageType_PlayAnim,
 		MessageType_PlayAnimEvent,
 		MessageType_StopAnim,
+		MessageType_PlaySound,
 		MessageType_RequestState,
 		MessageType_RequestAnimSet,
 		MessageType_RequestSettings,
@@ -224,6 +225,15 @@ struct MessagePlayAnim
 	uint8_t loop; 		// 1 == loop, 0 == once
 
 	inline MessagePlayAnim() : Message(Message::MessageType_PlayAnim) {}
+};
+
+struct MessagePlaySound
+	: public Message
+{
+	uint32_t soundId;
+	uint8_t count;
+
+	inline MessagePlaySound() : Message(Message::MessageType_PlaySound) {}
 };
 
 struct MessagePlayAnimEvent

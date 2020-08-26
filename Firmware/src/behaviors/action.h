@@ -15,6 +15,7 @@ namespace Behaviors
     {
         Action_Unknown = 0,
         Action_PlayAnimation,
+        Action_PlaySound
     };
 
     /// <summary>
@@ -35,6 +36,16 @@ namespace Behaviors
         uint8_t animIndex;
         uint8_t faceIndex;
         uint8_t loopCount;
+    };
+
+    /// <summary>
+    /// Action to play a sound on a connected phone
+    /// </summary>
+    struct ActionPlaySound
+        : Action
+    {
+        uint32_t soundId;
+        uint8_t playCount;
     };
 
     // This method will execute the passed in action from the dataset

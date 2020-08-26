@@ -1,9 +1,12 @@
 #include "action.h"
 #include "data_set/data_set.h"
 #include "modules/anim_controller.h"
+#include "bluetooth/bluetooth_stack.h"
+#include "bluetooth/bluetooth_message_service.h"
 #include "nrf_log.h"
 
 using namespace Modules;
+using namespace Bluetooth;
 
 namespace Behaviors
 {
@@ -19,6 +22,23 @@ namespace Behaviors
                         AnimController::play(playAnimAction->animIndex, Accelerometer::currentFace(), false); // FIXME, handle remapFace and loopCount properly
                     } else {
                         AnimController::play(playAnimAction->animIndex, playAnimAction->faceIndex, false); // FIXME, handle remapFace and loopCount properly
+                    }
+                }
+                break;
+            case Action_PlaySound:
+                {
+                    auto playSoundAction = static_cast<const ActionPlaySound*>(action);
+                    if (Stack::isConnected)
+                    {
+                        NRF_LOG_INFO("Playing sound %08x", playSoundAction->soundId);
+                        MessagePlaySound playSound;
+                        playSound.soundId = playSoundAction->soundId;
+                        playSound.count = playSoundAction->playCount;
+                        MessageService::SendMessage(&playSound);
+                    }
+                    else
+                    {
+                        NRF_LOG_INFO("(Ignored) Playing sound %08x", playSoundAction->soundId);
                     }
                 }
                 break;

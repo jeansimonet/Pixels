@@ -316,45 +316,60 @@ bool ScanBLEInterfaces()
 
 		if (isDevice)
 		{
-			// Fetch the name!
-			auto info = new BLEDeviceInfo();
-			info->deviceName = ReadProperty(hDevInfo, &DeviceInfoData, SPDRP_FRIENDLYNAME);
-			info->containerId = containerGUID;
-			devices.push_back(info);
+			// Only add new devices
+			auto prev = std::find_if(devices.begin(), devices.end(), [&containerGUID](const BLEDeviceInfo* x) { return x->containerId == containerGUID; });
+			if (prev == devices.end())
+			{
+				// Fetch the name!
+				auto info = new BLEDeviceInfo();
+				info->deviceName = ReadProperty(hDevInfo, &DeviceInfoData, SPDRP_FRIENDLYNAME);
+				info->containerId = containerGUID;
+				devices.push_back(info);
+			}
 		}
 
 		if (isService)
 		{
 			// Fetch the guid!
-			auto service = new BLEServiceInfo();
-			service->name = ReadProperty(hDevInfo, &DeviceInfoData, SPDRP_DEVICEDESC);
-
 			std::regex guidRegex("\\{.*\\}");
 			std::smatch match;
 			if (std::regex_search(hardwareId, match, guidRegex))
 			{
-				service->containerId = containerGUID;
-
 				std::string guidString = match.str();
-				service->id = BLEUtils::StringToBTHLEUUID(guidString);
+				auto serviceId = BLEUtils::StringToBTHLEUUID(guidString);
 
-				// Parse the device instance id to get the device path!
-				std::string deviceId = ReadDeviceInstanceId(hDevInfo, &DeviceInfoData);
+				auto prev = std::find_if(services.begin(), services.end(),
+					[&containerGUID, &serviceId](const BLEServiceInfo* x)
+					{
+						return x->containerId == containerGUID && x->id == serviceId;
+					});
 
-				// Create the device path
-				std::string path = "\\\\?\\";
-				std::replace(deviceId.begin(), deviceId.end(), '\\', '#');
-				path.append(deviceId);
-				path.append("#");
-				path.append(guidString);
-				service->path = path;
+				if (prev == services.end())
+				{
+					auto service = new BLEServiceInfo();
+					service->name = ReadProperty(hDevInfo, &DeviceInfoData, SPDRP_DEVICEDESC);
+
+					service->containerId = containerGUID;
+					service->id = serviceId;
+
+					// Parse the device instance id to get the device path!
+					std::string deviceId = ReadDeviceInstanceId(hDevInfo, &DeviceInfoData);
+
+					// Create the device path
+					std::string path = "\\\\?\\";
+					std::replace(deviceId.begin(), deviceId.end(), '\\', '#');
+					path.append(deviceId);
+					path.append("#");
+					path.append(guidString);
+					service->path = path;
+
+					services.push_back(service);
+				}
 			}
 			else
 			{
 				SendError(std::string("Could not extract service GUID from the hardware ID \'").append(hardwareId).append("\'").c_str());
 			}
-
-			services.push_back(service);
 		}
 	}
 
@@ -386,16 +401,21 @@ void notifyDevicesWithServices(const std::vector<BTH_LE_UUID>& uuids)
 	// Find any device that has a service whose uuid matches one of the uuids passed in!
 	for (auto service : services)
 	{
-		// Does this service match the uuid?
-		if (std::find(uuids.begin(), uuids.end(), service->id) != uuids.end())
+		auto prev = std::find_if(connectedServices.begin(), connectedServices.end(), [service](const BLEConnectedServiceInfo* x) { return x->service == service; });
+		if (prev == connectedServices.end())
 		{
-			// Yes, send a message for each discovered peripheral
-			// Sadly we don't have access to advertisement data, it is managed by Windows!
-			std::string deviceDiscoveredMessage = "DiscoveredPeripheral~";
-			deviceDiscoveredMessage.append(BLEUtils::GUIDToString(service->device->containerId));
-			deviceDiscoveredMessage.append("~");
-			deviceDiscoveredMessage.append(service->device->deviceName);
-			SendBluetoothMessage(deviceDiscoveredMessage.c_str());
+			// Not already connected, good!
+			// Does this service match the uuid?
+			if (std::find(uuids.begin(), uuids.end(), service->id) != uuids.end())
+			{
+				// Yes, send a message for each discovered peripheral
+				// Sadly we don't have access to advertisement data, it is managed by Windows!
+				std::string deviceDiscoveredMessage = "DiscoveredPeripheral~";
+				deviceDiscoveredMessage.append(BLEUtils::GUIDToString(service->device->containerId));
+				deviceDiscoveredMessage.append("~");
+				deviceDiscoveredMessage.append(service->device->deviceName);
+				SendBluetoothMessage(deviceDiscoveredMessage.c_str());
+			}
 		}
 	}
 }
@@ -408,7 +428,7 @@ void notifyAllDevices()
 	// Find any device that has a service whose uuid matches one of the uuids passed in!
 	for (auto device : devices)
 	{
-		// Yes, send a message for each discovered peripheral
+		// Send a message for each discovered peripheral
 		// Sadly we don't have access to advertisement data...
 		std::string deviceDiscoveredMessage = "DiscoveredPeripheral~";
 		deviceDiscoveredMessage.append(BLEUtils::GUIDToString(device->containerId));
@@ -605,8 +625,8 @@ bool DisconnectServicesForDevice(GUID addressGUID)
 
 			if (CloseHandle(cservice->deviceHandle))
 			{
-				delete cservice;
 				servIt = connectedServices.erase(servIt);
+				delete cservice;
 				disconnectedService = true;
 			}
 			else
@@ -733,10 +753,10 @@ void _winBluetoothLEPauseMessages(bool isPaused)
 void _winBluetoothLEScanForPeripheralsWithServices(const char* serviceUUIDsString, bool allowDuplicates, bool rssiOnly, bool clearPeripheralList)
 {
 	// Devices are managed by windows, so we don't need to 'remember' old devices
-	devices.clear();
-	services.clear();
-	connectedServices.clear();
-	registeredCharacteristics.clear();
+	//devices.clear();
+	//services.clear();
+	//connectedServices.clear();
+	//registeredCharacteristics.clear();
 
 	// Scan for devices
 	ScanBLEInterfaces();
@@ -787,8 +807,9 @@ void _winBluetoothLEConnectToPeripheral(const char* address)
 		// Iterate all the services for the given device
 		bool firstService = true;
 		GUID addressGUID = BLEUtils::StringToGUID(address);
-		for (auto service : services)
+		for (auto servIt = services.begin(); servIt != services.end(); ++servIt)
 		{
+			auto service = *servIt;
 			if (service->containerId == addressGUID)
 			{
 				// Open a handle to the peripheral, and scan the services and characteristics
@@ -852,6 +873,9 @@ void _winBluetoothLEConnectToPeripheral(const char* address)
 							SendError(std::string("GATT service id ").append(gattServiceUuidString).append(" does not match service id ").append(BLEUtils::BTHLEGUIDToString(service->id)).c_str());
 						}
 					}
+
+					// No matter what we're done looking through the services
+					return;
 				}
 			}
 		}
