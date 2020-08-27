@@ -74,7 +74,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    public bool ShowDiePicker(string title, Die previousDie, System.Func<Die, bool> selector, System.Action<bool, Die> closeAction)
+    public bool ShowDiePicker(string title, Dice.EditDie previousDie, System.Func<Dice.EditDie, Dice.Die, bool> selector, System.Action<bool, Dice.EditDie> closeAction)
     {
         bool ret = !diePicker.isShown;
         if (ret)
@@ -164,127 +164,109 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    public void GetDieReady(Presets.EditDie editDie, System.Action<Die, bool, string> dieReadyCallback)
-    {
-        var die = DicePool.Instance.FindDie(editDie);
-        if (die != null)
-        {
-            // Make sure the die is ready!
-            DicePool.Instance.GetDieReady(die, dieReadyCallback);
-        }
-    }
-
     public void UpdateDieDataSet(Presets.EditDieAssignment editDieAssignment, System.Action<bool> callback)
     {
-        var die = DicePool.Instance.FindDie(editDieAssignment.die);
-        if (die != null)
+        // Make sure the die is ready!
+        ShowProgrammingBox("Connecting to " + editDieAssignment.die.name + "...");
+        DiceManager.Instance.ConnectDie(editDieAssignment.die, (ed, die, message) =>
         {
-            // Make sure the die is ready!
-            ShowProgrammingBox("Connecting to " + die.name + "...");
-            DicePool.Instance.GetDieReady(die, (d, res, message) =>
+            if (die != null)
             {
-                if (res)
+                // The die is ready to be uploaded to
+
+                // Generate the data to be uploaded
+                var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDieAssignment.die);
+
+                // Set the behavior
+                var dataSet = editSet.ToDataSet();
+
+                void checkAndActivateSet(System.Action<bool> checkActivateCallback)
                 {
-                    // The die is ready to be uploaded to
-
-                    // Generate the data to be uploaded
-                    var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDieAssignment.die);
-
-                    // Set the behavior
-                    var dataSet = editSet.ToDataSet();
-
-                    void checkAndActivateSet(System.Action<bool> checkActivateCallback)
+                    // Still need to check current behavior index
+                    int currentBehaviorIndex = editSet.behaviors.IndexOf(editDieAssignment.behavior);
+                    if (currentBehaviorIndex != die.currentBehaviorIndex)
                     {
-                        // Still need to check current behavior index
-                        int currentBehaviorIndex = editSet.behaviors.IndexOf(editDieAssignment.behavior);
-                        if (currentBehaviorIndex != die.currentBehaviorIndex)
-                        {
-                            Debug.Log("Setting active behavior on " + die.name + " to " + currentBehaviorIndex);
-                            UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior.name + " on " + die.name);
-                            die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
-                        }
-                        else
-                        {
-                            Debug.Log("Die " + die.name + " already has behavior index " + currentBehaviorIndex + " active.");
-                            checkActivateCallback?.Invoke(true);
-                        }
-                    }
-
-                    // Check the dataset against the one stored in the die
-                    var hash = dataSet.ComputeHash();
-                    if (hash != die.dataSetHash)
-                    {
-                        // We need to upload the dataset first
-                        Debug.Log("Uploading dataset to die " + die.name);
-                        UpdateProgrammingBox(0.0f, "Uploading data to " + die.name + "...");
-                        die.UploadDataSet(dataSet,
-                        (pct) =>
-                        {
-                            UpdateProgrammingBox(pct, "Uploading data to " + die.name + "...");
-                        },
-                        (res2) =>
-                        {
-                            if (res2)
-                            {
-                                checkAndActivateSet(res3 =>
-                                {
-                                    if (res3)
-                                    {
-                                        HideProgrammingBox();
-                                        DicePool.Instance.RequestDisconnectDie(die);
-                                        callback(true);
-                                    }
-                                    else
-                                    {
-                                        HideProgrammingBox();
-                                        ShowDialogBox("Error activating behavior on " + die.name, message, "Ok", null, null);
-                                        DicePool.Instance.RequestDisconnectDie(die);
-                                        callback(false);
-                                    }
-                                });
-                            }
-                            else
-                            {
-                                HideProgrammingBox();
-                                ShowDialogBox("Error uploading data to " + die.name, message, "Ok", null, null);
-                                DicePool.Instance.RequestDisconnectDie(die);
-                                callback(false);
-                            }
-                        });
+                        Debug.Log("Setting active behavior on " + die.name + " to " + currentBehaviorIndex);
+                        UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior.name + " on " + die.name);
+                        die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
                     }
                     else
                     {
-                        Debug.Log("Die " + die.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
-                        checkAndActivateSet(res3 =>
-                        {
-                            if (res3)
-                            {
-                                HideProgrammingBox();
-                                DicePool.Instance.RequestDisconnectDie(die);
-                                callback(true);
-                            }
-                            else
-                            {
-                                HideProgrammingBox();
-                                ShowDialogBox("Error activating behavior on " + die.name, message, "Ok", null, null);
-                                DicePool.Instance.RequestDisconnectDie(die);
-                                callback(false);
-                            }
-                        });
+                        Debug.Log("Die " + die.name + " already has behavior index " + currentBehaviorIndex + " active.");
+                        checkActivateCallback?.Invoke(true);
                     }
+                }
+
+                // Check the dataset against the one stored in the die
+                var hash = dataSet.ComputeHash();
+                if (hash != die.dataSetHash)
+                {
+                    // We need to upload the dataset first
+                    Debug.Log("Uploading dataset to die " + die.name);
+                    UpdateProgrammingBox(0.0f, "Uploading data to " + die.name + "...");
+                    die.UploadDataSet(dataSet,
+                    (pct) =>
+                    {
+                        UpdateProgrammingBox(pct, "Uploading data to " + die.name + "...");
+                    },
+                    (res2) =>
+                    {
+                        if (res2)
+                        {
+                            checkAndActivateSet(res3 =>
+                            {
+                                if (res3)
+                                {
+                                    HideProgrammingBox();
+                                    DicePool.Instance.DisconnectDie(die);
+                                    callback(true);
+                                }
+                                else
+                                {
+                                    HideProgrammingBox();
+                                    ShowDialogBox("Error activating behavior on " + die.name, message, "Ok", null, null);
+                                    DicePool.Instance.DisconnectDie(die);
+                                    callback(false);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            HideProgrammingBox();
+                            ShowDialogBox("Error uploading data to " + die.name, message, "Ok", null, null);
+                            DicePool.Instance.DisconnectDie(die);
+                            callback(false);
+                        }
+                    });
                 }
                 else
                 {
-                    HideProgrammingBox();
-                    ShowDialogBox("Error connecting to " + die.name, message, "Ok", null, null);
-                    callback(false);
+                    Debug.Log("Die " + die.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
+                    checkAndActivateSet(res3 =>
+                    {
+                        if (res3)
+                        {
+                            HideProgrammingBox();
+                            DicePool.Instance.DisconnectDie(die);
+                            callback(true);
+                        }
+                        else
+                        {
+                            HideProgrammingBox();
+                            ShowDialogBox("Error activating behavior on " + die.name, message, "Ok", null, null);
+                            DicePool.Instance.DisconnectDie(die);
+                            callback(false);
+                        }
+                    });
                 }
-            });
-        }
-        else
-        {
-            ShowDialogBox(editDieAssignment.die.name + " not found.", "Die " + editDieAssignment.die.name + " does not appear to be in your dice bag.", "Ok", null, null);
-        }
+            }
+            else
+            {
+                HideProgrammingBox();
+                ShowDialogBox("Error connecting to " + die.name, message, "Ok", null, null);
+                callback(false);
+            }
+        });
     }
 
     public void UploadPreset(Presets.EditPreset editPreset, System.Action<bool> callback)

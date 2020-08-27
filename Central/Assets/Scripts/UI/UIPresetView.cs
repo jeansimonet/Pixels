@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using Dice;
 
 public class UIPresetView : PixelsApp.Page
 {
@@ -55,9 +56,9 @@ public class UIPresetView : PixelsApp.Page
     void Setup(Presets.EditPreset preset)
     {
         editPreset = preset;
-        var designs = new List<DiceVariants.DesignAndColor>(preset.dieAssignments.Select(ass =>
+        var designs = new List<DesignAndColor>(preset.dieAssignments.Select(ass =>
         {
-            return (ass.die != null) ? ass.die.designAndColor : DiceVariants.DesignAndColor.Unknown;
+            return (ass.die != null) ? ass.die.designAndColor : DesignAndColor.Unknown;
         }));
 
         this.dieRenderer = DiceRendererManager.Instance.CreateMultiDiceRenderer(designs, 400);
@@ -162,7 +163,7 @@ public class UIPresetView : PixelsApp.Page
     UIAssignmentToken CreateAssignmentToken(Presets.EditDieAssignment assignment)
     {
         var uiass = GameObject.Instantiate<UIAssignmentToken>(assignmentTokenPrefab, assignmentsRoot);
-        uiass.Setup(assignment, d => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == d.deviceId));
+        uiass.Setup(assignment, (ed, d) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
         uiass.onDelete.AddListener(() => DeleteAssignment(assignment));
         return uiass;
     }

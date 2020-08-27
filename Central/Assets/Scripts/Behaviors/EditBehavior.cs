@@ -14,7 +14,7 @@ namespace Behaviors
         public string description;
         public List<EditRule> rules = new List<EditRule>();
 
-        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_Grey };
+        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = Dice.DesignAndColor.V5_Grey };
 
         public Behavior ToBehavior(EditDataSet editSet, DataSet set)
         {

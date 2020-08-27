@@ -14,7 +14,7 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
     // for a few other render layers for the rest of the app
     DiceRenderer[] renderers = new DiceRenderer[24];
 
-    public SingleDiceRenderer CreateDiceRenderer(DiceVariants.DesignAndColor variant, int widthHeight = 256)
+    public SingleDiceRenderer CreateDiceRenderer(Dice.DesignAndColor variant, int widthHeight = 256)
     {
         // Find the first empty slot
         int newRendererIndex = 0;
@@ -40,7 +40,7 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
         }
     }
 
-    public MultiDiceRenderer CreateMultiDiceRenderer(List<DiceVariants.DesignAndColor> variants, int widthHeight = 256)
+    public MultiDiceRenderer CreateMultiDiceRenderer(List<Dice.DesignAndColor> variants, int widthHeight = 256)
     {
         // Find the first empty slot
         int newRendererIndex = 0;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Dice;
 
 public class SpeakNumber : MonoBehaviour
 {

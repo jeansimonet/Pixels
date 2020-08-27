@@ -11,7 +11,7 @@ namespace Presets
     public class EditDieAssignment
         : EditObject
     {
-        public EditDie die;
+        public Dice.EditDie die;
         public Behaviors.EditBehavior behavior;
     }
 
@@ -62,7 +62,7 @@ namespace Presets
         public string name;
         public List<EditDieAssignment> dieAssignments = new List<EditDieAssignment>();
 
-        public bool CheckDependency(EditDie die)
+        public bool CheckDependency(Dice.EditDie die)
         {
             return dieAssignments.Any(ass => ass.die == die);
         }

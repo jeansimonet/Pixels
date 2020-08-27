@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 
-
+namespace Dice
+{
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 public class DieSettings
 {
@@ -69,4 +70,5 @@ public class DieSettings
         return ret;
     }
 
+}
 }

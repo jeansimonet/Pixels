@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Presets;
 using System.Linq;
+using Dice;
 
 public class UIHomePage
     : PixelsApp.Page
@@ -156,7 +157,7 @@ public class UIHomePage
         }
 
         // Collect all the dice in all the presets
-        var editDice = new HashSet<Presets.EditDie>();
+        var editDice = new HashSet<EditDie>();
         foreach (var editPreset in AppDataSet.Instance.presets)
         {
             foreach (var editDie in editPreset.dieAssignments.Select(da => da.die).Where(d => d != null))
@@ -171,67 +172,67 @@ public class UIHomePage
         {
             var editDieInfos = new Dictionary<EditDie, EditDieInfo>();
 
-            PixelsApp.Instance.GetDieReady(editDie, (die, res, errorMsg) =>
+            DiceManager.Instance.ConnectDie(editDie, (ed, die, errorMsg) =>
             {
-                die.GetDieInfo((res2) =>
+                if (die != null)
                 {
-                    var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDie);
-                    var dataSet = editSet.ToDataSet();
-                    editDieInfos[editDie] = new EditDieInfo()
+                    die.GetDieInfo((res2) =>
                     {
-                        die = die,
-                        editDataSet = editSet,
-                        dataSet = dataSet,
-                        upToDate = die.connectionState == Die.ConnectionState.Ready && (die.dataSetHash == dataSet.ComputeHash()),
-                    };
-                    testedDieCount++;
-
-                    if (testedDieCount == editDice.Count)
-                    {
-                        // We've tried to connect to all the dice, and either succeeded or not
-                        // Now derive the state of each preset
-                        foreach (var uip in presets)
+                        var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDie);
+                        var dataSet = editSet.ToDataSet();
+                        editDieInfos[editDie] = new EditDieInfo()
                         {
-                            var presetDice = uip.editPreset.dieAssignments.Select(da => da.die);
+                            die = die,
+                            editDataSet = editSet,
+                            dataSet = dataSet,
+                            upToDate = die.connectionState == Die.ConnectionState.Ready && (die.dataSetHash == dataSet.ComputeHash()),
+                        };
+                        testedDieCount++;
 
-
-
-                            bool allPresetDiceReady = presetDice.All(ed => ed != null && editDieInfos[ed] != null && editDieInfos[ed].die.connectionState == Die.ConnectionState.Ready);
-                            if (allPresetDiceReady)
+                        if (testedDieCount == editDice.Count)
+                        {
+                            // We've tried to connect to all the dice, and either succeeded or not
+                            // Now derive the state of each preset
+                            foreach (var uip in presets)
                             {
-                                uip.SetState(UIHomePresetToken.State.Reachable);
-
-                                // Check the dataset
-                                bool allPresetDiceUpToDate = presetDice.All(ed => editDieInfos[ed].upToDate);
-                                if (allPresetDiceUpToDate)
+                                var presetDice = uip.editPreset.dieAssignments.Select(da => da.die);
+                                bool allPresetDiceReady = presetDice.All(ed2 => ed2 != null && editDieInfos[ed2] != null && editDieInfos[ed2].die.connectionState == Die.ConnectionState.Ready);
+                                if (allPresetDiceReady)
                                 {
-                                    uip.SetState(UIHomePresetToken.State.UpToDate);
+                                    uip.SetState(UIHomePresetToken.State.Reachable);
 
-                                    // Check that the active behavior is correct too
-                                    bool allBehaviorsActive = uip.editPreset.dieAssignments.All(da => editDieInfos[da.die].die.currentBehaviorIndex == editDieInfos[da.die].editDataSet.behaviors.IndexOf(da.behavior));
-                                    if (allBehaviorsActive)
+                                    // Check the dataset
+                                    bool allPresetDiceUpToDate = presetDice.All(ed2 => editDieInfos[ed2].upToDate);
+                                    if (allPresetDiceUpToDate)
                                     {
-                                        uip.SetState(UIHomePresetToken.State.Active);
+                                        uip.SetState(UIHomePresetToken.State.UpToDate);
+
+                                        // Check that the active behavior is correct too
+                                        bool allBehaviorsActive = uip.editPreset.dieAssignments.All(da => editDieInfos[da.die].die.currentBehaviorIndex == editDieInfos[da.die].editDataSet.behaviors.IndexOf(da.behavior));
+                                        if (allBehaviorsActive)
+                                        {
+                                            uip.SetState(UIHomePresetToken.State.Active);
+                                        }
+                                        // Else leave as uptodate
                                     }
-                                    // Else leave as uptodate
+                                    // Else leave as available
                                 }
-                                // Else leave as available
+                                // Else leave as unknown
                             }
-                            // Else leave as unknown
-                        }
 
-                        // Now that we're done we can disconnect all
-                        foreach (var di in editDieInfos.Values)
-                        {
-                            if (di.die.connectionState == Die.ConnectionState.Ready)
+                            // Now that we're done we can disconnect all
+                            foreach (var di in editDieInfos.Values)
                             {
-                                DicePool.Instance.RequestDisconnectDie(di.die);
+                                if (di.die.connectionState == Die.ConnectionState.Ready)
+                                {
+                                    DiceManager.Instance.DisconnectDie(editDie);
+                                }
                             }
                         }
-                    }
-                    // Else keep waiting
+                        // Else keep waiting
 
-                });
+                    });
+                }
             });
         }
     }

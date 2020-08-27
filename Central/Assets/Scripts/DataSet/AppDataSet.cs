@@ -5,6 +5,7 @@ using System.IO;
 using Animations;
 using Behaviors;
 using Presets;
+using Dice;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,7 +13,7 @@ using Newtonsoft.Json.Linq;
 [System.Serializable]
 public class PreviewSettings
 {
-    public DiceVariants.DesignAndColor design;
+    public DesignAndColor design;
 }
 
 public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
@@ -21,7 +22,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public class Data
     {
         public int jsonVersion = 1;
-        public List<Presets.EditDie> dice = new List<Presets.EditDie>();
+        public List<EditDie> dice = new List<EditDie>();
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
@@ -36,7 +37,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     }
 
     Data data = new Data();
-    public List<Presets.EditDie> dice => data.dice;
+    public List<EditDie> dice => data.dice;
     public List<EditAnimation> animations => data.animations;
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;
@@ -100,22 +101,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         };
         dice.Add(ret);
         return ret;
-    }
-
-    public EditDie FindDie(Die die)
-    {
-        return dice.FirstOrDefault(d =>
-        {
-            // We should only use device Id
-            if (d.deviceId == 0 || die.deviceId == 0)
-            {
-                return d.name == die.name;
-            }
-            else
-            {
-                return d.deviceId == die.deviceId;
-            }
-        });
     }
 
     public EditAnimation AddNewDefaultAnimation()
@@ -282,36 +267,36 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
         // We only save the dice that we have indicated to be in the pool
         // (i.e. ignore dice that are 'new' and we didn't connect to)
-        var die0 = new Presets.EditDie()
+        var die0 = new EditDie()
         {
             name = "Die 000",
             deviceId = 0x123456789ABCDEF0,
             faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V3_Orange
+            designAndColor = DesignAndColor.V3_Orange
         };
         ret.dice.Add(die0);
-        var die1 = new Presets.EditDie()
+        var die1 = new EditDie()
         {
             name = "Die 001",
             deviceId = 0xABCDEF0123456789,
             faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Black
+            designAndColor = DesignAndColor.V5_Black
         };
         ret.dice.Add(die1);
-        var die2 = new Presets.EditDie()
+        var die2 = new EditDie()
         {
             name = "Die 002",
             deviceId = 0xCDEF0123456789AB,
             faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Grey
+            designAndColor = DesignAndColor.V5_Grey
         };
         ret.dice.Add(die2);
-        var die3 = new Presets.EditDie()
+        var die3 = new EditDie()
         {
             name = "Die 003",
             deviceId = 0xEF0123456789ABCD,
             faceCount = 20,
-            designAndColor = DiceVariants.DesignAndColor.V5_Gold
+            designAndColor = DesignAndColor.V5_Gold
         };
         ret.dice.Add(die3);
         

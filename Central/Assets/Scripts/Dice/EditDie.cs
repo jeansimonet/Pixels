@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Presets
+namespace Dice
 {
     [System.Serializable]
     public class EditDie
@@ -10,7 +10,7 @@ namespace Presets
         public string name;
         public System.UInt64 deviceId;
         public int faceCount; // Which kind of dice this is
-        public DiceVariants.DesignAndColor designAndColor; // Physical look
+        public DesignAndColor designAndColor; // Physical look
         public uint dataSetHash;
     }
 }

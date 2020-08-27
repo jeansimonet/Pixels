@@ -26,21 +26,11 @@ public class UIPairedDieToken : MonoBehaviour
     public Sprite buttonExpandedSprite;
 
     public bool expanded => expandGroup.activeSelf;
-    public Die die => dieView.die;
+    public DiceManager.ManagedDie die => dieView.die;
 
-    public void Setup(Die die)
+    public void Setup(DiceManager.ManagedDie die)
     {
         dieView.Setup(die);
-    }
-
-    public void BeginRefreshPool()
-    {
-        dieView.BeginRefreshPool();
-    }
-
-    public void FinishRefreshPool()
-    {
-        dieView.FinishRefreshPool();
     }
 
     void Awake()
@@ -61,7 +51,7 @@ public class UIPairedDieToken : MonoBehaviour
     void OnForget()
     {
         PixelsApp.Instance.ShowDialogBox(
-            "Forget " + die.name + "?",
+            "Forget " + die.editDie.name + "?",
             "Are you sure you want to remove it from your dice bag?",
             "Forget",
             "Cancel",
@@ -69,7 +59,7 @@ public class UIPairedDieToken : MonoBehaviour
             {
                 if (forget)
                 {
-                    DicePool.Instance.ForgetDie(die);
+                    DiceManager.Instance.ForgetDie(die.editDie);
                 }
             });
     }

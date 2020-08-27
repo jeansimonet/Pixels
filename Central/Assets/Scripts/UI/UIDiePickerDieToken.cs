@@ -16,13 +16,13 @@ public class UIDiePickerDieToken : MonoBehaviour
     public Color defaultFrameColor;
     public Color selectedColor;
 
-    public Die die => dieView.die;
+    public DiceManager.ManagedDie die => dieView.die;
     public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
-    public void Setup(Die die)
+    public void Setup(DiceManager.ManagedDie die)
     {
         dieView.Setup(die);
         SetSelected(false);
@@ -40,15 +40,5 @@ public class UIDiePickerDieToken : MonoBehaviour
             frame.color = defaultFrameColor;
         }
         dieView.SetSelected(selected);
-    }
-
-    public void BeginRefreshPool()
-    {
-        dieView.BeginRefreshPool();
-    }
-
-    public void FinishRefreshPool()
-    {
-        dieView.FinishRefreshPool();
     }
 }

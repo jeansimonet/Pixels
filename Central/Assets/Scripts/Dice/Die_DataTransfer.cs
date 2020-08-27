@@ -4,6 +4,8 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using System.Linq;
 
+namespace Dice
+{
 public partial class Die
 	: MonoBehaviour
     , Central.IDie
@@ -352,4 +354,5 @@ public partial class Die
     //     settingsReadCallback.Invoke(newSettings);
     // }
 
+}
 }

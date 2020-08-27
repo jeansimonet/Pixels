@@ -14,7 +14,7 @@ public class SingleDiceRenderer : DiceRenderer
     /// <summary>
     /// Called after instantiation to setup the camera, render texture, etc...
     /// </sumary>
-    public void Setup(int index, DiceVariants.DesignAndColor variant, int widthHeight)
+    public void Setup(int index, Dice.DesignAndColor variant, int widthHeight)
     {
         base.Setup(index, widthHeight);
 

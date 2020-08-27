@@ -5,10 +5,6 @@ using System.Linq;
 
 public class DicePoolRefresher : MonoBehaviour
 {
-    public delegate void RefreshPoolEvent();
-    public RefreshPoolEvent onBeginRefreshPool;
-    public RefreshPoolEvent onEndRefreshPool;
-
     void Start()
     {
         DicePool.Instance.StartCoroutine(ScanLoopCr());
@@ -19,54 +15,26 @@ public class DicePoolRefresher : MonoBehaviour
         while (true)
         {
             yield return new WaitUntil(() => gameObject.activeSelf);
-            onBeginRefreshPool?.Invoke();
-
-            // Did we have any dice that needed to be rechecked?
-            if (DicePool.Instance.allDice.Any(d => d.connectionState == Die.ConnectionState.Unknown))
+            foreach (var die in DiceManager.Instance.allDice)
             {
-                float startTime = Time.time;
-                float endTime = startTime + AppConstants.Instance.ScanTimeout;
-                DicePool.Instance.RequestBeginScanForDice();
+                bool dieConnected = false;
+                yield return DiceManager.Instance.ConnectDie(die.editDie, (_, d, errorMsg) => dieConnected = d != null);
+                if (dieConnected)
+                {
+                    // Fetch battery level
+                    bool battLevelReceived = false;
+                    die.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                    yield return new WaitUntil(() => battLevelReceived == true);
 
-                yield return new WaitUntil(() => !DicePool.Instance.allDice.Any(d => d.connectionState == Die.ConnectionState.Unknown) || Time.time >= endTime);
-
-                DicePool.Instance.RequestStopScanForDice();
+                    // Fetch rssi
+                    bool rssiReceived = false;
+                    die.die.GetRssi((d, i) => rssiReceived = true);
+                    yield return new WaitUntil(() => rssiReceived == true);
+                }
+                DiceManager.Instance.DisconnectDie(die.editDie);
             }
-
-            // Any connected or available die, refresh battery level
-            foreach (var die in DicePool.Instance.allDice)
-            {
-                yield return StartCoroutine(IdentifyOneDieCr(die));
-            }
-
-            onEndRefreshPool?.Invoke();
 
             yield return new WaitForSeconds(AppConstants.Instance.DicePoolViewScanDelay);
-        }
-    }
-
-    IEnumerator IdentifyOneDieCr(Die die)
-    {
-        if (die.connectionState == Die.ConnectionState.Available || die.connectionState == Die.ConnectionState.Ready)
-        {
-            DicePool.Instance.RequestConnectDie(die);
-
-            yield return new WaitUntil(() => die.connectionState == Die.ConnectionState.Ready || die.connectionState == Die.ConnectionState.CommError);
-
-            if (die.connectionState == Die.ConnectionState.Ready)
-            {
-                // Fetch battery level
-                bool battLevelReceived = false;
-                die.GetBatteryLevel((d, f) => battLevelReceived = true);
-                yield return new WaitUntil(() => battLevelReceived == true);
-
-                // Fetch rssi
-                bool rssiReceived = false;
-                die.GetRssi((d, i) => rssiReceived = true);
-                yield return new WaitUntil(() => rssiReceived == true);
-            }
-
-            DicePool.Instance.RequestDisconnectDie(die);
         }
     }
 }

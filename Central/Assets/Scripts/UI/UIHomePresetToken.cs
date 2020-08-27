@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Presets;
 using System.Linq;
-
+using Dice;
 
 public class UIHomePresetToken : MonoBehaviour
 {
@@ -45,7 +45,7 @@ public class UIHomePresetToken : MonoBehaviour
     public void Setup(EditPreset preset)
     {
         this.editPreset = preset;
-        var designs = new List<DiceVariants.DesignAndColor>(preset.dieAssignments.Select(ass => (ass.die != null) ? ass.die.designAndColor : DiceVariants.DesignAndColor.Unknown));
+        var designs = new List<DesignAndColor>(preset.dieAssignments.Select(ass => (ass.die != null) ? ass.die.designAndColor : DesignAndColor.Unknown));
 
         this.dieRenderer = DiceRendererManager.Instance.CreateMultiDiceRenderer(designs, 400);
         if (dieRenderer != null)

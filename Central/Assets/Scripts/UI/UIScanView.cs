@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using Dice;
 
 public class UIScanView
     : PixelsApp.Page
@@ -22,16 +23,13 @@ public class UIScanView
     void Awake()
     {
         backButton.onClick.AddListener(() => NavigationManager.Instance.GoBack());
-        pairSelectedDice.onClick.AddListener(PairSelectedDice);
         clearListButton.onClick.AddListener(ClearList);
     }
 
     void OnEnable()
     {
         RefreshView();
-        DicePool.Instance.onDieCreated += OnDieCreated;
-        DicePool.Instance.onWillDestroyDie += onWillDestroyDie;
-        DicePool.Instance.RequestBeginScanForDice();
+        DicePool.Instance.BeginScanForDice(OnDieDiscovered);
         pairSelectedDice.SetActive(false);
     }
 
@@ -39,9 +37,7 @@ public class UIScanView
     {
         if (DicePool.Instance != null)
         {
-            DicePool.Instance.RequestStopScanForDice();
-            DicePool.Instance.onDieCreated -= OnDieCreated;
-            DicePool.Instance.onWillDestroyDie -= onWillDestroyDie;
+            DicePool.Instance.StopScanForDice(OnDieDiscovered);
         }
         foreach (var die in discoveredDice)
         {
@@ -57,19 +53,23 @@ public class UIScanView
     {
         // Assume all scanned dice will be destroyed
         List<UIDiscoveredDieView> toDestroy = new List<UIDiscoveredDieView>(discoveredDice);
-        foreach (var die in DicePool.Instance.allDice.Where(d => d.connectionState == Die.ConnectionState.New))
+        foreach (var die in DicePool.Instance.allDice.Where(d => d.connectionState == Die.ConnectionState.Available || d.connectionState == Die.ConnectionState.CommError))
         {
-            int prevIndex = toDestroy.FindIndex(uid => uid.die == die);
-            if (prevIndex == -1)
+            if (!DiceManager.Instance.allDice.Any(d => d.die == die || (d.editDie.deviceId != 0 && d.editDie.deviceId == die.deviceId) || d.editDie.name == die.name))
             {
-                // New scanned die
-                var newUIDie = CreateDiscoveredDie(die);
-                discoveredDice.Add(newUIDie);
-            }
-            else
-            {
-                // Previous die is still advertising, good
-                toDestroy.RemoveAt(prevIndex);
+                // It's an advertising die we don't *know* about
+                int prevIndex = toDestroy.FindIndex(uid => uid.die == die);
+                if (prevIndex == -1)
+                {
+                    // New scanned die
+                    var newUIDie = CreateDiscoveredDie(die);
+                    discoveredDice.Add(newUIDie);
+                }
+                else
+                {
+                    // Previous die is still advertising, good
+                    toDestroy.RemoveAt(prevIndex);
+                }
             }
         }
 
@@ -101,19 +101,18 @@ public class UIScanView
 
     void PairSelectedDice()
     {
+        pairSelectedDice.onClick.RemoveListener(PairSelectedDice);
+        pairSelectedDice.SetActive(false);
         var selectedDieCopy = new List<Die>(selectedDice.Select(d => d.die));
         // Tell the navigation to go back to the pool, and then start connecting to the selected dice
-        foreach (var die in selectedDieCopy)
-        {
-            DicePool.Instance.IncludeDie(die);
-        }
+        DiceManager.Instance.AddDiscoveredDice(selectedDieCopy);
         NavigationManager.Instance.GoBack();
     }
 
-    void OnDieCreated(Die newDie)
+    void OnDieDiscovered(Die newDie)
     {
-        Debug.Assert(newDie.connectionState != Die.ConnectionState.New);
         newDie.OnConnectionStateChanged += OnDieStateChanged;
+        RefreshView();
     }
 
     void OnDieSelected(UIDiscoveredDieView uidie, bool selected)
@@ -138,41 +137,27 @@ public class UIScanView
         }
     }
 
-    void onWillDestroyDie(Die die)
-    {
-        var uidie = discoveredDice.Find(d => d.die == die);
-        if (uidie != null)
-        {
-            die.OnConnectionStateChanged -= OnDieStateChanged;
-            Debug.Assert(die.connectionState == Die.ConnectionState.New); // if not we should have been notified previously
-            discoveredDice.Remove(uidie);
-            DestroyDiscoveredDie(uidie);
-        }
-    }
+    // void onWillDestroyDie(Die die)
+    // {
+    //     var uidie = discoveredDice.Find(d => d.die == die);
+    //     if (uidie != null)
+    //     {
+    //         die.OnConnectionStateChanged -= OnDieStateChanged;
+    //         Debug.Assert(die.connectionState == Die.ConnectionState.New); // if not we should have been notified previously
+    //         discoveredDice.Remove(uidie);
+    //         DestroyDiscoveredDie(uidie);
+    //     }
+    // }
 
     void OnDieStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
     {
-        bool wasNew = oldState == Die.ConnectionState.New;
-        bool isNew = newState == Die.ConnectionState.New;
-        if (!wasNew && isNew)
-        {
-            var uidie = CreateDiscoveredDie(die);
-            discoveredDice.Add(uidie);
-        }
-        else if (wasNew && !isNew)
-        {
-            die.OnConnectionStateChanged -= OnDieStateChanged;
-            var uidie = discoveredDice.Find(d => d.die == die);
-            discoveredDice.Remove(uidie);
-            DestroyDiscoveredDie(uidie);
-        }
-
+        RefreshView();
     }
 
     void ClearList()
     {
-        DicePool.Instance.RequestStopScanForDice();
-        RefreshView();
-        DicePool.Instance.RequestBeginScanForDice();
+        // DicePool.Instance.StopScanForDice();
+        // RefreshView();
+        // DicePool.Instance.BeginScanForDice();
     }
 }

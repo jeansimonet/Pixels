@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Dice;
+using Presets;
 
 public class UIAssignmentToken : MonoBehaviour
 {
@@ -18,18 +20,12 @@ public class UIAssignmentToken : MonoBehaviour
 
     public Button.ButtonClickedEvent onDelete => deleteButton.onClick;
 
-    public void Setup(Presets.EditDieAssignment ass, System.Func<Die, bool> dieSelector)
+    public void Setup(Presets.EditDieAssignment ass, System.Func<EditDie, Die, bool> dieSelector)
     {
         this.editAssignment = ass;
-        Die die = null;
-        if (this.editAssignment.die != null)
-        {
-            die = DicePool.Instance.FindDie(this.editAssignment.die);
-        }
-
         selectDieDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowDiePicker(
             "Select Die",
-            die,
+            this.editAssignment.die,
             dieSelector,
             OnDieSelected));
         selectBehaviorDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowBehaviorPicker("Select Behavior", this.editAssignment.behavior, OnBehaviorSelected));
@@ -45,11 +41,11 @@ public class UIAssignmentToken : MonoBehaviour
         }
     }
 
-    void OnDieSelected(bool result, Die newDie)
+    void OnDieSelected(bool result, EditDie newDie)
     {
         if (result)
         {
-            editAssignment.die = AppDataSet.Instance.FindDie(newDie);
+            editAssignment.die = newDie;
             UpdateView();
         }
     }
@@ -71,7 +67,7 @@ public class UIAssignmentToken : MonoBehaviour
             this.dieRenderer = null;
         }
 
-        var design = DiceVariants.DesignAndColor.Unknown;
+        var design = DesignAndColor.Unknown;
         var dName = "Missing Die";
         if (editAssignment.die != null)
         {

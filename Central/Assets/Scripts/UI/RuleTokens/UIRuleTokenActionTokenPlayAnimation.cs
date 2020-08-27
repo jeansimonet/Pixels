@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Behaviors;
+using Dice;
 
 public class UIRuleTokenActionTokenPlayAnimation
     : UIRuleTokenActionToken
@@ -39,7 +40,7 @@ public class UIRuleTokenActionTokenPlayAnimation
         actionText.text = action.ToString();
         labelText.text = first ? "Then" : "And";
 
-        var design = DiceVariants.DesignAndColor.V5_Grey;
+        var design = DesignAndColor.V5_Grey;
         if (playAnimAction.animation != null)
         {
             design = playAnimAction.animation.defaultPreviewSettings.design;

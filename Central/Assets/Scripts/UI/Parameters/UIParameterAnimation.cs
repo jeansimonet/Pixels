@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Animations;
+using Dice;
 
 public class UIParameterAnimation
     : UIParameter
@@ -36,7 +37,7 @@ public class UIParameterAnimation
         // Set name
         nameText.text = name;
 
-        var design = DiceVariants.DesignAndColor.V5_Grey;
+        var design = DesignAndColor.V5_Grey;
         if (initialAnim != null)
         {
             design = initialAnim.defaultPreviewSettings.design;

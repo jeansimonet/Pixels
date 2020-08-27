@@ -18,7 +18,7 @@ namespace Animations
         public string name;
         [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
 		public float duration;
-        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = DiceVariants.DesignAndColor.V5_Grey };
+        public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = Dice.DesignAndColor.V5_Grey };
 
         [JsonIgnore]
         public abstract AnimationType type { get; }

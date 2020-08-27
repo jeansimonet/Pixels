@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace Dice
+{
 public partial class Die
 	: MonoBehaviour
     , Central.IDie
@@ -282,6 +284,7 @@ public partial class Die
             (msg) =>
             {
                 var lvlMsg = (DieMessageBatteryLevel)msg;
+                batteryLevel = lvlMsg.level;
                 OnBatteryLevelChanged?.Invoke(this, lvlMsg.level);
                 outLevelAction?.Invoke(this, lvlMsg.level);
             },
@@ -309,6 +312,7 @@ public partial class Die
             (msg) =>
             {
                 var rssiMsg = (DieMessageRssi)msg;
+                rssi = rssiMsg.rssi;
                 OnRssiChanged?.Invoke(this, rssiMsg.rssi);
                 outRssiAction?.Invoke(this, rssiMsg.rssi);
             },
@@ -322,7 +326,7 @@ public partial class Die
             }));
     }
 
-    public Coroutine SetCurrentDesignAndColor(DiceVariants.DesignAndColor design, System.Action<bool> callback)
+    public Coroutine SetCurrentDesignAndColor(DesignAndColor design, System.Action<bool> callback)
     {
        return StartCoroutine(SendMessageWithAckOrTimeoutCr(
            new DieMessageSetDesignAndColor() { designAndColor = design },
@@ -452,4 +456,5 @@ public partial class Die
         }
     }
     #endregion
+}
 }

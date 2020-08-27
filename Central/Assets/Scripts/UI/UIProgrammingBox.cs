@@ -9,7 +9,9 @@ public class UIProgrammingBox : MonoBehaviour
     public Text description;
     public Image prograssBarBackground;
     public Image progressBar;
-    public float defaultProgressSpeed = 1.0f; // pct/sec
+    public float defaultProgressSpeed = 0.2f; // pct/sec
+    public float progressSpeedMin = 0.02f;
+    public float progressMaxSpeed = 1.0f;
 
     public bool isShown => gameObject.activeSelf;
     float currentProgress = 0.0f;
@@ -36,7 +38,8 @@ public class UIProgrammingBox : MonoBehaviour
         if (deltaTime > 0.001f)
         {
             float deltaProgress = newProgress - currentDisplayProgress;
-            currentProgressSpeed = deltaProgress / deltaTime;
+            currentProgressSpeed = Mathf.Clamp(deltaProgress / deltaTime, progressSpeedMin, progressMaxSpeed);
+
             lastUpdateTime = Time.time;
         }
         currentProgress = newProgress;

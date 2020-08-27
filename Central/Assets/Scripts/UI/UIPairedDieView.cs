@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Dice;
+using Presets;
 
 public class UIPairedDieView : MonoBehaviour
 {
@@ -21,48 +23,29 @@ public class UIPairedDieView : MonoBehaviour
     public Color selectedColor;
 
 
-    public Die die { get; private set; }
+    public DiceManager.ManagedDie die { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
-    public void Setup(Die die)
+    public void Setup(DiceManager.ManagedDie die)
     {
         this.die = die;
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.designAndColor);
+        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.editDie.designAndColor);
         if (dieRenderer != null)
         {
             dieRenderImage.texture = dieRenderer.renderTexture;
         }
-        dieNameText.text = die.name;
-        if (die.deviceId != 0)
-        {
-            dieIDText.text = "ID: " + die.deviceId.ToString("X016");
-        }
-        else
-        {
-            dieIDText.text = "ID: Unavailable";
-        }
-        batteryView.SetLevel(null);
-        signalView.SetRssi(null);
-        SetState(die.connectionState);
+        UpdateState();
         SetSelected(false);
 
-        die.OnConnectionStateChanged += OnConnectionStateChanged;
-        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
-        die.OnRssiChanged += OnRssiChanged;
-
-    }
-
-    public void BeginRefreshPool()
-    {
-        // Pause die events
-        //die.OnConnectionStateChanged -= OnConnectionStateChanged;
-    }
-
-    public void FinishRefreshPool()
-    {
-       // SetState(die.connectionState);
-       // die.OnConnectionStateChanged += OnConnectionStateChanged;
+        if (die.die != null)
+        {
+            die.die.OnConnectionStateChanged += OnConnectionStateChanged;
+            die.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+            die.die.OnRssiChanged += OnRssiChanged;
+        }
+        die.onDieFound += OnDieFound;
+        die.onDieWillBeLost += OnDieWillBeLost;
     }
 
     public void SetSelected(bool selected)
@@ -78,10 +61,36 @@ public class UIPairedDieView : MonoBehaviour
         }
     }
 
-    void SetState(Die.ConnectionState newState)
+    void UpdateState()
     {
-        switch (newState)
+        dieNameText.text = die.editDie.name;
+        if (die.editDie.deviceId != 0)
         {
+            dieIDText.text = "ID: " + die.editDie.deviceId.ToString("X016");
+        }
+        else
+        {
+            dieIDText.text = "ID: Unavailable";
+        }
+
+        if (die.die == null)
+        {
+            batteryView.SetLevel(null);
+            signalView.SetRssi(null);
+            dieRenderer.SetAuto(false);
+            dieRenderImage.color = Color.white;
+            batteryView.gameObject.SetActive(true);
+            signalView.gameObject.SetActive(true);
+            statusText.text = "Disconnected";
+            disconnectedTextRoot.gameObject.SetActive(false);
+            errorTextRoot.gameObject.SetActive(false);
+        }
+        else
+        {
+            batteryView.SetLevel(die.die.batteryLevel);
+            signalView.SetRssi(die.die.rssi);
+            switch (die.die.connectionState)
+            {
             case Die.ConnectionState.Invalid:
                 dieRenderer.SetAuto(false);
                 dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
@@ -89,24 +98,6 @@ public class UIPairedDieView : MonoBehaviour
                 signalView.gameObject.SetActive(false);
                 statusText.text = "Invalid";
                 disconnectedTextRoot.gameObject.SetActive(true);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.Unknown:
-                dieRenderer.SetAuto(false);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "Disconnected";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.New:
-                dieRenderer.SetAuto(true);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "New die";
-                disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
                 break;
             case Die.ConnectionState.Available:
@@ -145,15 +136,6 @@ public class UIPairedDieView : MonoBehaviour
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
                 break;
-            case Die.ConnectionState.Missing:
-                dieRenderer.SetAuto(false);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(false);
-                signalView.gameObject.SetActive(false);
-                statusText.text = "Unreachable";
-                disconnectedTextRoot.gameObject.SetActive(true);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
             case Die.ConnectionState.CommError:
                 dieRenderer.SetAuto(false);
                 dieRenderImage.color = Color.white;
@@ -163,23 +145,8 @@ public class UIPairedDieView : MonoBehaviour
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(true);
                 break;
+            }
         }
-    }
-
-    void OnForget()
-    {
-        PixelsApp.Instance.ShowDialogBox(
-            "Forget " + die.name + "?",
-            "Are you sure you want to remove it from your dice bag?",
-            "Forget",
-            "Cancel",
-            (forget) =>
-            {
-                if (forget)
-                {
-                    DicePool.Instance.ForgetDie(die);
-                }
-            });
     }
 
     void OnDestroy()
@@ -189,28 +156,42 @@ public class UIPairedDieView : MonoBehaviour
             DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);
             this.dieRenderer = null;
         }
-        die.OnConnectionStateChanged -= OnConnectionStateChanged;
-        die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
-        die.OnRssiChanged -= OnRssiChanged;
+        die.onDieFound -= OnDieFound;
+        die.onDieWillBeLost -= OnDieWillBeLost;
+        if (die.die != null)
+        {
+            die.die.OnConnectionStateChanged -= OnConnectionStateChanged;
+            die.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
+            die.die.OnRssiChanged -= OnRssiChanged;
+        }
     }
 
     void OnConnectionStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
     {
-        Debug.Assert(die == this.die);
-        SetState(newState);
-        if (newState == Die.ConnectionState.Ready)
-        {
-            dieIDText.text = die.deviceId.ToString("X016");
-        }
+        UpdateState();
     }
 
     void OnBatteryLevelChanged(Die die, float? level)
     {
-        batteryView.SetLevel(level);
+        UpdateState();
     }
 
     void OnRssiChanged(Die die, int? rssi)
     {
-        signalView.SetRssi(rssi);
+        UpdateState();
+    }
+
+    void OnDieFound(EditDie editDie, Die die)
+    {
+        die.OnConnectionStateChanged += OnConnectionStateChanged;
+        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        die.OnRssiChanged += OnRssiChanged;
+    }
+
+    void OnDieWillBeLost(EditDie editDie1, Die die)
+    {
+        die.OnConnectionStateChanged -= OnConnectionStateChanged;
+        die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
+        die.OnRssiChanged -= OnRssiChanged;
     }
 }
