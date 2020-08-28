@@ -90,6 +90,23 @@ namespace Presets
         {
             return dieAssignments.Any(d => d.behavior == behavior);
         }
+
+        public void DeleteDie(Dice.EditDie die)
+        {
+            foreach (var ass in dieAssignments)
+            {
+                if (ass.die == die)
+                {
+                    ass.die = null;
+                }
+            }
+        }
+
+        public bool DependsOnDie(Dice.EditDie die)
+        {
+            return dieAssignments.Any(d => d.die == die);
+        }
+
     }
 }
 

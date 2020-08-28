@@ -26,20 +26,17 @@ public class RotationSlider : MonoBehaviour, IPointerDownHandler, IBeginDragHand
     {
 		dragStart = Input.mousePosition;
         dragStartRotation = renderedDie.currentAngle;
-        Debug.Log("Begin Drag");
     }
 
 	void IDragHandler.OnDrag(PointerEventData eventData)
 	{
         var dragDelta = Input.mousePosition - dragStart;
         renderedDie.SetCurrentAngle(dragStartRotation - dragDelta.x * dragSpeed);
-        Debug.Log("Drag");
 	}
 
     void IEndDragHandler.OnEndDrag(PointerEventData eventData)
     {
         // Nothing really
-        Debug.Log("End Drag");
         renderedDie.SetAuto(false);
     }
 

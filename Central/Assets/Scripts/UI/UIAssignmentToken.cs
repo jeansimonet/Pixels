@@ -15,20 +15,22 @@ public class UIAssignmentToken : MonoBehaviour
     public Button selectBehaviorDropdown;
     public Text behaviorName;
 
-    public Presets.EditDieAssignment editAssignment { get; private set; }
+    public EditDieAssignment editAssignment { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onDelete => deleteButton.onClick;
 
-    public void Setup(Presets.EditDieAssignment ass, System.Func<EditDie, Die, bool> dieSelector)
+    public delegate void OnChangeEvent(EditDieAssignment ass);
+    public OnChangeEvent onChange;
+
+    System.Func<EditDie, bool> dieSelector;
+
+    public void Setup(Presets.EditDieAssignment ass, System.Func<EditDie, bool> dieSelector)
     {
         this.editAssignment = ass;
-        selectDieDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowDiePicker(
-            "Select Die",
-            this.editAssignment.die,
-            dieSelector,
-            OnDieSelected));
-        selectBehaviorDropdown.onClick.AddListener(() => PixelsApp.Instance.ShowBehaviorPicker("Select Behavior", this.editAssignment.behavior, OnBehaviorSelected));
+        this.dieSelector = dieSelector;
+        selectDieDropdown.onClick.AddListener(PickNewDie);
+        selectBehaviorDropdown.onClick.AddListener(PickNewBehavior);
         UpdateView();
     }
 
@@ -41,20 +43,39 @@ public class UIAssignmentToken : MonoBehaviour
         }
     }
 
+    void PickNewDie()
+    {
+        PixelsApp.Instance.ShowDiePicker(
+            "Select Die",
+            this.editAssignment.die,
+            dieSelector,
+            OnDieSelected);
+    }
+
+    void PickNewBehavior()
+    {
+        PixelsApp.Instance.ShowBehaviorPicker(
+            "Select Behavior",
+            this.editAssignment.behavior,
+            OnBehaviorSelected);
+    }
+
     void OnDieSelected(bool result, EditDie newDie)
     {
-        if (result)
+        if (result && newDie != editAssignment.die)
         {
             editAssignment.die = newDie;
+            onChange?.Invoke(editAssignment);
             UpdateView();
         }
     }
 
     void OnBehaviorSelected(bool result, Behaviors.EditBehavior newBehavior)
     {
-        if (result)
+        if (result && newBehavior != editAssignment.behavior)
         {
             editAssignment.behavior = newBehavior;
+            onChange?.Invoke(editAssignment);
             UpdateView();
         }
     }

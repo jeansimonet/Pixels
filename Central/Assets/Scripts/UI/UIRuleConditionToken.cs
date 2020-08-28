@@ -14,12 +14,16 @@ public class UIRuleConditionToken : MonoBehaviour
 
     UIParameterManager.ObjectParameterList parameters;
 
+    public delegate void ConditionChangedEvent(Behaviors.EditRule rule, Behaviors.EditCondition condition);
+    public ConditionChangedEvent onConditionChanged;
+
     void OnDestroy()
     {
         foreach (var parameter in parameters.parameters)
         {
             GameObject.Destroy(parameter.gameObject);
         }
+        parameters.onParameterChanged -= OnConditionChanged;
         parameters = null;
     }
 
@@ -31,12 +35,15 @@ public class UIRuleConditionToken : MonoBehaviour
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(condition, parametersRoot);
+        parameters.onParameterChanged += OnConditionChanged;
     }
 
     void SetConditionType(Behaviors.ConditionType newType)
     {
         if (newType != editCondition.type)
         {
+            onConditionChanged?.Invoke(parentRule, editCondition);
+
             // Change the type, which really means create a new condition and replace the old one
             var newCondition = Behaviors.EditCondition.Create(newType);
 
@@ -49,8 +56,16 @@ public class UIRuleConditionToken : MonoBehaviour
                 GameObject.Destroy(parameter.gameObject);
             }
             parameters = UIParameterManager.Instance.CreateControls(newCondition, parametersRoot);
+            parameters.onParameterChanged += OnConditionChanged;
 
             editCondition = newCondition;
+
+            onConditionChanged?.Invoke(parentRule, editCondition);
         }
+    }
+
+    void OnConditionChanged(EditObject parentObject, UIParameter parameter, object newValue)
+    {
+        onConditionChanged?.Invoke(parentRule, editCondition);
     }
 }

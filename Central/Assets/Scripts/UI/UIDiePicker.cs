@@ -32,12 +32,12 @@ public class UIDiePicker : MonoBehaviour
     DicePoolRefresher poolRefresher;
 
     public bool isShown => gameObject.activeSelf;
-    System.Func<EditDie, Die, bool> dieSelector;
+    System.Func<EditDie, bool> dieSelector;
 
     /// <summary>
     /// Invoke the die picker
     /// </sumary>
-    public void Show(string title, EditDie previousDie, System.Func<EditDie, Die, bool> selector, System.Action<bool, EditDie> closeAction)
+    public void Show(string title, EditDie previousDie, System.Func<EditDie, bool> selector, System.Action<bool, EditDie> closeAction)
     {
         if (isShown)
         {
@@ -47,11 +47,11 @@ public class UIDiePicker : MonoBehaviour
 
         dieSelector = selector;
         
-        foreach (var dt in DiceManager.Instance.allDice.Where(d => selector(d.editDie, d.die)))
+        foreach (var dt in DiceManager.Instance.allDice.Where(selector))
         {
             // New pattern
             var newDieUI = CreateDieToken(dt);
-            newDieUI.SetSelected(dt.editDie == previousDie);
+            newDieUI.SetSelected(dt == previousDie);
             dice.Add(newDieUI);
         }
 
@@ -62,7 +62,7 @@ public class UIDiePicker : MonoBehaviour
         this.closeAction = closeAction;
     }
 
-    UIDiePickerDieToken CreateDieToken(DiceManager.ManagedDie die)
+    UIDiePickerDieToken CreateDieToken(EditDie die)
     {
         // Create the gameObject
         var ret = GameObject.Instantiate<UIDiePickerDieToken>(dieTokenPrefab, contentRoot.transform);
@@ -71,7 +71,7 @@ public class UIDiePicker : MonoBehaviour
         ret.Setup(die);
 
         // When we click on the pattern main button, go to the edit page
-        ret.onClick.AddListener(() => Hide(true, ret.die.editDie));
+        ret.onClick.AddListener(() => Hide(true, ret.die));
 
         return ret;
     }

@@ -6,7 +6,6 @@ namespace Dice
 {
 public partial class Die
 	: MonoBehaviour
-    , Central.IDie
 {
     #region Message Infrastructure
     void AddMessageHandler(DieMessageType msgType, MessageReceivedDelegate newDel)

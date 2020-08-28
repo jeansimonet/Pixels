@@ -8,7 +8,6 @@ namespace Dice
 {
 public partial class Die
 	: MonoBehaviour
-    , Central.IDie
 {
     public Coroutine UploadBulkData(byte[] bytes, System.Action<float> uploadPctCallback, System.Action<bool> resultCallback)
     {

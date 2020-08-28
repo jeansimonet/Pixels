@@ -23,14 +23,14 @@ public class UIPairedDieView : MonoBehaviour
     public Color selectedColor;
 
 
-    public DiceManager.ManagedDie die { get; private set; }
+    public EditDie die { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
-    public void Setup(DiceManager.ManagedDie die)
+    public void Setup(EditDie die)
     {
         this.die = die;
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.editDie.designAndColor);
+        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(die.designAndColor);
         if (dieRenderer != null)
         {
             dieRenderImage.texture = dieRenderer.renderTexture;
@@ -63,10 +63,10 @@ public class UIPairedDieView : MonoBehaviour
 
     void UpdateState()
     {
-        dieNameText.text = die.editDie.name;
-        if (die.editDie.deviceId != 0)
+        dieNameText.text = die.name;
+        if (die.deviceId != 0)
         {
-            dieIDText.text = "ID: " + die.editDie.deviceId.ToString("X016");
+            dieIDText.text = "ID: " + die.deviceId.ToString("X016");
         }
         else
         {
@@ -181,17 +181,17 @@ public class UIPairedDieView : MonoBehaviour
         UpdateState();
     }
 
-    void OnDieFound(EditDie editDie, Die die)
+    void OnDieFound(EditDie editDie)
     {
-        die.OnConnectionStateChanged += OnConnectionStateChanged;
-        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
-        die.OnRssiChanged += OnRssiChanged;
+        editDie.die.OnConnectionStateChanged += OnConnectionStateChanged;
+        editDie.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        editDie.die.OnRssiChanged += OnRssiChanged;
     }
 
-    void OnDieWillBeLost(EditDie editDie1, Die die)
+    void OnDieWillBeLost(EditDie editDie)
     {
-        die.OnConnectionStateChanged -= OnConnectionStateChanged;
-        die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
-        die.OnRssiChanged -= OnRssiChanged;
+        editDie.die.OnConnectionStateChanged -= OnConnectionStateChanged;
+        editDie.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
+        editDie.die.OnRssiChanged -= OnRssiChanged;
     }
 }

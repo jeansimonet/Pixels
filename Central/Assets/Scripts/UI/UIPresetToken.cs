@@ -56,8 +56,11 @@ public class UIPresetToken : MonoBehaviour
         dieRenderer.rotating = true;
         for (int i = 0; i < preset.dieAssignments.Count; ++i)
         {
-            dieRenderer.SetDieAnimations(i, preset.dieAssignments[i].behavior.CollectAnimations().Where(anim => anim != null));
-            dieRenderer.Play(i, false);
+            if (preset.dieAssignments[i].behavior != null)
+            {
+                dieRenderer.SetDieAnimations(i, preset.dieAssignments[i].behavior.CollectAnimations().Where(anim => anim != null));
+                dieRenderer.Play(i, false);
+            }
         }
         Expand(false);
     }

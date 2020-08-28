@@ -25,7 +25,6 @@ public class UIPatternView
     UIParameterManager.ObjectParameterList parameters;
     bool patternDirty = false;
     EditDie previewDie = null;
-    Die connectedDie = null;
 
     public override void Enter(object context)
     {
@@ -57,15 +56,21 @@ public class UIPatternView
         }
         parameters = null;
 
-        if (connectedDie != null)
+        if (previewDie != null)
         {
-            connectedDie.SetStandardMode(_ =>
+            if (previewDie.die != null)
             {
-                DicePool.Instance.DisconnectDie(connectedDie);
-                connectedDie = null;
-            });
+                previewDie.die.SetStandardMode(_ =>
+                {
+                    DiceManager.Instance.DisconnectDie(previewDie);
+                    previewDie = null;
+                });
+            }
+            else
+            {
+                previewDie = null;
+            }
         }
-        previewDie = null;
     }
 
     void Setup(Animations.EditAnimation anim)
@@ -185,56 +190,48 @@ public class UIPatternView
             PixelsApp.Instance.ShowDiePicker(
                 "Select Die for Preview",
                 null,
-                (ed, d) =>  true,
+                (ed) =>  true,
                 (res, newDie) =>
                 {
                     previewDie = newDie;
                     previewDieSelected = res;
                 });
             yield return new WaitUntil(() => previewDieSelected.HasValue);
+
+            string error = null;
+            yield return DiceManager.Instance.ConnectDie(previewDie, (_, res, errorMsg) =>
+            {
+                error = errorMsg;
+            });
+            if (error != null)
+            {
+                bool acknowledged = false;
+                PixelsApp.Instance.ShowDialogBox("Could not connect.", error, "Ok", null, _ => acknowledged = true);
+                yield return new WaitUntil(() => acknowledged);
+            }
+            else
+            {
+                bool acknowledged = false;
+                previewDie.die.SetLEDAnimatorMode(_ =>
+                {
+                    acknowledged = true;
+                });
+                yield return new WaitUntil(() => acknowledged);
+            }
         }
 
         if (previewDie != null)
         {
-            // Are we already connected?
-            if (connectedDie == null)
-            {
-                string error = null;
-                yield return DiceManager.Instance.ConnectDie(previewDie, (_, die, errorMsg) =>
-                {
-                    connectedDie = die;
-                    error = errorMsg;
-                });
-
-                if (connectedDie == null)
-                {
-                    bool acknowledged = false;
-                    PixelsApp.Instance.ShowDialogBox("Could not connect.", error, "Ok", null, _ => acknowledged = true);
-                    yield return new WaitUntil(() => acknowledged);
-                }
-                else
-                {
-                    bool acknowledged = false;
-                    connectedDie.SetLEDAnimatorMode(_ =>
-                    {
-                        acknowledged = true;
-                    });
-                    yield return new WaitUntil(() => acknowledged);
-                }
-            }
-
-            if (connectedDie != null)
+            if (previewDie.die != null)
             {
                 var editSet = AppDataSet.Instance.ExtractEditSetForAnimation(editAnimation);
                 var dataSet = editSet.ToDataSet();
                 bool playResult = false;
-                yield return connectedDie.PlayTestAnimation(dataSet, (res) => playResult = res);
+                yield return previewDie.die.PlayTestAnimation(dataSet, (res) => playResult = res);
                 if (!playResult)
                 {
-                    DicePool.Instance.DisconnectDie(connectedDie);
                     bool acknowledged = false;
-                    PixelsApp.Instance.ShowDialogBox("Transfer Error", "Could not play animation on " + connectedDie.name + ", Transfer error", "Ok", null, _ => acknowledged = true);
-                    connectedDie = null;
+                    PixelsApp.Instance.ShowDialogBox("Transfer Error", "Could not play animation on " + previewDie.name + ", Transfer error", "Ok", null, _ => acknowledged = true);
                     previewDie = null;
                     yield return new WaitUntil(() => acknowledged);
                 }

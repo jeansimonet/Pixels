@@ -32,6 +32,9 @@ public class UIDicePoolView
     {
         addNewDiceButton.onClick.AddListener(AddNewDice);
         poolRefresher = GetComponent<DicePoolRefresher>();
+        DiceManager.Instance.onBeginRefreshPool += OnBeginRefreshPool;
+        DiceManager.Instance.onEndRefreshPool += OnEndRefreshPool;
+
     }
 
     void OnEnable()
@@ -55,7 +58,7 @@ public class UIDicePoolView
         pairedDice.Clear();
     }
 
-    UIPairedDieToken CreatePairedDie(DiceManager.ManagedDie die)
+    UIPairedDieToken CreatePairedDie(EditDie die)
     {
         // Create the gameObject
         var ret = GameObject.Instantiate<UIPairedDieToken>(pairedDieViewPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
@@ -111,7 +114,7 @@ public class UIDicePoolView
 
     void OnWillRemoveDie(EditDie editDie)
     {
-        var ui = pairedDice.FirstOrDefault(uid => uid.die.editDie == editDie);
+        var ui = pairedDice.FirstOrDefault(uid => uid.die == editDie);
         if (ui != null)
         {
             pairedDice.Remove(ui);
@@ -119,4 +122,13 @@ public class UIDicePoolView
         }
     }
 
+    void OnBeginRefreshPool()
+    {
+        refreshButton.StartRotating();
+    }
+
+    void OnEndRefreshPool()
+    {
+        refreshButton.StopRotating();
+    }
 }

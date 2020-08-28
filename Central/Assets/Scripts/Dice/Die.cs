@@ -22,7 +22,6 @@ namespace Dice
 
     public partial class Die
         : MonoBehaviour
-        , Central.IDie
     {
         const float SCALE_2G = 2.0f;
         const float SCALE_4G = 4.0f;

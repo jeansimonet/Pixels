@@ -17,12 +17,16 @@ public class UIRuleActionToken : MonoBehaviour
 
     UIParameterManager.ObjectParameterList parameters;
 
+    public delegate void ActionChangedEvent(Behaviors.EditRule rule, Behaviors.EditAction action);
+    public ActionChangedEvent onActionChanged;
+
     void OnDestroy()
     {
         foreach (var parameter in parameters.parameters)
         {
             GameObject.Destroy(parameter.gameObject);
         }
+        parameters.onParameterChanged -= OnActionChanged;
         parameters = null;
     }
 
@@ -35,12 +39,15 @@ public class UIRuleActionToken : MonoBehaviour
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(action, parametersRoot);
+        parameters.onParameterChanged += OnActionChanged;
     }
 
     void SetActionType(Behaviors.ActionType newType)
     {
         if (newType != editAction.type)
         {
+            onActionChanged?.Invoke(parentRule, editAction);
+    
             // Change the type, which really means create a new action and replace the old one
             var newAction = Behaviors.EditAction.Create(newType);
 
@@ -55,6 +62,13 @@ public class UIRuleActionToken : MonoBehaviour
             parameters = UIParameterManager.Instance.CreateControls(newAction, parametersRoot);
 
             editAction = newAction;
+    
+            onActionChanged?.Invoke(parentRule, editAction);
         }
+    }
+
+    void OnActionChanged(EditObject parentObject, UIParameter parameter, object newValue)
+    {
+        onActionChanged?.Invoke(parentRule, editAction);
     }
 }

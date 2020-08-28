@@ -34,10 +34,6 @@ public class UIPresetView : PixelsApp.Page
         }
     }
 
-    void OnEnable()
-    {
-    }
-
     void OnDisable()
     {
         if (DiceRendererManager.Instance != null && this.dieRenderer != null)
@@ -163,7 +159,8 @@ public class UIPresetView : PixelsApp.Page
     UIAssignmentToken CreateAssignmentToken(Presets.EditDieAssignment assignment)
     {
         var uiass = GameObject.Instantiate<UIAssignmentToken>(assignmentTokenPrefab, assignmentsRoot);
-        uiass.Setup(assignment, (ed, d) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
+        uiass.Setup(assignment, (ed) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
+        uiass.onChange += OnAssignmentChanged;
         uiass.onDelete.AddListener(() => DeleteAssignment(assignment));
         return uiass;
     }
@@ -187,5 +184,12 @@ public class UIPresetView : PixelsApp.Page
                 editPreset.dieAssignments.Remove(assignment);
                 RefreshView();
             });
+    }
+
+    void OnAssignmentChanged(Presets.EditDieAssignment editAssignment)
+    {
+        presetDirty = true;
+        saveButton.gameObject.SetActive(true);
+        RefreshView();
     }
 }

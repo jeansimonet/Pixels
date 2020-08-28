@@ -226,6 +226,20 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         presets.Remove(editPreset);
     }
 
+    public IEnumerable<Presets.EditPreset> CollectPresetsForDie(Dice.EditDie die)
+    {
+        return presets.Where(b => b.DependsOnDie(die));
+    }
+
+    public void DeleteDie(EditDie editDie)
+    {
+        foreach (var preset in presets)
+        {
+            preset.DeleteDie(editDie);
+        }
+        dice.Remove(editDie);
+    }
+
     void OnEnable()
     {
         LoadData();

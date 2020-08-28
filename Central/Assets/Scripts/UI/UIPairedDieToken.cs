@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Dice;
+using System.Linq;
+using System.Text;
 
 public class UIPairedDieToken : MonoBehaviour
 {
@@ -26,9 +29,9 @@ public class UIPairedDieToken : MonoBehaviour
     public Sprite buttonExpandedSprite;
 
     public bool expanded => expandGroup.activeSelf;
-    public DiceManager.ManagedDie die => dieView.die;
+    public EditDie die => dieView.die;
 
-    public void Setup(DiceManager.ManagedDie die)
+    public void Setup(EditDie die)
     {
         dieView.Setup(die);
     }
@@ -51,15 +54,42 @@ public class UIPairedDieToken : MonoBehaviour
     void OnForget()
     {
         PixelsApp.Instance.ShowDialogBox(
-            "Forget " + die.editDie.name + "?",
+            "Forget " + die.name + "?",
             "Are you sure you want to remove it from your dice bag?",
             "Forget",
             "Cancel",
-            (forget) =>
+            res =>
             {
-                if (forget)
+                if (res)
                 {
-                    DiceManager.Instance.ForgetDie(die.editDie);
+                    var dependentPresets = AppDataSet.Instance.CollectPresetsForDie(die);
+                    if (dependentPresets.Any())
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append("The following presets depend on ");
+                        builder.Append(die.name);
+                        builder.AppendLine(":");
+                        foreach (var b in dependentPresets)
+                        {
+                            builder.Append("\t");
+                            builder.AppendLine(b.name);
+                        }
+                        builder.Append("Are you sure you want to forget it?");
+
+                        PixelsApp.Instance.ShowDialogBox("Die In Use!", builder.ToString(), "Ok", "Cancel", res2 =>
+                        {
+                            if (res2)
+                            {
+                                DiceManager.Instance.ForgetDie(die);
+                                AppDataSet.Instance.SaveData();
+                            }
+                        });
+                    }
+                    else
+                    {
+                        DiceManager.Instance.ForgetDie(die);
+                        AppDataSet.Instance.SaveData();
+                    }
                 }
             });
     }
