@@ -60,11 +60,9 @@ public class UIPatternView
         {
             if (previewDie.die != null)
             {
-                previewDie.die.SetStandardMode(_ =>
-                {
-                    DiceManager.Instance.DisconnectDie(previewDie);
-                    previewDie = null;
-                });
+                previewDie.die.SetStandardMode();
+                DiceManager.Instance.DisconnectDie(previewDie);
+                previewDie = null;
             }
             else
             {
@@ -211,12 +209,7 @@ public class UIPatternView
             }
             else
             {
-                bool acknowledged = false;
-                previewDie.die.SetLEDAnimatorMode(_ =>
-                {
-                    acknowledged = true;
-                });
-                yield return new WaitUntil(() => acknowledged);
+                previewDie.die.SetLEDAnimatorMode();
             }
         }
 

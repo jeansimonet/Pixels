@@ -43,14 +43,7 @@ public partial class Die
         where T : DieMessage
     {
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
-    }
-
-    void WriteMessage<T>(T message, System.Action<bool> callback)
-        where T : DieMessage
-    {
-        byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, callback);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length);
     }
 
     IEnumerator WaitForMessageCr(DieMessageType msgType, System.Action<DieMessage> msgReceivedCallback)
@@ -84,13 +77,7 @@ public partial class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, (res) =>
-        {
-            if (!res)
-            {
-                errorAction?.Invoke();
-            }
-        });
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length);
         while (ackMessage == null && Time.time < startTime + timeOut)
         {
             yield return null;
@@ -362,19 +349,19 @@ public partial class Die
         PostMessage(new DieMessageCalibrateFace() {face = (byte)face});
     }
 
-    public void SetStandardMode(System.Action<bool> callback)
+    public void SetStandardMode()
     {
-        WriteMessage(new DieMessageSetStandardState(), callback);
+        PostMessage(new DieMessageSetStandardState());
     }
 
-    public void SetLEDAnimatorMode(System.Action<bool> callback)
+    public void SetLEDAnimatorMode()
     {
-        WriteMessage(new DieMessageSetLEDAnimState(), callback);
+        PostMessage(new DieMessageSetLEDAnimState());
     }
 
-    public void SetBattleMode(System.Action<bool> callback)
+    public void SetBattleMode()
     {
-        WriteMessage(new DieMessageSetBattleState(), callback);
+        PostMessage(new DieMessageSetBattleState());
     }
 
     public void PrintNormals()
