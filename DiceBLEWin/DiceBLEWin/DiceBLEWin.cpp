@@ -1025,15 +1025,11 @@ void _winBluetoothLEWriteCharacteristic(const char* address, const char* service
 			newCharVal->DataSize = length;
 			memcpy(newCharVal->Data, data, length);
 
-			HRESULT hr = BluetoothGATTSetCharacteristicValue(cservice->deviceHandle, &(*charIt), newCharVal, NULL, BLUETOOTH_GATT_FLAG_NONE);
-			if (hr == S_OK)
-			{
-				// Notify that we got characteristic info
-				std::string wroteCharacteristicMessage = "DidWriteCharacteristic~";
-				wroteCharacteristicMessage.append(characteristic);
-				SendBluetoothMessage(wroteCharacteristicMessage.c_str());
-			}
-			else
+			ULONG flags = BLUETOOTH_GATT_FLAG_NONE;
+			if (withResponse)
+				BLUETOOTH_GATT_FLAG_WRITE_WITHOUT_RESPONSE;
+			HRESULT hr = BluetoothGATTSetCharacteristicValue(cservice->deviceHandle, &(*charIt), newCharVal, NULL, flags);
+			if (hr != S_OK)
 			{
 				_com_error err(hr);
 				SendError(std::string("Could not fetch characteristic value for ").append(characteristic).append(BLEUtils::ToNarrow(err.ErrorMessage())).c_str());
@@ -1059,6 +1055,13 @@ void _winBluetoothLEWriteCharacteristic(const char* address, const char* service
 void CALLBACK HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 {
 	PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
+
+
+	//// Notify that we got characteristic info
+	//std::string wroteCharacteristicMessage = "DidWriteCharacteristic~";
+	//wroteCharacteristicMessage.append(characteristic);
+	//SendBluetoothMessage(wroteCharacteristicMessage.c_str());
+
 
 	// Find the characteristic
 	auto charInfo = (BLERegisteredCharacteristicInfo*)Context;

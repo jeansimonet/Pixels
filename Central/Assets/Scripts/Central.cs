@@ -28,7 +28,6 @@ public class Central : SingletonMonoBehaviour<Central>
             Connected,
             Subscribing,
             Ready,
-            Writing,
             Disconnecting,
         }
 
@@ -44,7 +43,6 @@ public class Central : SingletonMonoBehaviour<Central>
         // These are set and cleared depending on what is going on
         public System.Action<IDie, int, byte[]> onCustomAdvertisingData;
         public System.Action<IDie, bool, string> onConnectionResult;
-        public System.Action<IDie, bool, string> onWriteResult;
         public System.Action<IDie, byte[]> onData;
         public System.Action<IDie, bool, string> onDisconnectionResult;
         public System.Action<IDie, string> onUnexpectedDisconnection;
@@ -212,7 +210,7 @@ public class Central : SingletonMonoBehaviour<Central>
     /// <param name="bytes">The data to write</param>
     /// <param name="length">The length of the data (can be less than the buffer length)</param>
     /// <param name="bytesWrittenCallback">Callback for when the data is written</param>
-    public void WriteDie(IDie die, byte[] bytes, int length, System.Action<IDie, bool, string> bytesWrittenCallback)
+    public void WriteDie(IDie die, byte[] bytes, int length)
     {
         if (_dice.TryGetValue(die.address, out Die ddie))
         {
@@ -222,12 +220,8 @@ public class Central : SingletonMonoBehaviour<Central>
                 return;
             }
 
-            // Set the callbacks
-            ddie.onWriteResult = bytesWrittenCallback;
-            ddie.state = Die.State.Writing;
-
             // Write the data!
-            BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, OnCharacteristicWritten);
+            BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, null);
         }
         else
         {
@@ -333,15 +327,6 @@ public class Central : SingletonMonoBehaviour<Central>
                         // Otherwise there will still be a subscription success/fail event and we'll trigger
                         // the next one then.
                         StartNextSubscribeToCharacteristic();
-                    }
-                    break;
-                case Die.State.Writing:
-                    {
-                        die.onWriteResult?.Invoke(die, false, error);
-                        die.onWriteResult = null;
-                        die.state = Die.State.Ready;
-                        Debug.LogError("Write Error: " + die.name + ": " + error);
-                        errorAttributed = true;
                     }
                     break;
                 case Die.State.Ready:
@@ -484,15 +469,6 @@ public class Central : SingletonMonoBehaviour<Central>
                         // Otherwise there will still be a subscription success/fail event and we'll trigger
                         // the next one then.
                         StartNextSubscribeToCharacteristic();
-                    }
-                    break;
-                case Die.State.Writing:
-                    {
-                        string errorString = "Disconnected while writing data to device";
-                        die.onWriteResult?.Invoke(die, false, errorString);
-                        die.onUnexpectedDisconnection?.Invoke(die, errorString);
-                        _dice.Remove(address);
-                        Debug.LogError("Disconnected " + die.name + ":" + errorString);
                     }
                     break;
                 case Die.State.Ready:
@@ -639,24 +615,6 @@ public class Central : SingletonMonoBehaviour<Central>
             BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
 
             StartNextSubscribeToCharacteristic();
-        }
-    }
-
-    void OnCharacteristicWritten(string characteristicId)
-    {
-        // It sucks that the bluetooth interface doesn't tell us the die...
-        // So assume it to be the first die that is currently writing
-        // It's incorrect, but it's the best we can do.
-        var die = _dice.Values.FirstOrDefault(d => d.state == Die.State.Writing);
-        if (die != null)
-        {
-            die.state = Die.State.Ready;
-            die.onWriteResult?.Invoke(die, true, null);
-            die.onWriteResult = null;
-        }
-        else
-        {
-            Debug.LogError("Unknown die received data!");
         }
     }
 

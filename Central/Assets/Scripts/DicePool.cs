@@ -245,10 +245,10 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// <summary>
     /// Write some data to the die
     /// </sumary>
-    public void WriteDie(Die die, byte[] bytes, int length, System.Action<bool> bytesWrittenCallback)
+    public void WriteDie(Die die, byte[] bytes, int length)
     {
         var dt = dice.First(p => p.die == die);
-        Central.Instance.WriteDie(dt.centralDie, bytes, length, (d, r, s) => bytesWrittenCallback?.Invoke(r));
+        Central.Instance.WriteDie(dt.centralDie, bytes, length);
     }
 
     void Awake()
