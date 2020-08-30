@@ -25,6 +25,25 @@ public class UIParameterManager : SingletonMonoBehaviour<UIParameterManager>
 
         // List all public fields
         var objType = objectToReflect.GetType();
+
+        var props = objType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var prop in props)
+        {
+            // Find a parameter ui for this property type
+            var prefab = parameterPrefabs.FirstOrDefault(pp => pp.CanEdit(prop.PropertyType, prop.GetCustomAttributes(false)));
+            if (prefab != null)
+            {
+                // Create the UI
+                var uiparam = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity, root);
+                uiparam.Setup(prop, objectToReflect);
+                uiparam.onParameterModified += (ui, val) =>
+                {
+                    reflectedObj.onParameterChanged?.Invoke(objectToReflect, ui, val);
+                };
+                reflectedObj.parameters.Add(uiparam);
+            }
+        }
+
         var fields = objType.GetFields(BindingFlags.Public | BindingFlags.Instance);
         foreach (var field in fields)
         {

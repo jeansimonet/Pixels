@@ -8,6 +8,8 @@ namespace Animations
     public class EditAnimationSimple
         : EditAnimation
     {
+        [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
+        public override float duration { get; set; }
         [FaceMask, IntRange(0, 19)]
 		public int faces = 0xFFFFF;
         public Color32 color = new Color32(0xFF, 0x30, 0x00, 0xff);

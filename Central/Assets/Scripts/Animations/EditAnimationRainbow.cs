@@ -8,6 +8,8 @@ namespace Animations
     public class EditAnimationRainbow
         : EditAnimation
     {
+        [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
+        public override float duration { get; set; }
         [FaceMask, IntRange(0, 19)]
 		public int faces = 0xFFFFF;
         [Index, IntRange(1, 10)]

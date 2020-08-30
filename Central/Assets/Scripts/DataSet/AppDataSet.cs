@@ -23,6 +23,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     {
         public int jsonVersion = 1;
         public List<EditDie> dice = new List<EditDie>();
+        public List<EditPattern> patterns = new List<EditPattern>();
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
@@ -38,6 +39,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     Data data = new Data();
     public List<EditDie> dice => data.dice;
+    public List<EditPattern> patterns => data.patterns;
     public List<EditAnimation> animations => data.animations;
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;

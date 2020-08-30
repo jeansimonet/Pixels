@@ -68,7 +68,6 @@ public class UIPatternEditor : MonoBehaviour
 		_texture = new Texture2D(512, 20, TextureFormat.ARGB32, false);
         _texture.filterMode = FilterMode.Point;
         _texture.wrapMode = TextureWrapMode.Clamp;
-        patternPreview.texture = _texture;        
     }
 
 	void OnDestroy()
@@ -112,29 +111,8 @@ public class UIPatternEditor : MonoBehaviour
 
     void RepaintPreview()
     {
-		Color[] pixels = new Color[512 * 20];
-        for (int i = 0; i < pixels.Length; ++i)
-        {
-            pixels[i] = Color.black;
-        }
-
-        for (int j = 0; j < currentPattern.gradients.Count; ++j)
-        {
-            var currentGradient = currentPattern.gradients[j];
-            int x = 0, lastMax = 0;
-            for (int i = 1; i < currentGradient.keyframes.Count; ++i)
-            {
-                int max = Mathf.RoundToInt(currentGradient.keyframes[i].time / 0.02f);
-                for (; x < max; ++x)
-                {
-                    Color prevColor = new Color(currentGradient.keyframes[i - 1].intensity, currentGradient.keyframes[i - 1].intensity, currentGradient.keyframes[i - 1].intensity);
-                    Color nextColor = new Color(currentGradient.keyframes[i].intensity, currentGradient.keyframes[i].intensity, currentGradient.keyframes[i].intensity);
-                    pixels[j * _texture.width + x] = Color.Lerp(prevColor, nextColor, ((float)x - lastMax) / (max - lastMax));
-                }
-                lastMax = max;
-            }
-        }
-		_texture.SetPixels(pixels);
-		_texture.Apply(false);
+		Object.Destroy(_texture);
+        _texture = currentPattern.ToTexture();
+        patternPreview.texture = _texture;        
     }
 }

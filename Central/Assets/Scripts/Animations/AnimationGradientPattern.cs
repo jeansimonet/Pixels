@@ -126,6 +126,7 @@ namespace Animations
 		public byte padding_type { get; set; } // to keep duration 16-bit aligned
 		public ushort duration { get; set; } // in ms
 
+        public ushort speedMultiplier256; // A multiplier to the duration, scaled to 256
 		public ushort tracksOffset; // offset into a global buffer of tracks
 		public ushort trackCount;
 		public ushort gradientTrackOffset;
@@ -142,8 +143,6 @@ namespace Animations
 	public class AnimationInstanceGradientPattern
 		: AnimationInstance
 	{
-		public uint specialColorPayload; // meaning varies
-
         public AnimationInstanceGradientPattern(AnimationGradientPattern preset, DataSet.AnimationBits bits)
             : base(preset, bits)
         {
@@ -165,8 +164,10 @@ namespace Animations
 
             // Figure out the color from the gradient
             var gradient = animationBits.getRGBTrack(preset.gradientTrackOffset);
-            int gradientTime = time * 512 / preset.duration;
+            int gradientTime = time * 1000 / preset.duration;
             uint gradientColor = gradient.evaluateColor(animationBits, gradientTime);
+
+            int trackTime = time * 256 / preset.speedMultiplier256;
 
             // Each track will append its led indices and colors into the return array
             // The assumption is that led indices don't overlap between tracks of a single animation,
@@ -176,8 +177,8 @@ namespace Animations
             var colors = new uint[20];
             for (int i = 0; i < preset.trackCount; ++i)
             {
-                var track = animationBits.getTrack((ushort)(preset.tracksOffset + i)); 
-                int count = track.evaluate(animationBits, gradientColor, time, indices, colors);
+                var track = animationBits.getTrack((ushort)(preset.tracksOffset + i));
+                int count = track.evaluate(animationBits, gradientColor, trackTime, indices, colors);
                 for (int j = 0; j < count; ++j)
                 {
                     retIndices[totalCount+j] = indices[j];

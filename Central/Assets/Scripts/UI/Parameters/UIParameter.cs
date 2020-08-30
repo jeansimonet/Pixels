@@ -43,6 +43,24 @@ public abstract class UIParameter : MonoBehaviour
             fieldInfo.GetCustomAttributes(false));
     }
 
+    public void Setup(System.Reflection.PropertyInfo propertyInfo, object parentObject)
+    {
+        var r = new Regex(@"
+                (?<=[A-Z])(?=[A-Z][a-z]) |
+                (?<=[^A-Z])(?=[A-Z]) |
+                (?<=[A-Za-z])(?=[^A-Za-z])", RegexOptions.IgnorePatternWhitespace);
+
+        SetupControls(
+            r.Replace(propertyInfo.Name.Substring(0, 1).ToUpper() + propertyInfo.Name.Substring(1), " "),
+            () => propertyInfo.GetValue(parentObject),
+            (val) =>
+            {
+                propertyInfo.SetValue(parentObject, val);
+                onParameterModified?.Invoke(this, val);
+            },
+            propertyInfo.GetCustomAttributes(false));
+    }
+
     // Start is called before the first frame update
     void Start()
     {

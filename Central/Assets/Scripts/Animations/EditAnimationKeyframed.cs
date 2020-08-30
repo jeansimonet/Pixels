@@ -53,6 +53,9 @@ namespace Animations
     public class EditAnimationKeyframed
         : EditAnimation
     {
+        [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
+        public override float duration { get; set; }
+
 		public List<EditRGBTrack> tracks = new List<EditRGBTrack>();
 
         public override AnimationType type => AnimationType.Keyframed;

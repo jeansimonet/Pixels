@@ -16,8 +16,7 @@ namespace Animations
         : EditObject
     {
         public string name;
-        [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
-		public float duration;
+		public abstract float duration { get; set; }
         public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = Dice.DesignAndColor.V5_Grey };
 
         [JsonIgnore]
