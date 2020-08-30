@@ -48,6 +48,8 @@ public class UIDiscoveredDieView : MonoBehaviour
         }
         batteryView.SetLevel(die.batteryLevel);
         signalView.SetRssi(die.rssi);
+        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        die.OnRssiChanged += OnRssiChanged;
         SetSelected(false);
     }
 
@@ -72,10 +74,23 @@ public class UIDiscoveredDieView : MonoBehaviour
 
     void OnDestroy()
     {
+        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        die.OnRssiChanged += OnRssiChanged;
         if (this.dieRenderer != null)
         {
             DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);
             this.dieRenderer = null;
         }
     }
+    
+    void OnBatteryLevelChanged(Die die, float? level)
+    {
+        batteryView.SetLevel(die.batteryLevel);
+    }
+
+    void OnRssiChanged(Die die, int? rssi)
+    {
+        signalView.SetRssi(die.rssi);
+    }
+
 }

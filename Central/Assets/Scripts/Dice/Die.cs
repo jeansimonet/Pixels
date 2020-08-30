@@ -63,9 +63,10 @@ namespace Dice
         /// <summary>
         /// This data structure mirrors the data in firmware/bluetooth/bluetooth_stack.cpp
         /// </sumary>
-        [System.Serializable]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct CustomAdvertisingData
         {
+            public ushort manufacturerId;
             // Die type identification
             public DesignAndColor designAndColor; // Physical look, also only 8 bits
             public byte faceCount; // Which kind of dice this is
@@ -196,6 +197,8 @@ namespace Dice
             {
                 OnStateChanged?.Invoke(this, state, face);
             }
+            OnBatteryLevelChanged?.Invoke(this, batteryLevel);
+            OnRssiChanged?.Invoke(this, rssi);
         }
 
         void SetConnectionState(ConnectionState newState)
