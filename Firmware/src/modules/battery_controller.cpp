@@ -272,7 +272,7 @@ namespace BatteryController
         if (newState != currentBatteryState) {
             switch (newState) {
                 case BatteryState_Done:
-                    NRF_LOG_INFO(">>> Battery finished charging, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
+                    NRF_LOG_INFO("Battery finished charging");
                     break;
                 case BatteryState_Ok:
                     NRF_LOG_INFO(">>> Battery is now Ok, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
@@ -287,6 +287,11 @@ namespace BatteryController
                     NRF_LOG_INFO(">>> Battery is Unknown, vBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
                     break;
             }
+            float level = LookupChargeLevel(vBat);
+            NRF_LOG_INFO("\tBat = " NRF_LOG_FLOAT_MARKER " %% ", NRF_LOG_FLOAT(level*100));
+            NRF_LOG_INFO("\tvBat = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vBat));
+            vcoil = Battery::checkVCoil();
+            NRF_LOG_INFO("\tvCoil = " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(vcoil));
             currentBatteryState = newState;
             for (int i = 0; i < clients.Count(); ++i) {
     			clients[i].handler(clients[i].token, newState);
