@@ -101,13 +101,36 @@ public class UIPairedDieView : MonoBehaviour
                 errorTextRoot.gameObject.SetActive(false);
                 break;
             case Die.ConnectionState.Available:
-                dieRenderer.SetAuto(true);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "Available";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(false);
+                switch (die.die.lastError)
+                {
+                    case Die.LastError.None:
+                        dieRenderer.SetAuto(true);
+                        dieRenderImage.color = Color.white;
+                        batteryView.gameObject.SetActive(true);
+                        signalView.gameObject.SetActive(true);
+                        statusText.text = "Available";
+                        disconnectedTextRoot.gameObject.SetActive(false);
+                        errorTextRoot.gameObject.SetActive(false);
+                        break;
+                    case Die.LastError.ConnectionError:
+                        dieRenderer.SetAuto(false);
+                        dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
+                        batteryView.gameObject.SetActive(false);
+                        signalView.gameObject.SetActive(false);
+                        statusText.text = "Connection Error";
+                        disconnectedTextRoot.gameObject.SetActive(true);
+                        errorTextRoot.gameObject.SetActive(true);
+                        break;
+                    case Die.LastError.Disconnected:
+                        dieRenderer.SetAuto(false);
+                        dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
+                        batteryView.gameObject.SetActive(false);
+                        signalView.gameObject.SetActive(false);
+                        statusText.text = "Disconnected";
+                        disconnectedTextRoot.gameObject.SetActive(true);
+                        errorTextRoot.gameObject.SetActive(true);
+                        break;
+                }
                 break;
             case Die.ConnectionState.Connecting:
                 dieRenderer.SetAuto(false);
@@ -135,15 +158,6 @@ public class UIPairedDieView : MonoBehaviour
                 statusText.text = "Ready";
                 disconnectedTextRoot.gameObject.SetActive(false);
                 errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.CommError:
-                dieRenderer.SetAuto(false);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(false);
-                signalView.gameObject.SetActive(false);
-                statusText.text = "Communication Error";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(true);
                 break;
             }
         }

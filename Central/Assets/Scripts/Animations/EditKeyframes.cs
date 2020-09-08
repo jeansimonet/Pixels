@@ -154,6 +154,7 @@ namespace Animations
     [System.Serializable]
     public class EditPattern
     {
+        public string name = "Pattern";
         public List<EditGradient> gradients = new List<EditGradient>();
         public float duration => gradients.Count > 0 ? gradients.Max(g => g.duration) : 1.0f;
 

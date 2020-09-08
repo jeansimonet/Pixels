@@ -40,7 +40,7 @@ public class UIDiscoveredDieView : MonoBehaviour
         dieNameText.text = die.name;
         if (die.deviceId != 0)
         {
-            dieIDText.text = "ID: " + die.deviceId.ToString("X016");
+            dieIDText.text = "ID: " + die.deviceId.ToString("X08");
         }
         else
         {

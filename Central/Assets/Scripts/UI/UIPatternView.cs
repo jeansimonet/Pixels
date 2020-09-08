@@ -195,26 +195,29 @@ public class UIPatternView
                     previewDieSelected = res;
                 });
             yield return new WaitUntil(() => previewDieSelected.HasValue);
-
-            string error = null;
-            yield return DiceManager.Instance.ConnectDie(previewDie, (_, res, errorMsg) =>
-            {
-                error = errorMsg;
-            });
-            if (error != null)
-            {
-                bool acknowledged = false;
-                PixelsApp.Instance.ShowDialogBox("Could not connect.", error, "Ok", null, _ => acknowledged = true);
-                yield return new WaitUntil(() => acknowledged);
-            }
-            else
-            {
-                previewDie.die.SetLEDAnimatorMode();
-            }
         }
 
         if (previewDie != null)
         {
+            if (previewDie.die == null)
+            {
+                string error = null;
+                yield return DiceManager.Instance.ConnectDie(previewDie, (_, res, errorMsg) =>
+                {
+                    error = errorMsg;
+                });
+                if (error != null)
+                {
+                    bool acknowledged = false;
+                    PixelsApp.Instance.ShowDialogBox("Could not connect.", error, "Ok", null, _ => acknowledged = true);
+                    yield return new WaitUntil(() => acknowledged);
+                }
+                else
+                {
+                    previewDie.die.SetLEDAnimatorMode();
+                }
+            }
+
             if (previewDie.die != null)
             {
                 var editSet = AppDataSet.Instance.ExtractEditSetForAnimation(editAnimation);

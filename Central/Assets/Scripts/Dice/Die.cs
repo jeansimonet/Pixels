@@ -54,11 +54,18 @@ namespace Dice
             Identifying,    // Getting info from the die, making sure it is valid to be used (right firmware, etc...)
             Ready,          // Die is ready for general use
             Disconnecting,  // We are currently disconnecting from this die
-            CommError,      // There was an error communicating with the die
-            Removed,        // Die was removed (but it may still be pointed at by presets)
         }
 
         public ConnectionState connectionState { get; private set; } = ConnectionState.Invalid;
+
+        public enum LastError
+        {
+            None = 0,
+            ConnectionError,
+            Disconnected
+        }
+
+        public LastError lastError { get; private set; } = LastError.None;
 
         /// <summary>
         /// This data structure mirrors the data in firmware/bluetooth/bluetooth_stack.cpp
@@ -66,10 +73,12 @@ namespace Dice
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct CustomAdvertisingData
         {
-            public ushort manufacturerId;
             // Die type identification
             public DesignAndColor designAndColor; // Physical look, also only 8 bits
             public byte faceCount; // Which kind of dice this is
+
+            // Device ID
+            public uint deviceId;
 
             // Current state
             public Die.RollState rollState; // Indicates whether the dice is being shaken
@@ -80,7 +89,7 @@ namespace Dice
         public int faceCount { get; private set; } = 0;
         public DesignAndColor designAndColor { get; private set; } = DesignAndColor.Unknown;
         public byte currentBehaviorIndex { get; private set; } = 0;
-        public System.UInt64 deviceId { get; private set; } = 0;
+        public uint deviceId { get; private set; } = 0;
         public string firmwareVersionId { get; private set; } = "Unknown";
         public string address { get; private set; } = ""; // name is stored on the gameObject itself
         public uint dataSetHash { get; private set; } = 0;
@@ -125,6 +134,9 @@ namespace Dice
         public delegate void ConnectionStateChangedEvent(Die die, ConnectionState oldState, ConnectionState newState);
         public ConnectionStateChangedEvent OnConnectionStateChanged;
 
+        public delegate void ErrorEvent(Die die, LastError error);
+        public ErrorEvent OnError;
+
         public delegate void SettingsChangedEvent(Die die);
         public SettingsChangedEvent OnSettingsChanged;
 
@@ -156,7 +168,14 @@ namespace Dice
             messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
         }
 
-        public System.Action<ConnectionState> Setup(string name, string address, System.UInt64 deviceId, int faceCount, DesignAndColor design)
+        public void Setup(
+            string name,
+            string address,
+            uint deviceId,
+            int faceCount,
+            DesignAndColor design,
+            out System.Action<ConnectionState> outConnectionSetter,
+            out System.Action<LastError> outLastErrorSetter)
         {
             bool appearanceChanged = faceCount != this.faceCount || design != this.designAndColor;
             this.name = name;
@@ -168,7 +187,8 @@ namespace Dice
             {
                 OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
             }
-            return SetConnectionState;
+            outConnectionSetter = SetConnectionState;
+            outLastErrorSetter = SetLastError;
         }
 
         public void UpdateAddress(string address)
@@ -182,6 +202,7 @@ namespace Dice
             bool rollStateChanged = state != newData.rollState || face != newData.currentFace;
             faceCount = newData.faceCount;
             designAndColor = newData.designAndColor;
+            deviceId = newData.deviceId;
             state = newData.rollState;
             face = newData.currentFace;
             batteryLevel = (float)newData.batteryLevel / 255.0f;
@@ -209,6 +230,12 @@ namespace Dice
                 connectionState = newState;
                 OnConnectionStateChanged?.Invoke(this, oldState, newState);
             }
+        }
+
+        void SetLastError(LastError newError)
+        {
+            lastError = newError;
+            OnError?.Invoke(this, newError);
         }
 
         public void UpdateInfo(System.Action<Die, bool> onInfoUpdatedCallback)

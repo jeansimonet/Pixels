@@ -347,10 +347,11 @@ public class Central : SingletonMonoBehaviour<Central>
         if (!errorAttributed)
         {
             Debug.LogError(error);
-
-            // Then pass it onto the current error handler(s)
-            onBluetoothError?.Invoke(error);
         }
+
+        // Then pass it onto the current error handler(s)
+        onBluetoothError?.Invoke(error);
+        
     }
 
     void OnDeviceDiscovered(

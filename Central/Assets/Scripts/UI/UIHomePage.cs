@@ -158,9 +158,8 @@ public class UIHomePage
         var editDieInfos = new Dictionary<EditDie, EditDieInfo>();
         foreach (var editDie in editDice)
         {
-            bool connected = false;
-            yield return DiceManager.Instance.ConnectDie(editDie, (ed, res, errorMsg) => connected = res);
-            if (connected)
+            yield return DiceManager.Instance.ConnectDie(editDie, null);
+            if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
             {
                 // Update the die info
                 yield return editDie.die.GetDieInfo(null);
@@ -182,7 +181,7 @@ public class UIHomePage
         {
             var presetDice = uip.editPreset.dieAssignments.Select(da => da.die);
             bool allPresetDiceReady = presetDice.All(ed2 =>
-                ed2 != null &&
+                ed2 != null && ed2.die != null &&
                 ed2.die.connectionState == Die.ConnectionState.Ready &&
                 editDieInfos[ed2] != null);
             if (allPresetDiceReady)
@@ -209,7 +208,7 @@ public class UIHomePage
         }
 
         // Now that we're done we can disconnect all
-        foreach (var editDie in editDice)
+        foreach (var editDie in editDieInfos.Keys)
         {
             DiceManager.Instance.DisconnectDie(editDie);
         }

@@ -298,7 +298,7 @@ namespace Dice
         public DesignAndColor designAndColor; // Physical look
         public byte currentBehaviorIndex;
         public uint dataSetHash;
-        public System.UInt64 deviceId; // A unique identifier
+        public uint deviceId; // A unique identifier
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = DieMessages.VERSION_INFO_SIZE)]
         public byte[] versionInfo; // Firmware version string, i.e. "10_05"
     }

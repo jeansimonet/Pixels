@@ -31,6 +31,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public void Clear()
         {
             dice.Clear();
+            patterns.Clear();
             animations.Clear();
             behaviors.Clear();
             presets.Clear();
@@ -141,6 +142,24 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         }
         animations.Remove(animation);
     }
+
+
+    public EditPattern AddNewDefaultPattern()
+    {
+        var newPattern = new Animations.EditPattern();
+        newPattern.name = "New Pattern";
+        for (int i = 0; i < 20; ++i)
+        {
+            var grad = new EditGradient();
+            grad.keyframes.Add(new EditKeyframe() { time = 0.0f, intensity = 0.0f });
+            grad.keyframes.Add(new EditKeyframe() { time = 0.5f, intensity = 1.0f });
+            grad.keyframes.Add(new EditKeyframe() { time = 1.0f, intensity = 0.0f });
+            newPattern.gradients.Add(grad);
+        }
+        patterns.Add(newPattern);
+        return newPattern;
+    }
+
 
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAnimation(Animations.EditAnimation anim)
     {

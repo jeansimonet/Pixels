@@ -59,15 +59,16 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             }
             else
             {
-                DicePool.Instance.ConnectDie(die);
-                yield return new WaitUntil(() => die.connectionState == Die.ConnectionState.Ready || die.connectionState == Die.ConnectionState.CommError);
+                bool? res = null;
+                DicePool.Instance.ConnectDie(die, (d, r, s) => res = r);
+                yield return new WaitUntil(() => res.HasValue);
                 if (die.connectionState == Die.ConnectionState.Ready)
                 {
                     if (die.deviceId == 0)
                     {
                         Debug.LogError("Die " + die.name + " was connected to but doesn't have a proper device Id");
                         bool acknowledge = false;
-                        PixelsApp.Instance.ShowDialogBox("Identification Error", "Die " + die.name + " was connected to but doesn't have a proper device Id", "Ok", null, (res) => acknowledge = true);
+                        PixelsApp.Instance.ShowDialogBox("Identification Error", "Die " + die.name + " was connected to but doesn't have a proper device Id", "Ok", null, (_) => acknowledge = true);
                         yield return new WaitUntil(() => acknowledge);
                     }
                     else
@@ -80,14 +81,16 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                         onDieAdded?.Invoke(editDie);
                         editDie.die = die;
                     }
+                    res = null;
+                    DicePool.Instance.DisconnectDie(die, (d, r, s) => res = r);
+                    yield return new WaitUntil(() => res.HasValue);
                 }
                 else
                 {
                     bool acknowledge = false;
-                    PixelsApp.Instance.ShowDialogBox("Connection error", "Could not connect to " + die.name + " to add it to the dice bag.", "Ok", null, (res) => acknowledge = true);
+                    PixelsApp.Instance.ShowDialogBox("Connection error", "Could not connect to " + die.name + " to add it to the dice bag.", "Ok", null, (_) => acknowledge = true);
                     yield return new WaitUntil(() => acknowledge);
                 }
-                DicePool.Instance.DisconnectDie(die);
             }
         }
         PixelsApp.Instance.HideProgrammingBox();
@@ -126,150 +129,54 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             List<Die> discoveredDice = new List<Die>();
             void onDieDiscovered(Die newDie)
             {
-                discoveredDice.Add(newDie);
+                #if UNITY_EDITOR
+                if (newDie.name == editDie.name)
+                {
+                    discoveredDice.Add(newDie);
+                }
+                #else
+                if (newDie.deviceId == editDie.deviceId)
+                {
+                    discoveredDice.Add(newDie);
+                }
+                #endif
             }
 
             DicePool.Instance.BeginScanForDice(onDieDiscovered);
             float startScanTime = Time.time;
-            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || discoveredDice.Any(d => d.name == editDie.name || d.deviceId == editDie.deviceId));
+            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || discoveredDice.Any());
             DicePool.Instance.StopScanForDice(onDieDiscovered);
 
-            var die = discoveredDice.FirstOrDefault(d => d.name == editDie.name || d.deviceId == editDie.deviceId);
+            var die = discoveredDice.FirstOrDefault();
             if (die != null)
             {
-                if (die.deviceId == 0)
+                // We found the die, try to connect
+                bool? res = null;
+                DicePool.Instance.ConnectDie(die, (d, r, s) => res = r);
+                yield return new WaitUntil(() => res.HasValue);
+                if (die.connectionState == Die.ConnectionState.Ready)
                 {
-                    // Find out the device id of the die
-                    // Connect to the die
-                    DicePool.Instance.ConnectDie(die);
-                    yield return new WaitUntil(() => die.connectionState == Die.ConnectionState.Ready || die.connectionState == Die.ConnectionState.CommError);
-                    if (die.connectionState == Die.ConnectionState.Ready)
-                    {
-                        if (die.deviceId == editDie.deviceId)
-                        {
-                            editDie.die = die;
-                            dieReadyCallback?.Invoke(editDie, true, null);
-                        }
-                        else
-                        {
-                            // Wrong die
-                            DicePool.Instance.DisconnectDie(die);
-                            die = null;
-                        }
-                    }
-                    else
-                    {
-                        // Couldn't connect, keep looking
-                        DicePool.Instance.DisconnectDie(die);
-                        die = null;
-                    }
-                }
-                else if (die.deviceId != editDie.deviceId)
-                {
-                    // Wrong die
-                    die = null;
+                    editDie.die = die;
+                    dieReadyCallback?.Invoke(editDie, true, null);
                 }
                 else
                 {
-                    // We found the die, try to connect
-                    DicePool.Instance.ConnectDie(die);
-                    yield return new WaitUntil(() => die.connectionState == Die.ConnectionState.Ready || die.connectionState == Die.ConnectionState.CommError);
-                    if (die.connectionState == Die.ConnectionState.Ready)
-                    {
-                        editDie.die = die;
-                        dieReadyCallback?.Invoke(editDie, true, null);
-                    }
-                    else
-                    {
-                        // Couldn't connect, error out
-                        DicePool.Instance.DisconnectDie(die);
-                        dieReadyCallback?.Invoke(editDie, false, "Could not connect to Die " + editDie.name + ". Communication Error");
-                    }
+                    dieReadyCallback?.Invoke(editDie, false, "Could not connect to Die " + editDie.name + ". Communication Error");
                 }
             }
-
-            if (die == null)
-            {
-                // If we haven't found the die yet, keep looking
-                discoveredDice.Clear();
-                DicePool.Instance.BeginScanForDice(onDieDiscovered);
-                startScanTime = Time.time;
-                yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || discoveredDice.Any(d => d.deviceId == editDie.deviceId));
-                DicePool.Instance.StopScanForDice(onDieDiscovered);
-
-                die = discoveredDice.FirstOrDefault(d => d.deviceId == editDie.deviceId);
-                if (die != null)
-                {
-                    // We found it, try to connect
-                    DicePool.Instance.ConnectDie(die);
-                    yield return new WaitUntil(() => die.connectionState == Die.ConnectionState.Ready || die.connectionState == Die.ConnectionState.CommError);
-                    if (die.connectionState == Die.ConnectionState.Ready)
-                    {
-                        editDie.die = die;
-                        dieReadyCallback?.Invoke(editDie, true, null);
-                    }
-                    else
-                    {
-                        // Couldn't connect, error out
-                        DicePool.Instance.DisconnectDie(die);
-                        dieReadyCallback?.Invoke(editDie, false, "Could not connect to Die " + editDie.name + ". Communication Error");
-                    }
-                }
-                else
-                {
-                    // Worst case, try to connect to all the dice until we find the right one
-                    foreach (var d in discoveredDice)
-                    {
-                        DicePool.Instance.ConnectDie(d);
-                        yield return new WaitUntil(() => d.connectionState == Die.ConnectionState.Ready || d.connectionState == Die.ConnectionState.CommError);
-                        if (d.connectionState == Die.ConnectionState.Ready)
-                        {
-                            if (d.deviceId == editDie.deviceId)
-                            {
-                                // We finally found it
-                                editDie.die = d;
-                                dieReadyCallback?.Invoke(editDie, true, null);
-                                break;
-                            }
-                            else
-                            {
-                                // Wrong die
-                                DicePool.Instance.DisconnectDie(die);
-                                DicePool.Instance.DisconnectDie(d);
-                            }
-                        }
-                        else
-                        {
-                            // Else try the next one
-                            DicePool.Instance.DisconnectDie(die);
-                        }
-                    }
-
-                    if (die == null)
-                    {
-                        // Looked through all the discovered dice and didn't find the right one
-                        dieReadyCallback?.Invoke(editDie, false, "Could not find die " + editDie.name + ". Make sure it is charged and in range");
-                    }
-                }
-            }
-            // Else we found it
         }
         else
         {
             // We already know what die matches the edit die, connect to it!
-            DicePool.Instance.ConnectDie(editDie.die);
-            yield return new WaitUntil(() => editDie.die != null && (editDie.die.connectionState == Die.ConnectionState.Ready || editDie.die.connectionState == Die.ConnectionState.CommError));
+            bool? res = null;
+            DicePool.Instance.ConnectDie(editDie.die, (d, r, s) => res = r);
+            yield return new WaitUntil(() => res.HasValue);
             if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
             {
                 dieReadyCallback?.Invoke(editDie, true, null);
             }
             else
             {
-                // Couldn't connect, error out
-                if (editDie.die != null)
-                {
-                    DicePool.Instance.DisconnectDie(editDie.die);
-                }
                 dieReadyCallback?.Invoke(editDie, false, "Could not connect to Die " + editDie.name + ". Communication Error");
             }
         }
@@ -283,10 +190,10 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
     IEnumerator DisconnectDieCr(EditDie editDie)
     {
         yield return new WaitUntil(() => state == State.Idle);
-        DoDisconnectDie(editDie);
+        yield return StartCoroutine(DoDisconnectDie(editDie));
     }
 
-    void DoDisconnectDie(EditDie editDie)
+    IEnumerator DoDisconnectDie(EditDie editDie)
     {
         var dt = dice.First(p => p == editDie);
         if (dt == null)
@@ -303,7 +210,9 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         }
         else
         {
-            DicePool.Instance.DisconnectDie(dt.die);
+            bool? res = null;
+            DicePool.Instance.DisconnectDie(dt.die, (d, r, s) => res = r);
+            yield return new WaitUntil(() => res.HasValue);
         }
     }
 
@@ -351,6 +260,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         {
             bool dieConnected = false;
             yield return StartCoroutine(DoConnectDieCr(editDie, (_, res, errorMsg) => dieConnected = res));
+
             if (dieConnected)
             {
                 // Fetch battery level
@@ -362,8 +272,10 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                 bool rssiReceived = false;
                 editDie.die.GetRssi((d, i) => rssiReceived = true);
                 yield return new WaitUntil(() => rssiReceived == true);
+
+                yield return StartCoroutine(DoDisconnectDie(editDie));
             }
-            DoDisconnectDie(editDie);
+            // Else we've already disconnected
         }
         onEndRefreshPool?.Invoke();
         state = State.Idle;
@@ -430,11 +342,6 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             }
             // Else this is a die we don't care about
         }
-        // else
-        // {
-        //     // This *may* be a die we care about, add it to the list of dice we should check out
-        //     discoveredDieToCheckOut.Enqueue(die);
-        // }
     }
 
     void OnWillDestroyDie(Die die)

@@ -8,7 +8,7 @@ namespace Die
 	void initMainLogic();
 	void initDebugLogic();
 
-	uint64_t getDeviceID();
+	uint32_t getDeviceID();
     void update();
 }
 

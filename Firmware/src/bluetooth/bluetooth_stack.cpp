@@ -21,6 +21,7 @@
 #include "core/delegate_array.h"
 #include "modules/accelerometer.h"
 #include "modules/battery_controller.h"
+#include "die.h"
 
 using namespace Config;
 using namespace DriversNRF;
@@ -91,8 +92,7 @@ namespace Stack
     // Custom advertising data, so the Pixel app can identify dice before they're even connected
     struct CustomAdvertisingData
     {
-        Config::DiceVariants::DesignAndColor designAndColor; // Physical look, also only 8 bits
-        uint8_t faceCount; // Which kind of dice this is
+        uint32_t deviceId; // Unique die ID
         Accelerometer::RollState rollState; // Indicates whether the dice is being shaken, 8 bits
         uint8_t currentFace; // Which face is currently up
         uint8_t batteryLevel; // 8 bits, charge level 0 -> 255
@@ -104,7 +104,7 @@ namespace Stack
     // Buffer pointing to the custom advertising data, so Softdevice knows where and how big it is
     ble_advdata_manuf_data_t m_sp_manuf_advdata =
     {
-        .company_identifier = 0xABCD, // <-- should pick a good one!
+        .company_identifier = 0xABCD, // <-- will be replaced by design and face count
         .data               =
         {
             .size   = sizeof(customAdvertisingData),
@@ -446,11 +446,11 @@ namespace Stack
 
     void initCustomAdvertisingData() {
         // Initialize the custom advertising data
-        customAdvertisingData.faceCount = (uint8_t)Config::BoardManager::getBoard()->ledCount;
-        customAdvertisingData.designAndColor = Config::SettingsManager::getSettings()->designAndColor;
+        customAdvertisingData.deviceId = Die::getDeviceID();
         customAdvertisingData.batteryLevel = (uint8_t)(BatteryController::getCurrentLevel() * 255.0f);
         customAdvertisingData.currentFace = Accelerometer::currentFace();
         customAdvertisingData.rollState = Accelerometer::currentRollState();
+        adv_data.p_manuf_specific_data->company_identifier = (uint16_t)Config::BoardManager::getBoard()->ledCount << 8 | (uint16_t)Config::SettingsManager::getSettings()->designAndColor;
 
         // Update advertising data
         ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);

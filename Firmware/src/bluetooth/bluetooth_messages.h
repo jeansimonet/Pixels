@@ -105,7 +105,7 @@ struct MessageIAmADie
 	Config::DiceVariants::DesignAndColor designAndColor; // Physical look
 	uint8_t currentBehaviorIndex;
 	uint32_t dataSetHash;
-	uint64_t deviceId; // A unique identifier
+	uint32_t deviceId; // A unique identifier
 	char versionInfo[VERSION_INFO_SIZE]; // Firmware version string, i.e. "10_05"
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) { versionInfo[0] = 0; }
 };

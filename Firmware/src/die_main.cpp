@@ -208,9 +208,9 @@ namespace Die
        }
     }
 
-	uint64_t getDeviceID()
+	uint32_t getDeviceID()
     {
-		return (((uint64_t)NRF_FICR->DEVICEID[1]) << 32) + (uint64_t)NRF_FICR->DEVICEID[0];
+		return NRF_FICR->DEVICEID[1] ^ NRF_FICR->DEVICEID[0];
     }
 
     // Main loop!

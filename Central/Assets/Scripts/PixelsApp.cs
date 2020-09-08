@@ -15,6 +15,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIEnumPicker enumPicker;
     public UIPatternEditor patternEditor;
     public UIProgrammingBox programmingBox;
+    public UIPatternPicker patternPicker;
 
     public enum PageId
     {
@@ -130,6 +131,16 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             patternEditor.Show(title, previousPattern, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowPatternPicker(string title, Animations.EditPattern previousPattern, System.Action<bool, Animations.EditPattern> closeAction)
+    {
+        bool ret = !patternPicker.isShown;
+        if (ret)
+        {
+            patternPicker.Show(title, previousPattern, closeAction);
         }
         return ret;
     }
