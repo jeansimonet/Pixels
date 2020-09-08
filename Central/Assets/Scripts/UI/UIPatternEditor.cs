@@ -137,7 +137,7 @@ public class UIPatternEditor : MonoBehaviour
         #if UNITY_EDITOR
             FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select png", "", "png"));
         #else
-            NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "png" ); } );
+            NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "png" ) });
         #endif
 
         //var filePath = System.IO.Path.Combine(Application.persistentDataPath, $"pattern.png");
