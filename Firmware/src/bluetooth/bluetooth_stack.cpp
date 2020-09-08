@@ -89,6 +89,7 @@ namespace Stack
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
 	DelegateArray<RssiEventMethod, MAX_CLIENTS> rssiClients;
 
+#pragma pack( push, 1)
     // Custom advertising data, so the Pixel app can identify dice before they're even connected
     struct CustomAdvertisingData
     {
@@ -97,7 +98,7 @@ namespace Stack
         uint8_t currentFace; // Which face is currently up
         uint8_t batteryLevel; // 8 bits, charge level 0 -> 255
     };
-
+#pragma pack(pop)
     // Global custom manufacturer data
     CustomAdvertisingData customAdvertisingData;
 
