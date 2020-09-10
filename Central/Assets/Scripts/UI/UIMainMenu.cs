@@ -28,7 +28,6 @@ public class UIMainMenu : MonoBehaviour
         behaviorsButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.Behaviors));
         lightingButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.Patterns));
         ledPatternButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.GradientPatterns));
-        rgbPattherButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.RGBPatterns));
     }
 
     public void Show()

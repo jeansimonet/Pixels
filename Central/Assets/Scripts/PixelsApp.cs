@@ -13,11 +13,9 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIFacePicker facePicker;
     public UIGradientEditor gradientEditor;
     public UIEnumPicker enumPicker;
-    public UIPatternEditor patternEditor;
     public UIProgrammingBox programmingBox;
+    public UIPatternEditor patternEditor;
     public UIPatternPicker patternPicker;
-    public UIRGBPatternEditor rgbPatternEditor;
-    public UIRGBPatternPicker rgbPatternPicker;
 
     [Header("Controls")]
     public UIMainMenu mainMenu;
@@ -128,26 +126,6 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             patternPicker.Show(title, previousPattern, closeAction);
-        }
-        return ret;
-    }
-
-    public bool ShowRGBPatternEditor(string title, Animations.EditRGBPattern previousPattern, System.Action<bool, Animations.EditRGBPattern> closeAction)
-    {
-        bool ret = !patternEditor.isShown;
-        if (ret)
-        {
-            rgbPatternEditor.Show(title, previousPattern, closeAction);
-        }
-        return ret;
-    }
-
-    public bool ShowRGBPatternPicker(string title, Animations.EditRGBPattern previousPattern, System.Action<bool, Animations.EditRGBPattern> closeAction)
-    {
-        bool ret = !patternPicker.isShown;
-        if (ret)
-        {
-            rgbPatternPicker.Show(title, previousPattern, closeAction);
         }
         return ret;
     }

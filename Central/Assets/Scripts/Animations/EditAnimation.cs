@@ -37,19 +37,6 @@ namespace Animations
             // Base does not
             return false;
         }
-        public virtual void ReplaceRGBPattern(Animations.EditRGBPattern oldPattern, Animations.EditRGBPattern newPattern)
-        {
-            // Base does nothing
-        }
-        public virtual void DeleteRGBPattern(Animations.EditRGBPattern pattern)
-        {
-            // Base does nothing
-        }
-        public virtual bool DependsOnRGBPattern(Animations.EditRGBPattern pattern)
-        {
-            // Base does not
-            return false;
-        }
 
         public static EditAnimation Create(AnimationType type)
         {

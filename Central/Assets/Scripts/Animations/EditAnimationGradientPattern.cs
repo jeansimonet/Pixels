@@ -24,7 +24,7 @@ namespace Animations
                 speedMultiplier = value / pattern.duration;
             }
         }
-        [Pattern]
+        [GreyscalePattern]
 		public EditPattern pattern = new EditPattern();
         [Gradient]
         public EditRGBGradient gradient = new EditRGBGradient();

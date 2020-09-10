@@ -69,7 +69,7 @@ namespace Animations
             }
         }
         [RGBPattern]
-		public EditRGBPattern pattern = new EditRGBPattern();
+		public EditPattern pattern = new EditPattern();
 
         [Slider, FloatRange(-0.5f, 0.5f)]
         public float hueAdjust = 0.0f;
@@ -111,21 +111,21 @@ namespace Animations
             return ret;
         }
 
-        public override void ReplaceRGBPattern(Animations.EditRGBPattern oldPattern, Animations.EditRGBPattern newPattern)
+        public override void ReplacePattern(Animations.EditPattern oldPattern, Animations.EditPattern newPattern)
         {
             if (pattern == oldPattern)
             {
                 pattern = newPattern;
             }
         }
-        public override void DeleteRGBPattern(Animations.EditRGBPattern pattern)
+        public override void DeletePattern(Animations.EditPattern pattern)
         {
             if (this.pattern == pattern)
             {
                 this.pattern = null;
             }
         }
-        public override bool DependsOnRGBPattern(Animations.EditRGBPattern pattern)
+        public override bool DependsOnPattern(Animations.EditPattern pattern)
         {
             return this.pattern == pattern;
         }
@@ -148,7 +148,7 @@ namespace Animations
                     writer.WriteStartObject();
                     writer.WritePropertyName("name");
                     serializer.Serialize(writer, value.name);
-                    var patternIndex = dataSet.rgbPatterns.IndexOf(value.pattern);
+                    var patternIndex = dataSet.patterns.IndexOf(value.pattern);
                     writer.WritePropertyName("patternIndex");
                     serializer.Serialize(writer, patternIndex);
                     writer.WritePropertyName("speedMultiplier");
@@ -172,10 +172,10 @@ namespace Animations
                     var ret = new EditAnimationKeyframed();
                     ret.name = jsonObject["name"].Value<string>();
                     int patternIndex = jsonObject.ContainsKey("patternIndex") ? jsonObject["patternIndex"].Value<int>() : -1;
-                    if (patternIndex >= 0 && patternIndex < dataSet.rgbPatterns.Count)
-                        ret.pattern = dataSet.rgbPatterns[patternIndex];
+                    if (patternIndex >= 0 && patternIndex < dataSet.patterns.Count)
+                        ret.pattern = dataSet.patterns[patternIndex];
                     else
-                        ret.pattern = AppDataSet.Instance.AddNewDefaultRGBPattern();
+                        ret.pattern = AppDataSet.Instance.AddNewDefaultPattern();
                     ret.speedMultiplier = jsonObject["speedMultiplier"].Value<float>();
                     ret.duration = jsonObject["duration"].Value<float>();
                     ret.hueAdjust = jsonObject["hueAdjust"].Value<float>();

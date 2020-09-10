@@ -24,7 +24,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public int jsonVersion = 1;
         public List<EditDie> dice = new List<EditDie>();
         public List<EditPattern> patterns = new List<EditPattern>();
-        public List<EditRGBPattern> rgbPatterns = new List<EditRGBPattern>();
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
@@ -46,7 +45,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     Data data = new Data();
     public List<EditDie> dice => data.dice;
     public List<EditPattern> patterns => data.patterns;
-    public List<EditRGBPattern> rgbPatterns => data.rgbPatterns;
     public List<EditAnimation> animations => data.animations;
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;
@@ -158,17 +156,16 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         animations.Remove(animation);
     }
 
-
     public EditPattern AddNewDefaultPattern()
     {
         var newPattern = new Animations.EditPattern();
         newPattern.name = "New Pattern";
         for (int i = 0; i < 20; ++i)
         {
-            var grad = new EditGradient();
-            grad.keyframes.Add(new EditKeyframe() { time = 0.0f, intensity = 0.0f });
-            grad.keyframes.Add(new EditKeyframe() { time = 0.5f, intensity = 1.0f });
-            grad.keyframes.Add(new EditKeyframe() { time = 1.0f, intensity = 0.0f });
+            var grad = new EditRGBGradient();
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.0f, color = Color.black });
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.5f, color = Color.white });
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 1.0f, color = Color.black });
             newPattern.gradients.Add(grad);
         }
         patterns.Add(newPattern);
@@ -197,46 +194,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public IEnumerable<Animations.EditAnimation> CollectAnimationsForPattern(Animations.EditPattern pattern)
     {
         return animations.Where(b => b.DependsOnPattern(pattern));
-    }
-
-    public EditRGBPattern AddNewDefaultRGBPattern()
-    {
-        var newPattern = new Animations.EditRGBPattern();
-        newPattern.name = "New Pattern";
-        for (int i = 0; i < 20; ++i)
-        {
-            var grad = new EditRGBGradient();
-            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.0f, color = Color.black });
-            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.5f, color = Color.white });
-            grad.keyframes.Add(new EditRGBKeyframe() { time = 1.0f, color = Color.black });
-            newPattern.gradients.Add(grad);
-        }
-        rgbPatterns.Add(newPattern);
-        return newPattern;
-    }
-
-    public void ReplaceRGBPattern(EditRGBPattern oldPattern, EditRGBPattern newPattern)
-    {
-        foreach (var animation in animations)
-        {
-            animation.ReplaceRGBPattern(oldPattern, newPattern);
-        }
-        int oldPatternIndex = rgbPatterns.IndexOf(oldPattern);
-        rgbPatterns[oldPatternIndex] = newPattern;
-    }
-
-    public void DeleteRGBPattern(EditRGBPattern pattern)
-    {
-        foreach (var animation in animations)
-        {
-            animation.DeleteRGBPattern(pattern);
-        }
-        rgbPatterns.Remove(pattern);
-    }
-
-    public IEnumerable<Animations.EditAnimation> CollectAnimationsForRGBPattern(Animations.EditRGBPattern pattern)
-    {
-        return animations.Where(b => b.DependsOnRGBPattern(pattern));
     }
 
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAnimation(Animations.EditAnimation anim)

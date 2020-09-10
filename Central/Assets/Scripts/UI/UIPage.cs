@@ -19,7 +19,6 @@ public class UIPage
         Behavior,
         Rule,
         LiveView,
-        RGBPatterns,
         GradientPatterns
     }
 
