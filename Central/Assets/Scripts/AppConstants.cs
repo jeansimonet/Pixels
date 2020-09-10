@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class AppConstants : SingletonMonoBehaviour<AppConstants>
 {
+    public TextAsset defaultDiceJson;
     public string DataSetFilename = "dice_data.json";
     public string SettingsFilename = "settings.json";
     public float ScanTimeout = 3.0f;

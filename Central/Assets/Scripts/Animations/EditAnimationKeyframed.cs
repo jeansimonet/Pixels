@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Animations
 {
@@ -41,7 +43,7 @@ namespace Animations
             // Add the keyframes
             foreach (var editKeyframe in gradient.keyframes)
             {
-                var kf = editKeyframe.ToKeyframe(editSet, bits);
+                var kf = editKeyframe.ToRGBKeyframe(editSet, bits);
                 bits.rgbKeyframes.Add(kf);
             }
 
@@ -53,28 +55,48 @@ namespace Animations
     public class EditAnimationKeyframed
         : EditAnimation
     {
+        public float speedMultiplier = 1.0f;
         [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
-        public override float duration { get; set; }
+        public override float duration
+        {
+            get
+            {
+                return pattern.duration * speedMultiplier;
+            }
+            set
+            {
+                speedMultiplier = value / pattern.duration;
+            }
+        }
+        [RGBPattern]
+		public EditRGBPattern pattern = new EditRGBPattern();
 
-		public List<EditRGBTrack> tracks = new List<EditRGBTrack>();
+        [Slider, FloatRange(-0.5f, 0.5f)]
+        public float hueAdjust = 0.0f;
 
         public override AnimationType type => AnimationType.Keyframed;
-        public bool empty => tracks?.Count == 0;
 
         public override Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             var ret = new AnimationKeyframed();
 		    ret.duration = (ushort)(duration * 1000); // stored in milliseconds
+            ret.speedMultiplier256 = (ushort)(this.speedMultiplier * 256.0f);
 		    ret.tracksOffset = (ushort)bits.rgbTracks.Count;
-		    ret.trackCount = (ushort)tracks.Count;
-
-            // Add the tracks
-            foreach (var editTrack in tracks)
+            // Copy the pattern so we can adjust the hue of the keyframes
+            var patternCopy = pattern.Duplicate();
+            foreach (var t in patternCopy.gradients)
             {
-                var track = editTrack.ToTrack(editSet, bits);
-                bits.rgbTracks.Add(track);
+                foreach (var k in t.keyframes)
+                {
+                    float h, s, v;
+                    Color.RGBToHSV(k.color, out h, out s, out v);
+                    h = Mathf.Repeat(h + hueAdjust, 1.0f);
+                    k.color = Color.HSVToRGB(h, s, v);
+                }
             }
-
+            var tracks = patternCopy.ToRGBTracks(editSet, bits);
+		    ret.trackCount = (ushort)tracks.Length;
+            bits.rgbTracks.AddRange(tracks);
             return ret;
         }
 
@@ -82,12 +104,84 @@ namespace Animations
         {
             EditAnimationKeyframed ret = new EditAnimationKeyframed();
             ret.name = this.name;
+            ret.pattern = this.pattern.Duplicate();
+            ret.speedMultiplier = this.speedMultiplier;
 		    ret.duration = this.duration;
-            foreach (var track in tracks)
-            {
-                ret.tracks.Add(track.Duplicate());
-            }
+            ret.hueAdjust = this.hueAdjust;
             return ret;
+        }
+
+        public override void ReplaceRGBPattern(Animations.EditRGBPattern oldPattern, Animations.EditRGBPattern newPattern)
+        {
+            if (pattern == oldPattern)
+            {
+                pattern = newPattern;
+            }
+        }
+        public override void DeleteRGBPattern(Animations.EditRGBPattern pattern)
+        {
+            if (this.pattern == pattern)
+            {
+                this.pattern = null;
+            }
+        }
+        public override bool DependsOnRGBPattern(Animations.EditRGBPattern pattern)
+        {
+            return this.pattern == pattern;
+        }
+
+        /// <summary>
+        /// Specialized converter
+        /// </sumary>
+        public class Converter
+            : JsonConverter<EditAnimationKeyframed>
+        {
+            AppDataSet dataSet;
+            public Converter(AppDataSet dataSet)
+            {
+                this.dataSet = dataSet;
+            }
+            public override void WriteJson(JsonWriter writer, EditAnimationKeyframed value, JsonSerializer serializer)
+            {
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("name");
+                    serializer.Serialize(writer, value.name);
+                    var patternIndex = dataSet.rgbPatterns.IndexOf(value.pattern);
+                    writer.WritePropertyName("patternIndex");
+                    serializer.Serialize(writer, patternIndex);
+                    writer.WritePropertyName("speedMultiplier");
+                    serializer.Serialize(writer, value.speedMultiplier);
+                    writer.WritePropertyName("duration");
+                    serializer.Serialize(writer, value.duration);
+                    writer.WritePropertyName("hueAdjust");
+                    serializer.Serialize(writer, value.hueAdjust);
+                    writer.WriteEndObject();
+                }
+            }
+
+            public override EditAnimationKeyframed ReadJson(JsonReader reader, System.Type objectType, EditAnimationKeyframed existingValue, bool hasExistingValue, JsonSerializer serializer)
+            {
+                if (hasExistingValue)
+                    throw(new System.NotImplementedException());
+
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    JObject jsonObject = JObject.Load(reader);
+                    var ret = new EditAnimationKeyframed();
+                    ret.name = jsonObject["name"].Value<string>();
+                    int patternIndex = jsonObject.ContainsKey("patternIndex") ? jsonObject["patternIndex"].Value<int>() : -1;
+                    if (patternIndex >= 0 && patternIndex < dataSet.rgbPatterns.Count)
+                        ret.pattern = dataSet.rgbPatterns[patternIndex];
+                    else
+                        ret.pattern = AppDataSet.Instance.AddNewDefaultRGBPattern();
+                    ret.speedMultiplier = jsonObject["speedMultiplier"].Value<float>();
+                    ret.duration = jsonObject["duration"].Value<float>();
+                    ret.hueAdjust = jsonObject["hueAdjust"].Value<float>();
+                    return ret;
+                }
+            }
         }
     }
 }

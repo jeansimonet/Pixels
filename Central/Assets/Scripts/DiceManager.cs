@@ -253,32 +253,42 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
 
     IEnumerator RefreshPoolCr()
     {
+        Debug.Log("A");
         yield return new WaitUntil(() => state == State.Idle);
         state = State.RefreshingPool;
         onBeginRefreshPool?.Invoke();
+        Debug.Log("B");
         foreach (var editDie in DiceManager.Instance.allDice)
         {
+        Debug.Log("C");
             bool dieConnected = false;
             yield return StartCoroutine(DoConnectDieCr(editDie, (_, res, errorMsg) => dieConnected = res));
+        Debug.Log("D");
 
             if (dieConnected)
             {
+        Debug.Log("E");
                 // Fetch battery level
                 bool battLevelReceived = false;
                 editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
                 yield return new WaitUntil(() => battLevelReceived == true);
 
+        Debug.Log("F");
                 // Fetch rssi
                 bool rssiReceived = false;
                 editDie.die.GetRssi((d, i) => rssiReceived = true);
                 yield return new WaitUntil(() => rssiReceived == true);
+        Debug.Log("G");
 
                 yield return StartCoroutine(DoDisconnectDie(editDie));
+        Debug.Log("H");
             }
             // Else we've already disconnected
         }
+        Debug.Log("I");
         onEndRefreshPool?.Invoke();
         state = State.Idle;
+        Debug.Log("J");
     }
     
     /// <summary>

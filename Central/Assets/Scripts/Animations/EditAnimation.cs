@@ -24,6 +24,32 @@ namespace Animations
 
         public abstract Animation ToAnimation(EditDataSet editSet, DataSet.AnimationBits bits);
         public abstract EditAnimation Duplicate();
+        public virtual void ReplacePattern(Animations.EditPattern oldPattern, Animations.EditPattern newPattern)
+        {
+            // Base does nothing
+        }
+        public virtual void DeletePattern(Animations.EditPattern pattern)
+        {
+            // Base does nothing
+        }
+        public virtual bool DependsOnPattern(Animations.EditPattern pattern)
+        {
+            // Base does not
+            return false;
+        }
+        public virtual void ReplaceRGBPattern(Animations.EditRGBPattern oldPattern, Animations.EditRGBPattern newPattern)
+        {
+            // Base does nothing
+        }
+        public virtual void DeleteRGBPattern(Animations.EditRGBPattern pattern)
+        {
+            // Base does nothing
+        }
+        public virtual bool DependsOnRGBPattern(Animations.EditRGBPattern pattern)
+        {
+            // Base does not
+            return false;
+        }
 
         public static EditAnimation Create(AnimationType type)
         {

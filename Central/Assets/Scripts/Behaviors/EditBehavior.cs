@@ -58,7 +58,7 @@ namespace Behaviors
                 new EditActionPlayAnimation()
                 {
                     animation = null,
-                    faceIndex = 0xFF,
+                    faceIndex = -1,
                     loopCount = 1
                 }
             };

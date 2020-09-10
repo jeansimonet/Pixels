@@ -7,7 +7,7 @@ using System.Linq;
 using Dice;
 
 public class UIHomePage
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
     public Transform newsSection;
@@ -23,8 +23,8 @@ public class UIHomePage
 
     void OnEnable()
     {
+        base.SetupHeader(true, true, "Pixels", null);
         RefreshView();
-        StartCoroutine(UpdatePresetsStatusesCr());
     }
 
     void OnDisable()
@@ -59,7 +59,7 @@ public class UIHomePage
     void Awake()
     {
         dismissMessagesButton.onClick.AddListener(CloseWhatsNew);
-        editPresetsButton.onClick.AddListener(() => NavigationManager.Instance.GoToRoot(PixelsApp.PageId.Presets));
+        editPresetsButton.onClick.AddListener(() => NavigationManager.Instance.GoToRoot(UIPage.PageId.Presets));
     }
 
     void DestroyPresetToken(UIHomePresetToken die)
@@ -93,6 +93,8 @@ public class UIHomePage
             presets.Remove(uipreset);
             DestroyPresetToken(uipreset);
         }
+
+        UpdatePresetsStatuses();
     }
 
     void AddNewPreset()
@@ -116,7 +118,10 @@ public class UIHomePage
                     // Attempt to activate the preset
                     PixelsApp.Instance.UploadPreset(editPreset, (res2) =>
                     {
-                        StartCoroutine(UpdatePresetsStatusesCr());
+                        if (res2)
+                        {
+                            UpdatePresetsStatuses();
+                        }
                     });
                 }
             });
@@ -128,89 +133,18 @@ public class UIHomePage
         AppSettings.Instance.SetDisplayWhatsNew(false);
     }
 
-    class EditDieInfo
+    void UpdatePresetsStatuses()
     {
-        public EditDataSet editDataSet;
-        public DataSet dataSet;
-        public bool upToDate;
-    }
-
-    IEnumerator UpdatePresetsStatusesCr()
-    {
-        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
-
         foreach (var uipresetToken in presets)
         {
-            uipresetToken.SetState(UIHomePresetToken.State.Unknown);
-        }
-
-        // Collect all the dice in all the presets
-        var editDice = new HashSet<EditDie>();
-        foreach (var editPreset in AppDataSet.Instance.presets)
-        {
-            foreach (var editDie in editPreset.dieAssignments.Select(da => da.die).Where(d => d != null))
+            if (AppDataSet.Instance.activePreset == uipresetToken.editPreset)
             {
-                editDice.Add(editDie);
+                uipresetToken.SetState(UIHomePresetToken.State.Active);
             }
-        }
-
-        // Now we have all the dice, try to connect to get their dataset and and active behavior
-        var editDieInfos = new Dictionary<EditDie, EditDieInfo>();
-        foreach (var editDie in editDice)
-        {
-            yield return DiceManager.Instance.ConnectDie(editDie, null);
-            if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
+            else
             {
-                // Update the die info
-                yield return editDie.die.GetDieInfo(null);
-
-                var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDie);
-                var dataSet = editSet.ToDataSet();
-                editDieInfos[editDie] = new EditDieInfo()
-                {
-                    editDataSet = editSet,
-                    dataSet = dataSet,
-                    upToDate = editDie.die.connectionState == Die.ConnectionState.Ready && (editDie.die.dataSetHash == dataSet.ComputeHash()),
-                };
+                uipresetToken.SetState(UIHomePresetToken.State.Unknown);
             }
-        }
-
-        // We've tried to connect to all the dice, and either succeeded or not
-        // Now derive the state of each preset
-        foreach (var uip in presets)
-        {
-            var presetDice = uip.editPreset.dieAssignments.Select(da => da.die);
-            bool allPresetDiceReady = presetDice.All(ed2 =>
-                ed2 != null && ed2.die != null &&
-                ed2.die.connectionState == Die.ConnectionState.Ready &&
-                editDieInfos[ed2] != null);
-            if (allPresetDiceReady)
-            {
-                uip.SetState(UIHomePresetToken.State.Reachable);
-
-                // Check the dataset
-                bool allPresetDiceUpToDate = presetDice.All(ed2 => editDieInfos[ed2].upToDate);
-                if (allPresetDiceUpToDate)
-                {
-                    uip.SetState(UIHomePresetToken.State.UpToDate);
-
-                    // Check that the active behavior is correct too
-                    bool allBehaviorsActive = uip.editPreset.dieAssignments.All(da => da.die.die.currentBehaviorIndex == editDieInfos[da.die].editDataSet.behaviors.IndexOf(da.behavior));
-                    if (allBehaviorsActive)
-                    {
-                        uip.SetState(UIHomePresetToken.State.Active);
-                    }
-                    // Else leave as uptodate
-                }
-                // Else leave as available
-            }
-            // Else leave as unknown
-        }
-
-        // Now that we're done we can disconnect all
-        foreach (var editDie in editDieInfos.Keys)
-        {
-            DiceManager.Instance.DisconnectDie(editDie);
         }
     }
 }

@@ -16,33 +16,20 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIPatternEditor patternEditor;
     public UIProgrammingBox programmingBox;
     public UIPatternPicker patternPicker;
+    public UIRGBPatternEditor rgbPatternEditor;
+    public UIRGBPatternPicker rgbPatternPicker;
 
-    public enum PageId
+    [Header("Controls")]
+    public UIMainMenu mainMenu;
+
+    public void ShowMainMenu()
     {
-        Home,
-        DicePool,
-        DicePoolScanning,
-        Patterns,
-        Pattern,
-        Presets,
-        Preset,
-        Behaviors,
-        Behavior,
-        Rule,
-        LiveView
+        mainMenu.Show();
     }
 
-    public class Page
-        : MonoBehaviour
+    public void HideMainMenu()
     {
-        public virtual void Enter(object context)
-        {
-            gameObject.SetActive(true);
-        }
-        public virtual void Leave()
-        {
-            gameObject.SetActive(false);
-        }
+        mainMenu.Hide();
     }
 
     public bool ShowDialogBox(string title, string message, string okMessage, string cancelMessage, System.Action<bool> closeAction)
@@ -141,6 +128,26 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             patternPicker.Show(title, previousPattern, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowRGBPatternEditor(string title, Animations.EditRGBPattern previousPattern, System.Action<bool, Animations.EditRGBPattern> closeAction)
+    {
+        bool ret = !patternEditor.isShown;
+        if (ret)
+        {
+            rgbPatternEditor.Show(title, previousPattern, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowRGBPatternPicker(string title, Animations.EditRGBPattern previousPattern, System.Action<bool, Animations.EditRGBPattern> closeAction)
+    {
+        bool ret = !patternPicker.isShown;
+        if (ret)
+        {
+            rgbPatternPicker.Show(title, previousPattern, closeAction);
         }
         return ret;
     }
@@ -296,12 +303,14 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     }
                     else
                     {
+                        AppDataSet.Instance.activePreset = editPreset;
                         // We're done!
                         callback?.Invoke(true);
                     }
                 }
                 else
                 {
+                    AppDataSet.Instance.activePreset = null;
                     callback(false);
                 }
             });
@@ -314,6 +323,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         }
         else
         {
+            AppDataSet.Instance.activePreset = null;
             callback(false);
         }
     }

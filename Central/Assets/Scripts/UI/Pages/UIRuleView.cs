@@ -6,12 +6,9 @@ using Behaviors;
 using System.Linq;
 
 public class UIRuleView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
-    public Button backButton;
-    public Button menuButton;
-    public Button saveButton;
     public RectTransform contentRoot;
     public Button addActionButton;
 
@@ -20,10 +17,9 @@ public class UIRuleView
     public UIRuleActionToken actionPrefab;
 
     public Behaviors.EditRule editRule { get; private set; }
+    Behaviors.EditRule workingRule;
     UIRuleConditionToken conditionToken;
     List<UIRuleActionToken> actionTokens = new List<UIRuleActionToken>();
-
-    bool ruleDirty = false;
 
     public override void Enter(object context)
     {
@@ -57,34 +53,32 @@ public class UIRuleView
 
     void Setup(Behaviors.EditRule rule)
     {
+        base.SetupHeader(false, false, "Edit Rule", null);
         editRule = rule;
+        workingRule = editRule.Duplicate();
 
         conditionToken = GameObject.Instantiate<UIRuleConditionToken>(conditionPrefab, Vector3.zero, Quaternion.identity, contentRoot);
-        conditionToken.Setup(rule, rule.condition);
+        conditionToken.Setup(workingRule, workingRule.condition);
         conditionToken.onConditionChanged += OnConditionChange;
 
 
-        for (int i = 0; i < rule.actions.Count; ++i)
+        for (int i = 0; i < workingRule.actions.Count; ++i)
         {
-            var action = rule.actions[i];
+            var action = workingRule.actions[i];
             AddActionToken(action, i == 0);
         }
 
         addActionButton.transform.SetAsLastSibling();
-        saveButton.gameObject.SetActive(false);
-        ruleDirty = false;
     }
 
     void Awake()
     {
         addActionButton.onClick.AddListener(AddAction);
-        backButton.onClick.AddListener(DiscardAndGoBack);
-        saveButton.onClick.AddListener(SaveAndGoBack);
     }
 
-    void DiscardAndGoBack()
+    public override void OnBack()
     {
-        if (ruleDirty)
+        if (pageDirty)
         {
             PixelsApp.Instance.ShowDialogBox(
                 "Discard Changes",
@@ -94,9 +88,8 @@ public class UIRuleView
                 {
                     if (discard)
                     {
-                        // Reload from file
-                        AppDataSet.Instance.LoadData();
                         NavigationManager.Instance.GoBack();
+                        pageDirty = false;
                     }
                 });
         }
@@ -106,9 +99,11 @@ public class UIRuleView
         }
     }
 
-    void SaveAndGoBack()
+    public override void OnSave()
     {
+        workingRule.CopyTo(editRule);
         AppDataSet.Instance.SaveData(); // Not sure about this one!
+        pageDirty = false;
         NavigationManager.Instance.GoBack();
     }
 
@@ -116,15 +111,14 @@ public class UIRuleView
     {
         var action = Behaviors.EditAction.Create(Behaviors.ActionType.PlayAnimation);
         AddActionToken(action, false);
-        editRule.actions.Add(action);
-        ruleDirty = true;
-        saveButton.gameObject.SetActive(true);
+        workingRule.actions.Add(action);
+        base.pageDirty = true;
     }
 
     void AddActionToken(Behaviors.EditAction action, bool first)
     {
         var actionToken = GameObject.Instantiate<UIRuleActionToken>(actionPrefab, Vector3.zero, Quaternion.identity, contentRoot);
-        actionToken.Setup(editRule, action, first);
+        actionToken.Setup(workingRule, action, first);
         actionToken.onDelete.AddListener(() => DeleteAction(action));
         actionToken.onActionChanged += OnActionChange;
         actionTokens.Add(actionToken);
@@ -140,16 +134,15 @@ public class UIRuleView
 
     void DeleteAction(Behaviors.EditAction action)
     {
-        if (editRule.actions.Count > 1)
+        if (workingRule.actions.Count > 1)
         {
             PixelsApp.Instance.ShowDialogBox("Delete Action?", "Are you sure sure you want to delete this action?", "Ok", "Cancel", res =>
             {
                 if (res)
                 {
                     DestroyActionToken(action);
-                    editRule.actions.Remove(action);
-                    ruleDirty = true;
-                    saveButton.gameObject.SetActive(true);
+                    workingRule.actions.Remove(action);
+                    base.pageDirty = true;
                 }
             });
         }
@@ -162,13 +155,11 @@ public class UIRuleView
 
     void OnConditionChange(EditRule rule, EditCondition condition)
     {
-        ruleDirty = true;
-        saveButton.gameObject.SetActive(true);
+        base.pageDirty = true;
     }
 
     void OnActionChange(EditRule rule, EditAction action)
     {
-        ruleDirty = true;
-        saveButton.gameObject.SetActive(true);
+        base.pageDirty = true;
     }
 }

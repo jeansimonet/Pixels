@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Animations;
+using System.IO;
 
-public class UIAnimationPicker : MonoBehaviour
+public class UIRGBPatternPicker : MonoBehaviour
 {
     [Header("Controls")]
     public Button backButton;
@@ -13,53 +14,53 @@ public class UIAnimationPicker : MonoBehaviour
     public Button addPatternButton;
 
     [Header("Prefabs")]
-    public UIAnimationSelectorPatternToken patternTokenPrefab;
+    public UIRGBPatternPickerToken patternTokenPrefab;
 
-    EditAnimation currentAnimation;
-    System.Action<bool, EditAnimation> closeAction;
+    EditRGBPattern currentPattern;
+    System.Action<bool, EditRGBPattern> closeAction;
 
     // The list of controls we have created to display patterns
-    List<UIAnimationSelectorPatternToken> patterns = new List<UIAnimationSelectorPatternToken>();
+    List<UIRGBPatternPickerToken> patterns = new List<UIRGBPatternPickerToken>();
 
     public bool isShown => gameObject.activeSelf;
 
     /// <summary>
     /// Invoke the color picker
     /// </sumary>
-    public void Show(string title, EditAnimation previousAnimation, System.Action<bool, EditAnimation> closeAction)
+    public void Show(string title, EditRGBPattern previousPattern, System.Action<bool, EditRGBPattern> closeAction)
     {
         if (isShown)
         {
-            Debug.LogWarning("Previous Animation picker still active");
+            Debug.LogWarning("Previous Pattern picker still active");
             ForceHide();
         }
 
-        foreach (var editAnim in AppDataSet.Instance.animations)
+        foreach (var editPattern in AppDataSet.Instance.rgbPatterns)
         {
             // New pattern
-            var newPatternUI = CreatePatternToken(editAnim);
+            var newPatternUI = CreatePatternToken(editPattern);
             patterns.Add(newPatternUI);
         }
 
         gameObject.SetActive(true);
-        currentAnimation = previousAnimation;
+        currentPattern = previousPattern;
         titleText.text = title;
 
 
         this.closeAction = closeAction;
     }
 
-    UIAnimationSelectorPatternToken CreatePatternToken(Animations.EditAnimation anim)
+    UIRGBPatternPickerToken CreatePatternToken(EditRGBPattern pattern)
     {
         // Create the gameObject
-        var ret = GameObject.Instantiate<UIAnimationSelectorPatternToken>(patternTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
+        var ret = GameObject.Instantiate<UIRGBPatternPickerToken>(patternTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
 
         // When we click on the pattern main button, go to the edit page
-        ret.onClick.AddListener(() => Hide(true, ret.editAnimation));
+        ret.onClick.AddListener(() => Hide(true, ret.editPattern));
 
         addPatternButton.transform.SetAsLastSibling();
         // Initialize it
-        ret.Setup(anim);
+        ret.Setup(pattern);
         return ret;
     }
 
@@ -69,7 +70,7 @@ public class UIAnimationPicker : MonoBehaviour
     /// </sumary>
     public void ForceHide()
     {
-        Hide(false, currentAnimation);
+        Hide(false, currentPattern);
     }
 
     void Awake()
@@ -78,7 +79,7 @@ public class UIAnimationPicker : MonoBehaviour
         addPatternButton.onClick.AddListener(AddNewPattern);
     }
 
-    void Hide(bool result, EditAnimation animation)
+    void Hide(bool result, EditRGBPattern pattern)
     {
         foreach (var uipattern in patterns)
         {
@@ -87,25 +88,23 @@ public class UIAnimationPicker : MonoBehaviour
         patterns.Clear();
 
         gameObject.SetActive(false);
-        closeAction?.Invoke(result, animation);
+        closeAction?.Invoke(result, pattern);
         closeAction = null;
     }
 
     void Back()
     {
-        Hide(false, currentAnimation);
+        Hide(false, currentPattern);
     }
 
-    void DestroyPatternToken(UIAnimationSelectorPatternToken token)
+    void DestroyPatternToken(UIRGBPatternPickerToken token)
     {
         GameObject.Destroy(token.gameObject);
     }
 
     void AddNewPattern()
     {
-        // Create a new default animation
-        var newAnim = AppDataSet.Instance.AddNewDefaultAnimation();
-        Hide(true, newAnim);
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, newAnim);
+        currentPattern = AppDataSet.Instance.AddNewDefaultRGBPattern();
+        PixelsApp.Instance.ShowRGBPatternEditor(currentPattern.name, currentPattern, (res, newPattern) => Hide(res, newPattern));
     }
 }

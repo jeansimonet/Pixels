@@ -10,11 +10,18 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
     public Button mainButton;
     public RawImage animRenderImage;
     public Text animNameText;
+    public Image frame;
+
+    [Header("Parameters")]
+    public Color defaultTextColor;
+    public Color defaultFrameColor;
+    public Color selectedColor;
 
     public EditAnimation editAnimation { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
+    public bool selected { get; private set; }
 
     public void Setup(EditAnimation anim)
     {
@@ -29,6 +36,7 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
         dieRenderer.SetAuto(true);
         dieRenderer.SetAnimation(anim);
         dieRenderer.Play(true);
+        SetSelected(false);
     }
 
     // Start is called before the first frame update
@@ -51,4 +59,20 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    public void SetSelected(bool selected)
+    {
+        this.selected = selected;
+        if (selected)
+        {
+            animNameText.color = selectedColor;
+            frame.color = selectedColor;
+        }
+        else
+        {
+            animNameText.color = defaultTextColor;
+            frame.color = defaultFrameColor;
+        }
+    }
+
 }

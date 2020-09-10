@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using Presets;
 
 public class UIPresetsView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
     public Transform contentRoot;
@@ -20,6 +20,7 @@ public class UIPresetsView
 
     void OnEnable()
     {
+        base.SetupHeader(true, false, "Profiles", null);
         RefreshView();
     }
 
@@ -41,8 +42,8 @@ public class UIPresetsView
         var ret = GameObject.Instantiate<UIPresetToken>(presetTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
 
         // When we click on the pattern main button, go to the edit page
-        ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, preset));
-        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, preset));
+        ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Preset, preset));
+        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Preset, preset));
         ret.onDuplicate.AddListener(() => DuplicatePreset(preset));
         ret.onRemove.AddListener(() => DeletePreset(preset));
         ret.onExpand.AddListener(() => ExpandPreset(preset));
@@ -131,7 +132,7 @@ public class UIPresetsView
     {
         // Create a new default preset
         var newPreset = AppDataSet.Instance.AddNewDefaultPreset();
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Preset, newPreset);
+        NavigationManager.Instance.GoToPage(UIPage.PageId.Preset, newPreset);
     }
 
 }

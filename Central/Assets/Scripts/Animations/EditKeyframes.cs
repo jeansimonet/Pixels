@@ -22,7 +22,7 @@ namespace Animations
             return keyframe;
         }
 
-        public RGBKeyframe ToKeyframe(EditDataSet editSet, DataSet.AnimationBits bits)
+        public RGBKeyframe ToRGBKeyframe(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             RGBKeyframe ret = new RGBKeyframe();
 
@@ -35,6 +35,15 @@ namespace Animations
             }
 
             ret.setTimeAndColorIndex((ushort)(time * 1000), (ushort)colorIndex);            
+            return ret;
+        }
+
+        public Keyframe ToKeyframe(EditDataSet editSet, DataSet.AnimationBits bits)
+        {
+            Keyframe ret = new Keyframe();
+
+            // Get the intensity from the color and scale
+            ret.setTimeAndIntensity((ushort)(time * 1000), (byte)(ColorUtils.desaturate(color) * 255.0f));
             return ret;
         }
 
@@ -79,6 +88,127 @@ namespace Animations
         }
 
     }
+
+    /// <summary>
+    /// Simple list of keyframes for a led
+    /// </summary>
+    [System.Serializable]
+    public class EditRGBPattern
+    {
+        public string name = "RGB Pattern";
+        public List<EditRGBGradient> gradients = new List<EditRGBGradient>();
+        public float duration => gradients.Count > 0 ? gradients.Max(g => g.duration) : 1.0f;
+
+        public EditRGBPattern Duplicate()
+        {
+            var track = new EditRGBPattern();
+            track.name = name;
+            track.gradients = new List<EditRGBGradient>();
+            foreach (var g in gradients)
+            {
+                track.gradients.Add(g.Duplicate());
+            }
+            return track;
+        }
+
+        public RGBTrack[] ToRGBTracks(EditDataSet editSet, DataSet.AnimationBits bits)
+        {
+            RGBTrack[] ret = new RGBTrack[gradients.Count];
+            for (int i = 0; i < gradients.Count; ++i)
+            {
+                RGBTrack t = new RGBTrack();
+                t.keyframesOffset = (ushort)bits.rgbKeyframes.Count;
+                t.keyFrameCount = (byte)gradients[i].keyframes.Count;
+                t.ledMask = 0;
+                t.ledMask = (uint)(1 << i);
+
+                // Add the keyframes
+                foreach (var editKeyframe in gradients[i].keyframes)
+                {
+                    var kf = editKeyframe.ToRGBKeyframe(editSet, bits);
+                    bits.rgbKeyframes.Add(kf);
+                }
+                ret[i] = t;
+            }
+
+            return ret;
+        }
+
+        public Track[] ToTracks(EditDataSet editSet, DataSet.AnimationBits bits)
+        {
+            Track[] ret = new Track[gradients.Count];
+            for (int i = 0; i < gradients.Count; ++i)
+            {
+                Track t = new Track();
+                t.keyframesOffset = (ushort)bits.keyframes.Count;
+                t.keyFrameCount = (byte)gradients[i].keyframes.Count;
+                t.ledMask = 0;
+                t.ledMask = (uint)(1 << i);
+
+                // Add the keyframes
+                foreach (var editKeyframe in gradients[i].keyframes)
+                {
+                    var kf = editKeyframe.ToKeyframe(editSet, bits);
+                    bits.keyframes.Add(kf);
+                }
+                ret[i] = t;
+            }
+
+            return ret;
+        }
+
+        public void FromTexture(Texture2D texture)
+        {
+            gradients.Clear();
+            for (int i = 0; i < texture.height; ++i)
+            {
+                var gradientPixels = texture.GetPixels(0, i, texture.width, 1, 0);
+                var keyframes = ColorUtils.extractKeyframes(gradientPixels);
+                // Convert to greyscale (right now us the red channel only)
+                var gradient = new EditRGBGradient() { keyframes = keyframes };
+                gradients.Add(gradient);
+            }
+        }
+
+        public Texture2D ToTexture()
+        {
+            Texture2D ret = null;
+            int width = Mathf.RoundToInt(duration / 0.02f);
+            int height = gradients.Count;
+            if (width > 0 && height > 0)
+            {
+                ret = new Texture2D(width, height, TextureFormat.ARGB32, false);
+                ret.filterMode = FilterMode.Point;
+                ret.wrapMode = TextureWrapMode.Clamp;
+                
+                Color[] pixels = ret.GetPixels();
+                for (int i = 0; i < pixels.Length; ++i)
+                {
+                    pixels[i] = Color.black;
+                }
+                for (int j = 0; j < gradients.Count; ++j)
+                {
+                    var currentGradient = gradients[j];
+                    int x = 0, lastMax = 0;
+                    for (int i = 1; i < currentGradient.keyframes.Count; ++i)
+                    {
+                        int max = Mathf.RoundToInt(currentGradient.keyframes[i].time / 0.02f);
+                        for (; x < max; ++x)
+                        {
+                            Color prevColor = currentGradient.keyframes[i - 1].color;
+                            Color nextColor = currentGradient.keyframes[i].color;
+                            pixels[j * ret.width + x] = Color.Lerp(prevColor, nextColor, ((float)x - lastMax) / (max - lastMax));
+                        }
+                        lastMax = max;
+                    }
+                }
+                ret.SetPixels(pixels);
+                ret.Apply(false);
+            }
+            return ret;
+        }
+    }
+
 
     /// <summary>
     /// Simple anition keyframe, time in seconds and color!

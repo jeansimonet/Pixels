@@ -2,25 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Linq;
+using Animations;
 using System.Text;
+using System.Linq;
 
-public class UIPatternsView
-    : PixelsApp.Page
+public class UIGradientPatternsView
+    : UIPage
 {
     [Header("Controls")]
     public Transform contentRoot;
     public Button addPatternButton;
-    public Button menuButton;
 
     [Header("Prefabs")]
-    public UIPatternToken patternTokenPrefab;
+    public UIGradientPatternViewToken patternTokenPrefab;
 
     // The list of controls we have created to display patterns
-    List<UIPatternToken> patterns = new List<UIPatternToken>();
+    List<UIGradientPatternViewToken> patterns = new List<UIGradientPatternViewToken>();
 
     void OnEnable()
     {
+        base.SetupHeader(true, false, "LED Patterns", null);
         RefreshView();
     }
 
@@ -36,21 +37,28 @@ public class UIPatternsView
         }
     }
 
-    UIPatternToken CreatePatternToken(Animations.EditAnimation anim)
+    UIGradientPatternViewToken CreatePatternToken(Animations.EditPattern pattern)
     {
         // Create the gameObject
-        var ret = GameObject.Instantiate<UIPatternToken>(patternTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
+        var ret = GameObject.Instantiate<UIGradientPatternViewToken>(patternTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
 
         // When we click on the pattern main button, go to the edit page
-        ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, anim));
-        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, anim));
-        ret.onDuplicate.AddListener(() => DuplicateAnimation(anim));
-        ret.onRemove.AddListener(() => DeleteAnimation(anim));
-        ret.onExpand.AddListener(() => ExpandAnimation(anim));
+        ret.onClick.AddListener(() => 
+        {
+            ret.Expand(false);
+            PixelsApp.Instance.ShowPatternEditor(pattern.name, pattern, (r, p) => SetPattern(r, pattern, p));
+        });
+        ret.onEdit.AddListener(() => 
+        {
+            ret.Expand(false);
+            PixelsApp.Instance.ShowPatternEditor(pattern.name, pattern, (r, p) => SetPattern(r, pattern, p));
+        });
+        ret.onRemove.AddListener(() => DeletePattern(pattern));
+        ret.onExpand.AddListener(() => ExpandPattern(pattern));
 
         addPatternButton.transform.SetAsLastSibling();
         // Initialize it
-        ret.Setup(anim);
+        ret.Setup(pattern);
         return ret;
     }
 
@@ -59,7 +67,7 @@ public class UIPatternsView
         addPatternButton.onClick.AddListener(AddNewPattern);
     }
 
-    void DestroyPatternToken(UIPatternToken die)
+    void DestroyPatternToken(UIGradientPatternViewToken die)
     {
         GameObject.Destroy(die.gameObject);
     }
@@ -67,14 +75,14 @@ public class UIPatternsView
     void RefreshView()
     {
         // Assume all pool dice will be destroyed
-        List<UIPatternToken> toDestroy = new List<UIPatternToken>(patterns);
-        foreach (var anim in AppDataSet.Instance.animations)
+        List<UIGradientPatternViewToken> toDestroy = new List<UIGradientPatternViewToken>(patterns);
+        foreach (var pattern in AppDataSet.Instance.patterns)
         {
-            int prevIndex = toDestroy.FindIndex(a => a.editAnimation == anim);
+            int prevIndex = toDestroy.FindIndex(a => a.editPattern == pattern);
             if (prevIndex == -1)
             {
                 // New pattern
-                var newPatternUI = CreatePatternToken(anim);
+                var newPatternUI = CreatePatternToken(pattern);
                 patterns.Add(newPatternUI);
             }
             else
@@ -95,33 +103,25 @@ public class UIPatternsView
     void AddNewPattern()
     {
         // Create a new default animation
-        var newAnim = AppDataSet.Instance.AddNewDefaultAnimation();
+        var newPattern = AppDataSet.Instance.AddNewDefaultPattern();
         AppDataSet.Instance.SaveData();
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Pattern, newAnim);
+        PixelsApp.Instance.ShowPatternEditor(newPattern.name, newPattern, (r, p) => SetPattern(r, newPattern, p));
     }
 
-    void DuplicateAnimation(Animations.EditAnimation anim)
+    void DeletePattern(Animations.EditPattern pattern)
     {
-        AppDataSet.Instance.DuplicateAnimation(anim);
-        patterns.Find(p => p.editAnimation == anim).Expand(false);
-        AppDataSet.Instance.SaveData();
-        RefreshView();
-    }
-
-    void DeleteAnimation(Animations.EditAnimation anim)
-    {
-        PixelsApp.Instance.ShowDialogBox("Delete Pattern?", "Are you sure you want to delete " + anim.name + "?", "Ok", "Cancel", res =>
+        PixelsApp.Instance.ShowDialogBox("Delete LED Pattern?", "Are you sure you want to delete " + pattern.name + "?", "Ok", "Cancel", res =>
         {
             if (res)
             {
-                var dependentBehaviors = AppDataSet.Instance.CollectBehaviorsForAnimation(anim);
-                if (dependentBehaviors.Any())
+                var dependentAnimations = AppDataSet.Instance.CollectAnimationsForPattern(pattern);
+                if (dependentAnimations.Any())
                 {
                     StringBuilder builder = new StringBuilder();
-                    builder.Append("The following behaviors depend on ");
-                    builder.Append(anim.name);
+                    builder.Append("The following animations depend on ");
+                    builder.Append(pattern.name);
                     builder.AppendLine(":");
-                    foreach (var b in dependentBehaviors)
+                    foreach (var b in dependentAnimations)
                     {
                         builder.Append("\t");
                         builder.AppendLine(b.name);
@@ -132,7 +132,7 @@ public class UIPatternsView
                     {
                         if (res2)
                         {
-                            AppDataSet.Instance.DeleteAnimation(anim);
+                            AppDataSet.Instance.DeletePattern(pattern);
                             AppDataSet.Instance.SaveData();
                             RefreshView();
                         }
@@ -140,7 +140,7 @@ public class UIPatternsView
                 }
                 else
                 {
-                    AppDataSet.Instance.DeleteAnimation(anim);
+                    AppDataSet.Instance.DeletePattern(pattern);
                     AppDataSet.Instance.SaveData();
                     RefreshView();
                 }
@@ -148,11 +148,11 @@ public class UIPatternsView
         });
     }
 
-    void ExpandAnimation(Animations.EditAnimation anim)
+    void ExpandPattern(Animations.EditPattern pattern)
     {
         foreach (var uip in patterns)
         {
-            if (uip.editAnimation == anim)
+            if (uip.editPattern == pattern)
             {
                 uip.Expand(!uip.isExpanded);
             }
@@ -161,5 +161,10 @@ public class UIPatternsView
                 uip.Expand(false);
             }
         }
+    }
+
+    void SetPattern(bool res, EditPattern previousPattern, EditPattern newPattern)
+    {
+        AppDataSet.Instance.ReplacePattern(previousPattern, newPattern);
     }
 }

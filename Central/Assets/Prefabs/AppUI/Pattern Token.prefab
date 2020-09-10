@@ -406,7 +406,7 @@ MonoBehaviour:
   editButton: {fileID: 8102420150467669965}
   expandImage: {fileID: 21300000, guid: 46a88d499a629264e8877193e7b6abcb, type: 3}
   contractImage: {fileID: 21300000, guid: 8e19391cc42256c4680ff7f805f3ff6b, type: 3}
-  backgroundColor: {r: 0.11764707, g: 0.12941177, b: 0.227451, a: 1}
+  backgroundColor: {r: 0.22941178, g: 0.24117647, b: 0.3, a: 1}
   expandedColor: {r: 0.11764707, g: 0.12941177, b: 0.227451, a: 1}
   backgroundSprite: {fileID: 21300000, guid: 2edb90b1473b1ca43b7901d48f2925b3, type: 3}
   expandedSprite: {fileID: 21300000, guid: 5607ce1015207624aa8249d78b1cd6ff, type: 3}

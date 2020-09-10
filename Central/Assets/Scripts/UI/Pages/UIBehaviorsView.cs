@@ -6,12 +6,11 @@ using System.Text;
 using System.Linq;
 
 public class UIBehaviorsView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
     public Transform contentRoot;
     public Button addBehaviorButton;
-    public Button menuButton;
     public RectTransform spacer;
 
     [Header("Prefabs")]
@@ -22,6 +21,7 @@ public class UIBehaviorsView
 
     void OnEnable()
     {
+        base.SetupHeader(true, false, "Behaviors", null);
         RefreshView();
     }
 
@@ -44,8 +44,8 @@ public class UIBehaviorsView
         spacer.SetAsLastSibling();
 
         // When we click on the pattern main button, go to the edit page
-        ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, behavior));
-        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, behavior));
+        ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Behavior, behavior));
+        ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Behavior, behavior));
         ret.onDuplicate.AddListener(() => DuplicateBehavior(behavior));
         ret.onRemove.AddListener(() => DeleteBehavior(behavior));
         ret.onExpand.AddListener(() => ExpandBehavior(behavior));
@@ -99,7 +99,7 @@ public class UIBehaviorsView
         // Create a new default behavior
         var newBehavior = AppDataSet.Instance.AddNewDefaultBehavior();
         AppDataSet.Instance.SaveData();
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Behavior, newBehavior);
+        NavigationManager.Instance.GoToPage(UIPage.PageId.Behavior, newBehavior);
     }
 
     void DuplicateBehavior(Behaviors.EditBehavior behavior)

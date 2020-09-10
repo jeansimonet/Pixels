@@ -4,13 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class UIBehaviorView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
-    public Button backButton;
-    public InputField behaviorNameText;
     public InputField behaviorDescriptionText;
-    public Button menuButton;
     public RawImage previewImage;
     public RectTransform rulesRoot;
     public Button addRuleButton;
@@ -24,8 +21,6 @@ public class UIBehaviorView
 
     // The list of controls we have created to display rules
     List<UIRuleToken> rules = new List<UIRuleToken>();
-
-    bool behaviorDirty = false;
 
     public override void Enter(object context)
     {
@@ -64,7 +59,7 @@ public class UIBehaviorView
         {
             previewImage.texture = dieRenderer.renderTexture;
         }
-        behaviorNameText.text = behavior.name;
+        base.SetupHeader(false, false, behavior.name, SetName);
         behaviorDescriptionText.text = behavior.description;
 
         RefreshView();
@@ -76,23 +71,16 @@ public class UIBehaviorView
 
     void Awake()
     {
-        backButton.onClick.AddListener(SaveAndGoBack);
-        behaviorNameText.onEndEdit.AddListener(newName => editBehavior.name = newName);
-        behaviorDescriptionText.onEndEdit.AddListener(newDescription => editBehavior.description = newDescription);
+        behaviorDescriptionText.onEndEdit.AddListener(SetDescription);
         addRuleButton.onClick.AddListener(AddNewRule);
-    }
-
-    void SaveAndGoBack()
-    {
-        AppDataSet.Instance.SaveData(); // Not sure about this one!
-        NavigationManager.Instance.GoBack();
     }
 
     void AddNewRule()
     {
         var newRule = editBehavior.AddNewDefaultRule();
+        base.pageDirty = true;
         RefreshView();
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.Rule, newRule);
+        NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, newRule);
     }
 
     void RefreshView()
@@ -107,8 +95,8 @@ public class UIBehaviorView
                 // New rule
                 var ruleui = GameObject.Instantiate<UIRuleToken>(ruleTokenPrefab, Vector3.zero, Quaternion.identity, rulesRoot);
                 ruleui.Setup(rule);
-                ruleui.onClick.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Rule, rule));
-                ruleui.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(PixelsApp.PageId.Rule, rule));
+                ruleui.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
+                ruleui.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
                 ruleui.onMoveUp.AddListener(() => MoveUp(rule));
                 ruleui.onMoveDown.AddListener(() => MoveDown(rule));
                 ruleui.onDuplicate.AddListener(() => DuplicateRule(rule));
@@ -145,6 +133,7 @@ public class UIBehaviorView
         {
             editBehavior.rules.RemoveAt(index);
             editBehavior.rules.Insert(index - 1, rule);
+            base.pageDirty = true;
             RefreshView();
         }
     }
@@ -156,6 +145,7 @@ public class UIBehaviorView
         {
             editBehavior.rules.RemoveAt(index);
             editBehavior.rules.Insert(index + 1, rule);
+            base.pageDirty = true;
             RefreshView();
         }
     }
@@ -164,6 +154,7 @@ public class UIBehaviorView
     {
         var newRule = rule.Duplicate();
         editBehavior.rules.Add(newRule);
+        base.pageDirty = true;
         RefreshView();
     }
 
@@ -174,6 +165,7 @@ public class UIBehaviorView
             if (res)
             {
                 editBehavior.rules.Remove(rule);
+                base.pageDirty = true;
                 RefreshView();
             }
         });
@@ -194,4 +186,15 @@ public class UIBehaviorView
         }
     }
 
+    void SetName(string newName)
+    {
+        editBehavior.name = newName;
+        base.pageDirty = true;
+    }
+
+    void SetDescription(string newDescription)
+    {
+        editBehavior.description = newDescription;
+        base.pageDirty = true;
+    }
 }

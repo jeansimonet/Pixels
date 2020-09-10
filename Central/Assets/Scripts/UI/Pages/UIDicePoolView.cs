@@ -6,7 +6,7 @@ using System.Linq;
 using Dice;
 
 public class UIDicePoolView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
     public GameObject contentRoot;
@@ -39,6 +39,7 @@ public class UIDicePoolView
 
     void OnEnable()
     {
+        base.SetupHeader(true, false, "Dice Bag", null);
         RefreshView();
         DiceManager.Instance.onDieAdded += OnDieAdded;
         DiceManager.Instance.onWillRemoveDie += OnWillRemoveDie;
@@ -75,7 +76,7 @@ public class UIDicePoolView
 
     void AddNewDice()
     {
-        NavigationManager.Instance.GoToPage(PixelsApp.PageId.DicePoolScanning, null);
+        NavigationManager.Instance.GoToPage(UIPage.PageId.DicePoolScanning, null);
     }
 
 

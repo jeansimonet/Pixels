@@ -10,13 +10,13 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     {
         public class Page
         {
-            public PixelsApp.Page page;
+            public UIPage page;
             public object context;
         }
 
-        public delegate void PageEnterEvent(PixelsApp.Page page, object context);
+        public delegate void PageEnterEvent(UIPage page, object context);
         public PageEnterEvent onPageEntered;
-        public delegate void PageLeavingEvent(PixelsApp.Page page);
+        public delegate void PageLeavingEvent(UIPage page);
         public PageLeavingEvent onLeavingPage;
 
         public Page currentRoot => pages.FirstOrDefault();
@@ -24,7 +24,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 
         List<Page> pages = new List<Page>();
 
-        public void GoToRoot(PixelsApp.Page newRootPage)
+        public void GoToRoot(UIPage newRootPage)
         {
             if (pages.Count > 0)
             {
@@ -37,7 +37,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             EnterPage(p);
         }
 
-        public void GoTo(PixelsApp.Page newPage, object context)
+        public void GoTo(UIPage newPage, object context)
         {
             if (pages.Count > 0)
             {
@@ -75,12 +75,14 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
         }
     }
 
+    public UIPageHeader header;
+
     [System.Serializable]
     public class PageAndToggle
     {
-        public PixelsApp.Page page;
+        public UIPage page;
         public MainNavigationButton button;
-        public PixelsApp.PageId pageId;
+        public UIPage.PageId pageId;
     }
     public PageAndToggle[] pages;
 
@@ -89,6 +91,10 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     // Start is called before the first frame update
     void Awake()
     {
+        header.onBackClicked.AddListener(OnBack);
+        header.onMenuClicked.AddListener(OnMenu);
+        header.onSaveClicked.AddListener(OnSave);
+
         foreach (var pat in pages)
         {
             pat.page.gameObject.SetActive(false);
@@ -110,7 +116,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page
     /// </sumary>
-    public void GoToPage(PixelsApp.PageId pageId, object context)
+    public void GoToPage(UIPage.PageId pageId, object context)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
         if (newPage != null && history.currentPage.page != newPage.page)
@@ -120,7 +126,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
         // Else we're already there
     }
 
-    public void GoToRoot(PixelsApp.PageId pageId)
+    public void GoToRoot(UIPage.PageId pageId)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
         if (newPage != null && history.currentPage.page != newPage.page)
@@ -133,7 +139,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page as root (clearing history)
     /// </sumary>
-    public void GoToRoot(PixelsApp.Page newRoot)
+    public void GoToRoot(UIPage newRoot)
     {
         if (history.currentPage.page != newRoot)
         {
@@ -153,7 +159,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Called when the user clicks on of the root toggles
     /// </sumary>
-    void onPageEntered(PixelsApp.Page newPage, object context)
+    void onPageEntered(UIPage newPage, object context)
     {
         // Update the buttons to reflect whether the page is one of the roots
         foreach (var p in pages)
@@ -164,4 +170,18 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             }
         }
     }
+
+    void OnBack()
+    {
+        history.currentPage.page.OnBack();
+    }
+    void OnMenu()
+    {
+
+    }
+    void OnSave()
+    {
+        history.currentPage.page.OnSave();
+    }
+
 }

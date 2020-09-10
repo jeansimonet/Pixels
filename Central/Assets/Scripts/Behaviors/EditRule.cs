@@ -46,6 +46,16 @@ namespace Behaviors
             };
         }
 
+        public void CopyTo(EditRule dest)
+        {
+            dest.condition = condition.Duplicate();
+            dest.actions.Clear();
+            foreach (var action in actions)
+            {
+                dest.actions.Add(action.Duplicate());
+            }
+        }
+
         public void ReplaceAction(EditAction prevAction, EditAction newAction)
         {
             int index = actions.IndexOf(prevAction);

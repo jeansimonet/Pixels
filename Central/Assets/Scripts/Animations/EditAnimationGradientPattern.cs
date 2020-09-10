@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Animations
 {
@@ -58,5 +60,80 @@ namespace Animations
             ret.gradient = gradient.Duplicate();
             return ret;
         }
+
+        public override void ReplacePattern(Animations.EditPattern oldPattern, Animations.EditPattern newPattern)
+        {
+            if (pattern == oldPattern)
+            {
+                pattern = newPattern;
+            }
+        }
+        public override void DeletePattern(Animations.EditPattern pattern)
+        {
+            if (this.pattern == pattern)
+            {
+                this.pattern = null;
+            }
+        }
+        public override bool DependsOnPattern(Animations.EditPattern pattern)
+        {
+            return this.pattern == pattern;
+        }
+
+        /// <summary>
+        /// Specialized converter
+        /// </sumary>
+        public class Converter
+            : JsonConverter<EditAnimationGradientPattern>
+        {
+            AppDataSet dataSet;
+            public Converter(AppDataSet dataSet)
+            {
+                this.dataSet = dataSet;
+            }
+            public override void WriteJson(JsonWriter writer, EditAnimationGradientPattern value, JsonSerializer serializer)
+            {
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("name");
+                    serializer.Serialize(writer, value.name);
+                    var patternIndex = dataSet.patterns.IndexOf(value.pattern);
+                    writer.WritePropertyName("patternIndex");
+                    serializer.Serialize(writer, patternIndex);
+                    writer.WritePropertyName("speedMultiplier");
+                    serializer.Serialize(writer, value.speedMultiplier);
+                    writer.WritePropertyName("duration");
+                    serializer.Serialize(writer, value.duration);
+                    writer.WritePropertyName("gradient");
+                    serializer.Serialize(writer, value.gradient);
+                    writer.WriteEndObject();
+                }
+            }
+
+            public override EditAnimationGradientPattern ReadJson(JsonReader reader, System.Type objectType, EditAnimationGradientPattern existingValue, bool hasExistingValue, JsonSerializer serializer)
+            {
+                if (hasExistingValue)
+                    throw(new System.NotImplementedException());
+
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    JObject jsonObject = JObject.Load(reader);
+                    var ret = new EditAnimationGradientPattern();
+                    ret.name = jsonObject["name"].Value<string>();
+                    int patternIndex = jsonObject.ContainsKey("patternIndex") ? jsonObject["patternIndex"].Value<int>() : -1;
+                    if (patternIndex >= 0 && patternIndex < dataSet.patterns.Count)
+                        ret.pattern = dataSet.patterns[patternIndex];
+                    else
+                        ret.pattern = AppDataSet.Instance.AddNewDefaultPattern();
+                    ret.speedMultiplier = jsonObject["speedMultiplier"].Value<float>();
+                    ret.duration = jsonObject["duration"].Value<float>();
+                    ret.gradient = jsonObject["gradient"].ToObject<EditRGBGradient>();
+                    return ret;
+                }
+            }
+        }
+
+
     }
 }

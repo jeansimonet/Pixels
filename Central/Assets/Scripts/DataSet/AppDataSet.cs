@@ -24,9 +24,14 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public int jsonVersion = 1;
         public List<EditDie> dice = new List<EditDie>();
         public List<EditPattern> patterns = new List<EditPattern>();
+        public List<EditRGBPattern> rgbPatterns = new List<EditRGBPattern>();
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
+
+        [JsonIgnore]
+        public EditPreset activePreset; // Updated after serializing
+        public int activePresetIndex; // Updated before serializing
 
         public void Clear()
         {
@@ -41,14 +46,22 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     Data data = new Data();
     public List<EditDie> dice => data.dice;
     public List<EditPattern> patterns => data.patterns;
+    public List<EditRGBPattern> rgbPatterns => data.rgbPatterns;
     public List<EditAnimation> animations => data.animations;
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;
+    public EditPreset activePreset
+    {
+        get { return data.activePreset; }
+        set { data.activePreset = value; }
+    }
 
     JsonSerializer CreateSerializer()
     {
         var serializer = new JsonSerializer();
         serializer.Converters.Add(new EditAnimationConverter());
+        serializer.Converters.Add(new EditAnimationGradientPattern.Converter(this));
+        serializer.Converters.Add(new EditAnimationKeyframed.Converter(this));
         serializer.Converters.Add(new EditActionConverter());
         serializer.Converters.Add(new EditActionPlayAnimation.Converter(this));
         serializer.Converters.Add(new EditDieAssignmentConverter(this));
@@ -58,6 +71,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public void ToJson(JsonWriter writer, JsonSerializer serializer)
     {
+        data.activePresetIndex = data.presets.IndexOf(data.activePreset);
         serializer.Serialize(writer, data);
     }
 
@@ -65,6 +79,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     {
         data.Clear();
         serializer.Populate(reader, data); 
+        data.activePreset = data.activePresetIndex != -1 ? data.presets[data.activePresetIndex] : null;
     }
 
     public EditDataSet ExtractEditSetForDie(EditDie die)
@@ -160,6 +175,69 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         return newPattern;
     }
 
+    public void ReplacePattern(EditPattern oldPattern, EditPattern newPattern)
+    {
+        foreach (var animation in animations)
+        {
+            animation.ReplacePattern(oldPattern, newPattern);
+        }
+        int oldPatternIndex = patterns.IndexOf(oldPattern);
+        patterns[oldPatternIndex] = newPattern;
+    }
+
+    public void DeletePattern(EditPattern pattern)
+    {
+        foreach (var animation in animations)
+        {
+            animation.DeletePattern(pattern);
+        }
+        patterns.Remove(pattern);
+    }
+
+    public IEnumerable<Animations.EditAnimation> CollectAnimationsForPattern(Animations.EditPattern pattern)
+    {
+        return animations.Where(b => b.DependsOnPattern(pattern));
+    }
+
+    public EditRGBPattern AddNewDefaultRGBPattern()
+    {
+        var newPattern = new Animations.EditRGBPattern();
+        newPattern.name = "New Pattern";
+        for (int i = 0; i < 20; ++i)
+        {
+            var grad = new EditRGBGradient();
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.0f, color = Color.black });
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 0.5f, color = Color.white });
+            grad.keyframes.Add(new EditRGBKeyframe() { time = 1.0f, color = Color.black });
+            newPattern.gradients.Add(grad);
+        }
+        rgbPatterns.Add(newPattern);
+        return newPattern;
+    }
+
+    public void ReplaceRGBPattern(EditRGBPattern oldPattern, EditRGBPattern newPattern)
+    {
+        foreach (var animation in animations)
+        {
+            animation.ReplaceRGBPattern(oldPattern, newPattern);
+        }
+        int oldPatternIndex = rgbPatterns.IndexOf(oldPattern);
+        rgbPatterns[oldPatternIndex] = newPattern;
+    }
+
+    public void DeleteRGBPattern(EditRGBPattern pattern)
+    {
+        foreach (var animation in animations)
+        {
+            animation.DeleteRGBPattern(pattern);
+        }
+        rgbPatterns.Remove(pattern);
+    }
+
+    public IEnumerable<Animations.EditAnimation> CollectAnimationsForRGBPattern(Animations.EditRGBPattern pattern)
+    {
+        return animations.Where(b => b.DependsOnRGBPattern(pattern));
+    }
 
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAnimation(Animations.EditAnimation anim)
     {
@@ -272,12 +350,23 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public void LoadData()
     {
         var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.DataSetFilename);
-        //var path = System.IO.Path.Combine(Application.persistentDataPath, $"test_dataset3.json");
-        var serializer = CreateSerializer();
-        using (StreamReader sw = new StreamReader(path))
-        using (JsonReader reader = new JsonTextReader(sw))
+        if (System.IO.File.Exists(path))
         {
-            FromJson(reader, serializer);
+            var serializer = CreateSerializer();
+            using (StreamReader sw = new StreamReader(path))
+            using (JsonReader reader = new JsonTextReader(sw))
+            {
+                FromJson(reader, serializer);
+            }
+        }
+        else
+        {
+            var serializer = CreateSerializer();
+            using (StringReader sw = new StringReader(AppConstants.Instance.defaultDiceJson.text))
+            using (JsonReader reader = new JsonTextReader(sw))
+            {
+                FromJson(reader, serializer);
+            }
         }
     }
 
@@ -342,33 +431,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         simpleAnim.name = "Simple Anim 1";
         ret.animations.Add(simpleAnim);
 
-        EditAnimationKeyframed keyAnim = new EditAnimationKeyframed();
-        keyAnim.duration = 3.0f;
-        keyAnim.name = "Keyframed Anim 2";
-        keyAnim.tracks.Add(new EditRGBTrack()
-        {
-            ledIndices = new List<int>() { 1, 5, 9 },
-            gradient = new EditRGBGradient() {
-                keyframes = new List<EditRGBKeyframe>() {
-                    new EditRGBKeyframe() { time = 0.0f, color = Color.black },
-                    new EditRGBKeyframe() { time = 1.5f, color = Color.red },
-                    new EditRGBKeyframe() { time = 3.0f, color = Color.black },
-                }
-            }
-        });
-        keyAnim.tracks.Add(new EditRGBTrack()
-        {
-            ledIndices = new List<int>() { 0, 2, 3, 4 },
-            gradient = new EditRGBGradient() {
-                keyframes = new List<EditRGBKeyframe>() {
-                    new EditRGBKeyframe() { time = 0.0f, color = Color.black },
-                    new EditRGBKeyframe() { time = 1.0f, color = Color.cyan },
-                    new EditRGBKeyframe() { time = 2.0f, color = Color.cyan },
-                    new EditRGBKeyframe() { time = 3.0f, color = Color.black },
-                }
-            }
-        });
-        ret.animations.Add(keyAnim);
 
         EditBehavior behavior = new EditBehavior();
         behavior.rules.Add(new EditRule() {
@@ -381,7 +443,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
                 faceIndex = 19,
                 flags = ConditionFaceCompare_Flags.Equal
             },
-            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 19, loopCount = 1 }}
+            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = simpleAnim, faceIndex = 19, loopCount = 1 }}
         });
         behavior.rules.Add(new EditRule() {
             condition = new EditConditionFaceCompare()
@@ -389,7 +451,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
                 faceIndex = 0,
                 flags = ConditionFaceCompare_Flags.Less | ConditionFaceCompare_Flags.Equal | ConditionFaceCompare_Flags.Greater
             },
-            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = keyAnim, faceIndex = 2, loopCount = 1 }}
+            actions = new List<EditAction> () { new EditActionPlayAnimation() { animation = simpleAnim, faceIndex = 2, loopCount = 1 }}
         });
         ret.behaviors.Add(behavior);
 

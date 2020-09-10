@@ -167,7 +167,7 @@ namespace Behaviors
     public class EditConditionFaceCompare
         : EditCondition
     {
-        [Index, IntRange(0, 19)]
+        [FaceIndex, IntRange(0, 19)]
         public int faceIndex;
         [Bitfield]
         public ConditionFaceCompare_Flags flags;

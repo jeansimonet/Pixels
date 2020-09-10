@@ -6,12 +6,9 @@ using Presets;
 using Dice;
 
 public class UIPatternView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
-    public Button backButton;
-    public InputField animationNameText;
-    public Button saveButton;
     public RawImage previewImage;
     public RotationSlider rotationSlider;
     public UIParameterEnum animationSelector;
@@ -23,7 +20,6 @@ public class UIPatternView
     public SingleDiceRenderer dieRenderer { get; private set; }
     
     UIParameterManager.ObjectParameterList parameters;
-    bool patternDirty = false;
     EditDie previewDie = null;
 
     public override void Enter(object context)
@@ -34,12 +30,6 @@ public class UIPatternView
         {
             Setup(anim);
         }
-        patternDirty = false;
-        saveButton.gameObject.SetActive(false);
-    }
-
-    void OnEnable()
-    {
     }
 
     void OnDisable()
@@ -73,13 +63,13 @@ public class UIPatternView
 
     void Setup(Animations.EditAnimation anim)
     {
+        base.SetupHeader(false, false, anim.name, SetName);
         editAnimation = anim;
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(anim.defaultPreviewSettings.design, 600);
         if (dieRenderer != null)
         {
             previewImage.texture = dieRenderer.renderTexture;
         }
-        animationNameText.text = anim.name;
 
         rotationSlider.Setup(this.dieRenderer.die);
         rotationControl.Setup(this.dieRenderer.die);
@@ -97,42 +87,7 @@ public class UIPatternView
 
     void Awake()
     {
-        backButton.onClick.AddListener(DiscardAndGoBack);
-        animationNameText.onEndEdit.AddListener(newName => editAnimation.name = newName);
-        saveButton.gameObject.SetActive(false);
-        saveButton.onClick.AddListener(SaveAndGoBack);
         playOnDieButton.onClick.AddListener(() => PreviewOnDie());
-    }
-
-    void DiscardAndGoBack()
-    {
-        if (patternDirty)
-        {
-            PixelsApp.Instance.ShowDialogBox(
-                "Discard Changes",
-                "You have unsaved changes, are you sure you want to discard them?",
-                "Discard",
-                "Cancel", discard => 
-                {
-                    if (discard)
-                    {
-                        // Reload from file
-                        AppDataSet.Instance.LoadData();
-                        NavigationManager.Instance.GoBack();
-                    }
-                });
-        }
-        else
-        {
-            NavigationManager.Instance.GoBack();
-        }
-    }
-
-    void SaveAndGoBack()
-    {
-        Debug.Assert(patternDirty);
-        AppDataSet.Instance.SaveData();
-        NavigationManager.Instance.GoBack();
     }
 
     void OnAnimParameterChanged(EditObject animObject, UIParameter parameter, object newValue)
@@ -140,8 +95,7 @@ public class UIPatternView
         var theEditAnim = (Animations.EditAnimation)animObject;
         Debug.Assert(theEditAnim == editAnimation);
         dieRenderer.SetAnimation(theEditAnim);
-        patternDirty = true;
-        saveButton.gameObject.SetActive(true);
+        base.pageDirty = true;
     }
 
     void SetAnimationType(Animations.AnimationType newType)
@@ -172,6 +126,7 @@ public class UIPatternView
             dieRenderer.SetAnimation(newEditAnimation);
 
             editAnimation = newEditAnimation;
+            base.pageDirty = true;
         }
     }
 
@@ -233,5 +188,11 @@ public class UIPatternView
                 }
             }
         }
+    }
+
+    void SetName(string newName)
+    {
+        editAnimation.name = newName;
+        base.pageDirty = true;
     }
 }

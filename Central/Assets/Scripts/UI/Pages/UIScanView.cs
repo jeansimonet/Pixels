@@ -6,10 +6,9 @@ using System.Linq;
 using Dice;
 
 public class UIScanView
-    : PixelsApp.Page
+    : UIPage
 {
     [Header("Controls")]
-    public Button backButton;
     public GameObject contentRoot;
     public UIPairSelectedDiceButton pairSelectedDice;
     public Button clearListButton;
@@ -22,12 +21,12 @@ public class UIScanView
 
     void Awake()
     {
-        backButton.onClick.AddListener(() => NavigationManager.Instance.GoBack());
         clearListButton.onClick.AddListener(ClearList);
     }
 
     void OnEnable()
     {
+        base.SetupHeader(false, false, "Scanning", null);
         RefreshView();
         DicePool.Instance.BeginScanForDice(OnDieDiscovered);
         pairSelectedDice.SetActive(false);
@@ -80,6 +79,11 @@ public class UIScanView
             discoveredDice.Remove(uidie);
             DestroyDiscoveredDie(uidie);
         }
+    }
+
+    public override void OnBack()
+    {
+        NavigationManager.Instance.GoBack();
     }
 
     UIDiscoveredDieView CreateDiscoveredDie(Die die)

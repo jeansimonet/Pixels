@@ -77,7 +77,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 1 Sec
+  m_Text: -- Select a Lighting Pattern --
 --- !u!1 &762995363461187837
 GameObject:
   m_ObjectHideFlags: 0

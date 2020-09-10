@@ -5,12 +5,9 @@ using UnityEngine.UI;
 using System.Linq;
 using Dice;
 
-public class UIPresetView : PixelsApp.Page
+public class UIPresetView : UIPage
 {
     [Header("Controls")]
-    public Button backButton;
-    public InputField presetNameText;
-    public Button saveButton;
     public RawImage previewImage;
     public RectTransform assignmentsRoot;
     public Button addAssignmentButton;
@@ -21,8 +18,6 @@ public class UIPresetView : PixelsApp.Page
     public MultiDiceRenderer dieRenderer { get; private set; }
     public Presets.EditPreset editPreset { get; private set; }
     List<UIAssignmentToken> assignments = new List<UIAssignmentToken>();
-
-    bool presetDirty = false;
 
     public override void Enter(object context)
     {
@@ -51,6 +46,7 @@ public class UIPresetView : PixelsApp.Page
 
     void Setup(Presets.EditPreset preset)
     {
+        base.SetupHeader(false, false, preset.name, SetName);
         editPreset = preset;
         var designs = new List<DesignAndColor>(preset.dieAssignments.Select(ass =>
         {
@@ -70,24 +66,18 @@ public class UIPresetView : PixelsApp.Page
                 }
             }
         }
-        presetNameText.text = preset.name;
         dieRenderer.rotating = true;
-        presetDirty = false;
-        saveButton.gameObject.SetActive(false);
         RefreshView();
     }
 
     void Awake()
     {
-        backButton.onClick.AddListener(DiscardAndGoBack);
-        saveButton.onClick.AddListener(SaveAndGoBack);
-        presetNameText.onEndEdit.AddListener(newName => editPreset.name = newName);
         addAssignmentButton.onClick.AddListener(AddNewAssignment);
     }
 
     void DiscardAndGoBack()
     {
-        if (presetDirty)
+        if (pageDirty)
         {
             PixelsApp.Instance.ShowDialogBox(
                 "Discard Changes",
@@ -122,8 +112,7 @@ public class UIPresetView : PixelsApp.Page
             die = null,
             behavior = null
         });
-        presetDirty = true;
-        saveButton.gameObject.SetActive(true);
+        base.pageDirty = true;
         RefreshView();
     }
 
@@ -179,8 +168,7 @@ public class UIPresetView : PixelsApp.Page
             "Cancel",
             (res) =>
             {
-                presetDirty = true;
-                saveButton.gameObject.SetActive(true);
+                base.pageDirty = true;
                 editPreset.dieAssignments.Remove(assignment);
                 RefreshView();
             });
@@ -188,8 +176,13 @@ public class UIPresetView : PixelsApp.Page
 
     void OnAssignmentChanged(Presets.EditDieAssignment editAssignment)
     {
-        presetDirty = true;
-        saveButton.gameObject.SetActive(true);
+        base.pageDirty = true;
         RefreshView();
+    }
+
+    void SetName(string newName)
+    {
+        editPreset.name = newName;
+        base.pageDirty = true;
     }
 }
