@@ -202,7 +202,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 548d5527b9b465740b5f296a52699f42, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4791a7a8f7dcfa046a4b2cf62ae5422e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -576,16 +576,11 @@ MonoBehaviour:
   presetNameText: {fileID: 7299952726807433446}
   backgroundImage: {fileID: 7299952728293820426}
   checkMarkRoot: {fileID: 8035983444152954188}
-  iconImage: {fileID: 3995566418184155049}
   activePresetBorderImage: {fileID: 5694254108680313569}
   textColor: {r: 0.3064935, g: 0.3220779, b: 0.4, a: 1}
   activeTextColor: {r: 0.5529412, g: 0.6392157, b: 0.7411765, a: 1}
   background: {fileID: 21300000, guid: 2edb90b1473b1ca43b7901d48f2925b3, type: 3}
   activeBackground: {fileID: 21300000, guid: 5607ce1015207624aa8249d78b1cd6ff, type: 3}
-  iconUnknown: {fileID: 21300000, guid: 9460cc393bdc3804da9954bbee41677e, type: 3}
-  iconReachable: {fileID: 21300000, guid: 0534165990c64ad4898454bdb3528a65, type: 3}
-  iconUpToDate: {fileID: 21300000, guid: 708e79e119e06ee479f01b4496562ccc, type: 3}
-  iconActive: {fileID: 21300000, guid: 4791a7a8f7dcfa046a4b2cf62ae5422e, type: 3}
 --- !u!1 &8612555019444753551
 GameObject:
   m_ObjectHideFlags: 0
@@ -623,7 +618,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 19}
-  m_SizeDelta: {x: -189, y: 100}
+  m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1199959757292983549
 MonoBehaviour:

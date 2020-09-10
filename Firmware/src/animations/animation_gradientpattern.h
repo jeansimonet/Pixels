@@ -16,6 +16,7 @@ namespace Animations
 	struct AnimationGradientPattern
 		: public Animation
 	{
+		uint16_t speedMultiplier256; // A multiplier to the duration, scaled to 256
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
 		uint16_t gradientTrackOffset;

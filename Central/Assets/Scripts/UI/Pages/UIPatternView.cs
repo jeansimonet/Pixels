@@ -21,6 +21,7 @@ public class UIPatternView
     
     UIParameterManager.ObjectParameterList parameters;
     EditDie previewDie = null;
+    bool previewDieConnected = false;
 
     public override void Enter(object context)
     {
@@ -48,16 +49,10 @@ public class UIPatternView
 
         if (previewDie != null)
         {
-            if (previewDie.die != null)
-            {
-                previewDie.die.SetStandardMode();
-                DiceManager.Instance.DisconnectDie(previewDie);
-                previewDie = null;
-            }
-            else
-            {
-                previewDie = null;
-            }
+            previewDie.die.SetStandardMode();
+            DiceManager.Instance.DisconnectDie(previewDie);
+            previewDie = null;
+            previewDieConnected = false;
         }
     }
 
@@ -154,27 +149,29 @@ public class UIPatternView
 
         if (previewDie != null)
         {
-            if (previewDie.die == null)
+            if (!previewDieConnected)
             {
                 string error = null;
                 yield return DiceManager.Instance.ConnectDie(previewDie, (_, res, errorMsg) =>
                 {
+                    previewDieConnected = res;
                     error = errorMsg;
                 });
-                if (error != null)
+
+                if (!previewDieConnected)
                 {
+                    previewDie = null;
                     bool acknowledged = false;
                     PixelsApp.Instance.ShowDialogBox("Could not connect.", error, "Ok", null, _ => acknowledged = true);
                     yield return new WaitUntil(() => acknowledged);
                 }
-                else
-                {
-                    previewDie.die.SetLEDAnimatorMode();
-                }
             }
 
-            if (previewDie.die != null)
+            if (previewDie != null && previewDieConnected)
             {
+                previewDie.die.SetLEDAnimatorMode();
+                yield return new WaitForSeconds(0.5f); // Fixme!!! add acknowledge from die instead
+
                 var editSet = AppDataSet.Instance.ExtractEditSetForAnimation(editAnimation);
                 var dataSet = editSet.ToDataSet();
                 bool playResult = false;

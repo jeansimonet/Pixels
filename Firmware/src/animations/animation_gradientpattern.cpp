@@ -57,9 +57,10 @@ namespace Animations
         // Figure out the color from the gradient
         auto& gradient = animationBits->getRGBTrack(preset->gradientTrackOffset);
 
-        int gradientTime = time * 512 / preset->duration;
+        int gradientTime = time * 1000 / preset->duration;
         uint32_t gradientColor = gradient.evaluateColor(animationBits, gradientTime);
 
+        int trackTime = time * 256 / preset->speedMultiplier256;
 
         // Each track will append its led indices and colors into the return array
         // The assumption is that led indices don't overlap between tracks of a single animation,
@@ -70,7 +71,7 @@ namespace Animations
         for (int i = 0; i < preset->trackCount; ++i)
         {
             auto track = animationBits->getTrack((uint16_t)(preset->tracksOffset + i)); 
-            int count = track.evaluate(animationBits, gradientColor, time, indices, colors);
+            int count = track.evaluate(animationBits, gradientColor, trackTime, indices, colors);
             for (int j = 0; j < count; ++j)
             {
                 retIndices[totalCount+j] = indices[j];

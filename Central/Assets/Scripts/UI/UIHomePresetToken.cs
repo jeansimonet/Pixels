@@ -14,7 +14,6 @@ public class UIHomePresetToken : MonoBehaviour
     public Text presetNameText;
     public Image backgroundImage;
     public RectTransform checkMarkRoot;
-    public Image iconImage;
     public Image activePresetBorderImage;
 
     [Header("Parameters")]
@@ -22,10 +21,6 @@ public class UIHomePresetToken : MonoBehaviour
     public Color activeTextColor;
     public Sprite background;
     public Sprite activeBackground;
-    public Sprite iconUnknown;
-    public Sprite iconReachable;
-    public Sprite iconUpToDate;
-    public Sprite iconActive;
 
     public EditPreset editPreset { get; private set; }
     public MultiDiceRenderer dieRenderer { get; private set; }
@@ -34,9 +29,7 @@ public class UIHomePresetToken : MonoBehaviour
 
     public enum State
     {
-        Unknown = 0,
-        Reachable,
-        UpToDate,
+        Inactive = 0,
         Active
     }
 
@@ -60,7 +53,7 @@ public class UIHomePresetToken : MonoBehaviour
             dieRenderer.SetDieAnimations(i, preset.dieAssignments[i].behavior.CollectAnimations().Where(anim => anim != null));
             dieRenderer.Play(i, false);
         }
-        SetState(State.Unknown);
+        SetState(State.Inactive);
     }
 
     public void SetState(State newState)
@@ -68,32 +61,16 @@ public class UIHomePresetToken : MonoBehaviour
         state = newState;
         switch (newState)
         {
-            case State.Unknown:
+            case State.Inactive:
                 backgroundImage.sprite = background;
                 presetNameText.color = textColor;
-                iconImage.sprite = iconUnknown;
-                iconImage.color = textColor;
-                activePresetBorderImage.gameObject.SetActive(false);
-                break;            
-            case State.Reachable:
-                backgroundImage.sprite = background;
-                presetNameText.color = textColor;
-                iconImage.sprite = iconReachable;
-                iconImage.color = textColor;
-                activePresetBorderImage.gameObject.SetActive(false);
-                break;            
-            case State.UpToDate:
-                backgroundImage.sprite = background;
-                presetNameText.color = textColor;
-                iconImage.sprite = iconUpToDate;
-                iconImage.color = textColor;
+                checkMarkRoot.gameObject.SetActive(false);
                 activePresetBorderImage.gameObject.SetActive(false);
                 break;            
             case State.Active:
                 backgroundImage.sprite = activeBackground;
                 presetNameText.color = activeTextColor;
-                iconImage.sprite = iconActive;
-                iconImage.color = activeTextColor;
+                checkMarkRoot.gameObject.SetActive(true);
                 activePresetBorderImage.gameObject.SetActive(true);
                 break;            
         }

@@ -143,7 +143,7 @@ public class UIHomePage
             }
             else
             {
-                uipresetToken.SetState(UIHomePresetToken.State.Unknown);
+                uipresetToken.SetState(UIHomePresetToken.State.Inactive);
             }
         }
     }

@@ -52,6 +52,9 @@ namespace Animations
 	{
 		int time = ms - startTime;
 		auto preset = getPreset();
+
+        int trackTime = time * 256 / preset->speedMultiplier256;
+
 		const RGBTrack * tracks = animationBits->getRGBTracks(preset->tracksOffset);
 
 		// Each track will append its led indices and colors into the return array
@@ -63,7 +66,7 @@ namespace Animations
 		for (int i = 0; i < preset->trackCount; ++i)
 		{
 			auto& track = tracks[i]; 
-			auto count = track.evaluate(animationBits, time, indices, colors);
+			auto count = track.evaluate(animationBits, trackTime, indices, colors);
 			indices += count;
 			colors += count;
 			totalCount += count;
