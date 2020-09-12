@@ -21,14 +21,18 @@ namespace Behaviors
             int conditionIndex = set.conditions.Count - 1;
 
             // Create our action
-            var act = actions[0].ToAction(editSet, set);
-            set.actions.Add(act);
-            int actionIndex = set.actions.Count - 1;
+            int actionOffset = set.actions.Count;
+            foreach (var editAction in actions)
+            {
+                var act = editAction.ToAction(editSet, set);
+                set.actions.Add(act);
+            }
 
             return new Rule()
             {
                 condition = (ushort)conditionIndex,
-                action = (ushort)actionIndex
+                actionOffset = (ushort)actionOffset,
+                actionCount = (ushort)actions.Count,
             };
         }
 

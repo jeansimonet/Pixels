@@ -10,6 +10,7 @@ namespace Behaviors
     public class Rule
     {
         public ushort condition;
-        public ushort action;
+        public ushort actionOffset;
+        public ushort actionCount;
     }
 }

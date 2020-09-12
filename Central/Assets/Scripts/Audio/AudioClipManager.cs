@@ -22,6 +22,8 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
 
     public List<AudioClipInfo> audioClips = new List<AudioClipInfo>();
 
+    AudioSource audioSource;
+
     public AudioClipInfo FindClip(string name)
     {
         return audioClips.FirstOrDefault(a => string.Compare(a.clip.name, name, true) == 0);
@@ -38,6 +40,7 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
 
     void Start()
     {
+        audioSource = GetComponent<AudioSource>();
         if (!Directory.Exists(userClipsRootPath))
         {
             Directory.CreateDirectory(userClipsRootPath);
@@ -115,6 +118,27 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
 
             // Wait until next frame to continue
             yield return null;
+        }
+    }
+
+    public void PlayAudioClip(uint clipId)
+    {
+        var editClip = AppDataSet.Instance.FindAudioClip(clipId);
+        if (editClip != null)
+        {
+            var clipInfo = FindClip(editClip.name);
+            if (clipInfo != null)
+            {
+                audioSource.PlayOneShot(clipInfo.clip);
+            }
+            else
+            {
+                Debug.LogError("No matching clip info for Audio Clip id " + editClip.name);
+            }
+        }
+        else
+        {
+            Debug.LogError("Unknown Audio Clip id " + clipId);
         }
     }
 }

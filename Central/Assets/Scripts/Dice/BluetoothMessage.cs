@@ -523,8 +523,7 @@ namespace Dice
         : DieMessage
     {
         public DieMessageType type { get; set; } = DieMessageType.PlaySound;
-        public uint soundId;
-        public byte count;
+        public ushort clipId;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

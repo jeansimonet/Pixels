@@ -441,6 +441,12 @@ public partial class Die
             });
         }
     }
+
+    void OnPlayAudioClip(DieMessage message)
+    {
+        var playClipMessage = (DieMessagePlaySound)message;
+        AudioClipManager.Instance.PlayAudioClip((uint)playClipMessage.clipId);
+    }
     #endregion
 }
 }

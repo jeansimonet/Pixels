@@ -48,6 +48,7 @@ namespace Behaviors
         : Action
     {
         public ActionType type { get; set; } = ActionType.PlayAudioClip;
-        public byte clipId;
+        public byte paddingType;
+        public ushort clipId;
     };
 }

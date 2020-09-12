@@ -307,6 +307,11 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         return audioClips.FirstOrDefault(a => a.name == fileName);
     }
 
+    public EditAudioClip FindAudioClip(uint clipId)
+    {
+        return audioClips.FirstOrDefault(a => a.id == clipId);
+    }
+
     public EditAudioClip AddAudioClip(string fileName)
     {
         return new EditAudioClip()
