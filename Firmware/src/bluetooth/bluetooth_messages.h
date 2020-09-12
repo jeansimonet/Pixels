@@ -71,6 +71,8 @@ struct Message
 		MessageType_SetDesignAndColorAck,
 		MessageType_SetCurrentBehavior,
 		MessageType_SetCurrentBehaviorAck,
+		MessageType_SetName,
+		MessageType_SetNameAck,
 
 		// TESTING 
 		MessageType_TestBulkSend, 
@@ -320,6 +322,13 @@ struct MessageSetCurrentBehavior
 {
 	uint8_t currentBehavior;
 	inline MessageSetCurrentBehavior() : Message(Message::MessageType_SetCurrentBehavior) {}
+};
+
+struct MessageSetName
+: public Message
+{
+	char name[10];
+	inline MessageSetName() : Message(Message::MessageType_SetName) {}
 };
 
 struct MessageNotifyUser

@@ -16,5 +16,7 @@ public class AppConstants : SingletonMonoBehaviour<AppConstants>
     public float MultiDiceRootRotationSpeedAvg = 2.0f;
     public float MultiDiceRootRotationSpeedVar = 0.4f;
     public float DicePoolDisconnectDelay = 5.0f;
+    public string AudioClipsFolderName = "AudioClips";
+    public Color AudioClipsWaveformColor = Color.blue;
 }
 

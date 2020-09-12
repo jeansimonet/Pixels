@@ -8,11 +8,14 @@ namespace Bluetooth
     {
         void init();
         void initAdvertising();
+        void initAdvertisingName();
         void initCustomAdvertisingData();
         void disconnect();
         void startAdvertising();
         void disableAdvertisingOnDisconnect();
+        void enableAdvertisingOnDisconnect();
         bool canSend();
+        void resetOnDisconnect();
 
         enum SendResult
         {

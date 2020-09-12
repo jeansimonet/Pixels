@@ -6,6 +6,7 @@ using Animations;
 using Behaviors;
 using Presets;
 using Dice;
+using AudioClips;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -27,10 +28,12 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public List<EditAnimation> animations = new List<EditAnimation>();
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
+        public List<EditAudioClip> audioClips = new List<EditAudioClip>();
 
         [JsonIgnore]
         public EditPreset activePreset; // Updated after serializing
         public int activePresetIndex; // Updated before serializing
+        public uint nextAudioClipUniqueId = 0;
 
         public void Clear()
         {
@@ -39,6 +42,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
             animations.Clear();
             behaviors.Clear();
             presets.Clear();
+            audioClips.Clear();
         }
     }
 
@@ -48,6 +52,8 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public List<EditAnimation> animations => data.animations;
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;
+    public List<EditAudioClip> audioClips => data.audioClips;
+
     public EditPreset activePreset
     {
         get { return data.activePreset; }
@@ -294,6 +300,25 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
             preset.DeleteDie(editDie);
         }
         dice.Remove(editDie);
+    }
+
+    public EditAudioClip FindAudioClip(string fileName)
+    {
+        return audioClips.FirstOrDefault(a => a.name == fileName);
+    }
+
+    public EditAudioClip AddAudioClip(string fileName)
+    {
+        return new EditAudioClip()
+        {
+            name = fileName,
+            id = data.nextAudioClipUniqueId++
+        };
+    }
+
+    public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAudioClip(EditAudioClip clip)
+    {
+        return behaviors.Where(b => b.DependsOnAudioClip(clip));
     }
 
     void OnEnable()

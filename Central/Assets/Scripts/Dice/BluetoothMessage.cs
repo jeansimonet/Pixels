@@ -64,6 +64,8 @@ namespace Dice
         SetDesignAndColorAck,
         SetCurrentBehavior,
         SetCurrentBehaviorAck,
+        SetName,
+        SetNameAck,
 
         // Testing
         TestBulkSend, 
@@ -240,6 +242,12 @@ namespace Dice
                         break;
                     case DieMessageType.SetCurrentBehaviorAck:
                         ret = FromByteArray<DieMessageSetCurrentBehaviorAck>(data);
+                        break;
+                    case DieMessageType.SetName:
+                        ret = FromByteArray<DieMessageSetName>(data);
+                        break;
+                    case DieMessageType.SetNameAck:
+                        ret = FromByteArray<DieMessageSetNameAck>(data);
                         break;
                     default:
                         throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
@@ -748,6 +756,22 @@ namespace Dice
     : DieMessage
     {
         public DieMessageType type { get; set; } = DieMessageType.SetCurrentBehaviorAck;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public class DieMessageSetName
+    : DieMessage
+    {
+        public DieMessageType type { get; set; } = DieMessageType.SetName;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
+        public byte[] name;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public class DieMessageSetNameAck
+    : DieMessage
+    {
+        public DieMessageType type { get; set; } = DieMessageType.SetNameAck;
     }
 }
 

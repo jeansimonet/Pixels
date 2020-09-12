@@ -21,6 +21,8 @@ namespace Config
 		// Current active behavior
 		int currentBehaviorIndex;
 
+		char name[10];
+
 		// Face detector
 		float jerkClamp;
 		float sigmaDecay;
@@ -65,6 +67,7 @@ namespace Config
 
 		void programDesignAndColor(DiceVariants::DesignAndColor design, SettingsWrittenCallback callback);
 		void programCurrentBehavior(uint8_t behaviorIndex, SettingsWrittenCallback callback);
+		void programName(const char* newName, SettingsWrittenCallback callback);
 
 		enum ProgrammingEventType
 		{

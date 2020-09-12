@@ -58,6 +58,11 @@ namespace PowerManager
         // Go to system off.
         nrf_pwr_mgmt_shutdown(NRF_PWR_MGMT_SHUTDOWN_GOTO_SYSOFF);
     }
+
+    void reset() {
+        nrf_pwr_mgmt_shutdown(NRF_PWR_MGMT_SHUTDOWN_RESET);
+    }
+
 }
 }
 

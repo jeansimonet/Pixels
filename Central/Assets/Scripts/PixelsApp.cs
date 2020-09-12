@@ -16,6 +16,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIProgrammingBox programmingBox;
     public UIPatternEditor patternEditor;
     public UIPatternPicker patternPicker;
+    public UIAudioClipPicker audioClipPicker;
 
     [Header("Controls")]
     public UIMainMenu mainMenu;
@@ -126,6 +127,16 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             patternPicker.Show(title, previousPattern, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowAudioClipPicker(string title, AudioClipManager.AudioClipInfo previousClip, System.Action<bool, AudioClipManager.AudioClipInfo> closeAction)
+    {
+        bool ret = !audioClipPicker.isShown;
+        if (ret)
+        {
+            audioClipPicker.Show(title, previousClip, closeAction);
         }
         return ret;
     }

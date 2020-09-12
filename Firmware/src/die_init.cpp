@@ -131,6 +131,9 @@ namespace Die
         // The we read user settings from flash, or set some defaults if none are found
         SettingsManager::init([] (bool result) {
 
+            // The advertising name depends on settings
+            Stack::initAdvertisingName();
+
             // Now that the settings are set, update custom advertising data
             Stack::initCustomAdvertisingData();
 

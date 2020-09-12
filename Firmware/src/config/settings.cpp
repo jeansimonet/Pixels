@@ -12,7 +12,7 @@
 #include "utils/utils.h"
 
 #define SETTINGS_VALID_KEY (0x15E77165) // 1SETTINGS in leet speak ;)
-#define SETTINGS_VERSION 2
+#define SETTINGS_VERSION 3
 #define SETTINGS_PAGE_COUNT 1
 
 using namespace DriversNRF;
@@ -35,6 +35,7 @@ namespace SettingsManager
 	void ProgramDefaultParametersHandler(void* context, const Message* msg);
 	void SetDesignTypeAndColorHandler(void* context, const Message* msg);
 	void SetCurrentBehaviorHandler(void* context, const Message* msg);
+	void SetNameHandler(void* context, const Message* msg);
 	
 	#if BLE_LOG_ENABLED
 	void PrintNormals(void* context, const Message* msg);
@@ -51,6 +52,7 @@ namespace SettingsManager
 			MessageService::RegisterMessageHandler(Message::MessageType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetDesignAndColor, nullptr, SetDesignTypeAndColorHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetCurrentBehavior, nullptr, SetCurrentBehaviorHandler);
+			MessageService::RegisterMessageHandler(Message::MessageType_SetName, nullptr, SetNameHandler);
 			
 			#if BLE_LOG_ENABLED
 			MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
@@ -149,6 +151,15 @@ namespace SettingsManager
 		});
 	}
 
+	void SetNameHandler(void* context, const Message* msg) {
+		auto nameMsg = (const MessageSetName*)msg;
+		NRF_LOG_INFO("Received request to rename die to %s", nameMsg->name);
+		programName(nameMsg->name, [](bool result) {
+			MessageService::SendMessage(Message::MessageType_SetNameAck);
+		});
+	}
+
+
 	void writeToFlash(const Settings* sourceSettings, SettingsWrittenCallback callback) {
 
 		// Notify clients
@@ -203,6 +214,15 @@ namespace SettingsManager
 	}
 
 	void setDefaultParameters(Settings& outSettings) {
+        // Generate our name
+        outSettings.name[0] = '\0';
+        strcpy(outSettings.name, "IAMADIE");
+		// uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
+        // for (int i = 0; i < 8; ++i) {
+        //     outSettings.name[1+i] = '0' + uniqueId % 10;
+        //     uniqueId /= 10;
+        // }
+        // outSettings.name[1+8] = '\0';
 		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Unknown;
 		outSettings.currentBehaviorIndex = 0;
 		outSettings.jerkClamp = 10.f;
@@ -299,6 +319,21 @@ namespace SettingsManager
 		memcpy(&settingsCopy, settings, sizeof(Settings));
 		settingsCopy.currentBehaviorIndex = behaviorIndex;
 		writeToFlash(&settingsCopy, callback);
+	}
+
+	SettingsWrittenCallback programNameCallback = nullptr;
+	void programName(const char* newName, SettingsWrittenCallback callback) {
+		Settings settingsCopy;
+		memcpy(&settingsCopy, settings, sizeof(Settings));
+		strcpy(settingsCopy.name, newName);
+		programNameCallback = callback;
+		writeToFlash(&settingsCopy, [] (bool success) {
+			Bluetooth::Stack::resetOnDisconnect();
+			auto callbackCopy = programNameCallback;
+			programNameCallback = nullptr;
+			if (callbackCopy)
+				callbackCopy(success);
+		});
 	}
 
 	#if BLE_LOG_ENABLED

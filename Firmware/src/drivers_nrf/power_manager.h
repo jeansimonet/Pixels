@@ -13,5 +13,6 @@ namespace DriversNRF
         void pause();
         void resume();
         void goToSystemOff();
+        void reset();
     }
 }

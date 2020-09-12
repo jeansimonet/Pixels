@@ -15,7 +15,7 @@ public class UIMainMenu : MonoBehaviour
     public Button behaviorsButton;
     public Button lightingButton;
     public Button ledPatternButton;
-    public Button rgbPattherButton;
+    public Button audioClipsButton;
 
     // Start is called before the first frame update
     void Awake()
@@ -28,6 +28,7 @@ public class UIMainMenu : MonoBehaviour
         behaviorsButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.Behaviors));
         lightingButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.Patterns));
         ledPatternButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.GradientPatterns));
+        audioClipsButton.onClick.AddListener(() => GoToRoot(UIPage.PageId.AudioClips));
     }
 
     public void Show()

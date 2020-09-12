@@ -82,5 +82,10 @@ namespace Behaviors
         {
             return actions.Any(a => a.DependsOnAnimation(animation));
         }
+
+        public bool DependsOnAudioClip(AudioClips.EditAudioClip clip)
+        {
+            return actions.Any(a => a.DependsOnAudioClip(clip));
+        }
     }
 }

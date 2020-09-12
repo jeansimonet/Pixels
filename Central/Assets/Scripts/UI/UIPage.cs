@@ -19,7 +19,8 @@ public class UIPage
         Behavior,
         Rule,
         LiveView,
-        GradientPatterns
+        GradientPatterns,
+        AudioClips,
     }
 
     public bool pageDirty

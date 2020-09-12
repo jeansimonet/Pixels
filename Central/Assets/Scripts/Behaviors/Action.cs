@@ -12,6 +12,7 @@ namespace Behaviors
     {
         Unknown = 0,
         PlayAnimation,
+        PlayAudioClip,
     };
 
     /// <summary>
@@ -35,5 +36,18 @@ namespace Behaviors
         public byte animIndex;
         public byte faceIndex;
         public byte loopCount;
+    };
+
+
+    /// <summary>
+    /// Action to play a sound! 
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
+    public class ActionPlayAudioClip
+        : Action
+    {
+        public ActionType type { get; set; } = ActionType.PlayAudioClip;
+        public byte clipId;
     };
 }
