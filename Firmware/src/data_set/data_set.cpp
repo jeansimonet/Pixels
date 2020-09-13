@@ -5,6 +5,7 @@
 #include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/timers.h"
 #include "drivers_nrf/watchdog.h"
+#include "drivers_nrf/power_manager.h"
 #include "modules/accelerometer.h"
 #include "config/board_config.h"
 #include "config/settings.h"
@@ -71,6 +72,8 @@ namespace DataSet
 				size = computeDataSetSize();
 				hash = computeDataSetHash();
 
+				PowerManager::clearClearSettingsAndDataSet();
+
 				MessageService::RegisterMessageHandler(Message::MessageType_TransferAnimSet, nullptr, ReceiveDataSetHandler);
 				NRF_LOG_INFO("DataSet initialized, size=0x%x, hash=0x%08x", size, hash);
 				auto callBackCopy = _callback;
@@ -81,7 +84,10 @@ namespace DataSet
 			};
 
 		//ProgramDefaultDataSet();
-		if (!CheckValid()) {
+		if (PowerManager::getClearSettingsAndDataSet()) {
+			NRF_LOG_INFO("Watchdog indicates dataset might be bad, programming default");
+			ProgramDefaultDataSet(finishInit);
+		} else if (!CheckValid()) {
 			NRF_LOG_INFO("Animation Set not valid, programming default");
 			ProgramDefaultDataSet(finishInit);
 		} else {
@@ -181,6 +187,8 @@ namespace DataSet
 		hash = computeDataSetHash();
 		NRF_LOG_INFO("Dataset size=0x%x, hash=0x%08x", size, hash);
 
+		// NRF_LOG_HEXDUMP_INFO((void*)getDataSetDataAddress(), size);
+		// printAnimationInfo();
 		MessageService::SendMessage(Message::MessageType_TransferAnimSetFinished);
 
 		// Notify clients

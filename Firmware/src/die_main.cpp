@@ -27,19 +27,14 @@ using namespace Animations;
 
 namespace Die
 {
-    enum TopLevelState
-    {
-        TopLevel_Unknown = 0,
-        TopLevel_SoloPlay,      // Playing animations as a result of landing on faces
-        TopLevel_BattlePlay,    // Some kind of battle play
-        TopLevel_Animator,      // LED Animator
-        TopLevel_LowPower,      // Die is low on power
-        TopLevel_Attract,
-    };
-
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
     int currentFace = 0;
     RollState currentRollState = RollState_Unknown;
+
+    TopLevelState getCurrentState()
+    {
+        return currentTopLevelState;
+    }
 
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);

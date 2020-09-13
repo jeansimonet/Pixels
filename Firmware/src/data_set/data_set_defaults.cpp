@@ -291,7 +291,8 @@ namespace DataSet
         // Add Rules
         for (int i = 0; i < ruleCount; ++i) {
             writeRules[i].condition = i;
-            writeRules[i].action = i;
+            writeRules[i].actionOffset = i;
+            writeRules[i].actionCount = 1;
         }
 
         // Add Behavior

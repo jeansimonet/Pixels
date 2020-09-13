@@ -44,12 +44,12 @@ namespace Behaviors
     struct ActionPlaySound
         : Action
     {
-        uint32_t soundId;
-        uint8_t playCount;
+        uint8_t paddingType;
+        uint16_t clipId;
     };
 
     // This method will execute the passed in action from the dataset
-    void triggerAction(int actionIndex);
+    void triggerActions(int actionOffset, int actionCount);
 }
 
 #pragma pack(pop)

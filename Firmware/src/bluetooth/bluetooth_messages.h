@@ -232,8 +232,7 @@ struct MessagePlayAnim
 struct MessagePlaySound
 	: public Message
 {
-	uint32_t soundId;
-	uint8_t count;
+	uint16_t clipId;
 
 	inline MessagePlaySound() : Message(Message::MessageType_PlaySound) {}
 };

@@ -15,6 +15,7 @@ namespace Log
 
         NRF_LOG_DEFAULT_BACKENDS_INIT();
 
+        NRF_LOG_INFO("---------------");
         NRF_LOG_INFO("Log initialized");
 
         #if DICE_SELFTEST && LOG_SELFTEST

@@ -89,18 +89,21 @@ namespace Die
         // Then the timers
         Timers::init();
 
+        // Power manager handles going to sleep and resetting the board
+        //PowerManager::init();
+
         // GPIO Interrupts
         GPIOTE::init();
 
-        // Power manager handles going to sleep and resetting the board
-        //PowerManager::init();
-        
         // Analog to digital converter next, so we can
         // identify the board we're dealing with
         A2D::init();
         
         // Enable bluetooth
         Stack::init();
+
+        // Watchdog may setup a timer to verify app stability
+        Watchdog::initClearResetFlagTimer();
 
         // Add generic data service
         MessageService::init();
@@ -191,9 +194,11 @@ namespace Die
 
             #if defined(DEBUG_FIRMWARE)
                 initDebugLogic();
+                NRF_LOG_INFO("---------------");
             #else
                 // Initialize main logic manager
                 initMainLogic();
+                NRF_LOG_INFO("---------------");
 
                 // Entering the main loop! Play Hello! anim
                 BehaviorController::onDiceInitialized();

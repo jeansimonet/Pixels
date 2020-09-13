@@ -14,5 +14,15 @@ namespace DriversNRF
         void resume();
         void goToSystemOff();
         void reset();
+        void setWatchdogTriggeredReset();
+        void clearWatchdogTriggeredReset();
+        bool getWatchdogTriggeredReset();
+        void setClearSettingsAndDataSet();
+        void clearClearSettingsAndDataSet();
+        bool getClearSettingsAndDataSet();
+
+		typedef void(*PowerManagerClientMethod)(void* param, nrf_pwr_mgmt_evt_t event);
+		void hook(PowerManagerClientMethod method, void* param);
+		void unHook(PowerManagerClientMethod client);
     }
 }
