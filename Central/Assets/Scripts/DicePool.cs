@@ -133,9 +133,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                     poolDie.currentConnectionCount--;
                     if (poolDie.currentConnectionCount == 0)
                     {
-                        // Disconnect!
                         poolDie.onDisconnectionResult += onDisconnectionResult;
-                        DoDisconnectDie(die);
+                        poolDie.lastRequestDisconnectTime = Time.time;
                     }
                     break;
             }
@@ -149,40 +148,29 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
     void Update()
     {
-        // var connectedDiceCopy = new List<ConnectedDie>(connectedDice);
-        // foreach (var cd in connectedDiceCopy)
-        // {
-        //     if (cd.count == 1)
-        //     {
-        //         if (cd.wantForget)
-        //         {
-        //             // This die is waiting to be forgotten
-        //             Debug.Log("Forgetting " + cd.die.name);
-
-        //             // Really disconnect
-        //             cd.count = 0;
-        //             connectedDice.Remove(cd);
-        //             var dt = dice.First(d => d.die == cd.die);
-        //             DestroyDie(dt);
-        //         }
-        //         else
-        //         {
-        //             // This die is waiting to be disconnected
-        //             if (Time.time > (cd.lastRequestDisconnectTime + AppConstants.Instance.DicePoolDisconnectDelay))
-        //             {
-        //                 Debug.Log(cd.die.name + ": Update: 1 -> 0");
-
-        //                 // Really disconnect
-        //                 if (cd.die.connectionState == Die.ConnectionState.Ready)
-        //                 {
-        //                     DoDisconnectDie(cd.die, null);
-        //                 }
-        //                 cd.count = 0;
-        //                 connectedDice.Remove(cd);
-        //             }
-        //         }
-        //     }
-        // }
+        foreach (var poolDie in dice)
+        {
+            if (poolDie.die != null)
+            {
+                switch (poolDie.die.connectionState)
+                {
+                    case Die.ConnectionState.Ready:
+                        if (poolDie.currentConnectionCount == 0)
+                        {
+                            // Die is waiting to disconnect
+                            if (Time.time - poolDie.lastRequestDisconnectTime > AppConstants.Instance.DicePoolDisconnectDelay)
+                            {
+                                // Go ahead and disconnect
+                                DoDisconnectDie(poolDie.die);
+                            }
+                        }
+                        break;
+                    default:
+                        // Do nothing
+                        break;
+                }
+            }
+        }
     }
 
     /// <summary>

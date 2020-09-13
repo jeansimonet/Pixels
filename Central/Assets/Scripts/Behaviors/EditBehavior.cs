@@ -102,5 +102,16 @@ namespace Behaviors
                 }
             }
         }
+
+        public IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
+        {
+            foreach (var action in rules.SelectMany(r => r.actions))
+            {
+                foreach (var clip in action.CollectAudioClips())
+                {
+                    yield return clip;
+                }
+            }
+        }
     }
 }

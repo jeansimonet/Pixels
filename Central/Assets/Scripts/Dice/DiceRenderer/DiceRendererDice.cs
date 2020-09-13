@@ -176,25 +176,28 @@ public class DiceRendererDice : MonoBehaviour
         {
             case State.Waiting:
                 {
-                    Debug.Assert(animations.Count > 0);
-                    timeLeft -= Time.deltaTime;
-                    if (timeLeft <= 0.0f)
+                    if (animations.Count > 0)
                     {
-                        currentState = State.Playing;
-                        currentAnimationIndex++;
-                        if (currentAnimationIndex >= animations.Count)
+                        timeLeft -= Time.deltaTime;
+                        if (timeLeft <= 0.0f)
                         {
-                            currentAnimationIndex = 0;
-                        }
-                        if (animations[currentAnimationIndex] != null)
-                        {
-                            SetupInstance(currentAnimationIndex, (int)(Time.time * 1000), 0xFF);
-                        }
-                        else
-                        {
-                            currentState = State.Waiting;
+                            currentState = State.Playing;
+                            currentAnimationIndex++;
+                            if (currentAnimationIndex >= animations.Count)
+                            {
+                                currentAnimationIndex = 0;
+                            }
+                            if (animations[currentAnimationIndex] != null)
+                            {
+                                SetupInstance(currentAnimationIndex, (int)(Time.time * 1000), 0xFF);
+                            }
+                            else
+                            {
+                                currentState = State.Waiting;
+                            }
                         }
                     }
+                    // Else don't switch to playing state
                 }
                 break;
             case State.Playing:

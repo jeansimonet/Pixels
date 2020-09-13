@@ -12,5 +12,6 @@ namespace Behaviors
         public ushort condition;
         public ushort actionOffset;
         public ushort actionCount;
+        public ushort actionCountPadding;
     }
 }

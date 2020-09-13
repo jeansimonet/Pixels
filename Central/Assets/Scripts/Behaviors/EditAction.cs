@@ -39,6 +39,10 @@ namespace Behaviors
         {
             yield break;
         }
+        public virtual IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
+        {
+            yield break;
+        }
 
         public static EditAction Create(ActionType type)
         {
@@ -299,6 +303,14 @@ namespace Behaviors
         public override bool DependsOnAudioClip(AudioClips.EditAudioClip clip)
         {
             return this.clip == clip;
+        }
+
+        public override IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
+        {
+            if (this.clip != null)
+            {
+                yield return this.clip;
+            }
         }
 
         public override string ToString()

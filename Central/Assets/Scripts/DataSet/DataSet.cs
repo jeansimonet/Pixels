@@ -209,9 +209,9 @@ public class DataSet
         }
 
         // Round up to nearest multiple of 4
-        current = currentCopy + Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>());
+        current = currentCopy + Utils.roundUpTo4(conditions.Count * Marshal.SizeOf<ushort>());
 
-        // Then animations
+        // Then conditions
         foreach (var cond in conditions)
         {
             Marshal.StructureToPtr(cond, current, false);
@@ -230,9 +230,9 @@ public class DataSet
         }
 
         // Round up to nearest multiple of 4
-        current = currentCopy + Utils.roundUpTo4(animations.Count * Marshal.SizeOf<ushort>());
+        current = currentCopy + Utils.roundUpTo4(actions.Count * Marshal.SizeOf<ushort>());
 
-        // Then animations
+        // Then actions
         foreach (var action in actions)
         {
             Marshal.StructureToPtr(action, current, false);

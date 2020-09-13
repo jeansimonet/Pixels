@@ -18,6 +18,9 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIPatternPicker patternPicker;
     public UIAudioClipPicker audioClipPicker;
 
+    public delegate void OnPresetDownloadEvent(Presets.EditPreset activePreset);
+    public OnPresetDownloadEvent onPresetDownloadEvent;
+
     [Header("Controls")]
     public UIMainMenu mainMenu;
 
@@ -294,13 +297,15 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     {
                         AppDataSet.Instance.activePreset = editPreset;
                         // We're done!
+                        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
                         callback?.Invoke(true);
                     }
                 }
                 else
                 {
                     AppDataSet.Instance.activePreset = null;
-                    callback(false);
+                    onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
+                    callback?.Invoke(false);
                 }
             });
         }
@@ -313,6 +318,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         else
         {
             AppDataSet.Instance.activePreset = null;
+            onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
             callback(false);
         }
     }
@@ -320,7 +326,8 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     // Start is called before the first frame update
     void Start()
     {
-        
+        // Pretend to have updated the current preset on load
+        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
     }
 
     // Update is called once per frame

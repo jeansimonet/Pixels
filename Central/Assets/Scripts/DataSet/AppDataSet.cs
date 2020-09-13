@@ -314,11 +314,13 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public EditAudioClip AddAudioClip(string fileName)
     {
-        return new EditAudioClip()
+        var ret = new EditAudioClip()
         {
             name = fileName,
             id = data.nextAudioClipUniqueId++
         };
+        audioClips.Add(ret);
+        return ret;
     }
 
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAudioClip(EditAudioClip clip)
