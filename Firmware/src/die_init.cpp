@@ -102,8 +102,8 @@ namespace Die
         // Enable bluetooth
         Stack::init();
 
-        // Watchdog may setup a timer to verify app stability
-        Watchdog::initClearResetFlagTimer();
+        // // Watchdog may setup a timer to verify app stability
+        // Watchdog::initClearResetFlagTimer();
 
         // Add generic data service
         MessageService::init();
