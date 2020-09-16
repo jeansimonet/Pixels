@@ -15,7 +15,7 @@ namespace Animations
     {
         public ushort keyframesOffset;  // offset into a global keyframe buffer
         public byte keyFrameCount;      // Keyframe count
-        public byte padding;            // 
+        public byte padding;
         public uint ledMask;            // Each bit indicates whether the led is included in the animation track
 
         public ushort getDuration(DataSet.AnimationBits bits)

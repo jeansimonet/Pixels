@@ -68,10 +68,12 @@ namespace Animations
                 speedMultiplier = value / pattern.duration;
             }
         }
-        [RGBPattern]
+        [RGBPattern, Name("LED Pattern")]
 		public EditPattern pattern = new EditPattern();
+        [Name("Traveling Order")]
+        public bool flowOrder = false;
 
-        [Slider, FloatRange(-0.5f, 0.5f)]
+        [Slider, FloatRange(-0.5f, 0.5f), Name("Hue Adjustment")]
         public float hueAdjust = 0.0f;
 
         public override AnimationType type => AnimationType.Keyframed;
@@ -96,6 +98,7 @@ namespace Animations
             }
             var tracks = patternCopy.ToRGBTracks(editSet, bits);
 		    ret.trackCount = (ushort)tracks.Length;
+            ret.flowOrder = flowOrder ? (byte)1 : (byte)0;
             bits.rgbTracks.AddRange(tracks);
             return ret;
         }
@@ -105,6 +108,7 @@ namespace Animations
             EditAnimationKeyframed ret = new EditAnimationKeyframed();
             ret.name = this.name;
             ret.pattern = this.pattern.Duplicate();
+            ret.flowOrder = this.flowOrder;
             ret.speedMultiplier = this.speedMultiplier;
 		    ret.duration = this.duration;
             ret.hueAdjust = this.hueAdjust;

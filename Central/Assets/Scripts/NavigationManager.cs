@@ -14,6 +14,8 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             public object context;
         }
 
+        public System.Action<UIPage, object, System.Action> checkCanGoToPage;
+
         public delegate void PageEnterEvent(UIPage page, object context);
         public PageEnterEvent onPageEntered;
         public delegate void PageLeavingEvent(UIPage page);
@@ -26,27 +28,51 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 
         public void GoToRoot(UIPage newRootPage)
         {
-            if (pages.Count > 0)
+            void goToNewRoot()
             {
-                LeavePage(pages[pages.Count - 1]);
-                pages.Clear();
+                if (pages.Count > 0)
+                {
+                    LeavePage(pages[pages.Count - 1]);
+                    pages.Clear();
+                }
+                // Else no page to leave obviously
+                var p = new Page() { page = newRootPage, context = null };
+                pages.Add(p);
+                EnterPage(p);
             }
-            // Else no page to leave obviously
-            var p = new Page() { page = newRootPage, context = null };
-            pages.Add(p);
-            EnterPage(p);
+
+            if (checkCanGoToPage != null)
+            {
+                checkCanGoToPage(newRootPage, null, goToNewRoot);
+            }
+            else
+            {
+                goToNewRoot();
+            }
         }
 
         public void GoTo(UIPage newPage, object context)
         {
-            if (pages.Count > 0)
+            void goToNewPage()
             {
-                LeavePage(pages[pages.Count - 1]);
+                if (pages.Count > 0)
+                {
+                    LeavePage(pages[pages.Count - 1]);
+                }
+                // Else no page to leave obviously
+                var p = new Page() { page = newPage, context = context };
+                pages.Add(p);
+                EnterPage(p);
             }
-            // Else no page to leave obviously
-            var p = new Page() { page = newPage, context = context };
-            pages.Add(p);
-            EnterPage(p);
+
+            if (checkCanGoToPage != null)
+            {
+                checkCanGoToPage(newPage, context, goToNewPage);
+            }
+            else
+            {
+                goToNewPage();
+            }
         }
 
         public bool GoBack()
@@ -86,6 +112,17 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     }
     public PageAndToggle[] pages;
 
+    public delegate void PageEnterEvent(UIPage page, object context);
+    public PageEnterEvent onPageEntered;
+    public delegate void PageLeavingEvent(UIPage page);
+    public PageLeavingEvent onLeavingPage;
+
+    public System.Action<UIPage, object, System.Action> checkCanGoToPage
+    {
+        get { return history.checkCanGoToPage; }
+        set { history.checkCanGoToPage = value; }
+    }
+
     PageHistory history;
 
     // Start is called before the first frame update
@@ -107,7 +144,8 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 
         // Start the page navigation history
         history = new PageHistory();
-        history.onPageEntered += onPageEntered;
+        history.onPageEntered += onHistoryPageEntered;
+        history.onLeavingPage += onHistoryLeavingPage;
 
         // Go to the home page
         history.GoToRoot(pages[0].page);
@@ -159,7 +197,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Called when the user clicks on of the root toggles
     /// </sumary>
-    void onPageEntered(UIPage newPage, object context)
+    void onHistoryPageEntered(UIPage newPage, object context)
     {
         // Update the buttons to reflect whether the page is one of the roots
         foreach (var p in pages)
@@ -169,6 +207,12 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
                 p.button.SetCurrent(p.page == newPage);
             }
         }
+        onPageEntered?.Invoke(newPage, context);
+    }
+
+    void onHistoryLeavingPage(UIPage page)
+    {
+        onLeavingPage?.Invoke(page);
     }
 
     void OnBack()

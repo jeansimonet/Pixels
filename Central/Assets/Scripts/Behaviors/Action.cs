@@ -8,10 +8,13 @@ namespace Behaviors
     /// <summary>
     /// The different types of action we support. Yes, yes, it's only one right now :)
     /// </summary>
+    [SkipEnum(1)]
     public enum ActionType : byte
     {
         Unknown = 0,
+        [Name("Trigger Pattern")]
         PlayAnimation,
+        [Name("Play Audio Clip")]
         PlayAudioClip,
     };
 

@@ -39,13 +39,17 @@ public class UIEnumPicker : MonoBehaviour
         this.closeAction = closeAction;
 
         var enumType = previousValue.GetType();
-        List<string> enumValueNames;
         System.Array enumValues;
 
         int count = max - min + 1;
         enumValues = System.Array.CreateInstance(typeof(object), count);
         System.Array.Copy(System.Enum.GetValues(enumType), min, enumValues, 0, count);
-        enumValueNames = System.Enum.GetNames(enumType).ToList().GetRange(min, count);
+
+        List<string> enumValueNames = new List<string>();
+        foreach (var value in enumValues)
+        {
+            enumValueNames.Add(UIParameterEnum.GetNameAttribute(value, value.ToString()));
+        }
 
         for (int i = 0; i < enumValues.Length; ++i)
         {

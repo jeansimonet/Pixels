@@ -197,7 +197,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     if (currentBehaviorIndex != editDie.die.currentBehaviorIndex)
                     {
                         Debug.Log("Setting active behavior on " + editDie.name + " to " + currentBehaviorIndex);
-                        UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior.name + " on " + editDie.name);
+                        UpdateProgrammingBox(1.0f, "Activating behavior on " + editDie.name);
                         editDie.die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
                     }
                     else
@@ -321,6 +321,12 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
             onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
             callback(false);
         }
+    }
+
+    public void RestartTutorial()
+    {
+        AppSettings.Instance.EnableAllTutorials();
+        Tutorial.Instance.StartMainTutorial();
     }
 
     // Start is called before the first frame update

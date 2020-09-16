@@ -16,7 +16,7 @@ namespace Animations
     {
         public ushort keyframesOffset;  // offset into a global keyframe buffer
         public byte keyFrameCount;      // Keyframe count
-        public byte padding;            // 
+        public byte padding;
         public uint ledMask;            // Each bit indicates whether the led is included in the animation track
 
         public ushort getDuration(DataSet.AnimationBits bits)
@@ -127,6 +127,7 @@ namespace Animations
 	public class AnimationKeyframed
 		: Animation
 	{
+        public static int[] faceIndices = new int[] {  17, 1, 19, 13, 3, 10, 8, 5, 15, 7, 9, 11, 14, 4, 12, 0, 18, 2, 16, 6 };
 		public AnimationType type { get; set; } = AnimationType.Keyframed;
 		public byte padding_type { get; set; } // to keep duration 16-bit aligned
 		public ushort duration { get; set; } // in ms
@@ -134,7 +135,8 @@ namespace Animations
         public ushort speedMultiplier256;
 		public ushort tracksOffset; // offset into a global buffer of tracks
 		public ushort trackCount;
-        public ushort paddingTrackCount;
+        public byte flowOrder; // boolean, if true the indices are led indices, not face indices
+        public byte paddingOrder;
 
         public AnimationInstance CreateInstance(DataSet.AnimationBits bits)
         {
@@ -183,7 +185,15 @@ namespace Animations
                 int count = track.evaluate(animationBits, trackTime, indices, colors);
                 for (int j = 0; j < count; ++j)
                 {
-                    retIndices[totalCount+j] = indices[j];
+                    if (preset.flowOrder != 0)
+                    {
+                        // Use reverse lookup so that the indices are actually led Indices, not face indices
+                        retIndices[totalCount+j] = AnimationKeyframed.faceIndices[indices[j]];
+                    }
+                    else
+                    {
+                        retIndices[totalCount+j] = indices[j];
+                    }
                     retColors[totalCount+j] = colors[j];
                 }
                 totalCount += count;

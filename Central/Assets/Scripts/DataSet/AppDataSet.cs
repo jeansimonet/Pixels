@@ -202,6 +202,12 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         return animations.Where(b => b.DependsOnPattern(pattern));
     }
 
+    public IEnumerable<Presets.EditPreset> CollectPresetsForAnimation(Animations.EditAnimation anim)
+    {
+        var behaviors = CollectBehaviorsForAnimation(anim);
+        return presets.Where(p => p.dieAssignments.Any(da => behaviors.Contains(da.behavior)));
+    }
+
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAnimation(Animations.EditAnimation anim)
     {
         return behaviors.Where(b => b.DependsOnAnimation(anim));
@@ -210,8 +216,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public EditBehavior AddNewDefaultBehavior()
     {
         var newBehavior = new Behaviors.EditBehavior();
-        newBehavior.name = "New Behavior";
-        newBehavior.description = "New Behavior Description";
         newBehavior.rules.Add(new Behaviors.EditRule()
         {
             condition = new Behaviors.EditConditionFaceCompare()
@@ -321,6 +325,12 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         };
         audioClips.Add(ret);
         return ret;
+    }
+
+    public IEnumerable<Presets.EditPreset> CollectPresetsForAudioClip(EditAudioClip clip)
+    {
+        var behaviors = CollectBehaviorsForAudioClip(clip);
+        return presets.Where(p => p.dieAssignments.Any(da => behaviors.Contains(da.behavior)));
     }
 
     public IEnumerable<Behaviors.EditBehavior> CollectBehaviorsForAudioClip(EditAudioClip clip)

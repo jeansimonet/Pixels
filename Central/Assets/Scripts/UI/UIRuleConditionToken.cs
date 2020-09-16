@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class UIRuleConditionToken : MonoBehaviour
 {
@@ -31,7 +32,11 @@ public class UIRuleConditionToken : MonoBehaviour
     {
         parentRule = rule;
         editCondition = condition;
-        conditionSelector.Setup("Condition Type", () => editCondition.type, (t) => SetConditionType((Behaviors.ConditionType)t));
+        conditionSelector.Setup(
+            "Condition Type",
+            () => editCondition.type,
+            (t) => SetConditionType((Behaviors.ConditionType)t),
+            Enumerable.Repeat(new SkipEnumAttribute(1), 1));
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(condition, parametersRoot);

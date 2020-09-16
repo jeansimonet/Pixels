@@ -29,6 +29,11 @@ public class UIRuleView
         {
             Setup(rule);
         }
+
+        if (AppSettings.Instance.ruleTutorialEnabled)
+        {
+            Tutorial.Instance.StartRuleTutorial();
+        }
     }
 
     void OnEnable()

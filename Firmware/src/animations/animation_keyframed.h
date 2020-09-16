@@ -19,7 +19,8 @@ namespace Animations
 		uint16_t speedMultiplier256;
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
-		uint16_t padding_trackCount;
+		uint8_t flowOrder;
+		uint8_t padding_flowOrder;
 	};
 
 	/// <summary>

@@ -10,13 +10,22 @@ public class UIPresetsView
     [Header("Controls")]
     public Transform contentRoot;
     public Button addPresetButton;
-    public Button menuButton;
+    public RectTransform spacer;
 
     [Header("Prefabs")]
     public UIPresetToken presetTokenPrefab;
 
     // The list of controls we have created to display presets
     List<UIPresetToken> presets = new List<UIPresetToken>();
+
+    public override void Enter(object context)
+    {
+        base.Enter(context);
+        if (AppSettings.Instance.presetsTutorialEnabled)
+        {
+            Tutorial.Instance.StartPresetsTutorial();
+        }
+    }
 
     void OnEnable()
     {
@@ -40,6 +49,7 @@ public class UIPresetsView
     {
         // Create the gameObject
         var ret = GameObject.Instantiate<UIPresetToken>(presetTokenPrefab, Vector3.zero, Quaternion.identity, contentRoot.transform);
+        spacer.SetAsLastSibling();
 
         // When we click on the pattern main button, go to the edit page
         ret.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Preset, preset));

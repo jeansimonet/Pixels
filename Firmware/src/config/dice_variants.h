@@ -13,6 +13,7 @@ namespace Config
         enum DesignAndColor : uint8_t
         {
             DesignAndColor_Unknown = 0,
+            DesignAndColor_Generic,
             DesignAndColor_V3_Orange,
             DesignAndColor_V4_BlackClear,
             DesignAndColor_V4_WhiteClear,

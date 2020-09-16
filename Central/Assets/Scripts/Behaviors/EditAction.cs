@@ -109,10 +109,11 @@ namespace Behaviors
     public class EditActionPlayAnimation
         : EditAction
     {
+        [Name("Lighting Pattern")]
         public Animations.EditAnimation animation;
-        [PlaybackFace]
+        [PlaybackFace, Name("Play on Face")]
         public int faceIndex = -1;
-        [IntSlider, IntRange(1, 10)]
+        [IntSlider, IntRange(1, 10), Name("Repeat Count")]
         public int loopCount = 1;
 
         public override ActionType type { get { return ActionType.PlayAnimation; } }
@@ -240,6 +241,7 @@ namespace Behaviors
     public class EditActionPlayAudioClip
         : EditAction
     {
+        [Name("Audio Clip")]
         public AudioClips.EditAudioClip clip;
         public override ActionType type { get { return ActionType.PlayAudioClip; } }
         public override Action ToAction(EditDataSet editSet, DataSet set)

@@ -27,6 +27,14 @@ public class UIParameterEnum : UIParameter
     public Text valueText;
     public Button valueButton;
 
+    public static string GetNameAttribute(object enumVal, string fallback)
+    {
+        var type = enumVal.GetType();
+        var memInfo = type.GetMember(enumVal.ToString());
+        var attributes = memInfo[0].GetCustomAttributes(typeof(NameAttribute), false);
+        return (attributes.Length > 0) ? ((NameAttribute)attributes[0]).name : fallback;
+    }
+
     public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
     {
         return typeof(System.Enum).IsAssignableFrom(parameterType) && attributes.Any(a => a.GetType() == typeof(DropdowndAttribute));
@@ -38,6 +46,7 @@ public class UIParameterEnum : UIParameter
         var initialValue = getterFunc();
         var enumType = initialValue.GetType();
         var vals = System.Enum.GetValues(enumType);
+
         int min = 0;
         int max = vals.Length - 1;
         var skip = (SkipEnumAttribute) System.Attribute.GetCustomAttribute(enumType, typeof (SkipEnumAttribute));
@@ -48,14 +57,14 @@ public class UIParameterEnum : UIParameter
 
         // Set name
         nameText.text = name;
-        valueText.text = initialValue.ToString();
+        valueText.text = GetNameAttribute(initialValue, initialValue.ToString());
         valueButton.onClick.AddListener(() => 
         {
             PixelsApp.Instance.ShowEnumPicker("Select " + name, (System.Enum)getterFunc(), (ret, newVal) =>
             {
                 if (ret)
                 {
-                    valueText.text = newVal.ToString();
+                    valueText.text = GetNameAttribute(newVal, newVal.ToString());
                     setterAction(newVal);
                 }
             },

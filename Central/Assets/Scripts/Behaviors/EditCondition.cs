@@ -167,10 +167,10 @@ namespace Behaviors
     public class EditConditionFaceCompare
         : EditCondition
     {
-        [FaceIndex, IntRange(0, 19)]
-        public int faceIndex;
-        [Bitfield]
+        [Bitfield, Name("Comparison")]
         public ConditionFaceCompare_Flags flags;
+        [FaceIndex, IntRange(0, 19), Name("Than")]
+        public int faceIndex;
 
         public override ConditionType type { get { return ConditionType.FaceCompare; } }
         public override Condition ToCondition(EditDataSet editSet, DataSet set)
@@ -201,7 +201,7 @@ namespace Behaviors
                 }
                 else if (flags == (ConditionFaceCompare_Flags.Less | ConditionFaceCompare_Flags.Greater))
                 {
-                    builder.Append("not equal to");
+                    builder.Append("not equal to ");
                     builder.Append(faceIndex + 1);
                 }
                 else if ((flags & ConditionFaceCompare_Flags.Less) != 0)
@@ -245,7 +245,7 @@ namespace Behaviors
     public class EditConditionHelloGoodbye
         : EditCondition
     {
-        [Bitfield]
+        [Bitfield, Name("Hello / Goodbye")]
         public ConditionHelloGoodbye_Flags flags;
 
         public override ConditionType type { get { return ConditionType.HelloGoodbye; } }
@@ -295,7 +295,7 @@ namespace Behaviors
     public class EditConditionConnectionState
         : EditCondition
     {
-        [Bitfield]
+        [Bitfield, Name("Connection Event")]
         public ConditionConnectionState_Flags flags;
 
         public override ConditionType type { get { return ConditionType.ConnectionState; } }
@@ -345,7 +345,7 @@ namespace Behaviors
     public class EditConditionBatteryState
         : EditCondition
     {
-        [Bitfield]
+        [Bitfield, Name("Battery State")]
         public ConditionBatteryState_Flags flags;
 
         public override ConditionType type { get { return ConditionType.BatteryState; } }

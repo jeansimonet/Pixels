@@ -18,6 +18,15 @@ public class UIPatternsView
     // The list of controls we have created to display patterns
     List<UIPatternToken> patterns = new List<UIPatternToken>();
 
+    public override void Enter(object context)
+    {
+        base.Enter(context);
+        if (AppSettings.Instance.animationsTutorialEnabled)
+        {
+            Tutorial.Instance.StartAnimationsTutorial();
+        }
+    }
+
     void OnEnable()
     {
         base.SetupHeader(true, false, "Lighting Patterns", null);
@@ -114,14 +123,14 @@ public class UIPatternsView
         {
             if (res)
             {
-                var dependentBehaviors = AppDataSet.Instance.CollectBehaviorsForAnimation(anim);
-                if (dependentBehaviors.Any())
+                var dependentPresets = AppDataSet.Instance.CollectPresetsForAnimation(anim);
+                if (dependentPresets.Any())
                 {
                     StringBuilder builder = new StringBuilder();
-                    builder.Append("The following behaviors depend on ");
+                    builder.Append("The following profiles depend on ");
                     builder.Append(anim.name);
                     builder.AppendLine(":");
-                    foreach (var b in dependentBehaviors)
+                    foreach (var b in dependentPresets)
                     {
                         builder.Append("\t");
                         builder.AppendLine(b.name);

@@ -223,7 +223,7 @@ namespace SettingsManager
         //     uniqueId /= 10;
         // }
         // outSettings.name[1+8] = '\0';
-		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Unknown;
+		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Generic;
 		outSettings.currentBehaviorIndex = 0;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;

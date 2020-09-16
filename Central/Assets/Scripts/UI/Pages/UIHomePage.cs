@@ -21,6 +21,15 @@ public class UIHomePage
     // The list of controls we have created to display presets
     List<UIHomePresetToken> presets = new List<UIHomePresetToken>();
 
+    public override void Enter(object context)
+    {
+        base.Enter(context);
+        if (AppSettings.Instance.mainTutorialEnabled)
+        {
+            Tutorial.Instance.StartMainTutorial();
+        }
+    }
+
     void OnEnable()
     {
         base.SetupHeader(true, true, "Pixels", null);

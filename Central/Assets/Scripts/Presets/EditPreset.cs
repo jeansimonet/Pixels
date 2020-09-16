@@ -13,6 +13,7 @@ namespace Presets
     {
         public Dice.EditDie die;
         public Behaviors.EditBehavior behavior;
+        public int defaultDieAssignmentIndex; // Used during auto-assign of user dice
     }
 
     class EditDieAssignmentConverter
@@ -60,6 +61,7 @@ namespace Presets
         : EditObject
     {
         public string name;
+        public string description;
         public List<EditDieAssignment> dieAssignments = new List<EditDieAssignment>();
 
         public bool CheckDependency(Dice.EditDie die)

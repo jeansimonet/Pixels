@@ -168,109 +168,112 @@ public class DiceRendererDice : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        for (int i = 0; i < 20; ++i)
+        if (FaceColors.Length == 20)
         {
-            FaceColors[i] = Color.black;
-        }
-        switch (currentState)
-        {
-            case State.Waiting:
-                {
-                    if (animations.Count > 0)
+            for (int i = 0; i < 20; ++i)
+            {
+                FaceColors[i] = Color.black;
+            }
+            switch (currentState)
+            {
+                case State.Waiting:
                     {
-                        timeLeft -= Time.deltaTime;
-                        if (timeLeft <= 0.0f)
+                        if (animations.Count > 0)
                         {
-                            currentState = State.Playing;
-                            currentAnimationIndex++;
-                            if (currentAnimationIndex >= animations.Count)
+                            timeLeft -= Time.deltaTime;
+                            if (timeLeft <= 0.0f)
                             {
-                                currentAnimationIndex = 0;
+                                currentState = State.Playing;
+                                currentAnimationIndex++;
+                                if (currentAnimationIndex >= animations.Count)
+                                {
+                                    currentAnimationIndex = 0;
+                                }
+                                if (animations[currentAnimationIndex] != null)
+                                {
+                                    SetupInstance(currentAnimationIndex, (int)(Time.time * 1000), 0xFF);
+                                }
+                                else
+                                {
+                                    currentState = State.Waiting;
+                                }
                             }
-                            if (animations[currentAnimationIndex] != null)
+                        }
+                        // Else don't switch to playing state
+                    }
+                    break;
+                case State.Playing:
+                    {
+                        Debug.Assert(currentInstance != null);
+                        // Update the animation time
+                        int time = (int)(Time.time * 1000);
+                        if (time > (currentInstance.startTime + currentInstance.animationPreset.duration))
+                        {
+                            for (int i = 0; i < 20; ++i)
                             {
-                                SetupInstance(currentAnimationIndex, (int)(Time.time * 1000), 0xFF);
+                                FaceColors[i] = Color.black;
                             }
-                            else
+                            currentInstance = null;
+                            currentState = State.Waiting;
+                            timeLeft = delay;
+                        }
+                        else
+                        {
+                            int [] retIndices = new int[20];
+                            uint[] retColors = new uint[20];
+                            int ledCount = currentInstance.updateLEDs(time, retIndices, retColors);
+                            for (int t = 0; t < ledCount; ++t)
                             {
-                                currentState = State.Waiting;
+                                uint color = retColors[t];
+                                Color32 color32 = new Color32(
+                                    ColorUtils.getRed(color),
+                                    ColorUtils.getGreen(color),
+                                    ColorUtils.getBlue(color),
+                                    255);
+                                FaceColors[retIndices[t]] = color32;
                             }
                         }
                     }
-                    // Else don't switch to playing state
-                }
-                break;
-            case State.Playing:
-                {
-                    Debug.Assert(currentInstance != null);
-                    // Update the animation time
-                    int time = (int)(Time.time * 1000);
-                    if (time > (currentInstance.startTime + currentInstance.animationPreset.duration))
-                    {
-                        for (int i = 0; i < 20; ++i)
-                        {
-                            FaceColors[i] = Color.black;
-                        }
-                        currentInstance = null;
-                        currentState = State.Waiting;
-                        timeLeft = delay;
-                    }
-                    else
-                    {
-                        int [] retIndices = new int[20];
-                        uint[] retColors = new uint[20];
-                        int ledCount = currentInstance.updateLEDs(time, retIndices, retColors);
-                        for (int t = 0; t < ledCount; ++t)
-                        {
-                            uint color = retColors[t];
-                            Color32 color32 = new Color32(
-                                ColorUtils.getRed(color),
-                                ColorUtils.getGreen(color),
-                                ColorUtils.getBlue(color),
-                                255);
-                            FaceColors[retIndices[t]] = color32;
-                        }
-                    }
-                }
-                break;
-            default:
-                break;
-        }
+                    break;
+                default:
+                    break;
+            }
 
-        UpdateColors();
-        switch (rotationState)
-        {
-            case RotationState.Auto:
-                {
-                    _currentAngle += Time.deltaTime * rotationSpeedDeg;
-                }
-                break;
-            case RotationState.Drag:
-                {
-                    // Angle is set externally;
-                }
-                break;
-            case RotationState.Idle:
-                {
-                    if (_currentSpeed > 0.0f)
+            UpdateColors();
+            switch (rotationState)
+            {
+                case RotationState.Auto:
                     {
-                        _currentSpeed -= Time.deltaTime * deceleration;
-                        if (_currentSpeed < 0.0f)
-                        {
-                            _currentSpeed = 0.0f;
-                        }
+                        _currentAngle += Time.deltaTime * rotationSpeedDeg;
                     }
-                    else if (_currentSpeed < 0.0f)
+                    break;
+                case RotationState.Drag:
                     {
-                        _currentSpeed += Time.deltaTime * deceleration;
+                        // Angle is set externally;
+                    }
+                    break;
+                case RotationState.Idle:
+                    {
                         if (_currentSpeed > 0.0f)
                         {
-                            _currentSpeed = 0.0f;
+                            _currentSpeed -= Time.deltaTime * deceleration;
+                            if (_currentSpeed < 0.0f)
+                            {
+                                _currentSpeed = 0.0f;
+                            }
                         }
+                        else if (_currentSpeed < 0.0f)
+                        {
+                            _currentSpeed += Time.deltaTime * deceleration;
+                            if (_currentSpeed > 0.0f)
+                            {
+                                _currentSpeed = 0.0f;
+                            }
+                        }
+                        _currentAngle += Time.deltaTime * _currentSpeed;
                     }
-                    _currentAngle += Time.deltaTime * _currentSpeed;
-                }
-                break;
+                    break;
+            }
         }
 
         var quat = Quaternion.AngleAxis(_currentAngle, Vector3.up);

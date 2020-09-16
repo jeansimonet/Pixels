@@ -12,12 +12,19 @@ namespace Behaviors
     public enum ConditionType : byte
     {
         Unknown = 0,
+        [Name("Die wakes up / sleeps")]
         HelloGoodbye,
+        [Name("Die is picked up")]
         Handling,
+        [Name("Die is rolling")]
 		Rolling,
+        [Name("Die roll is...")]
 		FaceCompare,
+        [Name("Die is crooked")]
 		Crooked,
+        [Name("Bluetooth Event...")]
         ConnectionState,
+        [Name("Battery Event...")]
         BatteryState,
     };
 

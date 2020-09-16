@@ -33,6 +33,7 @@ namespace Dice
                 _die = value;
                 if (_die != null)
                 {
+                    // We should check die information (name, design, hash)
                     onDieFound?.Invoke(this);
                 }
             }

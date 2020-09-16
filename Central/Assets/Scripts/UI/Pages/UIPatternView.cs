@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Presets;
 using Dice;
+using System.Linq;
 
 public class UIPatternView
     : UIPage
@@ -30,6 +31,11 @@ public class UIPatternView
         if (anim != null)
         {
             Setup(anim);
+        }
+
+        if (AppSettings.Instance.animationTutorialEnabled)
+        {
+            Tutorial.Instance.StartAnimationTutorial();
         }
     }
 
@@ -69,7 +75,11 @@ public class UIPatternView
         rotationSlider.Setup(this.dieRenderer.die);
         rotationControl.Setup(this.dieRenderer.die);
 
-        animationSelector.Setup("Animation Type", () => editAnimation.type, (t) => SetAnimationType((Animations.AnimationType)t));
+        animationSelector.Setup(
+            "Lighting Pattern Type",
+            () => editAnimation.type,
+            (t) => SetAnimationType((Animations.AnimationType)t),
+            Enumerable.Repeat(new SkipEnumAttribute(1), 1));
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(anim, parametersRoot);

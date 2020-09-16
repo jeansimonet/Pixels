@@ -11,6 +11,7 @@ public class UIPresetView : UIPage
     public RawImage previewImage;
     public RectTransform assignmentsRoot;
     public Button addAssignmentButton;
+    public InputField presetDescriptionText;
 
     [Header("Prefabs")]
     public UIAssignmentToken assignmentTokenPrefab;
@@ -26,6 +27,11 @@ public class UIPresetView : UIPage
         if (preset != null)
         {
             Setup(preset);
+        }
+
+        if (AppSettings.Instance.presetTutorialEnabled)
+        {
+            Tutorial.Instance.StartPresetTutorial();
         }
     }
 
@@ -48,6 +54,7 @@ public class UIPresetView : UIPage
     {
         base.SetupHeader(false, false, preset.name, SetName);
         editPreset = preset;
+        presetDescriptionText.text = editPreset.description;
         var designs = new List<DesignAndColor>(preset.dieAssignments.Select(ass =>
         {
             return (ass.die != null) ? ass.die.designAndColor : DesignAndColor.Unknown;
@@ -73,6 +80,7 @@ public class UIPresetView : UIPage
     void Awake()
     {
         addAssignmentButton.onClick.AddListener(AddNewAssignment);
+        presetDescriptionText.onEndEdit.AddListener(SetDescription);
     }
 
     void DiscardAndGoBack()
@@ -148,7 +156,7 @@ public class UIPresetView : UIPage
     UIAssignmentToken CreateAssignmentToken(Presets.EditDieAssignment assignment)
     {
         var uiass = GameObject.Instantiate<UIAssignmentToken>(assignmentTokenPrefab, assignmentsRoot);
-        uiass.Setup(assignment, (ed) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
+        uiass.Setup(editPreset, assignment, (ed) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
         uiass.onChange += OnAssignmentChanged;
         uiass.onDelete.AddListener(() => DeleteAssignment(assignment));
         return uiass;
@@ -183,6 +191,12 @@ public class UIPresetView : UIPage
     void SetName(string newName)
     {
         editPreset.name = newName;
+        base.pageDirty = true;
+    }
+
+    void SetDescription(string newDescription)
+    {
+        editPreset.description = newDescription;
         base.pageDirty = true;
     }
 }

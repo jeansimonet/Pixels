@@ -12,9 +12,9 @@ public class UIAssignmentToken : MonoBehaviour
     public RawImage diePreview;
     public Button selectDieDropdown;
     public Text dieName;
-    public Button selectBehaviorDropdown;
-    public Text behaviorName;
+    public Button editBehaviorButton;
 
+    public EditPreset parentPreset { get; private set; }
     public EditDieAssignment editAssignment { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
@@ -25,12 +25,13 @@ public class UIAssignmentToken : MonoBehaviour
 
     System.Func<EditDie, bool> dieSelector;
 
-    public void Setup(Presets.EditDieAssignment ass, System.Func<EditDie, bool> dieSelector)
+    public void Setup(EditPreset preset, EditDieAssignment ass, System.Func<EditDie, bool> dieSelector)
     {
+        this.parentPreset = preset;
         this.editAssignment = ass;
         this.dieSelector = dieSelector;
         selectDieDropdown.onClick.AddListener(PickNewDie);
-        selectBehaviorDropdown.onClick.AddListener(PickNewBehavior);
+        editBehaviorButton.onClick.AddListener(EditBehavior);
         UpdateView();
     }
 
@@ -52,12 +53,24 @@ public class UIAssignmentToken : MonoBehaviour
             OnDieSelected);
     }
 
-    void PickNewBehavior()
+    void EditBehavior()
     {
-        PixelsApp.Instance.ShowBehaviorPicker(
-            "Select Behavior",
-            this.editAssignment.behavior,
-            OnBehaviorSelected);
+        // Are we editing or adding?
+        if (editAssignment.behavior == null)
+        {
+            // Create the behavior and add it to the assignment
+            var newBehavior = AppDataSet.Instance.AddNewDefaultBehavior();
+            editAssignment.behavior = newBehavior;
+            onChange?.Invoke(editAssignment);
+        }
+
+        UIBehaviorView.Context context = new UIBehaviorView.Context()
+        {
+            behavior = editAssignment.behavior,
+            parentPreset = parentPreset,
+            dieAssignment = editAssignment
+        };
+        NavigationManager.Instance.GoToPage(UIPage.PageId.Behavior, context);
     }
 
     void OnDieSelected(bool result, EditDie newDie)
@@ -65,16 +78,6 @@ public class UIAssignmentToken : MonoBehaviour
         if (result && newDie != editAssignment.die)
         {
             editAssignment.die = newDie;
-            onChange?.Invoke(editAssignment);
-            UpdateView();
-        }
-    }
-
-    void OnBehaviorSelected(bool result, Behaviors.EditBehavior newBehavior)
-    {
-        if (result && newBehavior != editAssignment.behavior)
-        {
-            editAssignment.behavior = newBehavior;
             onChange?.Invoke(editAssignment);
             UpdateView();
         }
@@ -89,17 +92,11 @@ public class UIAssignmentToken : MonoBehaviour
         }
 
         var design = DesignAndColor.Unknown;
-        var dName = "Missing Die";
+        var dName = "Select Die";
         if (editAssignment.die != null)
         {
             design = editAssignment.die.designAndColor;
             dName = editAssignment.die.name;
-        }
-
-        var bName = "Missing Behavior";
-        if (editAssignment.behavior != null)
-        {
-            bName = editAssignment.behavior.name;
         }
         
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(design);
@@ -115,6 +112,5 @@ public class UIAssignmentToken : MonoBehaviour
         }
 
         dieName.text = dName;
-        behaviorName.text = bName;
     }
 }

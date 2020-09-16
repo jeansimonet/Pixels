@@ -11,6 +11,7 @@ namespace Dice
     public enum DesignAndColor : byte
     {
         Unknown = 0,
+        Generic,
         V3_Orange,
         V4_BlackClear,
         V4_WhiteClear,

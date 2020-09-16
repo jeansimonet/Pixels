@@ -190,10 +190,10 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
     IEnumerator DisconnectDieCr(EditDie editDie)
     {
         yield return new WaitUntil(() => state == State.Idle);
-        yield return StartCoroutine(DoDisconnectDie(editDie));
+        DoDisconnectDie(editDie);
     }
 
-    IEnumerator DoDisconnectDie(EditDie editDie)
+    void DoDisconnectDie(EditDie editDie)
     {
         var dt = dice.First(p => p == editDie);
         if (dt == null)
@@ -210,9 +210,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         }
         else
         {
-            bool? res = null;
-            DicePool.Instance.DisconnectDie(dt.die, (d, r, s) => res = r);
-            yield return new WaitUntil(() => res.HasValue);
+            DicePool.Instance.DisconnectDie(dt.die, null);
         }
     }
 
@@ -273,7 +271,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                 editDie.die.GetRssi((d, i) => rssiReceived = true);
                 yield return new WaitUntil(() => rssiReceived == true);
 
-                yield return StartCoroutine(DoDisconnectDie(editDie));
+                DoDisconnectDie(editDie);
             }
             // Else we've already disconnected
         }

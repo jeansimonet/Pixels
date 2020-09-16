@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 public class UIBehaviorView
     : UIPage
 {
     [Header("Controls")]
-    public InputField behaviorDescriptionText;
     public RawImage previewImage;
     public RectTransform rulesRoot;
     public Button addRuleButton;
@@ -19,16 +19,28 @@ public class UIBehaviorView
     [Header("Prefabs")]
     public UIRuleToken ruleTokenPrefab;
 
+    public class Context
+    {
+        public Behaviors.EditBehavior behavior;
+        public Presets.EditPreset parentPreset;
+        public Presets.EditDieAssignment dieAssignment;
+    }
+
     // The list of controls we have created to display rules
     List<UIRuleToken> rules = new List<UIRuleToken>();
 
     public override void Enter(object context)
     {
         base.Enter(context);
-        var bh = context as Behaviors.EditBehavior;
-        if (bh != null)
+        var ctx = context as Context;
+        if (ctx != null)
         {
-            Setup(bh);
+            Setup(ctx);
+        }
+
+        if (AppSettings.Instance.behaviorTutorialEnabled)
+        {
+            Tutorial.Instance.StartBehaviorTutorial();
         }
     }
 
@@ -51,16 +63,17 @@ public class UIBehaviorView
         rules.Clear();
     }
 
-    void Setup(Behaviors.EditBehavior behavior)
+    void Setup(Context context)
     {
-        editBehavior = behavior;
+        editBehavior = context.behavior;
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(editBehavior.defaultPreviewSettings.design, 300);
         if (dieRenderer != null)
         {
             previewImage.texture = dieRenderer.renderTexture;
         }
-        base.SetupHeader(false, false, behavior.name, SetName);
-        behaviorDescriptionText.text = behavior.description;
+        // Generate a title for the page
+        string title = context.parentPreset.name + " - " + (context.dieAssignment.die != null ? context.dieAssignment.die.name : "");
+        base.SetupHeader(false, false, title, null);
 
         RefreshView();
 
@@ -71,7 +84,6 @@ public class UIBehaviorView
 
     void Awake()
     {
-        behaviorDescriptionText.onEndEdit.AddListener(SetDescription);
         addRuleButton.onClick.AddListener(AddNewRule);
     }
 
@@ -184,17 +196,5 @@ public class UIBehaviorView
                 uip.Expand(false);
             }
         }
-    }
-
-    void SetName(string newName)
-    {
-        editBehavior.name = newName;
-        base.pageDirty = true;
-    }
-
-    void SetDescription(string newDescription)
-    {
-        editBehavior.description = newDescription;
-        base.pageDirty = true;
     }
 }

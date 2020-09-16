@@ -15,9 +15,13 @@ namespace Animations
 	public enum AnimationType : byte
 	{
 		Unknown = 0,
+		[Name("Simple Flashes")]
 		Simple,
+		[Name("Colorful Rainbow")]
 		Rainbow,
+		[Name("RGB Pattern")]
 		Keyframed,
+		[Name("Gradient Pattern")]
 		GradientPattern,
 	};
 
