@@ -36,7 +36,7 @@ public class UIRuleConditionToken : MonoBehaviour
             "Condition Type",
             () => editCondition.type,
             (t) => SetConditionType((Behaviors.ConditionType)t),
-            Enumerable.Repeat(new SkipEnumAttribute(1), 1));
+            null);
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(condition, parametersRoot);

@@ -8,11 +8,11 @@ namespace Behaviors
     /// <summary>
     /// The types of conditions we support!
     /// </summary>
-    [SkipEnum(1)]
     public enum ConditionType : byte
     {
+		[SkipEnumValue]
         Unknown = 0,
-        [Name("Die wakes up / sleeps")]
+        [AdvancedEnumValue, Name("Die wakes up / sleeps")]
         HelloGoodbye,
         [Name("Die is picked up")]
         Handling,
@@ -22,9 +22,9 @@ namespace Behaviors
 		FaceCompare,
         [Name("Die is crooked")]
 		Crooked,
-        [Name("Bluetooth Event...")]
+        [AdvancedEnumValue, Name("Bluetooth Event...")]
         ConnectionState,
-        [Name("Battery Event...")]
+        [AdvancedEnumValue, Name("Battery Event...")]
         BatteryState,
     };
 

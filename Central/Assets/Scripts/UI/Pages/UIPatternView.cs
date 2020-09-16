@@ -79,7 +79,7 @@ public class UIPatternView
             "Lighting Pattern Type",
             () => editAnimation.type,
             (t) => SetAnimationType((Animations.AnimationType)t),
-            Enumerable.Repeat(new SkipEnumAttribute(1), 1));
+            null);
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(anim, parametersRoot);

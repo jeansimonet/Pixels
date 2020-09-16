@@ -25,11 +25,11 @@ public class UIEnumPicker : MonoBehaviour
     /// <summary>
     /// Invoke the die picker
     /// </sumary>
-    public void Show(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, int min, int max)
+    public void Show(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, List<System.Enum> validValues)
     {
         if (isShown)
         {
-            Debug.LogWarning("Previous Die picker still active");
+            Debug.LogWarning("Previous Enum picker still active");
             ForceHide();
         }
 
@@ -38,22 +38,15 @@ public class UIEnumPicker : MonoBehaviour
         titleText.text = title;
         this.closeAction = closeAction;
 
-        var enumType = previousValue.GetType();
-        System.Array enumValues;
-
-        int count = max - min + 1;
-        enumValues = System.Array.CreateInstance(typeof(object), count);
-        System.Array.Copy(System.Enum.GetValues(enumType), min, enumValues, 0, count);
-
         List<string> enumValueNames = new List<string>();
-        foreach (var value in enumValues)
+        foreach (var value in validValues)
         {
             enumValueNames.Add(UIParameterEnum.GetNameAttribute(value, value.ToString()));
         }
 
-        for (int i = 0; i < enumValues.Length; ++i)
+        for (int i = 0; i < validValues.Count; ++i)
         {
-            var value = (System.Enum)enumValues.GetValue(i);
+            var value = validValues[i];
             var token = CreateEnumToken(enumValueNames[i], value);
             tokens.Add(token);
             token.SetSelected(value.Equals(currentValue));

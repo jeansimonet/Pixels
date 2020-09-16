@@ -40,33 +40,27 @@ public class UIParameterBitfield : UIParameter
         int initialValueInt = System.Convert.ToInt32(initialValue);
         var enumType = initialValue.GetType();
 
-        var vals = new List<object>();
-        foreach (var val in System.Enum.GetValues(enumType))
+        var vals = System.Enum.GetValues(enumType);
+        var validValues = new List<System.Enum>();
+        foreach (var val in vals)
         {
-            vals.Add(val);
-        }
-        var strings = new List<string>(System.Enum.GetNames(enumType));
-        int min = 0;
-        int max = vals.Count - 1;
-        var skip = (SkipEnumAttribute) System.Attribute.GetCustomAttribute(enumType, typeof (SkipEnumAttribute));
-        if (skip != null)
-        {
-            min = skip.skipCount;
-            vals.RemoveRange(0, skip.skipCount);
-            strings.RemoveRange(0, skip.skipCount);
+            if (!UIParameterEnum.ShouldSkipValue(val))
+            {
+                validValues.Add(val as System.Enum);
+            }
         }
 
-        for (int i = 0; i < vals.Count; ++i)
+        for (int i = 0; i < validValues.Count; ++i)
         {
             var bitui = GameObject.Instantiate<UIParameterBitfieldBit>(bitPrefab, buttonRoot);
-            int bit = System.Convert.ToInt32(vals[i]);
+            int bit = System.Convert.ToInt32(validValues[i]);
             int backgroundIndex = 1;
             if (i == 0)
                 backgroundIndex = 0;
-            else if (i == vals.Count - 1)
+            else if (i == validValues.Count - 1)
                 backgroundIndex = 2;
 
-            bitui.Setup(strings[i], (initialValueInt & bit) != 0, backgrounds[backgroundIndex], bitColor, bitColorSelected);
+            bitui.Setup(UIParameterEnum.GetNameAttribute(validValues[i], validValues[i].ToString()), (initialValueInt & bit) != 0, backgrounds[backgroundIndex], bitColor, bitColorSelected);
             bitui.onValueChanged.AddListener((val) =>
             {
                 if (val)

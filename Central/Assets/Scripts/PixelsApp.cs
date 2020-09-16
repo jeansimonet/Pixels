@@ -104,12 +104,12 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    public bool ShowEnumPicker(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, int min, int max)
+    public bool ShowEnumPicker(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, List<System.Enum> validValues)
     {
         bool ret = !enumPicker.isShown;
         if (ret)
         {
-            enumPicker.Show(title, previousValue, closeAction, min, max);
+            enumPicker.Show(title, previousValue, closeAction, validValues);
         }
         return ret;
     }

@@ -11,9 +11,9 @@ namespace Animations
 	/// <summary>
 	/// Defines the types of Animation Presets we have/support
 	/// </summary>
-    [SkipEnum(1)]
 	public enum AnimationType : byte
 	{
+		[SkipEnumValue]
 		Unknown = 0,
 		[Name("Simple Flashes")]
 		Simple,

@@ -40,7 +40,7 @@ public class UIRuleActionToken : MonoBehaviour
             "Action Type",
             () => editAction.type,
             (t) => SetActionType((Behaviors.ActionType)t),
-            Enumerable.Repeat(new SkipEnumAttribute(1), 1));
+            null);
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(action, parametersRoot);

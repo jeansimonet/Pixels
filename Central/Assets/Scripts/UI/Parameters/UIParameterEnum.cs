@@ -4,14 +4,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 
-public class SkipEnumAttribute
+public class SkipEnumValueAttribute
     : System.Attribute
 {
-    public int skipCount {get; private set;}
-    public SkipEnumAttribute(int skipCount)
-    {
-        this.skipCount = skipCount;
-    }
+}
+
+public class AdvancedEnumValueAttribute
+    : System.Attribute
+{    
 }
 
 public class DropdowndAttribute
@@ -35,6 +35,27 @@ public class UIParameterEnum : UIParameter
         return (attributes.Length > 0) ? ((NameAttribute)attributes[0]).name : fallback;
     }
 
+    public static bool ShouldSkipValue(object enumVal)
+    {
+        var type = enumVal.GetType();
+        var memInfo = type.GetMember(enumVal.ToString());
+        var skipAttribute = memInfo[0].GetCustomAttributes(typeof(SkipEnumValueAttribute), false);
+        if (skipAttribute.Length > 0)
+        {
+            return true;
+        }
+        else
+        {
+            var advAttribute = memInfo[0].GetCustomAttributes(typeof(AdvancedEnumValueAttribute), false);
+//            if (advAttribute.Length > 0 && Application.platform != RuntimePlatform.WindowsEditor)
+            if (advAttribute.Length > 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
     {
         return typeof(System.Enum).IsAssignableFrom(parameterType) && attributes.Any(a => a.GetType() == typeof(DropdowndAttribute));
@@ -45,14 +66,15 @@ public class UIParameterEnum : UIParameter
         // List all the enum values and populate the dropdown
         var initialValue = getterFunc();
         var enumType = initialValue.GetType();
-        var vals = System.Enum.GetValues(enumType);
 
-        int min = 0;
-        int max = vals.Length - 1;
-        var skip = (SkipEnumAttribute) System.Attribute.GetCustomAttribute(enumType, typeof (SkipEnumAttribute));
-        if (skip != null)
+        var vals = System.Enum.GetValues(enumType);
+        var validValues = new List<System.Enum>();
+        foreach (var val in vals)
         {
-            min = skip.skipCount;
+            if (!ShouldSkipValue(val))
+            {
+                validValues.Add(val as System.Enum);
+            }
         }
 
         // Set name
@@ -68,7 +90,7 @@ public class UIParameterEnum : UIParameter
                     setterAction(newVal);
                 }
             },
-            min, max);
+            validValues);
         });
     }
 }

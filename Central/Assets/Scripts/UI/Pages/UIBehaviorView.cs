@@ -105,17 +105,21 @@ public class UIBehaviorView
             if (prevIndex == -1)
             {
                 // New rule
-                var ruleui = GameObject.Instantiate<UIRuleToken>(ruleTokenPrefab, Vector3.zero, Quaternion.identity, rulesRoot);
-                ruleui.Setup(rule);
-                ruleui.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
-                ruleui.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
-                ruleui.onMoveUp.AddListener(() => MoveUp(rule));
-                ruleui.onMoveDown.AddListener(() => MoveDown(rule));
-                ruleui.onDuplicate.AddListener(() => DuplicateRule(rule));
-                ruleui.onRemove.AddListener(() => DeleteRule(rule));
-                ruleui.onExpand.AddListener(() => ExpandRule(rule));
-                rules.Add(ruleui);
-                spacer.SetAsLastSibling();
+                // Check if we should hide it
+                if (!UIParameterEnum.ShouldSkipValue(rule.condition.type))
+                {
+                    var ruleui = GameObject.Instantiate<UIRuleToken>(ruleTokenPrefab, Vector3.zero, Quaternion.identity, rulesRoot);
+                    ruleui.Setup(rule);
+                    ruleui.onClick.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
+                    ruleui.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Rule, rule));
+                    ruleui.onMoveUp.AddListener(() => MoveUp(rule));
+                    ruleui.onMoveDown.AddListener(() => MoveDown(rule));
+                    ruleui.onDuplicate.AddListener(() => DuplicateRule(rule));
+                    ruleui.onRemove.AddListener(() => DeleteRule(rule));
+                    ruleui.onExpand.AddListener(() => ExpandRule(rule));
+                    rules.Add(ruleui);
+                    spacer.SetAsLastSibling();
+                }
             }
             else
             {
