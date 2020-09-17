@@ -10,6 +10,7 @@
 #include "config/dice_variants.h"
 #include "drivers_hw/apa102.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 #include "accelerometer.h"
 

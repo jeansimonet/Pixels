@@ -3,6 +3,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 //#include "SEGGER_RTT.h"
 
 namespace DriversNRF

@@ -8,6 +8,7 @@
 #include "config/dice_variants.h"
 #include "app_timer.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 #include "config/settings.h"
 #include "bluetooth/bluetooth_message_service.h"

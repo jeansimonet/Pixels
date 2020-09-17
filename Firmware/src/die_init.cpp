@@ -2,6 +2,7 @@
 
 #include "app_timer.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/timers.h"

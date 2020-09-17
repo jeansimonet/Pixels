@@ -1,6 +1,7 @@
 #include "timers.h"
 #include "power_manager.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "Log.h"
 #include "nrf_delay.h"
 #include "nrf_gpio.h"

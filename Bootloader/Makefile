@@ -130,6 +130,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/bootloader \
   $(SDK_ROOT)/external/fprintf \
   $(SDK_ROOT)/components/libraries/crypto \
+  $(SDK_ROOT)/components/libraries/crypto/backend/optiga \
   $(SDK_ROOT)/components/libraries/scheduler \
   $(SDK_ROOT)/external/segger_rtt \
   $(SDK_ROOT)/modules/nrfx/hal \
@@ -148,7 +149,7 @@ INC_FOLDERS += \
 
 # Libraries common to all targets
 LIB_FILES += \
-  $(SDK_ROOT)/external/nrf_oberon/lib/nrf52/liboberon_no_fp_2.0.5.a \
+  $(SDK_ROOT)/external/nrf_oberon/lib/cortex-m4/soft-float/liboberon_3.0.6.a \
   $(SDK_ROOT)/external/micro-ecc/nrf52nf_armgcc/armgcc/micro_ecc_lib_nrf52.a \
 
 # Optimization flags
@@ -165,9 +166,10 @@ CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DFLOAT_ABI_SOFT
 CFLAGS += -DNRF52810_XXAA
 CFLAGS += -DNRF52_PAN_74
-CFLAGS += -DNRF_DFU_SETTINGS_VERSION=1
+CFLAGS += -DNRFX_COREDEP_DELAY_US_LOOP_CYCLES=3
+CFLAGS += -DNRF_DFU_SETTINGS_VERSION=2
+CFLAGS += -DNRF_SD_BLE_API_VERSION=7
 CFLAGS += -DNRF_DFU_SVCI_ENABLED
-CFLAGS += -DNRF_SD_BLE_API_VERSION=6
 CFLAGS += -DS112
 CFLAGS += -DSOFTDEVICE_PRESENT
 CFLAGS += -DSVC_INTERFACE_CALL_AS_NORMAL_FUNCTION
@@ -180,8 +182,8 @@ CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs
 CFLAGS += -Wall -Werror
 CFLAGS += -mfloat-abi=soft
-#CFLAGS += -DDEBUG_NRF
-#CFLAGS += -DNRF_DFU_DEBUG_VERSION
+# CFLAGS += -DDEBUG_NRF
+# CFLAGS += -DNRF_DFU_DEBUG_VERSION
 
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -202,9 +204,10 @@ ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
 ASMFLAGS += -DFLOAT_ABI_SOFT
 ASMFLAGS += -DNRF52810_XXAA
 ASMFLAGS += -DNRF52_PAN_74
-ASMFLAGS += -DNRF_DFU_SETTINGS_VERSION=1
 ASMFLAGS += -DNRF_DFU_SVCI_ENABLED
-ASMFLAGS += -DNRF_SD_BLE_API_VERSION=6
+ASMFLAGS += -DNRFX_COREDEP_DELAY_US_LOOP_CYCLES=3
+ASMFLAGS += -DNRF_DFU_SETTINGS_VERSION=2
+ASMFLAGS += -DNRF_SD_BLE_API_VERSION=7
 ASMFLAGS += -DS112
 ASMFLAGS += -DSOFTDEVICE_PRESENT
 ASMFLAGS += -DSVC_INTERFACE_CALL_AS_NORMAL_FUNCTION
@@ -213,8 +216,8 @@ ASMFLAGS += -DuECC_OPTIMIZATION_LEVEL=3
 ASMFLAGS += -DuECC_SQUARE_FUNC=0
 ASMFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
 ASMFLAGS += -DuECC_VLI_NATIVE_LITTLE_ENDIAN=1
-#ASMFLAGS += -DNRF_DFU_DEBUG_VERSION
-#ASMFLAGS += -DDEBUG_NRF
+# ASMFLAGS += -DNRF_DFU_DEBUG_VERSION
+# ASMFLAGS += -DDEBUG_NRF
 
 # Linker flags
 LDFLAGS += $(OPT)
@@ -226,7 +229,9 @@ LDFLAGS += -Wl,--gc-sections
 LDFLAGS += --specs=nano.specs
 
 nrf52810_xxaa_s112: CFLAGS += -D__HEAP_SIZE=0
+nrf52810_xxaa_s112: CFLAGS += -D__STACK_SIZE=2048
 nrf52810_xxaa_s112: ASMFLAGS += -D__HEAP_SIZE=0
+nrf52810_xxaa_s112: ASMFLAGS += -D__STACK_SIZE=2048
 
 # Add standard libraries at the very end of the linker input, after all objects
 # that may need symbols provided by these libraries.
@@ -263,8 +268,8 @@ flash: default
 
 # Flash softdevice
 flash_softdevice:
-	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
-	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
+	@echo Flashing: s112_nrf52_7.2.0_softdevice.hex
+	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
 erase:

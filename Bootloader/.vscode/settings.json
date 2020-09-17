@@ -15,6 +15,8 @@
         "nrf_dfu_settings.h": "c",
         "nrf_drv_uart.h": "c",
         "nrfx_uarte.h": "c",
-        "sdk_config.h": "c"
+        "sdk_config.h": "c",
+        "xmemory": "c"
     },
+    "arduino.defaultBaudRate": 230400,
 }

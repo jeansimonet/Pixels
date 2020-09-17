@@ -5,6 +5,7 @@
 #include "nrf_fstorage_sd.h"
 #include "power_manager.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "log.h"
 #include "nrf_soc.h"
 #include "scheduler.h"

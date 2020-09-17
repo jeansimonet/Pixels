@@ -11,8 +11,13 @@ PROJ_DIR := .
 $(OUTPUT_DIRECTORY)/firmware.out: \
 	LINKER_SCRIPT  := Firmware.ld
  
+	#$(SDK_ROOT)/components/libraries/util/app_error.c
+	#$(SDK_ROOT)/components/libraries/util/app_error_handler_gcc.c \
 # Source files common to all targets
 SRC_FILES += \
+	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
+	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
+	$(SDK_ROOT)/components/libraries/util/app_error_weak.c \
 	$(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
 	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu.c \
 	$(SDK_ROOT)/components/ble/ble_services/ble_dfu/ble_dfu_unbonded.c \
@@ -48,28 +53,23 @@ SRC_FILES += \
 	$(SDK_ROOT)/components/libraries/scheduler/app_scheduler.c \
 	$(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
 	$(SDK_ROOT)/components/libraries/timer/app_timer.c \
-	$(SDK_ROOT)/components/libraries/util/app_error.c \
-	$(SDK_ROOT)/components/libraries/util/app_error_weak.c \
-	$(SDK_ROOT)/components/libraries/util/app_error_handler_gcc.c \
 	$(SDK_ROOT)/components/libraries/util/app_util_platform.c \
 	$(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
 	$(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
 	$(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
 	$(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
 	$(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
+	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twi.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_clock.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_twi.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_uart.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
-	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power_clock.c \
+	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_saadc.c \
-	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twim.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uarte.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_wdt.c \
 	$(SDK_ROOT)/modules/nrfx/drivers/src/prs/nrfx_prs.c \
-	$(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52810.S \
-	$(SDK_ROOT)/modules/nrfx/mdk/system_nrf52810.c \
 	$(PROJ_DIR)/src/die_init.cpp \
 	$(PROJ_DIR)/src/die_main.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
@@ -155,7 +155,7 @@ INC_FOLDERS += \
 	$(SDK_ROOT)/components/ble/peer_manager \
 	$(SDK_ROOT)/components/boards \
 	$(SDK_ROOT)/components/softdevice/common \
-	$(SDK_ROOT)/components/softdevice/mbr/nrf52810/headers \
+	$(SDK_ROOT)/components/softdevice/mbr/headers \
 	$(SDK_ROOT)/components/softdevice/s112/headers \
 	$(SDK_ROOT)/components/libraries \
 	$(SDK_ROOT)/components/libraries/bootloader \
@@ -210,7 +210,7 @@ LIB_FILES += \
 OPT = -Os -g3
 #OPT = -O0 -g3
 # Uncomment the line below to enable link time optimization
-#OPT += -flto
+OPT += -flto
 
 COMMON_FLAGS = -DBL_SETTINGS_ACCESS_ONLY
 COMMON_FLAGS += -DNRF52_SERIES
@@ -252,9 +252,6 @@ CFLAGS += -Wall
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin -fshort-enums
-
-# Debug
-#CFLAGS += -DDEBUG
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
@@ -312,7 +309,8 @@ erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
 zip: firmware_release
-	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0x103 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+#	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --softdevice $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sd-id 0x103 --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0x103 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 
 publish: zip
 	copy $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip $(PUBLISH_DIRECTORY)
@@ -344,7 +342,7 @@ flash_ble: zip
 # Flash softdevice
 flash_softdevice:
 	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
-	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
 	nrfjprog -f nrf52 -s 801001366 --reset
 
 flash_bootloader:

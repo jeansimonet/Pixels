@@ -2,6 +2,7 @@
 #include "drivers_nrf/flash.h"
 #include "nrf_log.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "config/board_config.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_stack.h"

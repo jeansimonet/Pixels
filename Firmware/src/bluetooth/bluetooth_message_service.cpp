@@ -1,6 +1,7 @@
 #include "bluetooth_message_service.h"
 #include "bluetooth_stack.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 #include "ble.h"
 #include "ble_srv_common.h"

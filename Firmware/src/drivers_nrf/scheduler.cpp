@@ -1,5 +1,6 @@
 #include "scheduler.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "app_timer.h"
 #include "log.h"
 

@@ -3,6 +3,7 @@
 #include "nrf_power.h"
 #include "nrf_bootloader_info.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "log.h"
 #include "core/delegate_array.h"
 

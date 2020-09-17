@@ -375,6 +375,29 @@
 
 
 //==========================================================
+// <e> NRFX_TWI_ENABLED - nrfx_twi - TWI peripheral driver
+//==========================================================
+#define NRFX_TWI_ENABLED 1
+ 
+#ifndef NRFX_TWI0_ENABLED
+#define NRFX_TWI0_ENABLED 1
+#endif
+
+// <o> NRFX_TWI_DEFAULT_CONFIG_FREQUENCY  - Frequency
+// <26738688=> 100k 
+// <67108864=> 250k 
+// <104857600=> 400k 
+#define NRFX_TWI_DEFAULT_CONFIG_FREQUENCY 26738688
+
+// <q> NRFX_TWI_DEFAULT_CONFIG_HOLD_BUS_UNINIT  - Enables bus holding after uninit
+#define NRFX_TWI_DEFAULT_CONFIG_HOLD_BUS_UNINIT 0
+
+// <o> NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY  - Interrupt priority
+// <0=> 0 (highest) -> 7 (lowest)
+#define NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY 6
+
+
+//==========================================================
 // nrfx_twim - TWIM peripheral driver
 //==========================================================
 

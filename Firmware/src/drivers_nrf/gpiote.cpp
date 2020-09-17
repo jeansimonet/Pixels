@@ -1,6 +1,7 @@
 #include "gpiote.h"
 #include "nrf_drv_gpiote.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 
 namespace DriversNRF

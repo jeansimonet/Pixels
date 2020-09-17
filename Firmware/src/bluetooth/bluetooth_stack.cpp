@@ -1,6 +1,7 @@
 #include "bluetooth_stack.h"
 #include "bluetooth_message_service.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
@@ -118,24 +119,24 @@ namespace Stack
     ble_advdata_t adv_data;
     ble_advdata_t sr_data;
 
-    // This will store packed versions of advertising structs
-    uint8_t adv_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Advertising data buffer. */
-    uint8_t sr_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Scan Response data buffer. */
+    // // This will store packed versions of advertising structs
+    // uint8_t adv_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Advertising data buffer. */
+    // uint8_t sr_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Scan Response data buffer. */
 
-    // And this will tell the Softdevice where those buffers are
-    ble_gap_adv_data_t m_sp_advdata_buf = 
-    {
-        .adv_data =
-        {
-            .p_data = adv_data_buffer,
-            .len    = sizeof(adv_data_buffer)
-        },
-        .scan_rsp_data =
-        {
-            .p_data = sr_data_buffer,
-            .len    = sizeof(sr_data_buffer)
-        }
-    };
+    // // And this will tell the Softdevice where those buffers are
+    // ble_gap_adv_data_t m_sp_advdata_buf = 
+    // {
+    //     .adv_data =
+    //     {
+    //         .p_data = adv_data_buffer,
+    //         .len    = sizeof(adv_data_buffer)
+    //     },
+    //     .scan_rsp_data =
+    //     {
+    //         .p_data = sr_data_buffer,
+    //         .len    = sizeof(sr_data_buffer)
+    //     }
+    // };
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
     void onBatteryLevelChange(void* param, float newLevel);
@@ -264,7 +265,7 @@ namespace Stack
             case BLE_ADV_EVT_FAST:
             {
                 NRF_LOG_INFO("Fast advertising.");
-                ret_code_t err_code = ble_advertising_advdata_update(&m_advertising, &m_sp_advdata_buf, false);
+                ret_code_t err_code = ble_advertising_advdata_update(&m_advertising, &adv_data, &sr_data);
                 APP_ERROR_CHECK(err_code);
 
                 // Register to be notified of accelerometer changes
@@ -452,12 +453,12 @@ namespace Stack
         customAdvertisingData.rollState = Accelerometer::currentRollState();
         adv_data.p_manuf_specific_data->company_identifier = (uint16_t)Config::BoardManager::getBoard()->ledCount << 8 | (uint16_t)Config::SettingsManager::getSettings()->designAndColor;
 
-        // Update advertising data
-        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
-        APP_ERROR_CHECK(err_code);
+        // // Update advertising data
+        // ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        // APP_ERROR_CHECK(err_code);
 
-        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
-        APP_ERROR_CHECK(err_code);
+        // err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        // APP_ERROR_CHECK(err_code);
     }
 
     void onBatteryLevelChange(void* param, float newLevel) {
@@ -471,12 +472,12 @@ namespace Stack
     void updateCustomAdvertisingDataBattery(float batteryLevel) {
         customAdvertisingData.batteryLevel = (uint8_t)(batteryLevel * 255.0f);
 
-        // Update advertising data
-        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
-        APP_ERROR_CHECK(err_code);
+        // // Update advertising data
+        // ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        // APP_ERROR_CHECK(err_code);
 
-        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
-        APP_ERROR_CHECK(err_code);
+        // err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        // APP_ERROR_CHECK(err_code);
     }
 
     void updateCustomAdvertisingDataState(Accelerometer::RollState newState, int newFace) {
@@ -484,12 +485,12 @@ namespace Stack
         customAdvertisingData.currentFace = newFace;
         customAdvertisingData.rollState = newState;
 
-        // Update advertising data
-        ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
-        APP_ERROR_CHECK(err_code);
+        // // Update advertising data
+        // ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
+        // APP_ERROR_CHECK(err_code);
 
-        err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
-        APP_ERROR_CHECK(err_code);
+        // err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
+        // APP_ERROR_CHECK(err_code);
     }
 
     void disconnectLink(uint16_t conn_handle, void * p_context) {
