@@ -5,7 +5,14 @@ PUBLISH_DIRECTORY := binaries
 
 VERSION			 := 09_05
 
-SDK_ROOT := C:/nRF5_SDK
+SDK_VER = 12
+
+ifeq ($(SDK_VER),17)
+	SDK_ROOT := C:/nRF5_SDK
+else
+	SDK_ROOT := C:/nRF5_SDK_old
+endif
+
 PROJ_DIR := .
 
 $(OUTPUT_DIRECTORY)/firmware.out: \
@@ -59,7 +66,6 @@ SRC_FILES += \
 	$(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
 	$(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
 	$(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
-	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twi.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_clock.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_twi.c \
 	$(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_uart.c \
@@ -133,6 +139,14 @@ SRC_FILES += \
 	# $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_rtt.c \
 	# $(SDK_ROOT)/components/libraries/button/app_button.c \
 
+ifeq ($(SDK_VER),17)
+SRC_FILES += \
+ 	$(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twi.c
+else
+SRC_FILES += \
+    $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twim.c
+endif
+
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -203,6 +217,11 @@ INC_FOLDERS += \
 	# $(ARDUINO_ROOT)/
 
 
+ifneq ($(SDK_VER),17)
+INC_FOLDERS += \
+	$(SDK_ROOT)/components/softdevice/mbr/nrf52810/headers
+endif
+
 # Libraries common to all targets
 LIB_FILES += \
 
@@ -228,6 +247,7 @@ COMMON_FLAGS += -DNRF52_PAN_74
 COMMON_FLAGS += -DNRF_DFU_SVCI_ENABLED
 COMMON_FLAGS += -DNRF_DFU_TRANSPORT_BLE=1
 COMMON_FLAGS += -DFIRMWARE_VERSION=\"$(VERSION)\"
+COMMON_FLAGS += -DSDK_VER=$(SDK_VER)
 
 # COMMON_FLAGS += -DDEVELOP_IN_NRF52832
 DEBUG_FLAGS = -DNRF_LOG_ENABLED=0
@@ -309,8 +329,7 @@ erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
 zip: firmware_release
-	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0x103 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
-#	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --softdevice $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sd-id 0x103 --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0x103 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 
 publish: zip
 	copy $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip $(PUBLISH_DIRECTORY)
@@ -336,13 +355,17 @@ flash_release: firmware_release settings
 # e.g. make flash_ble DICE=D_71902510
 flash_ble: zip
 	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip over BLE DFU
-#	nrfutil dfu ble -cd 0 -ic NRF52 -p COM4 -snr 682511527 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
 
 # Flash softdevice
 flash_softdevice:
+ifeq ($(SDK_VER),17)
+	@echo Flashing: s112_nrf52_7.2.0_softdevice.hex
+	nrfjprog -f nrf52 -s 801001366 --program c:/nRF5_SDK_old/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
+else
 	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
-	nrfjprog -f nrf52 -s 801001366 --program $(SDK_ROOT)/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --program c:/nRF5_SDK_old/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
+endif
 	nrfjprog -f nrf52 -s 801001366 --reset
 
 flash_bootloader:
