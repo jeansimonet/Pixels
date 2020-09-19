@@ -554,7 +554,8 @@ namespace Dice
         : DieMessage
     {
         public DieMessageType type { get; set; } = DieMessageType.Flash;
-        public byte animIndex;
+        public byte flashCount;
+        public uint color;
     }
 
 

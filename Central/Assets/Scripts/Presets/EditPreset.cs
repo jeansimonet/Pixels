@@ -35,6 +35,8 @@ namespace Presets
                 serializer.Serialize(writer, (ulong)0);
             writer.WritePropertyName("behaviorIndex");
             serializer.Serialize(writer, dataSet.behaviors.IndexOf(value.behavior));
+            writer.WritePropertyName("defaultDieAssignmentIndex");
+            serializer.Serialize(writer, value.defaultDieAssignmentIndex);
             writer.WriteEndObject();
         }
 
@@ -52,6 +54,7 @@ namespace Presets
                 ret.behavior = dataSet.behaviors[behaviorIndex];
             else
                 ret.behavior = null;
+            ret.defaultDieAssignmentIndex = jsonObject["defaultDieAssignmentIndex"].Value<int>();
             return ret;
         }
     }

@@ -21,6 +21,9 @@ public class UIPairedDieToken : MonoBehaviour
     public Button renameButton;
     public Button forgetButton;
     public Button resetButton;
+    public Button calibrateButton;
+    public Button setDesignButton;
+    public Button pingButton;
 
     [Header("Images")]
     public Sprite backgroundCollapsedSprite;
@@ -41,6 +44,10 @@ public class UIPairedDieToken : MonoBehaviour
         // Hook up to events
         expandButton.onClick.AddListener(OnToggle);
         forgetButton.onClick.AddListener(OnForget);
+        renameButton.onClick.AddListener(OnRename);
+        calibrateButton.onClick.AddListener(OnCalibrate);
+        setDesignButton.onClick.AddListener(OnSetDesign);
+        pingButton.onClick.AddListener(OnPing);
     }
 
     void OnToggle()
@@ -53,6 +60,7 @@ public class UIPairedDieToken : MonoBehaviour
 
     void OnForget()
     {
+        OnToggle();
         PixelsApp.Instance.ShowDialogBox(
             "Forget " + die.name + "?",
             "Are you sure you want to remove it from your dice bag?",
@@ -92,5 +100,48 @@ public class UIPairedDieToken : MonoBehaviour
                     }
                 }
             });
+    }
+
+    void OnRename()
+    {
+        OnToggle();
+        var newName = Names.GetRandomName();
+        die.die.RenameDie(newName, (res) =>
+        {
+            die.die.name = newName;
+            die.name = newName;
+            AppDataSet.Instance.SaveData();
+            dieView.UpdateState();
+        });
+    }
+
+    void OnCalibrate()
+    {
+        OnToggle();
+        die.die.StartCalibration();
+    }
+
+    void OnSetDesign()
+    {
+        OnToggle();
+        PixelsApp.Instance.ShowEnumPicker("Select Design", die.designAndColor, (res, newDesign) =>
+        {
+            die.designAndColor = (Dice.DesignAndColor)newDesign;
+            die.die.SetCurrentDesignAndColor((Dice.DesignAndColor)newDesign, (res2) =>
+            {
+                if (res2)
+                {
+                    AppDataSet.Instance.SaveData();
+                    dieView.UpdateState();
+                }
+            });
+        },
+        null);
+    }
+
+    void OnPing()
+    {
+        OnToggle();
+        die.die.Flash(Color.yellow, 3, null);
     }
 }

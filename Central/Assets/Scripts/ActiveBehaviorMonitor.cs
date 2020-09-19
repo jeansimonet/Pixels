@@ -36,7 +36,7 @@ public class ActiveBehaviorMonitor : MonoBehaviour
                     {
                         toDisconnect.Remove(assignment.die);
                     }
-                    else
+                    else if (assignment.die != null)
                     {
                         // Connect to the new die
                         DiceManager.Instance.ConnectDie(assignment.die, (d, res, _) =>
@@ -53,8 +53,7 @@ public class ActiveBehaviorMonitor : MonoBehaviour
 
         foreach (var die in toDisconnect)
         {
-            DiceManager.Instance.DisconnectDie(die);
-            connectedDice.Remove(die);
+            DiceManager.Instance.DisconnectDie(die, (d, res, _) => connectedDice.Remove(die));
         }
     }
 }

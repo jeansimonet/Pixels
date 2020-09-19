@@ -13,6 +13,7 @@ public class UIDicePoolRefreshButton : MonoBehaviour
     public Animator refreshImageAnimator;
 
     public Button.ButtonClickedEvent onClick => GetComponent<Button>().onClick;
+    public bool rotating => state == State.Rotating;
 
     enum State
     {

@@ -47,8 +47,7 @@ public class UIParameterEnum : UIParameter
         else
         {
             var advAttribute = memInfo[0].GetCustomAttributes(typeof(AdvancedEnumValueAttribute), false);
-//            if (advAttribute.Length > 0 && Application.platform != RuntimePlatform.WindowsEditor)
-            if (advAttribute.Length > 0)
+            if (advAttribute.Length > 0 && Application.platform != RuntimePlatform.WindowsEditor)
             {
                 return true;
             }

@@ -38,15 +38,29 @@ public class UIEnumPicker : MonoBehaviour
         titleText.text = title;
         this.closeAction = closeAction;
 
+        var enumValues = new List<System.Enum>();
+        if (validValues != null)
+        {
+            enumValues.AddRange(validValues);
+        }
+        else
+        {
+            var vals = System.Enum.GetValues(previousValue.GetType());
+            foreach (var val in vals)
+            {
+                enumValues.Add(val as System.Enum);
+            }
+        }
+
         List<string> enumValueNames = new List<string>();
-        foreach (var value in validValues)
+        foreach (var value in enumValues)
         {
             enumValueNames.Add(UIParameterEnum.GetNameAttribute(value, value.ToString()));
         }
 
-        for (int i = 0; i < validValues.Count; ++i)
+        for (int i = 0; i < enumValues.Count; ++i)
         {
-            var value = validValues[i];
+            var value = enumValues[i];
             var token = CreateEnumToken(enumValueNames[i], value);
             tokens.Add(token);
             token.SetSelected(value.Equals(currentValue));

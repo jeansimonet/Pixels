@@ -26,15 +26,29 @@ public class UIDicePoolView
     // to return to normal after the refresh (updating at that time).
     List<UIPairedDieToken> doubtedDice = new List<UIPairedDieToken>();
 
-    DicePoolRefresher poolRefresher;
+    IEnumerator connectAllDiceCoroutine;
 
     void Awake()
     {
         addNewDiceButton.onClick.AddListener(AddNewDice);
-        poolRefresher = GetComponent<DicePoolRefresher>();
-        DiceManager.Instance.onBeginRefreshPool += OnBeginRefreshPool;
-        DiceManager.Instance.onEndRefreshPool += OnEndRefreshPool;
 
+    }
+
+    public override void Enter(object context)
+    {
+        base.Enter(context);
+
+        // Connect to all the dice in the pool if possible
+        connectAllDiceCoroutine = ConnectAllDice();
+        StartCoroutine(connectAllDiceCoroutine);
+    }
+
+    public override void Leave()
+    {
+        base.Leave();
+        StopCoroutine(connectAllDiceCoroutine);
+        ((System.IDisposable)connectAllDiceCoroutine).Dispose(); // This will make sure the
+        connectAllDiceCoroutine = null;
     }
 
     void OnEnable()
@@ -128,8 +142,67 @@ public class UIDicePoolView
         refreshButton.StartRotating();
     }
 
+    IEnumerator ConnectAllDice()
+    {
+        var allDiceCopy = new List<EditDie>();
+        var connectedDice = new List<EditDie>();
+        try
+        {
+            while (true)
+            {
+                OnBeginRefreshPool();
+                allDiceCopy.Clear();
+                allDiceCopy.AddRange(DiceManager.Instance.allDice);
+                foreach (var editDie in allDiceCopy)
+                {
+                    if (editDie.die == null || editDie.die.connectionState != Die.ConnectionState.Ready)
+                    {
+                        // Try connecting to the die
+                        bool connected = false;
+                        connectedDice.Add(editDie);
+                        yield return DiceManager.Instance.ConnectDie(editDie, (d, res, err) => connected = res);
+
+                        if (connected)
+                        {
+                            // Fetch battery level
+                            bool battLevelReceived = false;
+                            editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                            yield return new WaitUntil(() => battLevelReceived == true);
+
+                            // Fetch rssi
+                            bool rssiReceived = false;
+                            editDie.die.GetRssi((d, i) => rssiReceived = true);
+                            yield return new WaitUntil(() => rssiReceived == true);
+                        }
+                        else
+                        {
+                            connectedDice.Remove(editDie);
+                        }
+
+                        RefreshView();
+                    }
+                }
+                OnEndRefreshPool();
+
+                yield return new WaitForSeconds(10.0f);
+            }
+        }
+        finally
+        {
+            Debug.Log("Finally Called");
+            foreach (var editDie in connectedDice)
+            {
+                DiceManager.Instance.DisconnectDie(editDie, null);
+            }
+            OnEndRefreshPool();
+        }
+    }
+
     void OnEndRefreshPool()
     {
-        refreshButton.StopRotating();
+        if (refreshButton.rotating)
+        {
+            refreshButton.StopRotating();
+        }
     }
 }

@@ -75,6 +75,8 @@ public class Central : SingletonMonoBehaviour<Central>
         Initializing,
         Idle,
         Scanning,
+        Connecting,
+        Disconnecting,
         Error,
     }
 
@@ -82,6 +84,53 @@ public class Central : SingletonMonoBehaviour<Central>
     public State state => _state;
 
     Dictionary<string, Die> _dice;
+
+    abstract class Operation
+    {
+        public abstract void Process(Central central);
+    }
+
+    class OperationConnect
+        : Operation
+    {
+        public IDie die;
+        public System.Action<IDie, bool, string> connectionResultCallback;
+        public System.Action<IDie, byte[]> onDataCallback;
+        public System.Action<IDie, string> onUnexpectedDisconnectionCallback;
+
+        public override void Process(Central central)
+        {
+            central.DoConnectDie(die, connectionResultCallback, onDataCallback, onUnexpectedDisconnectionCallback);
+        }
+    }
+
+    class OperationDisconnect
+        : Operation
+    {
+        public IDie die;
+        public System.Action<IDie, bool, string> onDisconnectionResult;
+
+        public override void Process(Central central)
+        {
+            central.DoDisconnectDie(die, onDisconnectionResult);
+        }
+    }
+
+    class OperationWriteDie
+        : Operation
+    {
+        public IDie die;
+        public byte[] bytes;
+        public int length;
+        public System.Action<IDie, bool, string> bytesWrittenCallback;
+
+        public override void Process(Central central)
+        {
+            central.DoWriteDie(die, bytes, length, bytesWrittenCallback);
+        }
+    }
+
+    Queue<Operation> operations = new Queue<Operation>();
 
     public delegate void BluetoothErrorEvent(string errorString);
     public BluetoothErrorEvent onBluetoothError;
@@ -139,10 +188,51 @@ public class Central : SingletonMonoBehaviour<Central>
         return true;
     }
 
+    public void ClearScanList()
+    {
+        var diceCopy = new List<Die>(_dice.Values);
+        foreach (var die in diceCopy)
+        {
+            if (die.state == Die.State.Advertising)
+            {
+                _dice.Remove(die.address);
+            }
+        }
+    }
+
+    public void ConnectDie(
+        IDie die,
+        System.Action<IDie, bool, string> connectionResultCallback,
+        System.Action<IDie, byte[]> onDataCallback,
+        System.Action<IDie, string> onUnexpectedDisconnectionCallback)
+    {
+        operations.Enqueue(new OperationConnect() { die = die, connectionResultCallback = connectionResultCallback, onDataCallback = onDataCallback, onUnexpectedDisconnectionCallback = onUnexpectedDisconnectionCallback });
+        TryPerformOneOperation();
+    }
+
+    public void DisconnectDie(IDie die, System.Action<IDie, bool, string> onDisconnectionResult)
+    {
+        operations.Enqueue(new OperationDisconnect() { die = die, onDisconnectionResult = onDisconnectionResult });
+        TryPerformOneOperation();
+    }
+
+    /// <summary>
+    /// Writes data to a connected die
+    /// </summary>
+    /// <param name="die">The die to write to</param>
+    /// <param name="bytes">The data to write</param>
+    /// <param name="length">The length of the data (can be less than the buffer length)</param>
+    /// <param name="bytesWrittenCallback">Callback for when the data is written</param>
+    public void WriteDie(IDie die, byte[] bytes, int length, System.Action<IDie, bool, string> bytesWrittenCallback)
+    {
+        operations.Enqueue(new OperationWriteDie() { die = die, bytes = bytes, length = length, bytesWrittenCallback = bytesWrittenCallback });
+        TryPerformOneOperation();
+    }
+
     /// <summary>
     /// Connect to a die
     /// </summary>
-    public void ConnectDie(
+    void DoConnectDie(
         IDie die,
         System.Action<IDie, bool, string> connectionResultCallback,
         System.Action<IDie, byte[]> onDataCallback,
@@ -167,6 +257,8 @@ public class Central : SingletonMonoBehaviour<Central>
 
             Debug.Log("Connecting to die " + ddie.name);
 
+            _state = State.Connecting;
+
             // And kick off the connection!
             BluetoothLEHardwareInterface.ConnectToPeripheral(die.address, OnDeviceConnected, OnServiceDiscovered, OnCharacteristicDiscovered, OnDeviceDisconnected);
         }
@@ -179,9 +271,7 @@ public class Central : SingletonMonoBehaviour<Central>
     /// <summary>
     /// Disconnect from a given die
     /// </summary>
-    public void DisconnectDie(
-        IDie die,
-        System.Action<IDie, bool, string> onDisconnectionResult)
+    void DoDisconnectDie(IDie die, System.Action<IDie, bool, string> onDisconnectionResult)
     {
         if (_dice.TryGetValue(die.address, out Die ddie))
         {
@@ -191,6 +281,8 @@ public class Central : SingletonMonoBehaviour<Central>
                 Debug.LogError("Die " + die.name + " in invalid state " + ddie.state);
                 return;
             }
+
+            _state = State.Disconnecting;
 
             // And kick off the disconnection!
             ddie.state = Die.State.Disconnecting;
@@ -203,14 +295,7 @@ public class Central : SingletonMonoBehaviour<Central>
         }
     }
 
-    /// <summary>
-    /// Writes data to a connected die
-    /// </summary>
-    /// <param name="die">The die to write to</param>
-    /// <param name="bytes">The data to write</param>
-    /// <param name="length">The length of the data (can be less than the buffer length)</param>
-    /// <param name="bytesWrittenCallback">Callback for when the data is written</param>
-    public void WriteDie(IDie die, byte[] bytes, int length)
+    void DoWriteDie(IDie die, byte[] bytes, int length, System.Action<IDie, bool, string> bytesWrittenCallback)
     {
         if (_dice.TryGetValue(die.address, out Die ddie))
         {
@@ -222,12 +307,14 @@ public class Central : SingletonMonoBehaviour<Central>
 
             // Write the data!
             BluetoothLEHardwareInterface.WriteCharacteristic(die.address, serviceGUID, writeCharacteristic, bytes, length, false, null);
+            bytesWrittenCallback?.Invoke(die, true, null);
         }
         else
         {
             Debug.LogError("Unknown die " + die.name + " received data!");
         }
     }
+
 
     // Start is called before the first frame update
     void Awake()
@@ -265,6 +352,20 @@ public class Central : SingletonMonoBehaviour<Central>
                 CheckSubscriptionState(die);
             }
         }
+
+        while (TryPerformOneOperation())
+            ;
+    }
+
+    bool TryPerformOneOperation()
+    {
+        bool res = state == State.Idle && operations.Count > 0;
+        if (res)
+        {
+            var op = operations.Dequeue();
+            op.Process(this);
+        }
+        return res;
     }
 
     void OnBluetoothInitComplete()
@@ -282,6 +383,8 @@ public class Central : SingletonMonoBehaviour<Central>
             switch (die.state)
             {
                 case Die.State.Disconnecting:
+                    Debug.Assert(_state == State.Disconnecting);
+                    _state = State.Idle;
                     // We got an error while this die was disconnecting,
                     // Just indicate it
                     die.onDisconnectionResult?.Invoke(die, false, error);
@@ -294,6 +397,8 @@ public class Central : SingletonMonoBehaviour<Central>
                     // Ignore this die
                     break;
                 case Die.State.Connecting:
+                    Debug.Assert(_state == State.Connecting);
+                    _state = State.Idle;
                     die.onConnectionResult?.Invoke(die, false, error);
                     die.onConnectionResult = null;
                     die.onUnexpectedDisconnection = null;
@@ -311,6 +416,8 @@ public class Central : SingletonMonoBehaviour<Central>
                     break;
                 case Die.State.Subscribing:
                     {
+                        Debug.Assert(_state == State.Connecting);
+                        _state = State.Idle;
                         Debug.LogError("Characteristic Error: " + die.name + ": " + error);
                         die.onConnectionResult?.Invoke(die, false, error);
                         die.onConnectionResult = null;
@@ -436,6 +543,8 @@ public class Central : SingletonMonoBehaviour<Central>
             switch (die.state)
             {
                 case Die.State.Disconnecting:
+                    Debug.Assert(_state == State.Disconnecting, "Wrong state " + _state.ToString());
+                    _state = State.Idle;
                     // This is perfectly okay
                     die.onDisconnectionResult?.Invoke(die,true, null);
                     die.onDisconnectionResult = null;
@@ -453,6 +562,8 @@ public class Central : SingletonMonoBehaviour<Central>
                 case Die.State.Connecting:
                 case Die.State.Connected:
                     {
+                        Debug.Assert(_state == State.Connecting);
+                        _state = State.Idle;
                         string errorString = "Disconnected before subscribing (state = " + die.state + ")";
                         die.onConnectionResult?.Invoke(die, false, errorString);
                         _dice.Remove(address);
@@ -461,6 +572,8 @@ public class Central : SingletonMonoBehaviour<Central>
                     break;
                 case Die.State.Subscribing:
                     {
+                        Debug.Assert(_state == State.Connecting);
+                        _state = State.Idle;
                         string errorString = "Disconnected while subscribing";
                         die.onConnectionResult?.Invoke(die, false, errorString);
                         _dice.Remove(address);
@@ -540,6 +653,8 @@ public class Central : SingletonMonoBehaviour<Central>
             // Check timeout!
             if (Time.time - die.startTime > DiscoverCharacteristicsTimeout)
             {
+                Debug.Assert(_state == State.Connecting);
+                _state = State.Idle;
                 // Wrong characteristics, we can't talk to this die!
                 string errorString = "Timeout looking for characteristics on Die";
                 die.onConnectionResult?.Invoke(die, false, errorString);
@@ -583,6 +698,8 @@ public class Central : SingletonMonoBehaviour<Central>
         Die sub = _dice.Values.FirstOrDefault(d => d.state == Die.State.Subscribing);
         if (sub != null)
         {
+            Debug.Assert(_state == State.Connecting);
+            _state = State.Idle;
             sub.state = Die.State.Ready;
             sub.onConnectionResult?.Invoke(sub, true, null);
             sub.onConnectionResult = null;
@@ -603,6 +720,8 @@ public class Central : SingletonMonoBehaviour<Central>
     {
         if (Time.time - die.startTime > SubscribeCharacteristicsTimeout)
         {
+            Debug.Assert(_state == State.Connecting);
+            _state = State.Idle;
             string errorString = "Timeout trying to subscribe to die";
             Debug.LogError("Characteristic Error: " + die.name + ": " + errorString);
             die.onConnectionResult?.Invoke(die, false, errorString);

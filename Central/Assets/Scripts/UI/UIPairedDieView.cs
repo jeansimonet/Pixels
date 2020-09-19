@@ -80,7 +80,7 @@ public class UIPairedDieView : MonoBehaviour
         }
     }
 
-    void UpdateState()
+    public void UpdateState()
     {
         dieNameText.text = die.name;
         if (die.deviceId != 0)
@@ -137,7 +137,7 @@ public class UIPairedDieView : MonoBehaviour
                         batteryView.gameObject.SetActive(false);
                         signalView.gameObject.SetActive(false);
                         statusText.text = "Connection Error";
-                        disconnectedTextRoot.gameObject.SetActive(true);
+                        disconnectedTextRoot.gameObject.SetActive(false);
                         errorTextRoot.gameObject.SetActive(true);
                         break;
                     case Die.LastError.Disconnected:
@@ -147,7 +147,7 @@ public class UIPairedDieView : MonoBehaviour
                         signalView.gameObject.SetActive(false);
                         statusText.text = "Disconnected";
                         disconnectedTextRoot.gameObject.SetActive(true);
-                        errorTextRoot.gameObject.SetActive(true);
+                        errorTextRoot.gameObject.SetActive(false);
                         break;
                 }
                 break;

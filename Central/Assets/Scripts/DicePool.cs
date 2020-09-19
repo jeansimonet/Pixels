@@ -82,6 +82,19 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
     }
 
+    public void ClearScanList()
+    {
+        var diceCopy = new List<PoolDie>(dice);
+        foreach (var die in diceCopy)
+        {
+            if (die.die != null && die.die.connectionState == Die.ConnectionState.Available)
+            {
+                DestroyDie(die);
+            }
+        }
+        Central.Instance.ClearScanList();
+    }
+
     public void ConnectDie(Die die, System.Action<Die, bool, string> onConnectionResult)
     {
         var poolDie = dice.FirstOrDefault(d => d.die == die);
@@ -144,6 +157,47 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             Debug.LogError("Pool atempting to disconnect to unknown die " + die.name);
         }
+    }
+
+    /// <summary>
+    /// Removes a die from the pool, as if we never new it.
+    /// Note: We may very well 'discover' it again the next time we scan.
+    /// </sumary>
+    public void ForgetDie(Die die)
+    {
+        var poolDie = dice.FirstOrDefault(d => d.die == die);
+        if (poolDie != null)
+        {
+            switch (poolDie.die.connectionState)
+            {
+                default:
+                    break;
+                case Die.ConnectionState.Ready:
+                case Die.ConnectionState.Connecting:
+                case Die.ConnectionState.Identifying:
+                    // Disconnect!
+                    DoDisconnectDie(die);
+                    break;
+            }
+
+            DestroyDie(poolDie);
+        }
+        else
+        {
+            Debug.LogError("Pool atempting to forget unknown die " + die.name);
+        }
+    }
+
+    /// <summary>
+    /// Write some data to the die
+    /// </sumary>
+    public void WriteDie(Die die, byte[] bytes, int length, System.Action<Die, bool, string> onWriteResult)
+    {
+        var dt = dice.First(p => p.die == die);
+        Central.Instance.WriteDie(dt.centralDie, bytes, length, (d, res, errorMsg) =>
+        {
+            onWriteResult?.Invoke(die, res, errorMsg);
+        });
     }
 
     void Update()
@@ -219,44 +273,6 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             Debug.LogError("Die " + die.name + " not in ready state, instead: " + die.connectionState);
         }
-    }
-
-    /// <summary>
-    /// Removes a die from the pool, as if we never new it.
-    /// Note: We may very well 'discover' it again the next time we scan.
-    /// </sumary>
-    public void ForgetDie(Die die)
-    {
-        var poolDie = dice.FirstOrDefault(d => d.die == die);
-        if (poolDie != null)
-        {
-            switch (poolDie.die.connectionState)
-            {
-                default:
-                    break;
-                case Die.ConnectionState.Ready:
-                case Die.ConnectionState.Connecting:
-                case Die.ConnectionState.Identifying:
-                    // Disconnect!
-                    DoDisconnectDie(die);
-                    break;
-            }
-
-            DestroyDie(poolDie);
-        }
-        else
-        {
-            Debug.LogError("Pool atempting to forget unknown die " + die.name);
-        }
-    }
-
-    /// <summary>
-    /// Write some data to the die
-    /// </sumary>
-    public void WriteDie(Die die, byte[] bytes, int length)
-    {
-        var dt = dice.First(p => p.die == die);
-        Central.Instance.WriteDie(dt.centralDie, bytes, length);
     }
 
     void Awake()

@@ -74,8 +74,8 @@ public class UIDiscoveredDieView : MonoBehaviour
 
     void OnDestroy()
     {
-        die.OnBatteryLevelChanged += OnBatteryLevelChanged;
-        die.OnRssiChanged += OnRssiChanged;
+        die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
+        die.OnRssiChanged -= OnRssiChanged;
         if (this.dieRenderer != null)
         {
             DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);

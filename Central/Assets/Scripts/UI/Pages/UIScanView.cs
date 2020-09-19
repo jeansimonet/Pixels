@@ -161,8 +161,9 @@ public class UIScanView
 
     void ClearList()
     {
-        // DicePool.Instance.StopScanForDice();
-        // RefreshView();
-        // DicePool.Instance.BeginScanForDice();
+        DicePool.Instance.StopScanForDice(OnDieDiscovered);
+        DicePool.Instance.ClearScanList();
+        RefreshView();
+        DicePool.Instance.BeginScanForDice(OnDieDiscovered);
     }
 }
