@@ -275,7 +275,8 @@ struct MessageProgramDefaultAnimSet
 struct MessageFlash
 	: public Message
 {
-	uint8_t animIndex;
+	uint8_t flashCount;
+	uint32_t color;
 
 	inline MessageFlash() : Message(Message::MessageType_Flash) {}
 };

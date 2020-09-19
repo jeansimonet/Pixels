@@ -1,5 +1,6 @@
 #include "animation_preview.h"
 #include "animations/animation.h"
+#include "animations/animation_simple.h"
 #include "data_set/data_animation_bits.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
@@ -18,6 +19,7 @@ namespace Modules
 namespace AnimationPreview
 {
     void ReceiveTestAnimSet(void* context, const Message* msg);
+    void FlashDie(void* context, const Message* msg);
 
     AnimationBits animationBits;
     const Animation* animation;
@@ -27,6 +29,7 @@ namespace AnimationPreview
     void init()
     {
         MessageService::RegisterMessageHandler(Message::MessageType_TransferTestAnimSet, nullptr, ReceiveTestAnimSet);
+        MessageService::RegisterMessageHandler(Message::MessageType_Flash, nullptr, FlashDie);
         animationData = nullptr;
         animation = nullptr;
         animationDataHash = 0;
@@ -138,6 +141,24 @@ namespace AnimationPreview
             // Play the ANIMATION NOW!!!
             AnimController::play(animation, &animationBits, (uint8_t)Accelerometer::currentFace(), false);
        }
-   } 
+   }
+
+    AnimationSimple flashAnim;
+    void FlashDie(void* context, const Message* msg)
+    {
+		NRF_LOG_INFO("Received Request to flash the die");
+		const MessageFlash* message = (const MessageFlash*)msg;
+
+        // Create a small anim on the spot
+        animationBits.Clear();
+        flashAnim.type = Animation_Simple;
+        flashAnim.duration = 1000;
+		flashAnim.faceMask = 0xFFFFF;
+        flashAnim.count = message->flashCount;
+        flashAnim.fade = 255;
+        flashAnim.color = message->color;
+        AnimController::play(&flashAnim, 0, false);
+        MessageService::SendMessage(Message::MessageType_FlashFinished);
+    }
 }
 }

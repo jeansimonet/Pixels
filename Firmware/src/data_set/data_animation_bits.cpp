@@ -66,4 +66,17 @@ namespace DataSet
 		return trackCount;
 	}
 
+	void AnimationBits::Clear() {
+        palette = nullptr;
+        paletteSize = 0;
+        rgbKeyframes = nullptr;
+        rgbKeyFrameCount = 0;
+        rgbTracks = nullptr;
+        rgbTrackCount = 0;
+        keyframes = nullptr;
+        keyFrameCount = 0;
+        tracks = nullptr;
+        trackCount = 0;
+	}
+
 }
