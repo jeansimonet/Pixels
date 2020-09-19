@@ -28,6 +28,10 @@ public class IndexAttribute
 {
 }
 
+public class FaceIndexAttribute
+    : System.Attribute
+{
+}
 
 public class UIParameterIndex
     : UIParameter
@@ -38,7 +42,7 @@ public class UIParameterIndex
 
     public override bool CanEdit(System.Type parameterType, IEnumerable<object> attributes = null)
     {
-        return parameterType == typeof(int) && attributes.Any(a => a.GetType() == typeof(IndexAttribute));
+        return parameterType == typeof(int) && attributes.Any(a => a.GetType() == typeof(IndexAttribute) || a.GetType() == typeof(FaceIndexAttribute));
     }
 
     protected override void SetupControls(string name, System.Func<object> getterFunc, System.Action<object> setterAction, IEnumerable<object> attributes = null)
@@ -55,9 +59,14 @@ public class UIParameterIndex
             max = rangeAttribute.max;
         }
         string[] values = new string[max - min + 1];
+        int offset = 0;
+        if (attributes.FirstOrDefault(att => att.GetType() == typeof(FaceIndexAttribute)) != null)
+        {
+            offset = 1;
+        }
         for (int i = min; i <= max; ++i)
         {
-            values[i - min] = i.ToString();
+            values[i - min] = (i + offset).ToString();
         }
         wheel.Init(values);
         wheel.Select(initialValue - min);

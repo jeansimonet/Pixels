@@ -38,6 +38,7 @@ namespace Modules
 			RollState_Handling,
 			RollState_Rolling,
 			RollState_Crooked,
+			RollState_Count
 		};
 
 		int determineFace(Core::float3 acc, float* outConfidence = nullptr);

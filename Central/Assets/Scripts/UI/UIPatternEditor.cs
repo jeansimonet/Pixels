@@ -37,7 +37,7 @@ public class UIPatternEditor : MonoBehaviour
     {
         if (isShown)
         {
-            Debug.LogWarning("Previous Color picker still active");
+            Debug.LogWarning("Previous RGB Pattern picker still active");
             ForceHide();
         }
 
@@ -147,11 +147,8 @@ public class UIPatternEditor : MonoBehaviour
     {
 		Object.Destroy(_texture);
 
-        var anim = new EditAnimationGradientPattern();
+        var anim = new EditAnimationKeyframed();
         anim.name = "temp anim";
-        anim.gradient = new EditRGBGradient();
-        anim.gradient.keyframes.Add(new EditRGBKeyframe() { time = 0.0f, color = Color.white });
-        anim.gradient.keyframes.Add(new EditRGBKeyframe() { time = 1.0f, color = Color.white });
         anim.pattern = currentPattern;
         anim.duration = currentPattern.duration;
 

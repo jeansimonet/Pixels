@@ -3,6 +3,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 //#include "SEGGER_RTT.h"
 
 namespace DriversNRF
@@ -15,6 +16,7 @@ namespace Log
 
         NRF_LOG_DEFAULT_BACKENDS_INIT();
 
+        NRF_LOG_INFO("---------------");
         NRF_LOG_INFO("Log initialized");
 
         #if DICE_SELFTEST && LOG_SELFTEST

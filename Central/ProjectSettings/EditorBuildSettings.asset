@@ -7,5 +7,5 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Pixels.unity
-    guid: 61435c47209f19542973324961d1f90d
+    guid: b1d5fd6e7f9ba9a40aa6d6715e9c32ae
   m_configObjects: {}

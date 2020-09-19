@@ -8,17 +8,20 @@
 #include "config/dice_variants.h"
 #include "app_timer.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 #include "config/settings.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_stack.h"
 #include "drivers_hw/apa102.h"
-
+#include "drivers_nrf/power_manager.h"
+#include "drivers_nrf/gpiote.h"
 
 using namespace Modules;
 using namespace Core;
 using namespace DriversHW;
+using namespace DriversNRF;
 using namespace Config;
 using namespace Bluetooth;
 
@@ -55,6 +58,7 @@ namespace Accelerometer
     void CalibrateHandler(void* context, const Message* msg);
 	void CalibrateFaceHandler(void* context, const Message* msg);
 	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
+	void onPowerEvent(void* context, nrf_pwr_mgmt_evt_t event);
 
 	void update(void* context);
 
@@ -76,6 +80,9 @@ namespace Accelerometer
 		newFrame.sigma = 0.0f;
 		newFrame.smoothAcc = newFrame.acc;
 		buffer.push(newFrame);
+
+		// Attach to the power manager, so we can wake the device up
+		PowerManager::hook(onPowerEvent, nullptr);
 
 		// Create the accelerometer timer
 		ret_code_t ret_code = app_timer_create(&accelControllerTimer, APP_TIMER_MODE_REPEATED, update);
@@ -137,7 +144,7 @@ namespace Accelerometer
                 }
                 break;
             case RollState_Handling:
-				// Did we move ennough?
+				// Did we move enough?
 				{
 					bool rotatedEnough = float3::dot(newFrame.acc.normalized(), handleStateNormal) < 0.5f;
 					if (shock || zeroG || rotatedEnough) {
@@ -181,7 +188,8 @@ namespace Accelerometer
                 break;
         }
 
-		if (newFrame.face != face || newRollState != rollState) {
+		//if (newFrame.face != face || newRollState != rollState) {
+		if (newRollState != rollState) {
 
 			// Debugging
 			//BLE_LOG_INFO("Face Normal: %d, %d, %d", (int)(newFrame.acc.x * 100), (int)(newFrame.acc.y * 100), (int)(newFrame.acc.z * 100));
@@ -194,7 +202,7 @@ namespace Accelerometer
 			}
 
 			if (newRollState != rollState) {
-				//NRF_LOG_INFO("State: %s", getRollStateString(newRollState));
+				NRF_LOG_INFO("State: %s", getRollStateString(newRollState));
 				rollState = newRollState;
 			}
 
@@ -540,6 +548,29 @@ namespace Accelerometer
 			stop();
 		} else {
 			start();
+		}
+	}
+
+	bool interruptTriggered = false;
+	void accInterruptHandler(uint32_t pin, nrf_gpiote_polarity_t action) {
+		// Aknowledge the interrupt
+		LIS2DE12::clearTransientInterrupt();
+		LIS2DE12::disableTransientInterrupt();
+	}
+
+	void onPowerEvent(void* context, nrf_pwr_mgmt_evt_t event) {
+		if (event == NRF_PWR_MGMT_EVT_PREPARE_WAKEUP) {
+			// Setup interrupt to wake the device up
+			NRF_LOG_INFO("Setting accelerometer to trigger interrupt");
+
+			// Set interrupt pin
+			GPIOTE::enableInterrupt(
+				BoardManager::getBoard()->accInterruptPin,
+				NRF_GPIO_PIN_NOPULL,
+				NRF_GPIOTE_POLARITY_LOTOHI,
+				accInterruptHandler);
+
+			LIS2DE12::enableTransientInterrupt();
 		}
 	}
 

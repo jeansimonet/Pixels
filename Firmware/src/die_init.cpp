@@ -2,6 +2,7 @@
 
 #include "app_timer.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/timers.h"
@@ -89,18 +90,21 @@ namespace Die
         // Then the timers
         Timers::init();
 
+        // Power manager handles going to sleep and resetting the board
+        //PowerManager::init();
+
         // GPIO Interrupts
         GPIOTE::init();
 
-        // Power manager handles going to sleep and resetting the board
-        //PowerManager::init();
-        
         // Analog to digital converter next, so we can
         // identify the board we're dealing with
         A2D::init();
         
         // Enable bluetooth
         Stack::init();
+
+        // // Watchdog may setup a timer to verify app stability
+        // Watchdog::initClearResetFlagTimer();
 
         // Add generic data service
         MessageService::init();
@@ -130,6 +134,9 @@ namespace Die
 
         // The we read user settings from flash, or set some defaults if none are found
         SettingsManager::init([] (bool result) {
+
+            // The advertising name depends on settings
+            Stack::initAdvertisingName();
 
             // Now that the settings are set, update custom advertising data
             Stack::initCustomAdvertisingData();
@@ -188,9 +195,11 @@ namespace Die
 
             #if defined(DEBUG_FIRMWARE)
                 initDebugLogic();
+                NRF_LOG_INFO("---------------");
             #else
                 // Initialize main logic manager
                 initMainLogic();
+                NRF_LOG_INFO("---------------");
 
                 // Entering the main loop! Play Hello! anim
                 BehaviorController::onDiceInitialized();

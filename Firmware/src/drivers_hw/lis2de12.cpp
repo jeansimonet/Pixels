@@ -112,7 +112,7 @@ namespace LIS2DE12
 
 		uint8_t c = readRegister(WHO_AM_I);  // Read WHO_AM_I register
 
-		if (c != 0x33) // WHO_AM_I should always be 0x2A
+		if (c != 0x33) // WHO_AM_I should always be 0x33 on LIS2DE12
 		{
 			NRF_LOG_ERROR("Bad WHOAMI");
 			return;

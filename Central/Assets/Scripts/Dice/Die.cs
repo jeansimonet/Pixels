@@ -11,6 +11,7 @@ namespace Dice
     public enum DesignAndColor : byte
     {
         Unknown = 0,
+        Generic,
         V3_Orange,
         V4_BlackClear,
         V4_WhiteClear,
@@ -166,6 +167,7 @@ namespace Dice
             messageDelegates.Add(DieMessageType.Telemetry, OnTelemetryMessage);
             messageDelegates.Add(DieMessageType.DebugLog, OnDebugLogMessage);
             messageDelegates.Add(DieMessageType.NotifyUser, OnNotifyUserMessage);
+            messageDelegates.Add(DieMessageType.PlaySound, OnPlayAudioClip);
         }
 
         public void Setup(

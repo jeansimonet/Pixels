@@ -10,13 +10,15 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     {
         public class Page
         {
-            public PixelsApp.Page page;
+            public UIPage page;
             public object context;
         }
 
-        public delegate void PageEnterEvent(PixelsApp.Page page, object context);
+        public System.Action<UIPage, object, System.Action> checkCanGoToPage;
+
+        public delegate void PageEnterEvent(UIPage page, object context);
         public PageEnterEvent onPageEntered;
-        public delegate void PageLeavingEvent(PixelsApp.Page page);
+        public delegate void PageLeavingEvent(UIPage page);
         public PageLeavingEvent onLeavingPage;
 
         public Page currentRoot => pages.FirstOrDefault();
@@ -24,29 +26,53 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 
         List<Page> pages = new List<Page>();
 
-        public void GoToRoot(PixelsApp.Page newRootPage)
+        public void GoToRoot(UIPage newRootPage)
         {
-            if (pages.Count > 0)
+            void goToNewRoot()
             {
-                LeavePage(pages[pages.Count - 1]);
-                pages.Clear();
+                if (pages.Count > 0)
+                {
+                    LeavePage(pages[pages.Count - 1]);
+                    pages.Clear();
+                }
+                // Else no page to leave obviously
+                var p = new Page() { page = newRootPage, context = null };
+                pages.Add(p);
+                EnterPage(p);
             }
-            // Else no page to leave obviously
-            var p = new Page() { page = newRootPage, context = null };
-            pages.Add(p);
-            EnterPage(p);
+
+            if (checkCanGoToPage != null)
+            {
+                checkCanGoToPage(newRootPage, null, goToNewRoot);
+            }
+            else
+            {
+                goToNewRoot();
+            }
         }
 
-        public void GoTo(PixelsApp.Page newPage, object context)
+        public void GoTo(UIPage newPage, object context)
         {
-            if (pages.Count > 0)
+            void goToNewPage()
             {
-                LeavePage(pages[pages.Count - 1]);
+                if (pages.Count > 0)
+                {
+                    LeavePage(pages[pages.Count - 1]);
+                }
+                // Else no page to leave obviously
+                var p = new Page() { page = newPage, context = context };
+                pages.Add(p);
+                EnterPage(p);
             }
-            // Else no page to leave obviously
-            var p = new Page() { page = newPage, context = context };
-            pages.Add(p);
-            EnterPage(p);
+
+            if (checkCanGoToPage != null)
+            {
+                checkCanGoToPage(newPage, context, goToNewPage);
+            }
+            else
+            {
+                goToNewPage();
+            }
         }
 
         public bool GoBack()
@@ -75,20 +101,37 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
         }
     }
 
+    public UIPageHeader header;
+
     [System.Serializable]
     public class PageAndToggle
     {
-        public PixelsApp.Page page;
+        public UIPage page;
         public MainNavigationButton button;
-        public PixelsApp.PageId pageId;
+        public UIPage.PageId pageId;
     }
     public PageAndToggle[] pages;
+
+    public delegate void PageEnterEvent(UIPage page, object context);
+    public PageEnterEvent onPageEntered;
+    public delegate void PageLeavingEvent(UIPage page);
+    public PageLeavingEvent onLeavingPage;
+
+    public System.Action<UIPage, object, System.Action> checkCanGoToPage
+    {
+        get { return history.checkCanGoToPage; }
+        set { history.checkCanGoToPage = value; }
+    }
 
     PageHistory history;
 
     // Start is called before the first frame update
     void Awake()
     {
+        header.onBackClicked.AddListener(OnBack);
+        header.onMenuClicked.AddListener(OnMenu);
+        header.onSaveClicked.AddListener(OnSave);
+
         foreach (var pat in pages)
         {
             pat.page.gameObject.SetActive(false);
@@ -101,7 +144,8 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
 
         // Start the page navigation history
         history = new PageHistory();
-        history.onPageEntered += onPageEntered;
+        history.onPageEntered += onHistoryPageEntered;
+        history.onLeavingPage += onHistoryLeavingPage;
 
         // Go to the home page
         history.GoToRoot(pages[0].page);
@@ -110,7 +154,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page
     /// </sumary>
-    public void GoToPage(PixelsApp.PageId pageId, object context)
+    public void GoToPage(UIPage.PageId pageId, object context)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
         if (newPage != null && history.currentPage.page != newPage.page)
@@ -120,7 +164,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
         // Else we're already there
     }
 
-    public void GoToRoot(PixelsApp.PageId pageId)
+    public void GoToRoot(UIPage.PageId pageId)
     {
         var newPage = pages.FirstOrDefault(pat => pat.pageId == pageId);
         if (newPage != null && history.currentPage.page != newPage.page)
@@ -133,7 +177,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Go to a new page as root (clearing history)
     /// </sumary>
-    public void GoToRoot(PixelsApp.Page newRoot)
+    public void GoToRoot(UIPage newRoot)
     {
         if (history.currentPage.page != newRoot)
         {
@@ -153,7 +197,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
     /// <summary>
     /// Called when the user clicks on of the root toggles
     /// </sumary>
-    void onPageEntered(PixelsApp.Page newPage, object context)
+    void onHistoryPageEntered(UIPage newPage, object context)
     {
         // Update the buttons to reflect whether the page is one of the roots
         foreach (var p in pages)
@@ -163,5 +207,25 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
                 p.button.SetCurrent(p.page == newPage);
             }
         }
+        onPageEntered?.Invoke(newPage, context);
     }
+
+    void onHistoryLeavingPage(UIPage page)
+    {
+        onLeavingPage?.Invoke(page);
+    }
+
+    void OnBack()
+    {
+        history.currentPage.page.OnBack();
+    }
+    void OnMenu()
+    {
+
+    }
+    void OnSave()
+    {
+        history.currentPage.page.OnSave();
+    }
+
 }

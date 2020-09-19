@@ -82,6 +82,19 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
     }
 
+    public void ClearScanList()
+    {
+        var diceCopy = new List<PoolDie>(dice);
+        foreach (var die in diceCopy)
+        {
+            if (die.die != null && die.die.connectionState == Die.ConnectionState.Available)
+            {
+                DestroyDie(die);
+            }
+        }
+        Central.Instance.ClearScanList();
+    }
+
     public void ConnectDie(Die die, System.Action<Die, bool, string> onConnectionResult)
     {
         var poolDie = dice.FirstOrDefault(d => d.die == die);
@@ -133,9 +146,8 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
                     poolDie.currentConnectionCount--;
                     if (poolDie.currentConnectionCount == 0)
                     {
-                        // Disconnect!
                         poolDie.onDisconnectionResult += onDisconnectionResult;
-                        DoDisconnectDie(die);
+                        poolDie.lastRequestDisconnectTime = Time.time;
                     }
                     break;
             }
@@ -147,42 +159,72 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
     }
 
+    /// <summary>
+    /// Removes a die from the pool, as if we never new it.
+    /// Note: We may very well 'discover' it again the next time we scan.
+    /// </sumary>
+    public void ForgetDie(Die die)
+    {
+        var poolDie = dice.FirstOrDefault(d => d.die == die);
+        if (poolDie != null)
+        {
+            switch (poolDie.die.connectionState)
+            {
+                default:
+                    break;
+                case Die.ConnectionState.Ready:
+                case Die.ConnectionState.Connecting:
+                case Die.ConnectionState.Identifying:
+                    // Disconnect!
+                    DoDisconnectDie(die);
+                    break;
+            }
+
+            DestroyDie(poolDie);
+        }
+        else
+        {
+            Debug.LogError("Pool atempting to forget unknown die " + die.name);
+        }
+    }
+
+    /// <summary>
+    /// Write some data to the die
+    /// </sumary>
+    public void WriteDie(Die die, byte[] bytes, int length, System.Action<Die, bool, string> onWriteResult)
+    {
+        var dt = dice.First(p => p.die == die);
+        Central.Instance.WriteDie(dt.centralDie, bytes, length, (d, res, errorMsg) =>
+        {
+            onWriteResult?.Invoke(die, res, errorMsg);
+        });
+    }
+
     void Update()
     {
-        // var connectedDiceCopy = new List<ConnectedDie>(connectedDice);
-        // foreach (var cd in connectedDiceCopy)
-        // {
-        //     if (cd.count == 1)
-        //     {
-        //         if (cd.wantForget)
-        //         {
-        //             // This die is waiting to be forgotten
-        //             Debug.Log("Forgetting " + cd.die.name);
-
-        //             // Really disconnect
-        //             cd.count = 0;
-        //             connectedDice.Remove(cd);
-        //             var dt = dice.First(d => d.die == cd.die);
-        //             DestroyDie(dt);
-        //         }
-        //         else
-        //         {
-        //             // This die is waiting to be disconnected
-        //             if (Time.time > (cd.lastRequestDisconnectTime + AppConstants.Instance.DicePoolDisconnectDelay))
-        //             {
-        //                 Debug.Log(cd.die.name + ": Update: 1 -> 0");
-
-        //                 // Really disconnect
-        //                 if (cd.die.connectionState == Die.ConnectionState.Ready)
-        //                 {
-        //                     DoDisconnectDie(cd.die, null);
-        //                 }
-        //                 cd.count = 0;
-        //                 connectedDice.Remove(cd);
-        //             }
-        //         }
-        //     }
-        // }
+        foreach (var poolDie in dice)
+        {
+            if (poolDie.die != null)
+            {
+                switch (poolDie.die.connectionState)
+                {
+                    case Die.ConnectionState.Ready:
+                        if (poolDie.currentConnectionCount == 0)
+                        {
+                            // Die is waiting to disconnect
+                            if (Time.time - poolDie.lastRequestDisconnectTime > AppConstants.Instance.DicePoolDisconnectDelay)
+                            {
+                                // Go ahead and disconnect
+                                DoDisconnectDie(poolDie.die);
+                            }
+                        }
+                        break;
+                    default:
+                        // Do nothing
+                        break;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -231,44 +273,6 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             Debug.LogError("Die " + die.name + " not in ready state, instead: " + die.connectionState);
         }
-    }
-
-    /// <summary>
-    /// Removes a die from the pool, as if we never new it.
-    /// Note: We may very well 'discover' it again the next time we scan.
-    /// </sumary>
-    public void ForgetDie(Die die)
-    {
-        var poolDie = dice.FirstOrDefault(d => d.die == die);
-        if (poolDie != null)
-        {
-            switch (poolDie.die.connectionState)
-            {
-                default:
-                    break;
-                case Die.ConnectionState.Ready:
-                case Die.ConnectionState.Connecting:
-                case Die.ConnectionState.Identifying:
-                    // Disconnect!
-                    DoDisconnectDie(die);
-                    break;
-            }
-
-            DestroyDie(poolDie);
-        }
-        else
-        {
-            Debug.LogError("Pool atempting to forget unknown die " + die.name);
-        }
-    }
-
-    /// <summary>
-    /// Write some data to the die
-    /// </sumary>
-    public void WriteDie(Die die, byte[] bytes, int length)
-    {
-        var dt = dice.First(p => p.die == die);
-        Central.Instance.WriteDie(dt.centralDie, bytes, length);
     }
 
     void Awake()

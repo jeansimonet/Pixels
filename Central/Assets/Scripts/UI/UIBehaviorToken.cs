@@ -48,8 +48,6 @@ public class UIBehaviorToken : MonoBehaviour
         {
             behaviorRenderImage.texture = dieRenderer.renderTexture;
         }
-        behaviorNameText.text = bh.name;
-        behaviorDescriptionText.text = bh.description;
 
         dieRenderer.SetAuto(true);
         dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());

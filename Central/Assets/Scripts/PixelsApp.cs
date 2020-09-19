@@ -13,36 +13,25 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIFacePicker facePicker;
     public UIGradientEditor gradientEditor;
     public UIEnumPicker enumPicker;
-    public UIPatternEditor patternEditor;
     public UIProgrammingBox programmingBox;
+    public UIPatternEditor patternEditor;
     public UIPatternPicker patternPicker;
+    public UIAudioClipPicker audioClipPicker;
 
-    public enum PageId
+    public delegate void OnPresetDownloadEvent(Presets.EditPreset activePreset);
+    public OnPresetDownloadEvent onPresetDownloadEvent;
+
+    [Header("Controls")]
+    public UIMainMenu mainMenu;
+
+    public void ShowMainMenu()
     {
-        Home,
-        DicePool,
-        DicePoolScanning,
-        Patterns,
-        Pattern,
-        Presets,
-        Preset,
-        Behaviors,
-        Behavior,
-        Rule,
-        LiveView
+        mainMenu.Show();
     }
 
-    public class Page
-        : MonoBehaviour
+    public void HideMainMenu()
     {
-        public virtual void Enter(object context)
-        {
-            gameObject.SetActive(true);
-        }
-        public virtual void Leave()
-        {
-            gameObject.SetActive(false);
-        }
+        mainMenu.Hide();
     }
 
     public bool ShowDialogBox(string title, string message, string okMessage, string cancelMessage, System.Action<bool> closeAction)
@@ -115,12 +104,12 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
-    public bool ShowEnumPicker(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, int min, int max)
+    public bool ShowEnumPicker(string title, System.Enum previousValue, System.Action<bool, System.Enum> closeAction, List<System.Enum> validValues)
     {
         bool ret = !enumPicker.isShown;
         if (ret)
         {
-            enumPicker.Show(title, previousValue, closeAction, min, max);
+            enumPicker.Show(title, previousValue, closeAction, validValues);
         }
         return ret;
     }
@@ -141,6 +130,16 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         if (ret)
         {
             patternPicker.Show(title, previousPattern, closeAction);
+        }
+        return ret;
+    }
+
+    public bool ShowAudioClipPicker(string title, AudioClipManager.AudioClipInfo previousClip, System.Action<bool, AudioClipManager.AudioClipInfo> closeAction)
+    {
+        bool ret = !audioClipPicker.isShown;
+        if (ret)
+        {
+            audioClipPicker.Show(title, previousClip, closeAction);
         }
         return ret;
     }
@@ -198,7 +197,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     if (currentBehaviorIndex != editDie.die.currentBehaviorIndex)
                     {
                         Debug.Log("Setting active behavior on " + editDie.name + " to " + currentBehaviorIndex);
-                        UpdateProgrammingBox(1.0f, "Activating behavior " + editDieAssignment.behavior.name + " on " + editDie.name);
+                        UpdateProgrammingBox(1.0f, "Activating behavior on " + editDie.name);
                         editDie.die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
                     }
                     else
@@ -229,15 +228,13 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                                 if (res3)
                                 {
                                     HideProgrammingBox();
-                                    DiceManager.Instance.DisconnectDie(editDie);
-                                    callback(true);
+                                    DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(res));
                                 }
                                 else
                                 {
                                     HideProgrammingBox();
                                     ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                                    DiceManager.Instance.DisconnectDie(editDie);
-                                    callback(false);
+                                    DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
                                 }
                             });
                         }
@@ -245,8 +242,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         {
                             HideProgrammingBox();
                             ShowDialogBox("Error uploading data to " + editDie.name, message, "Ok", null, null);
-                            DiceManager.Instance.DisconnectDie(editDie);
-                            callback(false);
+                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
                         }
                     });
                 }
@@ -258,15 +254,13 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         if (res3)
                         {
                             HideProgrammingBox();
-                            DiceManager.Instance.DisconnectDie(editDie);
-                            callback(true);
+                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(res));
                         }
                         else
                         {
                             HideProgrammingBox();
                             ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                            DiceManager.Instance.DisconnectDie(editDie);
-                            callback(false);
+                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
                         }
                     });
                 }
@@ -296,13 +290,17 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     }
                     else
                     {
+                        AppDataSet.Instance.activePreset = editPreset;
                         // We're done!
+                        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
                         callback?.Invoke(true);
                     }
                 }
                 else
                 {
-                    callback(false);
+                    AppDataSet.Instance.activePreset = null;
+                    onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
+                    callback?.Invoke(false);
                 }
             });
         }
@@ -314,14 +312,23 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         }
         else
         {
+            AppDataSet.Instance.activePreset = null;
+            onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
             callback(false);
         }
+    }
+
+    public void RestartTutorial()
+    {
+        AppSettings.Instance.EnableAllTutorials();
+        Tutorial.Instance.StartMainTutorial();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        // Pretend to have updated the current preset on load
+        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
     }
 
     // Update is called once per frame

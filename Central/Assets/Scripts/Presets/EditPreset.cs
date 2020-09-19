@@ -13,6 +13,7 @@ namespace Presets
     {
         public Dice.EditDie die;
         public Behaviors.EditBehavior behavior;
+        public int defaultDieAssignmentIndex; // Used during auto-assign of user dice
     }
 
     class EditDieAssignmentConverter
@@ -34,6 +35,8 @@ namespace Presets
                 serializer.Serialize(writer, (ulong)0);
             writer.WritePropertyName("behaviorIndex");
             serializer.Serialize(writer, dataSet.behaviors.IndexOf(value.behavior));
+            writer.WritePropertyName("defaultDieAssignmentIndex");
+            serializer.Serialize(writer, value.defaultDieAssignmentIndex);
             writer.WriteEndObject();
         }
 
@@ -51,6 +54,7 @@ namespace Presets
                 ret.behavior = dataSet.behaviors[behaviorIndex];
             else
                 ret.behavior = null;
+            ret.defaultDieAssignmentIndex = jsonObject["defaultDieAssignmentIndex"].Value<int>();
             return ret;
         }
     }
@@ -60,6 +64,7 @@ namespace Presets
         : EditObject
     {
         public string name;
+        public string description;
         public List<EditDieAssignment> dieAssignments = new List<EditDieAssignment>();
 
         public bool CheckDependency(Dice.EditDie die)

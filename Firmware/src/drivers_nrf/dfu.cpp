@@ -3,6 +3,7 @@
 #include "power_manager.h"
 #include "nrf_sdh.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_log.h"
 
 #include "bluetooth/bluetooth_stack.h"

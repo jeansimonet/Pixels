@@ -19,10 +19,27 @@ namespace Behaviors
         public abstract ActionType type { get; }
         public abstract Action ToAction(EditDataSet editSet, DataSet set);
         public abstract EditAction Duplicate();
-        public abstract void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation);
-        public abstract void DeleteAnimation(Animations.EditAnimation animation);
-        public abstract bool DependsOnAnimation(Animations.EditAnimation animation);
+        public virtual void ReplaceAnimation(Animations.EditAnimation oldAnimation, Animations.EditAnimation newAnimation)
+        {
+            // Base does nothing
+        }
+        public virtual void DeleteAnimation(Animations.EditAnimation animation)
+        {
+            // Base does nothing
+        }
+        public virtual bool DependsOnAnimation(Animations.EditAnimation animation)
+        {
+            return false;
+        }
+        public virtual bool DependsOnAudioClip(AudioClips.EditAudioClip clip)
+        {
+            return false;
+        }
         public virtual IEnumerable<Animations.EditAnimation> CollectAnimations()
+        {
+            yield break;
+        }
+        public virtual IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
         {
             yield break;
         }
@@ -33,6 +50,8 @@ namespace Behaviors
             {
                 case ActionType.PlayAnimation:
                     return new EditActionPlayAnimation();
+                case ActionType.PlayAudioClip:
+                    return new EditActionPlayAudioClip();
                 default:
                     throw new System.Exception("Unknown condition type");
             }
@@ -44,6 +63,8 @@ namespace Behaviors
             {
                 case ActionType.PlayAnimation:
                     return typeof(EditActionPlayAnimation);
+                case ActionType.PlayAudioClip:
+                    return typeof(EditActionPlayAudioClip);
                 default:
                     throw new System.Exception("Unknown condition type");
             }
@@ -88,10 +109,11 @@ namespace Behaviors
     public class EditActionPlayAnimation
         : EditAction
     {
+        [Name("Lighting Pattern")]
         public Animations.EditAnimation animation;
-        [PlaybackFace]
+        [PlaybackFace, Name("Play on Face")]
         public int faceIndex = -1;
-        [IntSlider, IntRange(1, 10)]
+        [IntSlider, IntRange(1, 10), Name("Repeat Count")]
         public int loopCount = 1;
 
         public override ActionType type { get { return ActionType.PlayAnimation; } }
@@ -207,6 +229,102 @@ namespace Behaviors
             else
             {
                 builder.Append("- Please select a Pattern -");
+            }
+            return builder.ToString();
+        }
+    };
+
+    /// <summary>
+    /// Action to play an animation, really! 
+    /// </summary>
+    [System.Serializable]
+    public class EditActionPlayAudioClip
+        : EditAction
+    {
+        [Name("Audio Clip")]
+        public AudioClips.EditAudioClip clip;
+        public override ActionType type { get { return ActionType.PlayAudioClip; } }
+        public override Action ToAction(EditDataSet editSet, DataSet set)
+        {
+            return new ActionPlayAudioClip()
+            {
+                clipId = (byte)clip.id,
+            };
+        }
+
+        /// <summary>
+        /// Specialized converter
+        /// </sumary>
+        public class Converter
+            : JsonConverter<EditActionPlayAudioClip>
+        {
+            AppDataSet dataSet;
+            public Converter(AppDataSet dataSet)
+            {
+                this.dataSet = dataSet;
+            }
+            public override void WriteJson(JsonWriter writer, EditActionPlayAudioClip value, JsonSerializer serializer)
+            {
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    writer.WriteStartObject();
+                    var clipIndex = dataSet.audioClips.IndexOf(value.clip);
+                    writer.WritePropertyName("audioClipIndex");
+                    serializer.Serialize(writer, clipIndex);
+                    writer.WriteEndObject();
+                }
+            }
+
+            public override EditActionPlayAudioClip ReadJson(JsonReader reader, System.Type objectType, EditActionPlayAudioClip existingValue, bool hasExistingValue, JsonSerializer serializer)
+            {
+                if (hasExistingValue)
+                    throw(new System.NotImplementedException());
+
+                using (new IgnoreThisConverter(serializer, this))
+                {
+                    JObject jsonObject = JObject.Load(reader);
+                    var ret = new EditActionPlayAudioClip();
+                    int clipIndex = jsonObject["audioClipIndex"].Value<int>();
+                    if (clipIndex >= 0 && clipIndex < dataSet.audioClips.Count)
+                        ret.clip = dataSet.audioClips[clipIndex];
+                    else
+                        ret.clip = null;
+                    return ret;
+                }
+            }
+        }
+
+        public override EditAction Duplicate()
+        {
+            return new EditActionPlayAudioClip()
+            {
+                clip = this.clip,
+            };
+        }
+
+        public override bool DependsOnAudioClip(AudioClips.EditAudioClip clip)
+        {
+            return this.clip == clip;
+        }
+
+        public override IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
+        {
+            if (this.clip != null)
+            {
+                yield return this.clip;
+            }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (clip != null)
+            {
+                builder.Append("play \"" + clip.name + "\"");
+            }
+            else
+            {
+                builder.Append("- Please select an Audio Clip -");
             }
             return builder.ToString();
         }

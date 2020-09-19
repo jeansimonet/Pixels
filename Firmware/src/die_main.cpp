@@ -12,6 +12,7 @@
 #include "modules/battery_controller.h"
 #include "data_set/data_set.h"
 #include "nrf_log.h"
+#include "nrf_log_ctrl.h"
 
 #if !defined(FIRMWARE_VERSION)
     #warning Firmware version not defined
@@ -25,21 +26,47 @@ using namespace Accelerometer;
 using namespace Config;
 using namespace Animations;
 
+static void on_error(void)
+{
+    NRF_LOG_FINAL_FLUSH();
+#ifdef NRF_DFU_DEBUG_VERSION
+    NRF_BREAKPOINT_COND;
+#endif
+    NVIC_SystemReset();
+}
+
+
+void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t * p_file_name)
+{
+    NRF_LOG_ERROR("app_error_handler err_code:%d %s:%d", error_code, p_file_name, line_num);
+    on_error();
+}
+
+
+void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
+{
+    NRF_LOG_ERROR("Received a fault! id: 0x%08x, pc: 0x%08x, info: 0x%08x", id, pc, info);
+    on_error();
+}
+
+
+void app_error_handler_bare(uint32_t error_code)
+{
+    NRF_LOG_ERROR("Received an error: 0x%08x!", error_code);
+    on_error();
+}
+
+
 namespace Die
 {
-    enum TopLevelState
-    {
-        TopLevel_Unknown = 0,
-        TopLevel_SoloPlay,      // Playing animations as a result of landing on faces
-        TopLevel_BattlePlay,    // Some kind of battle play
-        TopLevel_Animator,      // LED Animator
-        TopLevel_LowPower,      // Die is low on power
-        TopLevel_Attract,
-    };
-
     TopLevelState currentTopLevelState = TopLevel_SoloPlay;
     int currentFace = 0;
     RollState currentRollState = RollState_Unknown;
+
+    TopLevelState getCurrentState()
+    {
+        return currentTopLevelState;
+    }
 
     void RequestStateHandler(void* token, const Message* message);
     void WhoAreYouHandler(void* token, const Message* message);

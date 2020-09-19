@@ -41,8 +41,27 @@ public class UIPairedDieView : MonoBehaviour
         if (die.die != null)
         {
             die.die.OnConnectionStateChanged += OnConnectionStateChanged;
+            die.die.OnAppearanceChanged += OnAppearanceChanged;
             die.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
             die.die.OnRssiChanged += OnRssiChanged;
+
+            bool saveUpdatedData = false;
+            if (die.designAndColor != die.die.designAndColor)
+            {
+                OnAppearanceChanged(die.die, die.die.faceCount, die.die.designAndColor);
+                saveUpdatedData = true;
+            }
+
+            if (die.name != die.die.name)
+            {
+                OnNameChanged(die.die, die.die.name);
+                saveUpdatedData = true;
+            }
+
+            if (saveUpdatedData)
+            {
+                AppDataSet.Instance.SaveData();
+            }
         }
         die.onDieFound += OnDieFound;
         die.onDieWillBeLost += OnDieWillBeLost;
@@ -61,12 +80,12 @@ public class UIPairedDieView : MonoBehaviour
         }
     }
 
-    void UpdateState()
+    public void UpdateState()
     {
         dieNameText.text = die.name;
         if (die.deviceId != 0)
         {
-            dieIDText.text = "ID: " + die.deviceId.ToString("X016");
+            dieIDText.text = "ID: " + die.deviceId.ToString("X08");
         }
         else
         {
@@ -118,7 +137,7 @@ public class UIPairedDieView : MonoBehaviour
                         batteryView.gameObject.SetActive(false);
                         signalView.gameObject.SetActive(false);
                         statusText.text = "Connection Error";
-                        disconnectedTextRoot.gameObject.SetActive(true);
+                        disconnectedTextRoot.gameObject.SetActive(false);
                         errorTextRoot.gameObject.SetActive(true);
                         break;
                     case Die.LastError.Disconnected:
@@ -128,7 +147,7 @@ public class UIPairedDieView : MonoBehaviour
                         signalView.gameObject.SetActive(false);
                         statusText.text = "Disconnected";
                         disconnectedTextRoot.gameObject.SetActive(true);
-                        errorTextRoot.gameObject.SetActive(true);
+                        errorTextRoot.gameObject.SetActive(false);
                         break;
                 }
                 break;
@@ -175,6 +194,7 @@ public class UIPairedDieView : MonoBehaviour
         if (die.die != null)
         {
             die.die.OnConnectionStateChanged -= OnConnectionStateChanged;
+            die.die.OnAppearanceChanged -= OnAppearanceChanged;
             die.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
             die.die.OnRssiChanged -= OnRssiChanged;
         }
@@ -195,16 +215,49 @@ public class UIPairedDieView : MonoBehaviour
         UpdateState();
     }
 
+    void OnNameChanged(Die die, string newName)
+    {
+        this.die.name = die.name;
+        UpdateState();
+    }
+
+    void OnAppearanceChanged(Die die, int newFaceCount, DesignAndColor newDesign)
+    {
+        this.die.designAndColor = newDesign;
+        if (this.dieRenderer != null)
+        {
+            DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);
+            this.dieRenderer = null;
+        }
+        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(newDesign);
+        if (dieRenderer != null)
+        {
+            dieRenderImage.texture = dieRenderer.renderTexture;
+        }
+    }
+
     void OnDieFound(EditDie editDie)
     {
         editDie.die.OnConnectionStateChanged += OnConnectionStateChanged;
+        editDie.die.OnAppearanceChanged += OnAppearanceChanged;
         editDie.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
         editDie.die.OnRssiChanged += OnRssiChanged;
+
+        if (editDie.designAndColor != editDie.die.designAndColor)
+        {
+            OnAppearanceChanged(editDie.die, editDie.die.faceCount, editDie.die.designAndColor);
+        }
+
+        if (editDie.name != editDie.die.name)
+        {
+            OnNameChanged(editDie.die, editDie.die.name);
+        }
     }
 
     void OnDieWillBeLost(EditDie editDie)
     {
         editDie.die.OnConnectionStateChanged -= OnConnectionStateChanged;
+        editDie.die.OnAppearanceChanged -= OnAppearanceChanged;
         editDie.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
         editDie.die.OnRssiChanged -= OnRssiChanged;
     }

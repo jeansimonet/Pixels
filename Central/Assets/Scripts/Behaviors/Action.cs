@@ -10,8 +10,12 @@ namespace Behaviors
     /// </summary>
     public enum ActionType : byte
     {
+		[SkipEnumValue]
         Unknown = 0,
+        [Name("Trigger Pattern")]
         PlayAnimation,
+        [Name("Play Audio Clip")]
+        PlayAudioClip,
     };
 
     /// <summary>
@@ -35,5 +39,19 @@ namespace Behaviors
         public byte animIndex;
         public byte faceIndex;
         public byte loopCount;
+    };
+
+
+    /// <summary>
+    /// Action to play a sound! 
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
+    public class ActionPlayAudioClip
+        : Action
+    {
+        public ActionType type { get; set; } = ActionType.PlayAudioClip;
+        public byte paddingType;
+        public ushort clipId;
     };
 }

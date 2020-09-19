@@ -1,6 +1,7 @@
 #include "i2c.h"
 #include "nrf_drv_twi.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "config/board_config.h"
 #include "nrf_log.h"
 

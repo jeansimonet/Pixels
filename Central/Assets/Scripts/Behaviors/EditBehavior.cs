@@ -10,8 +10,6 @@ namespace Behaviors
     public class EditBehavior
         : EditObject
     {
-        public string name;
-        public string description;
         public List<EditRule> rules = new List<EditRule>();
 
         public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = Dice.DesignAndColor.V5_Grey };
@@ -36,8 +34,6 @@ namespace Behaviors
         public EditBehavior Duplicate()
         {
             var ret = new EditBehavior();
-            ret.name = name;
-            ret.description = description;
             foreach (var r in rules)
             {
                 ret.rules.Add(r.Duplicate());
@@ -58,7 +54,7 @@ namespace Behaviors
                 new EditActionPlayAnimation()
                 {
                     animation = null,
-                    faceIndex = 0xFF,
+                    faceIndex = -1,
                     loopCount = 1
                 }
             };
@@ -87,6 +83,11 @@ namespace Behaviors
             return rules.Any(r => r.DependsOnAnimation(animation));
         }
 
+        public bool DependsOnAudioClip(AudioClips.EditAudioClip clip)
+        {
+            return rules.Any(r => r.DependsOnAudioClip(clip));
+        }
+
         public IEnumerable<Animations.EditAnimation> CollectAnimations()
         {
             foreach (var action in rules.SelectMany(r => r.actions))
@@ -94,6 +95,17 @@ namespace Behaviors
                 foreach (var anim in action.CollectAnimations())
                 {
                     yield return anim;
+                }
+            }
+        }
+
+        public IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()
+        {
+            foreach (var action in rules.SelectMany(r => r.actions))
+            {
+                foreach (var clip in action.CollectAudioClips())
+                {
+                    yield return clip;
                 }
             }
         }

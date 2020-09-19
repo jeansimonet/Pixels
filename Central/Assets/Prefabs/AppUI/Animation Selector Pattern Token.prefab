@@ -113,7 +113,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 18}
-  m_SizeDelta: {x: 256, y: 256}
+  m_SizeDelta: {x: 240, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &940820379004556711
 CanvasRenderer:
@@ -211,13 +211,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.22941178, g: 0.24117647, b: 0.3, a: 1}
   m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 63a3fba41f1ffd04bae8f304bcd99185, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2edb90b1473b1ca43b7901d48f2925b3, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -285,3 +285,7 @@ MonoBehaviour:
   mainButton: {fileID: 5865762023204955092}
   animRenderImage: {fileID: 940820379004556710}
   animNameText: {fileID: 940820378105733996}
+  frame: {fileID: 940820379069873024}
+  defaultTextColor: {r: 0.5529412, g: 0.6392157, b: 0.7411765, a: 1}
+  defaultFrameColor: {r: 0.23137257, g: 0.24313727, b: 0.3019608, a: 1}
+  selectedColor: {r: 0.41568628, g: 0.47058824, b: 1, a: 1}

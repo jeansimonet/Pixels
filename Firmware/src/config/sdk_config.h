@@ -331,7 +331,7 @@
 
 // <o> NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S - Standby timeout (in seconds). 
 // <i> Shutdown procedure will begin no earlier than after this number of seconds.
-#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 5
+#define NRF_PWR_MGMT_CONFIG_STANDBY_TIMEOUT_S 30
 
 // <q> NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED  - Enables FPU event cleaning.
 #define NRF_PWR_MGMT_CONFIG_FPU_SUPPORT_ENABLED 0
@@ -372,6 +372,29 @@
 
 // <q> BUTTON_HIGH_ACCURACY_ENABLED  - Enables GPIOTE high accuracy for buttons
 #define BUTTON_HIGH_ACCURACY_ENABLED 0
+
+
+//==========================================================
+// <e> NRFX_TWI_ENABLED - nrfx_twi - TWI peripheral driver
+//==========================================================
+#define NRFX_TWI_ENABLED 1
+ 
+#ifndef NRFX_TWI0_ENABLED
+#define NRFX_TWI0_ENABLED 1
+#endif
+
+// <o> NRFX_TWI_DEFAULT_CONFIG_FREQUENCY  - Frequency
+// <26738688=> 100k 
+// <67108864=> 250k 
+// <104857600=> 400k 
+#define NRFX_TWI_DEFAULT_CONFIG_FREQUENCY 26738688
+
+// <q> NRFX_TWI_DEFAULT_CONFIG_HOLD_BUS_UNINIT  - Enables bus holding after uninit
+#define NRFX_TWI_DEFAULT_CONFIG_HOLD_BUS_UNINIT 0
+
+// <o> NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY  - Interrupt priority
+// <0=> 0 (highest) -> 7 (lowest)
+#define NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY 6
 
 
 //==========================================================

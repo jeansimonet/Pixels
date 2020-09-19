@@ -12,9 +12,9 @@ public class UIPresetToken : MonoBehaviour
     public Button mainButton;
     public RawImage presetRenderImage;
     public Text presetNameText;
+    public Text presetDescriptionText;
     public Button menuButton;
     public Image menuButtonImage;
-    public Canvas overrideCanvas;
     public Image backgroundImage;
     public RectTransform expandedRoot;
     public Button removeButton;
@@ -52,6 +52,7 @@ public class UIPresetToken : MonoBehaviour
             presetRenderImage.texture = dieRenderer.renderTexture;
         }
         presetNameText.text = preset.name;
+        presetDescriptionText.text = preset.description;
 
         dieRenderer.rotating = true;
         for (int i = 0; i < preset.dieAssignments.Count; ++i)
@@ -70,7 +71,6 @@ public class UIPresetToken : MonoBehaviour
         if (expand)
         {
             menuButtonImage.sprite = contractImage;
-            overrideCanvas.overrideSorting = true;
             backgroundImage.sprite = expandedSprite;
             backgroundImage.color = expandedColor;
             expandedRoot.gameObject.SetActive(true);
@@ -78,7 +78,6 @@ public class UIPresetToken : MonoBehaviour
         else
         {
             menuButtonImage.sprite = expandImage;
-            overrideCanvas.overrideSorting = false;
             backgroundImage.sprite = backgroundSprite;
             backgroundImage.color = backgroundColor;
             expandedRoot.gameObject.SetActive(false);

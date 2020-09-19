@@ -5,6 +5,7 @@
 #include "data_set/data_set.h"
 #include "config/settings.h"
 #include "nrf_log.h"
+#include "die.h"
 
 using namespace Bluetooth;
 using namespace Animations;
@@ -42,7 +43,7 @@ namespace BehaviorController
                 if (cond->checkTrigger(true)) {
                     NRF_LOG_DEBUG("Triggering a HelloGoodbye Condition");
                     // Go on, do the thing!
-                    Behaviors::triggerAction(rule->action);
+                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
                     // We're done!
                     break;
@@ -65,7 +66,7 @@ namespace BehaviorController
                 if (cond->checkTrigger(connected)) {
                     NRF_LOG_DEBUG("Triggering a Connection State Condition");
                     // Go on, do the thing!
-                    Behaviors::triggerAction(rule->action);
+                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
                     // We're done!
                     break;
@@ -88,7 +89,7 @@ namespace BehaviorController
                 if (cond->checkTrigger(newState)) {
                     NRF_LOG_DEBUG("Triggering a Battery State Condition");
                     // Go on, do the thing!
-                    Behaviors::triggerAction(rule->action);
+                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
                     // We're done!
                     break;
@@ -98,39 +99,42 @@ namespace BehaviorController
     }
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace) {
-        // Do we have a roll state event condition?
-        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
+        if (Die::getCurrentState() == Die::TopLevel_SoloPlay)
+        {
+            // Do we have a roll state event condition?
+            auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
 
-        // Iterate the rules and look for one!
-        for (int i = 0; i < bhv->rulesCount; ++i) {
-            auto rule = DataSet::getRule(bhv->rulesOffset + i);
-            auto condition = DataSet::getCondition(rule->condition);
+            // Iterate the rules and look for one!
+            for (int i = 0; i < bhv->rulesCount; ++i) {
+                auto rule = DataSet::getRule(bhv->rulesOffset + i);
+                auto condition = DataSet::getCondition(rule->condition);
 
-            // This is the right kind of condition, check it!
-            bool conditionTriggered = false;
-            switch (condition->type) {
-                case Behaviors::Condition_Handling:
-                    conditionTriggered = static_cast<const Behaviors::ConditionHandling*>(condition)->checkTrigger(newState, newFace);
-                    break;
-                case Behaviors::Condition_Rolling:
-                    conditionTriggered = static_cast<const Behaviors::ConditionRolling*>(condition)->checkTrigger(newState, newFace);
-                    break;
-                case Behaviors::Condition_Crooked:
-                    conditionTriggered = static_cast<const Behaviors::ConditionCrooked*>(condition)->checkTrigger(newState, newFace);
-                    break;
-                case Behaviors::Condition_FaceCompare:
-                    conditionTriggered = static_cast<const Behaviors::ConditionFaceCompare*>(condition)->checkTrigger(newState, newFace);
-                    break;
-                default:
-                    break;
-            }
+                // This is the right kind of condition, check it!
+                bool conditionTriggered = false;
+                switch (condition->type) {
+                    case Behaviors::Condition_Handling:
+                        conditionTriggered = static_cast<const Behaviors::ConditionHandling*>(condition)->checkTrigger(newState, newFace);
+                        break;
+                    case Behaviors::Condition_Rolling:
+                        conditionTriggered = static_cast<const Behaviors::ConditionRolling*>(condition)->checkTrigger(newState, newFace);
+                        break;
+                    case Behaviors::Condition_Crooked:
+                        conditionTriggered = static_cast<const Behaviors::ConditionCrooked*>(condition)->checkTrigger(newState, newFace);
+                        break;
+                    case Behaviors::Condition_FaceCompare:
+                        conditionTriggered = static_cast<const Behaviors::ConditionFaceCompare*>(condition)->checkTrigger(newState, newFace);
+                        break;
+                    default:
+                        break;
+                }
 
-            if (conditionTriggered) {
-                // do the thing
-                Behaviors::triggerAction(rule->action);
+                if (conditionTriggered) {
+                    // do the thing
+                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
-                // We're done
-                break;
+                    // We're done
+                    break;
+                }
             }
         }
     }

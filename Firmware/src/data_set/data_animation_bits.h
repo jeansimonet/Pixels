@@ -51,5 +51,6 @@ namespace DataSet
         Animations::Track const * const getTracks(uint16_t tracksStartIndex) const;
         uint16_t getTrackCount() const;
 
+        void Clear();
     };
 }

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class AppConstants : SingletonMonoBehaviour<AppConstants>
 {
+    public TextAsset defaultDiceJson;
     public string DataSetFilename = "dice_data.json";
     public string SettingsFilename = "settings.json";
     public float ScanTimeout = 3.0f;
@@ -15,5 +16,7 @@ public class AppConstants : SingletonMonoBehaviour<AppConstants>
     public float MultiDiceRootRotationSpeedAvg = 2.0f;
     public float MultiDiceRootRotationSpeedVar = 0.4f;
     public float DicePoolDisconnectDelay = 5.0f;
+    public string AudioClipsFolderName = "AudioClips";
+    public Color AudioClipsWaveformColor = Color.blue;
 }
 

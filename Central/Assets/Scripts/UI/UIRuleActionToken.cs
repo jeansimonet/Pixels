@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class UIRuleActionToken : MonoBehaviour
 {
@@ -35,7 +36,11 @@ public class UIRuleActionToken : MonoBehaviour
         parentRule = rule;
         editAction = action;
         labelText.text = first ? "Then" : "And";
-        actionSelector.Setup("Action Type", () => editAction.type, (t) => SetActionType((Behaviors.ActionType)t));
+        actionSelector.Setup(
+            "Action Type",
+            () => editAction.type,
+            (t) => SetActionType((Behaviors.ActionType)t),
+            null);
 
         // Setup all other parameters
         parameters = UIParameterManager.Instance.CreateControls(action, parametersRoot);

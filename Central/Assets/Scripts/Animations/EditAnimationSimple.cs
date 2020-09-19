@@ -10,13 +10,13 @@ namespace Animations
     {
         [Slider, FloatRange(0.1f, 10.0f, 0.1f), Units("sec")]
         public override float duration { get; set; }
-        [FaceMask, IntRange(0, 19)]
+        [FaceMask, IntRange(0, 19), Name("Face Mask")]
 		public int faces = 0xFFFFF;
         public Color32 color = new Color32(0xFF, 0x30, 0x00, 0xff);
-        [Index, IntRange(1, 10)]
+        [Index, IntRange(1, 10), Name("Repeat Count")]
         public int count = 1;
         [Slider]
-        [FloatRange(0.1f, 1.0f)]
+        [FloatRange(0.1f, 1.0f), Name("Fading Sharpness")]
         public float fade = 0.1f;
 
         public override AnimationType type { get { return AnimationType.Simple; } }

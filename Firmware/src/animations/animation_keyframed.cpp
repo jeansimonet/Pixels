@@ -50,8 +50,13 @@ namespace Animations
 	/// <returns>The number of leds/intensities added to the return array</returns>
 	int AnimationInstanceKeyframed::updateLEDs(int ms, int retIndices[], uint32_t retColors[])
 	{
+		static int faceIndices[] = {  17, 1, 19, 13, 3, 10, 8, 5, 15, 7, 9, 11, 14, 4, 12, 0, 18, 2, 16, 6 };
+
 		int time = ms - startTime;
 		auto preset = getPreset();
+
+        int trackTime = time * 256 / preset->speedMultiplier256;
+
 		const RGBTrack * tracks = animationBits->getRGBTracks(preset->tracksOffset);
 
 		// Each track will append its led indices and colors into the return array
@@ -63,7 +68,14 @@ namespace Animations
 		for (int i = 0; i < preset->trackCount; ++i)
 		{
 			auto& track = tracks[i]; 
-			auto count = track.evaluate(animationBits, time, indices, colors);
+			auto count = track.evaluate(animationBits, trackTime, indices, colors);
+			if (preset->flowOrder != 0)
+			{
+				// Use reverse lookup so that indices mean led index and not face index
+				for (int j = 0; j < count; ++j) {
+					indices[j] = faceIndices[indices[j]];
+				}
+			}
 			indices += count;
 			colors += count;
 			totalCount += count;

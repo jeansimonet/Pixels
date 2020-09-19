@@ -182,18 +182,18 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         }
     }
 
-    public Coroutine DisconnectDie(EditDie editDie)
+    public Coroutine DisconnectDie(EditDie editDie, System.Action<EditDie, bool, string> dieDisconnectedCallback)
     {
-        return StartCoroutine(DisconnectDieCr(editDie));
+        return StartCoroutine(DisconnectDieCr(editDie, dieDisconnectedCallback));
     }
 
-    IEnumerator DisconnectDieCr(EditDie editDie)
+    IEnumerator DisconnectDieCr(EditDie editDie, System.Action<EditDie, bool, string> dieDisconnectedCallback)
     {
         yield return new WaitUntil(() => state == State.Idle);
-        yield return StartCoroutine(DoDisconnectDie(editDie));
+        yield return StartCoroutine(DoDisconnectDieCr(editDie, dieDisconnectedCallback));
     }
 
-    IEnumerator DoDisconnectDie(EditDie editDie)
+    IEnumerator DoDisconnectDieCr(EditDie editDie, System.Action<EditDie, bool, string> dieDisconnectedCallback)
     {
         var dt = dice.First(p => p == editDie);
         if (dt == null)
@@ -213,6 +213,14 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             bool? res = null;
             DicePool.Instance.DisconnectDie(dt.die, (d, r, s) => res = r);
             yield return new WaitUntil(() => res.HasValue);
+            if (res.Value)
+            {
+                dieDisconnectedCallback?.Invoke(editDie, true, null);
+            }
+            else
+            {
+                dieDisconnectedCallback?.Invoke(editDie, false, "Could not disconnect to Die " + editDie.name + ". Communication Error");
+            }
         }
     }
 
@@ -273,7 +281,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                 editDie.die.GetRssi((d, i) => rssiReceived = true);
                 yield return new WaitUntil(() => rssiReceived == true);
 
-                yield return StartCoroutine(DoDisconnectDie(editDie));
+                yield return StartCoroutine(DoDisconnectDieCr(editDie, null));
             }
             // Else we've already disconnected
         }

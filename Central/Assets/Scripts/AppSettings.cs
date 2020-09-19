@@ -12,15 +12,93 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public class Data
     {
         public bool displayWhatsNew = true;
+        public bool mainTutorialEnabled = true;
+        public bool presetsTutorialEnabled = true;
+        public bool presetTutorialEnabled = true;
+        public bool behaviorTutorialEnabled = true;
+        public bool ruleTutorialEnabled = true;
+        public bool animationsTutorialEnabled = true;
+        public bool animationTutorialEnabled = true;
     }
     Data data = new Data();
 
     public bool displayWhatsNew => data.displayWhatsNew;
+    public bool mainTutorialEnabled => data.mainTutorialEnabled;
+    public bool presetsTutorialEnabled => data.presetsTutorialEnabled;
+    public bool presetTutorialEnabled => data.presetTutorialEnabled;
+    public bool behaviorTutorialEnabled => data.behaviorTutorialEnabled;
+    public bool ruleTutorialEnabled => data.ruleTutorialEnabled;
+    public bool animationsTutorialEnabled => data.animationsTutorialEnabled;
+    public bool animationTutorialEnabled => data.animationTutorialEnabled;
 
     public void SetDisplayWhatsNew(bool value)
     {
         data.displayWhatsNew = value;
         SaveData();
+    }
+
+    public void SetMainTutorialEnabled(bool value)
+    {
+        data.mainTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetPresetsTutorialEnabled(bool value)
+    {
+        data.presetsTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetPresetTutorialEnabled(bool value)
+    {
+        data.presetTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetBehaviorTutorialEnabled(bool value)
+    {
+        data.behaviorTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetRuleTutorialEnabled(bool value)
+    {
+        data.ruleTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetAnimationsTutorialEnabled (bool value)
+    {
+        data.animationsTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetAnimationTutorialEnabled(bool value)
+    {
+        data.animationTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void EnableAllTutorials()
+    {
+        SetMainTutorialEnabled(true);
+        SetPresetsTutorialEnabled(true);
+        SetPresetTutorialEnabled(true);
+        SetBehaviorTutorialEnabled(true);
+        SetRuleTutorialEnabled(true);
+        SetAnimationsTutorialEnabled(true);
+        SetAnimationTutorialEnabled(true);
+    }
+
+    public void DisableAllTutorials()
+    {
+        SetMainTutorialEnabled(false);
+        SetPresetsTutorialEnabled(false);
+        SetPresetTutorialEnabled(false);
+        SetBehaviorTutorialEnabled(false);
+        SetRuleTutorialEnabled(false);
+        SetAnimationsTutorialEnabled(false);
+        SetAnimationTutorialEnabled(false);
     }
 
     JsonSerializer CreateSerializer()

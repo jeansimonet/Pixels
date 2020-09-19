@@ -24,6 +24,10 @@ class ColorUtils
     {
         return (byte)Mathf.Max(getRed(color), Mathf.Max(getGreen(color), getBlue(color)));
     }
+    public static float desaturate(Color color)
+    {
+        return  (Mathf.Min(color.r, Mathf.Min(color.g, color.b)) + Mathf.Max(color.r, Mathf.Max(color.g, color.b))) * 0.5f;
+    }
 	public static uint addColors(uint a, uint b) {
 		byte red = (byte)Mathf.Max(getRed(a), getRed(b));
 		byte green = (byte)Mathf.Max(getGreen(a), getGreen(b));

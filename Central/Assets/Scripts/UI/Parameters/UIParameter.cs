@@ -2,6 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using System.Linq;
+
+
+public class NameAttribute
+    : System.Attribute
+{
+    public string name;
+    public NameAttribute(string name)
+    {
+        this.name = name;
+    }
+}
 
 public abstract class UIParameter : MonoBehaviour
 {
@@ -32,8 +44,15 @@ public abstract class UIParameter : MonoBehaviour
                 (?<=[^A-Z])(?=[A-Z]) |
                 (?<=[A-Za-z])(?=[^A-Za-z])", RegexOptions.IgnorePatternWhitespace);
 
+        string fieldName = r.Replace(fieldInfo.Name.Substring(0, 1).ToUpper() + fieldInfo.Name.Substring(1), " ");
+        var nameAttribute = fieldInfo.GetCustomAttributes(typeof(NameAttribute), true).FirstOrDefault() as NameAttribute;
+        if (nameAttribute != null)
+        {
+            fieldName = nameAttribute.name;
+        }
+
         SetupControls(
-            r.Replace(fieldInfo.Name.Substring(0, 1).ToUpper() + fieldInfo.Name.Substring(1), " "),
+            fieldName,
             () => fieldInfo.GetValue(parentObject),
             (val) =>
             {
@@ -50,8 +69,15 @@ public abstract class UIParameter : MonoBehaviour
                 (?<=[^A-Z])(?=[A-Z]) |
                 (?<=[A-Za-z])(?=[^A-Za-z])", RegexOptions.IgnorePatternWhitespace);
 
+        string propName = r.Replace(propertyInfo.Name.Substring(0, 1).ToUpper() + propertyInfo.Name.Substring(1), " ");
+        var nameAttribute = propertyInfo.GetCustomAttributes(typeof(NameAttribute), true).FirstOrDefault() as NameAttribute;
+        if (nameAttribute != null)
+        {
+            propName = nameAttribute.name;
+        }
+
         SetupControls(
-            r.Replace(propertyInfo.Name.Substring(0, 1).ToUpper() + propertyInfo.Name.Substring(1), " "),
+            propName,
             () => propertyInfo.GetValue(parentObject),
             (val) =>
             {

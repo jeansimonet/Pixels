@@ -41,6 +41,8 @@ namespace Animations
 	int AnimationInstanceRainbow::updateLEDs(int ms, int retIndices[], uint32_t retColors[]) {
 		auto preset = getPreset();
 
+		static int faceIndices[] {  17, 1, 19, 13, 3, 10, 8, 5, 15, 7, 9, 11, 14, 4, 12, 0, 18, 2, 16, 6 };
+
 		// Compute color
 		uint32_t color = 0;
 		int fadeTime = preset->duration * preset->fade / (255 * 2);
@@ -57,16 +59,28 @@ namespace Animations
 			intensity = (uint8_t)((preset->duration - time) * 255 / fadeTime);
 		}
 
-		color = Rainbow::wheel((uint8_t)wheelPos, intensity);
-
 		// Fill the indices and colors for the anim controller to know how to update leds
 		int retCount = 0;
-		for (int i = 0; i < 20; ++i) {
-			if ((preset->faceMask & (1 << i)) != 0)
-			{
-				retIndices[retCount] = i;
-				retColors[retCount] = color;
-				retCount++;
+        if (preset->traveling != 0) {
+			for (int i = 0; i < 20; ++i) {
+				if ((preset->faceMask & (1 << i)) != 0)
+				{
+					retIndices[retCount] = faceIndices[i];
+					retColors[retCount] = Rainbow::wheel((uint8_t)((wheelPos + i * 256 / 20) % 256), intensity);
+					retCount++;
+				}
+			}
+		} else {
+			// All leds same color
+			color = Rainbow::wheel((uint8_t)wheelPos, intensity);
+
+			for (int i = 0; i < 20; ++i) {
+				if ((preset->faceMask & (1 << i)) != 0)
+				{
+					retIndices[retCount] = i;
+					retColors[retCount] = color;
+					retCount++;
+				}
 			}
 		}
 		return retCount;

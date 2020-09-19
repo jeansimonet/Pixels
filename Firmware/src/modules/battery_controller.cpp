@@ -6,6 +6,7 @@
 #include "nrf_log.h"
 #include "app_timer.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "die.h"
 #include "drivers_hw/apa102.h"
 #include "utils/utils.h"

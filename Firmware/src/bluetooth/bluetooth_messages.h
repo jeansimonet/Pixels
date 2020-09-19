@@ -71,6 +71,8 @@ struct Message
 		MessageType_SetDesignAndColorAck,
 		MessageType_SetCurrentBehavior,
 		MessageType_SetCurrentBehaviorAck,
+		MessageType_SetName,
+		MessageType_SetNameAck,
 
 		// TESTING 
 		MessageType_TestBulkSend, 
@@ -230,8 +232,7 @@ struct MessagePlayAnim
 struct MessagePlaySound
 	: public Message
 {
-	uint32_t soundId;
-	uint8_t count;
+	uint16_t clipId;
 
 	inline MessagePlaySound() : Message(Message::MessageType_PlaySound) {}
 };
@@ -274,7 +275,8 @@ struct MessageProgramDefaultAnimSet
 struct MessageFlash
 	: public Message
 {
-	uint8_t animIndex;
+	uint8_t flashCount;
+	uint32_t color;
 
 	inline MessageFlash() : Message(Message::MessageType_Flash) {}
 };
@@ -320,6 +322,13 @@ struct MessageSetCurrentBehavior
 {
 	uint8_t currentBehavior;
 	inline MessageSetCurrentBehavior() : Message(Message::MessageType_SetCurrentBehavior) {}
+};
+
+struct MessageSetName
+: public Message
+{
+	char name[10];
+	inline MessageSetName() : Message(Message::MessageType_SetName) {}
 };
 
 struct MessageNotifyUser

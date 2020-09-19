@@ -1,6 +1,7 @@
 #include "bluetooth_stack.h"
 #include "bluetooth_message_service.h"
 #include "app_error.h"
+#include "app_error_weak.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
@@ -71,6 +72,7 @@ namespace Stack
     bool notificationPending = false;
     bool connected = false;
     bool currentlyAdvertising = false;
+    bool resetOnDisconnectPending = false;
     int8_t rssi;
 
     char advertisingName[16];
@@ -89,6 +91,7 @@ namespace Stack
 	DelegateArray<ConnectionEventMethod, MAX_CLIENTS> clients;
 	DelegateArray<RssiEventMethod, MAX_CLIENTS> rssiClients;
 
+#pragma pack( push, 1)
     // Custom advertising data, so the Pixel app can identify dice before they're even connected
     struct CustomAdvertisingData
     {
@@ -97,7 +100,7 @@ namespace Stack
         uint8_t currentFace; // Which face is currently up
         uint8_t batteryLevel; // 8 bits, charge level 0 -> 255
     };
-
+#pragma pack(pop)
     // Global custom manufacturer data
     CustomAdvertisingData customAdvertisingData;
 
@@ -116,6 +119,7 @@ namespace Stack
     ble_advdata_t adv_data;
     ble_advdata_t sr_data;
 
+#if SDK_VER == 12
     // This will store packed versions of advertising structs
     uint8_t adv_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Advertising data buffer. */
     uint8_t sr_data_buffer[BLE_GAP_ADV_SET_DATA_SIZE_MAX];          /**< Scan Response data buffer. */
@@ -134,6 +138,7 @@ namespace Stack
             .len    = sizeof(sr_data_buffer)
         }
     };
+#endif
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
     void onBatteryLevelChange(void* param, float newLevel);
@@ -157,6 +162,10 @@ namespace Stack
                 currentlyAdvertising = true;
                 for (int i = 0; i < clients.Count(); ++i) {
                     clients[i].handler(clients[i].token, false);
+                }
+
+                if (resetOnDisconnectPending) {
+                    PowerManager::reset();
                 }
 
                 break;
@@ -258,7 +267,11 @@ namespace Stack
             case BLE_ADV_EVT_FAST:
             {
                 NRF_LOG_INFO("Fast advertising.");
+#if SDK_VER == 17
+                ret_code_t err_code = ble_advertising_advdata_update(&m_advertising, &adv_data, &sr_data);
+#else
                 ret_code_t err_code = ble_advertising_advdata_update(&m_advertising, &m_sp_advdata_buf, false);
+#endif
                 APP_ERROR_CHECK(err_code);
 
                 // Register to be notified of accelerometer changes
@@ -354,27 +367,8 @@ namespace Stack
         // Register a handler for BLE events.
         NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 
-        // Generate our name
-        advertisingName[0] = '\0';
-        strcpy(advertisingName, "D");
-		uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
-        for (int i = 0; i < 8; ++i) {
-            advertisingName[1+i] = '0' + uniqueId % 10;
-            uniqueId /= 10;
-        }
-        advertisingName[1+8] = '\0';
-
         //  GAP Params
         ble_gap_conn_params_t   gap_conn_params;
-        ble_gap_conn_sec_mode_t sec_mode;
-
-        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
-
-        err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                            (const uint8_t *)advertisingName,
-                                            strlen(advertisingName));
-        APP_ERROR_CHECK(err_code);
-
 
         memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
@@ -444,6 +438,19 @@ namespace Stack
         adv_data.p_manuf_specific_data = &m_sp_manuf_advdata;
     }
 
+    void initAdvertisingName() {
+        ble_gap_conn_sec_mode_t sec_mode;
+
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+
+        // Generate our name
+        strcpy(advertisingName, SettingsManager::getSettings()->name);
+        ret_code_t err_code = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)advertisingName, strlen(advertisingName));
+        APP_ERROR_CHECK(err_code);
+
+
+    }
+
     void initCustomAdvertisingData() {
         // Initialize the custom advertising data
         customAdvertisingData.deviceId = Die::getDeviceID();
@@ -452,12 +459,14 @@ namespace Stack
         customAdvertisingData.rollState = Accelerometer::currentRollState();
         adv_data.p_manuf_specific_data->company_identifier = (uint16_t)Config::BoardManager::getBoard()->ledCount << 8 | (uint16_t)Config::SettingsManager::getSettings()->designAndColor;
 
+#if SDK_VER == 12
         // Update advertising data
         ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
         APP_ERROR_CHECK(err_code);
 
         err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
         APP_ERROR_CHECK(err_code);
+#endif
     }
 
     void onBatteryLevelChange(void* param, float newLevel) {
@@ -471,12 +480,14 @@ namespace Stack
     void updateCustomAdvertisingDataBattery(float batteryLevel) {
         customAdvertisingData.batteryLevel = (uint8_t)(batteryLevel * 255.0f);
 
+#if SDK_VER == 12
         // Update advertising data
         ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
         APP_ERROR_CHECK(err_code);
 
         err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
         APP_ERROR_CHECK(err_code);
+#endif
     }
 
     void updateCustomAdvertisingDataState(Accelerometer::RollState newState, int newFace) {
@@ -484,12 +495,14 @@ namespace Stack
         customAdvertisingData.currentFace = newFace;
         customAdvertisingData.rollState = newState;
 
+#if SDK_VER == 12
         // Update advertising data
         ret_code_t err_code = ble_advdata_encode(&adv_data, m_sp_advdata_buf.adv_data.p_data, &m_sp_advdata_buf.adv_data.len);
         APP_ERROR_CHECK(err_code);
 
         err_code = ble_advdata_encode(&sr_data, m_sp_advdata_buf.scan_rsp_data.p_data, &m_sp_advdata_buf.scan_rsp_data.len);
         APP_ERROR_CHECK(err_code);
+#endif
     }
 
     void disconnectLink(uint16_t conn_handle, void * p_context) {
@@ -531,6 +544,19 @@ namespace Stack
         advertising_config_get(&config);
         config.ble_adv_on_disconnect_disabled = true;
         ble_advertising_modes_config_set(&m_advertising, &config);
+    }
+
+    void enableAdvertisingOnDisconnect() {
+
+        // Prevent device from advertising on disconnect.
+        ble_adv_modes_config_t config;
+        advertising_config_get(&config);
+        config.ble_adv_on_disconnect_disabled = false;
+        ble_advertising_modes_config_set(&m_advertising, &config);
+    }
+
+    void resetOnDisconnect() {
+        resetOnDisconnectPending = true;
     }
 
     void requestRssi() {

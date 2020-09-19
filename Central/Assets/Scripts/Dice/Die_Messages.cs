@@ -43,7 +43,7 @@ public partial class Die
         where T : DieMessage
     {
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
     }
 
     IEnumerator WaitForMessageCr(DieMessageType msgType, System.Action<DieMessage> msgReceivedCallback)
@@ -77,7 +77,7 @@ public partial class Die
 
         AddMessageHandler(ackType, callback);
         byte[] msgBytes = DieMessages.ToByteArray(message);
-        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length);
+        DicePool.Instance.WriteDie(this, msgBytes, msgBytes.Length, null);
         while (ackMessage == null && Time.time < startTime + timeOut)
         {
             yield return null;
@@ -318,20 +318,46 @@ public partial class Die
            new DieMessageSetDesignAndColor() { designAndColor = design },
            DieMessageType.SetDesignAndColorAck,
            3,
-           (ignore) => callback(true),
-           () => callback(false),
-           () => callback(false)));
+           (ignore) => callback?.Invoke(true),
+           () => callback?.Invoke(false),
+           () => callback?.Invoke(false)));
     }
 
     public Coroutine SetCurrentBehavior(int behaviorIndex, System.Action<bool> callback)
     {
-       return StartCoroutine(SendMessageWithAckOrTimeoutCr(
-           new DieMessageSetCurrentBehavior() { currentBehaviorIndex = (byte)behaviorIndex },
-           DieMessageType.SetCurrentBehaviorAck,
-           3,
-           (ignore) => callback(true),
-           () => callback(false),
-           () => callback(false)));
+        return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+            new DieMessageSetCurrentBehavior() { currentBehaviorIndex = (byte)behaviorIndex },
+            DieMessageType.SetCurrentBehaviorAck,
+            3,
+            (ignore) => callback?.Invoke(true),
+            () => callback?.Invoke(false),
+            () => callback?.Invoke(false)));
+    }
+
+    public Coroutine RenameDie(string newName, System.Action<bool> callback)
+    {
+        return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+            new DieMessageSetName() { name = System.Text.Encoding.UTF8.GetBytes(newName) },
+            DieMessageType.SetNameAck,
+            3,
+            (ignore) => callback?.Invoke(true),
+            () => callback?.Invoke(false),
+            () => callback?.Invoke(false)));
+    }
+
+    public Coroutine Flash(Color color, int count, System.Action<bool> callback)
+    {
+        Color32 color32 = color;
+        var msg = new DieMessageFlash();
+        msg.color = (uint)((color32.r << 16) + (color32.g << 8) + color32.b);
+        msg.flashCount = (byte)count;
+        return StartCoroutine(SendMessageWithAckOrTimeoutCr(
+            msg,
+            DieMessageType.FlashFinished,
+            3,
+            (ignore) => callback?.Invoke(true),
+            () => callback?.Invoke(false),
+            () => callback?.Invoke(false)));
     }
 
     public void StartHardwareTest()
@@ -431,15 +457,16 @@ public partial class Die
         bool cancel = notifyUserMsg.cancel != 0;
         float timeout = (float)notifyUserMsg.timeout_s;
         string text = System.Text.Encoding.UTF8.GetString(notifyUserMsg.data, 0, notifyUserMsg.data.Length);
-        var uiInstance = NotificationUI.Instance;
-        if (uiInstance != null)
+        PixelsApp.Instance.ShowDialogBox("Message from " + name, text, "Ok", cancel ? "Cancel" : null, (res) =>
         {
-            // Show the message and tell the die when user clicks Ok!
-            uiInstance.Show(text, ok, cancel, timeout, (res) =>
-            {
-                PostMessage(new DieMessageNotifyUserAck() { okCancel = (byte)(res ? 1 : 0) });
-            });
-        }
+            PostMessage(new DieMessageNotifyUserAck() { okCancel = (byte)(res ? 1 : 0) });
+        });
+    }
+
+    void OnPlayAudioClip(DieMessage message)
+    {
+        var playClipMessage = (DieMessagePlaySound)message;
+        AudioClipManager.Instance.PlayAudioClip((uint)playClipMessage.clipId);
     }
     #endregion
 }

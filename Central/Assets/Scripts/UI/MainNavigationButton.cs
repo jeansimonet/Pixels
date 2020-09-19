@@ -12,6 +12,8 @@ public class MainNavigationButton : MonoBehaviour
     [Header("Sprites")]
     public Sprite activeSprite;
     public Sprite inactiveSprite;
+    public Color activeColor;
+    public Color inactiveColor;
 
     // Forward the click event
     public Button.ButtonClickedEvent onClick => button.onClick;
@@ -19,5 +21,6 @@ public class MainNavigationButton : MonoBehaviour
     public void SetCurrent(bool current)
     {
         buttonImage.sprite = current ? activeSprite : inactiveSprite;
+        buttonImage.color = current ? activeColor : inactiveColor;
     }
 }
