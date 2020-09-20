@@ -164,7 +164,7 @@ public class Central : SingletonMonoBehaviour<Central>
         BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
             new string[] { serviceGUID },
             (a, n) => OnDeviceDiscovered(a, n, onDieDiscovered, onCustomAdvertisingData),
-            OnDeviceAdvertisingInfo, false, true);
+            OnDeviceAdvertisingInfo, false, false);
 
         return true;
     }
@@ -611,6 +611,7 @@ public class Central : SingletonMonoBehaviour<Central>
     {
         if (_dice.TryGetValue(address, out Die die))
         {
+            Debug.Log("Found characteristic " + characteristic.ToLower());
             // We are looking for 2 characteristics, a generic read and a generic write!
             if (string.Compare(service.ToLower(), serviceGUID.ToLower()) == 0)
             {

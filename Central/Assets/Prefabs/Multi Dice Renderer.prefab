@@ -102,6 +102,7 @@ GameObject:
   m_Component:
   - component: {fileID: 807694994064931266}
   - component: {fileID: 807694994064931267}
+  - component: {fileID: 3921376662087437401}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -166,6 +167,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &3921376662087437401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 807694994064931269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &807694994550514550
 GameObject:
   m_ObjectHideFlags: 0
@@ -609,6 +623,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175307765789345877}
   - component: {fileID: 7175307765789345878}
+  - component: {fileID: 6937781497642880099}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -673,6 +688,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &6937781497642880099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7175307765789345876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7175307765862017583
 GameObject:
   m_ObjectHideFlags: 0
@@ -887,6 +915,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175307765999068494}
   - component: {fileID: 7175307765999068495}
+  - component: {fileID: 6292120697102068275}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -951,6 +980,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &6292120697102068275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7175307765999068493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7175307766006256277
 GameObject:
   m_ObjectHideFlags: 0
@@ -1440,6 +1482,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175307766634462531}
   - component: {fileID: 7175307766634462532}
+  - component: {fileID: 406099190434365132}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -1504,6 +1547,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &406099190434365132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7175307766634462530}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7175307766694762758
 GameObject:
   m_ObjectHideFlags: 0
@@ -1544,6 +1600,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175307766761061456}
   - component: {fileID: 7175307766761061457}
+  - component: {fileID: 556584606471392324}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -1608,6 +1665,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &556584606471392324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7175307766761061471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7175307766797729905
 GameObject:
   m_ObjectHideFlags: 0
@@ -2051,6 +2121,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175307767792537723}
   - component: {fileID: 7175307767792537724}
+  - component: {fileID: 5086322554401209253}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -2115,6 +2186,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &5086322554401209253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7175307767792537722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7175307767829071967
 GameObject:
   m_ObjectHideFlags: 0
@@ -2155,6 +2239,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7375634333844959751}
   - component: {fileID: 7375634333844959750}
+  - component: {fileID: 2499217882919309432}
   m_Layer: 8
   m_Name: CaptureCam
   m_TagString: Untagged
@@ -2219,6 +2304,19 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &2499217882919309432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7375634333844959744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1300d300fb83d48cf84b8c882b68c236, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fps: 20
 --- !u!1 &7613218436909974652
 GameObject:
   m_ObjectHideFlags: 0

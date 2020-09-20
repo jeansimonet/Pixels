@@ -747,7 +747,10 @@ extern "C" {
         NSString *message = [NSString stringWithFormat:@"ConnectedPeripheral~%@", foundPeripheral];
         UnitySendMessage ("BluetoothLEReceiver", "OnBluetoothMessage", [message UTF8String]);
         peripheral.delegate = self;
-        [peripheral discoverServices:nil];
+        if(peripheral.services)
+            [self peripheral:peripheral didDiscoverServices:nil]; //already discovered services, DO NOT re-discover. Just pass along the peripheral.
+        else
+            [peripheral discoverServices:nil];        
     }
 }
 
@@ -807,7 +810,10 @@ extern "C" {
                 NSString *message = [NSString stringWithFormat:@"DiscoveredService~%@~%@", foundPeripheral, [service UUID]];
                 UnitySendMessage ("BluetoothLEReceiver", "OnBluetoothMessage", [message UTF8String]);
                 
-                [peripheral discoverCharacteristics:nil forService:service];
+                if(service.characteristics)
+                    [self peripheral:peripheral didDiscoverCharacteristicsForService:service error:nil]; 
+                else
+                    [peripheral discoverCharacteristics:nil forService:service];
             }
         }
     }
