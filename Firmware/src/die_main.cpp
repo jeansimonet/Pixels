@@ -2,6 +2,7 @@
 #include "drivers_nrf/watchdog.h"
 #include "drivers_nrf/scheduler.h"
 #include "drivers_nrf/power_manager.h"
+#include "drivers_nrf/flash.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
 #include "bluetooth/bluetooth_stack.h"
@@ -138,6 +139,7 @@ namespace Die
         strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         identityMessage.faceCount = (uint8_t)BoardManager::getBoard()->ledCount;
         identityMessage.designAndColor = SettingsManager::getSettings()->designAndColor;
+        identityMessage.flashSize = Flash::getUsableBytes();
         Bluetooth::MessageService::SendMessage(&identityMessage);
     }
 

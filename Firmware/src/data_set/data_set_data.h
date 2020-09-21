@@ -6,7 +6,7 @@
 #include "data_animation_bits.h"
 
 #define ANIMATION_SET_VALID_KEY (0x600DF00D) // Good Food ;)
-#define ANIMATION_SET_VERSION 2
+#define ANIMATION_SET_VERSION 3
 
 using namespace Animations;
 

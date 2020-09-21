@@ -50,9 +50,8 @@ namespace Flash
         ret_code_t rc = nrf_fstorage_init(&fstorage, &nrf_fstorage_sd, NULL);
         APP_ERROR_CHECK(rc);
 
-        size_t size = fstorage.end_addr + 1 - fstorage.start_addr;
         NRF_LOG_INFO("Flash Initialized - Address range: 0x%08x - 0x%08x", fstorage.start_addr, fstorage.end_addr);
-        NRF_LOG_INFO(" - %d bytes available for user data", size);
+        NRF_LOG_INFO(" - %d bytes available for user data", getUsableBytes());
         NRF_LOG_INFO(" - erase unit: \t%d bytes",      fstorage.p_flash_info->erase_unit);
         NRF_LOG_INFO(" - program unit: \t%d bytes",    fstorage.p_flash_info->program_unit);
 
@@ -165,6 +164,10 @@ namespace Flash
 
     uint32_t getFlashEndAddress() {
         return fstorage.end_addr;
+    }
+
+    uint32_t getUsableBytes() {
+        return fstorage.end_addr + 1 - fstorage.start_addr;
     }
 
     uint32_t getPageSize() {

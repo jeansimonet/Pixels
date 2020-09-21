@@ -5,7 +5,7 @@ PUBLISH_DIRECTORY := binaries
 
 VERSION			 := 09_05
 
-SDK_VER = 12
+SDK_VER = 17
 
 ifeq ($(SDK_VER),17)
 	SDK_ROOT := C:/nRF5_SDK
@@ -328,11 +328,16 @@ hardreset:
 erase:
 	nrfjprog -f nrf52 -s 801001366 --eraseall
 
+ifeq ($(SDK_VER),12)
 zip: firmware_release
-	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0xB0 $(OUTPUT_DIRECTORY)/firmware_$(VERSION)_$(SDK_VER).zip
+else
+zip: firmware_release
+	nrfutil pkg generate --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --hw-version 52 --key-file private.pem --sd-req 0x103 $(OUTPUT_DIRECTORY)/firmware_$(VERSION)_$(SDK_VER).zip
+endif
 
 publish: zip
-	copy $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip $(PUBLISH_DIRECTORY)
+	copy $(OUTPUT_DIRECTORY)/firmware_$(VERSION)_$(SDK_VER).zip $(PUBLISH_DIRECTORY)
 
 settings:
 	nrfutil settings generate --family NRF52810 --application $(OUTPUT_DIRECTORY)/firmware.hex --application-version 0xff --bootloader-version 0xff --bl-settings-version 1 $(OUTPUT_DIRECTORY)/firmware_settings.hex
@@ -354,8 +359,8 @@ flash_release: firmware_release settings
 # Flash over BLE, you must use DICE=D_XXXXXXX argument to make flash_ble
 # e.g. make flash_ble DICE=D_71902510
 flash_ble: zip
-	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip over BLE DFU
-	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION).zip
+	@echo Flashing: $(OUTPUT_DIRECTORY)/firmware_$(VERSION)_$(SDK_VER).zip over BLE DFU
+	nrfutil dfu ble -cd 0 -ic NRF51 -p COM5 -snr 680120179 -f -n $(DICE) -pkg $(OUTPUT_DIRECTORY)/firmware_$(VERSION)_$(SDK_VER).zip
 
 # Flash softdevice
 flash_softdevice:

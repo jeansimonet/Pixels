@@ -108,6 +108,7 @@ struct MessageIAmADie
 	uint8_t currentBehaviorIndex;
 	uint32_t dataSetHash;
 	uint32_t deviceId; // A unique identifier
+	uint16_t flashSize; // How much room available for data
 	char versionInfo[VERSION_INFO_SIZE]; // Firmware version string, i.e. "10_05"
 	inline MessageIAmADie() : Message(Message::MessageType_IAmADie) { versionInfo[0] = 0; }
 };
