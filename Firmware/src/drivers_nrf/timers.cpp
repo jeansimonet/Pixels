@@ -12,8 +12,10 @@ namespace DriversNRF
 namespace Timers
 {
     void init() {
-        ret_code_t err_code = nrf_drv_clock_init();
-        APP_ERROR_CHECK(err_code);
+        ret_code_t err_code;
+        // This doesn't seem needed when SD is enabled
+        // err_code = nrf_drv_clock_init();
+        // APP_ERROR_CHECK(err_code);
 
         err_code = app_timer_init();
         APP_ERROR_CHECK(err_code);

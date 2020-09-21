@@ -366,7 +366,7 @@ flash_ble: zip
 flash_softdevice:
 ifeq ($(SDK_VER),17)
 	@echo Flashing: s112_nrf52_7.2.0_softdevice.hex
-	nrfjprog -f nrf52 -s 801001366 --program c:/nRF5_SDK_old/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
+	nrfjprog -f nrf52 -s 801001366 --program c:/nRF5_SDK/components/softdevice/s112/hex/s112_nrf52_7.2.0_softdevice.hex --sectorerase
 else
 	@echo Flashing: s112_nrf52_6.1.1_softdevice.hex
 	nrfjprog -f nrf52 -s 801001366 --program c:/nRF5_SDK_old/components/softdevice/s112/hex/s112_nrf52_6.1.0_softdevice.hex --sectorerase
