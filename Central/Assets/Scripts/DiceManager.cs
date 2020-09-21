@@ -4,6 +4,7 @@ using UnityEngine;
 using Presets;
 using System.Linq;
 using Dice;
+using System;
 
 public class DiceManager : SingletonMonoBehaviour<DiceManager>
 {
@@ -17,15 +18,18 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
     public PoolRefreshEvent onEndRefreshPool;
 
     public IEnumerable<EditDie> allDice => dice;
+    public IEnumerable<Die> addingDice => _addingDice;
 
-    enum State
+    public enum State
     {
         Idle = 0,
         AddingDiscoveredDie,
         ConnectingDie,
         RefreshingPool,
     }
-    State state = State.Idle;
+    public State state { get; private set; } = State.Idle;
+
+    List<Die> _addingDice = new List<Die>();
 
     public Coroutine AddDiscoveredDice(List<Die> discoveredDice)
     {
@@ -35,7 +39,11 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
     IEnumerator AddDiscoveredDiceCr(List<Die> discoveredDice)
     {
         PixelsApp.Instance.ShowProgrammingBox("Adding Dice to the Dice Bag");
-        yield return new WaitUntil(() => state == State.Idle);
+        _addingDice.AddRange(discoveredDice);
+        if (state != State.Idle)
+        {
+            yield return new WaitUntil(() => state == State.Idle);
+        }
         state = State.AddingDiscoveredDie;
         for (int i = 0; i < discoveredDice.Count; ++i)
         {
@@ -94,6 +102,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             }
         }
         PixelsApp.Instance.HideProgrammingBox();
+        _addingDice.Clear();
         state = State.Idle;
     }
 
@@ -124,39 +133,19 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
     {
         if (editDie.die == null)
         {
-            // We need to find the actual real die 
-            // Maybe the dice pool has already scanned it?
-            List<Die> discoveredDice = new List<Die>();
-            void onDieDiscovered(Die newDie)
-            {
-                #if UNITY_EDITOR
-                if (newDie.name == editDie.name)
-                {
-                    discoveredDice.Add(newDie);
-                }
-                #else
-                if (newDie.deviceId == editDie.deviceId)
-                {
-                    discoveredDice.Add(newDie);
-                }
-                #endif
-            }
-
-            DicePool.Instance.BeginScanForDice(onDieDiscovered);
+            DicePool.Instance.BeginScanForDice();
             float startScanTime = Time.time;
-            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || discoveredDice.Any());
-            DicePool.Instance.StopScanForDice(onDieDiscovered);
+            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || editDie.die != null);
+            DicePool.Instance.StopScanForDice();
 
-            var die = discoveredDice.FirstOrDefault();
-            if (die != null)
+            if (editDie.die != null)
             {
                 // We found the die, try to connect
                 bool? res = null;
-                DicePool.Instance.ConnectDie(die, (d, r, s) => res = r);
+                DicePool.Instance.ConnectDie(editDie.die, (d, r, s) => res = r);
                 yield return new WaitUntil(() => res.HasValue);
-                if (die.connectionState == Die.ConnectionState.Ready)
+                if (editDie.die.connectionState == Die.ConnectionState.Ready)
                 {
-                    editDie.die = die;
                     dieReadyCallback?.Invoke(editDie, true, null);
                 }
                 else
@@ -171,7 +160,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             bool? res = null;
             DicePool.Instance.ConnectDie(editDie.die, (d, r, s) => res = r);
             yield return new WaitUntil(() => res.HasValue);
-            if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
+            if (editDie.die.connectionState == Die.ConnectionState.Ready)
             {
                 dieReadyCallback?.Invoke(editDie, true, null);
             }
@@ -251,6 +240,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             }
             AppDataSet.Instance.DeleteDie(editDie);
             dice.Remove(dt);
+            AppDataSet.Instance.SaveData();
         }
     }
 
@@ -341,15 +331,16 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
 
     void OnDieDiscovered(Die die)
     {
-        if (die.deviceId != 0)
+#if UNITY_EDITOR
+        var ourDie = dice.FirstOrDefault(d => d.name == die.name);
+#else
+        var ourDie = dice.FirstOrDefault(d => d.deviceId == die.deviceId);
+#endif
+        if (ourDie != null)
         {
-            var ourDie = dice.FirstOrDefault(d => d.deviceId == die.deviceId);
-            if (ourDie != null)
-            {
-                ourDie.die = die;
-            }
-            // Else this is a die we don't care about
+            ourDie.die = die;
         }
+        // Else this is a die we don't care about
     }
 
     void OnWillDestroyDie(Die die)

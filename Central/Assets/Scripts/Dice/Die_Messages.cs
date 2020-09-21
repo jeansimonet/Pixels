@@ -210,8 +210,9 @@ public partial class Die
 	        deviceId = idMsg.deviceId;
             currentBehaviorIndex = idMsg.currentBehaviorIndex;
             dataSetHash = idMsg.dataSetHash;
+            flashSize = idMsg.flashSize;
             firmwareVersionId = System.Text.Encoding.UTF8.GetString(idMsg.versionInfo, 0, DieMessages.VERSION_INFO_SIZE);
-
+            Debug.Log("Die " + name + " has " + flashSize + " bytes available for data");
             if (appearanceChanged)
             {
                 OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);

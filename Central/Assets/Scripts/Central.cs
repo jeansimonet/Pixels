@@ -408,6 +408,7 @@ public class Central : SingletonMonoBehaviour<Central>
                     // And force a disconnect
                     // Note: I'm not completely sure if we should trigger the disconnect or just remove the die
                     die.state = Die.State.Disconnecting;
+                    _state = State.Disconnecting;
                     BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
                     errorAttributed = true;
                     break;
@@ -427,6 +428,7 @@ public class Central : SingletonMonoBehaviour<Central>
                         // Temporarily add the die to the connected list to avoid an error message during the disconnect
                         // And force a disconnect
                         die.state = Die.State.Disconnecting;
+                        _state = State.Disconnecting;
                         BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
                         errorAttributed = true;
 
@@ -667,6 +669,7 @@ public class Central : SingletonMonoBehaviour<Central>
                 // Temporarily add the die to the connected list to avoid an error message during the disconnect
                 // And force a disconnect
                 die.state = Die.State.Disconnecting;
+                _state = State.Disconnecting;
                 BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
             }
             // Else just keep waiting
@@ -733,6 +736,7 @@ public class Central : SingletonMonoBehaviour<Central>
             // Temporarily add the die to the connected list to avoid an error message during the disconnect
             // And force a disconnect
             die.state = Die.State.Disconnecting;
+            _state = State.Disconnecting;
             BluetoothLEHardwareInterface.DisconnectPeripheral(die.address, null);
 
             StartNextSubscribeToCharacteristic();

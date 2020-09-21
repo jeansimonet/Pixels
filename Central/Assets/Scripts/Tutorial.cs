@@ -101,7 +101,7 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
                         // Now we wait until the user connects their dice
                         void checkCanGoToPage(UIPage page, object context, System.Action goToPage)
                         {
-                            if (page != poolPage || DiceManager.Instance.allDice.Count() == 0)
+                            if (page != poolPage || (DiceManager.Instance.allDice.Count() == 0 && DiceManager.Instance.state != DiceManager.State.AddingDiscoveredDie))
                             {
                                 PixelsApp.Instance.ShowDialogBox("Are you sure?", "You have not paired any die, are you sure you want to leave the tutorial?", "Yes", "Cancel", res =>
                                 {
@@ -113,52 +113,65 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
                                     }
                                 });
                             }
+                            else
+                            {
+                                goToPage?.Invoke();
+                            }
                         }
 
                         void onPageChanged(UIPage newPage, object context)
                         {
-                            NavigationManager.Instance.onPageEntered -= onPageChanged;
-                            NavigationManager.Instance.checkCanGoToPage = null;
-
-                            // Automatically assign dice!
-                            List<Dice.EditDie> userDice = new List<Dice.EditDie>(DiceManager.Instance.allDice);
-                            foreach (var preset in AppDataSet.Instance.presets)
+                            IEnumerator waitUntilIdleAgainAndContinue()
                             {
-                                foreach (var assignment in preset.dieAssignments)
-                                {
-                                    if (assignment.die == null)
-                                    {
-                                        assignment.die = userDice[assignment.defaultDieAssignmentIndex % userDice.Count];
-                                    }
-                                }
-                            }
+                                yield return new WaitUntil(() => DiceManager.Instance.state == DiceManager.State.Idle);
 
-                            poolTutorialRoot.gameObject.SetActive(true);
-                            poolTutorialNext.onClick.RemoveAllListeners();
-                            poolTutorialNext.onClick.AddListener(() =>
-                            {
-                                IEnumerator waitAndDisplayHomeTutorial()
+                                // Check that we DO in fact have dice in the list
+                                if (DiceManager.Instance.allDice.Count() > 0)
                                 {
-                                    poolTutorialRoot.gameObject.SetActive(false);
-                                    NavigationManager.Instance.GoToRoot(UIPage.PageId.Home);
-                                    yield return new WaitForSeconds(0.25f);
-                                    homeTutorialRoot.gameObject.SetActive(true);
-                                    homeTutorialNext.onClick.RemoveAllListeners();
-                                    homeTutorialNext.onClick.AddListener(() =>
+                                    // Automatically assign dice!
+                                    List<Dice.EditDie> userDice = new List<Dice.EditDie>(DiceManager.Instance.allDice);
+                                    foreach (var preset in AppDataSet.Instance.presets)
                                     {
-                                        homeTutorialRoot.gameObject.SetActive(false);
-                                        home2TutorialRoot.gameObject.SetActive(true);
-                                        home2TutorialNext.onClick.RemoveAllListeners();
-                                        home2TutorialNext.onClick.AddListener(() =>
+                                        foreach (var assignment in preset.dieAssignments)
                                         {
-                                            home2TutorialRoot.gameObject.SetActive(false);
-                                            AppSettings.Instance.SetMainTutorialEnabled(false);
-                                        });
+                                            if (assignment.die == null)
+                                            {
+                                                assignment.die = userDice[assignment.defaultDieAssignmentIndex % userDice.Count];
+                                            }
+                                        }
+                                    }
+
+                                    poolTutorialRoot.gameObject.SetActive(true);
+                                    poolTutorialNext.onClick.RemoveAllListeners();
+                                    poolTutorialNext.onClick.AddListener(() =>
+                                    {
+                                        IEnumerator waitAndDisplayHomeTutorial()
+                                        {
+                                            poolTutorialRoot.gameObject.SetActive(false);
+                                            NavigationManager.Instance.GoToRoot(UIPage.PageId.Home);
+                                            yield return new WaitForSeconds(0.25f);
+                                            homeTutorialRoot.gameObject.SetActive(true);
+                                            homeTutorialNext.onClick.RemoveAllListeners();
+                                            homeTutorialNext.onClick.AddListener(() =>
+                                            {
+                                                homeTutorialRoot.gameObject.SetActive(false);
+                                                home2TutorialRoot.gameObject.SetActive(true);
+                                                home2TutorialNext.onClick.RemoveAllListeners();
+                                                home2TutorialNext.onClick.AddListener(() =>
+                                                {
+                                                    home2TutorialRoot.gameObject.SetActive(false);
+                                                    AppSettings.Instance.SetMainTutorialEnabled(false);
+                                                });
+                                            });
+                                        }
+                                        StartCoroutine(waitAndDisplayHomeTutorial());
+
                                     });
                                 }
-                                StartCoroutine(waitAndDisplayHomeTutorial());
-
-                            });
+                            }
+                            NavigationManager.Instance.onPageEntered -= onPageChanged;
+                            NavigationManager.Instance.checkCanGoToPage = null;
+                            StartCoroutine(waitUntilIdleAgainAndContinue());
                         }
 
                         NavigationManager.Instance.onPageEntered += onPageChanged;

@@ -94,6 +94,7 @@ namespace Dice
         public string firmwareVersionId { get; private set; } = "Unknown";
         public string address { get; private set; } = ""; // name is stored on the gameObject itself
         public uint dataSetHash { get; private set; } = 0;
+        public uint flashSize { get; private set; } = 0;
 
         public RollState state { get; private set; } = RollState.Unknown;
         public int face { get; private set; } = -1;

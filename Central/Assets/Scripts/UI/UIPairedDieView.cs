@@ -38,32 +38,14 @@ public class UIPairedDieView : MonoBehaviour
         UpdateState();
         SetSelected(false);
 
-        if (die.die != null)
+        if (die.die == null)
         {
-            die.die.OnConnectionStateChanged += OnConnectionStateChanged;
-            die.die.OnAppearanceChanged += OnAppearanceChanged;
-            die.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
-            die.die.OnRssiChanged += OnRssiChanged;
-
-            bool saveUpdatedData = false;
-            if (die.designAndColor != die.die.designAndColor)
-            {
-                OnAppearanceChanged(die.die, die.die.faceCount, die.die.designAndColor);
-                saveUpdatedData = true;
-            }
-
-            if (die.name != die.die.name)
-            {
-                OnNameChanged(die.die, die.die.name);
-                saveUpdatedData = true;
-            }
-
-            if (saveUpdatedData)
-            {
-                AppDataSet.Instance.SaveData();
-            }
+            die.onDieFound += OnDieFound;
         }
-        die.onDieFound += OnDieFound;
+        else
+        {
+            OnDieFound(die);
+        }
         die.onDieWillBeLost += OnDieWillBeLost;
     }
 
@@ -108,21 +90,21 @@ public class UIPairedDieView : MonoBehaviour
         {
             batteryView.SetLevel(die.die.batteryLevel);
             signalView.SetRssi(die.die.rssi);
-            switch (die.die.connectionState)
+            switch (die.die.lastError)
             {
-            case Die.ConnectionState.Invalid:
-                dieRenderer.SetAuto(false);
-                dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
-                batteryView.gameObject.SetActive(false);
-                signalView.gameObject.SetActive(false);
-                statusText.text = "Invalid";
-                disconnectedTextRoot.gameObject.SetActive(true);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.Available:
-                switch (die.die.lastError)
-                {
-                    case Die.LastError.None:
+                case Die.LastError.None:
+                    switch (die.die.connectionState)
+                    {
+                    case Die.ConnectionState.Invalid:
+                        dieRenderer.SetAuto(false);
+                        dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
+                        batteryView.gameObject.SetActive(false);
+                        signalView.gameObject.SetActive(false);
+                        statusText.text = "Invalid";
+                        disconnectedTextRoot.gameObject.SetActive(true);
+                        errorTextRoot.gameObject.SetActive(false);
+                        break;
+                    case Die.ConnectionState.Available:
                         dieRenderer.SetAuto(true);
                         dieRenderImage.color = Color.white;
                         batteryView.gameObject.SetActive(true);
@@ -131,53 +113,53 @@ public class UIPairedDieView : MonoBehaviour
                         disconnectedTextRoot.gameObject.SetActive(false);
                         errorTextRoot.gameObject.SetActive(false);
                         break;
-                    case Die.LastError.ConnectionError:
+                    case Die.ConnectionState.Connecting:
                         dieRenderer.SetAuto(false);
-                        dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
-                        batteryView.gameObject.SetActive(false);
-                        signalView.gameObject.SetActive(false);
-                        statusText.text = "Connection Error";
+                        dieRenderImage.color = Color.white;
+                        batteryView.gameObject.SetActive(true);
+                        signalView.gameObject.SetActive(true);
+                        statusText.text = "Identifying";
                         disconnectedTextRoot.gameObject.SetActive(false);
-                        errorTextRoot.gameObject.SetActive(true);
-                        break;
-                    case Die.LastError.Disconnected:
-                        dieRenderer.SetAuto(false);
-                        dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
-                        batteryView.gameObject.SetActive(false);
-                        signalView.gameObject.SetActive(false);
-                        statusText.text = "Disconnected";
-                        disconnectedTextRoot.gameObject.SetActive(true);
                         errorTextRoot.gameObject.SetActive(false);
                         break;
-                }
-                break;
-            case Die.ConnectionState.Connecting:
-                dieRenderer.SetAuto(false);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "Identifying";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.Identifying:
-                dieRenderer.SetAuto(true);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "Identifying";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
-            case Die.ConnectionState.Ready:
-                dieRenderer.SetAuto(true);
-                dieRenderImage.color = Color.white;
-                batteryView.gameObject.SetActive(true);
-                signalView.gameObject.SetActive(true);
-                statusText.text = "Ready";
-                disconnectedTextRoot.gameObject.SetActive(false);
-                errorTextRoot.gameObject.SetActive(false);
-                break;
+                    case Die.ConnectionState.Identifying:
+                        dieRenderer.SetAuto(true);
+                        dieRenderImage.color = Color.white;
+                        batteryView.gameObject.SetActive(true);
+                        signalView.gameObject.SetActive(true);
+                        statusText.text = "Identifying";
+                        disconnectedTextRoot.gameObject.SetActive(false);
+                        errorTextRoot.gameObject.SetActive(false);
+                        break;
+                    case Die.ConnectionState.Ready:
+                        dieRenderer.SetAuto(true);
+                        dieRenderImage.color = Color.white;
+                        batteryView.gameObject.SetActive(true);
+                        signalView.gameObject.SetActive(true);
+                        statusText.text = "Ready";
+                        disconnectedTextRoot.gameObject.SetActive(false);
+                        errorTextRoot.gameObject.SetActive(false);
+                        break;
+                    }
+                    break;
+                case Die.LastError.ConnectionError:
+                    dieRenderer.SetAuto(false);
+                    dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
+                    batteryView.gameObject.SetActive(false);
+                    signalView.gameObject.SetActive(false);
+                    statusText.text = "Connection Error";
+                    disconnectedTextRoot.gameObject.SetActive(false);
+                    errorTextRoot.gameObject.SetActive(true);
+                    break;
+                case Die.LastError.Disconnected:
+                    dieRenderer.SetAuto(false);
+                    dieRenderImage.color = AppConstants.Instance.DieUnavailableColor;
+                    batteryView.gameObject.SetActive(false);
+                    signalView.gameObject.SetActive(false);
+                    statusText.text = "Disconnected";
+                    disconnectedTextRoot.gameObject.SetActive(true);
+                    errorTextRoot.gameObject.SetActive(false);
+                    break;
             }
         }
     }
@@ -194,6 +176,7 @@ public class UIPairedDieView : MonoBehaviour
         if (die.die != null)
         {
             die.die.OnConnectionStateChanged -= OnConnectionStateChanged;
+            die.die.OnError -= OnError;
             die.die.OnAppearanceChanged -= OnAppearanceChanged;
             die.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
             die.die.OnRssiChanged -= OnRssiChanged;
@@ -201,6 +184,11 @@ public class UIPairedDieView : MonoBehaviour
     }
 
     void OnConnectionStateChanged(Die die, Die.ConnectionState oldState, Die.ConnectionState newState)
+    {
+        UpdateState();
+    }
+
+    void OnError(Die die, Die.LastError lastError)
     {
         UpdateState();
     }
@@ -238,19 +226,29 @@ public class UIPairedDieView : MonoBehaviour
 
     void OnDieFound(EditDie editDie)
     {
-        editDie.die.OnConnectionStateChanged += OnConnectionStateChanged;
-        editDie.die.OnAppearanceChanged += OnAppearanceChanged;
-        editDie.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
-        editDie.die.OnRssiChanged += OnRssiChanged;
+        Debug.Assert(editDie == die);
+        die.die.OnConnectionStateChanged += OnConnectionStateChanged;
+        die.die.OnError += OnError;
+        die.die.OnAppearanceChanged += OnAppearanceChanged;
+        die.die.OnBatteryLevelChanged += OnBatteryLevelChanged;
+        die.die.OnRssiChanged += OnRssiChanged;
 
-        if (editDie.designAndColor != editDie.die.designAndColor)
+        bool saveUpdatedData = false;
+        if (die.designAndColor != die.die.designAndColor)
         {
-            OnAppearanceChanged(editDie.die, editDie.die.faceCount, editDie.die.designAndColor);
+            OnAppearanceChanged(die.die, die.die.faceCount, die.die.designAndColor);
+            saveUpdatedData = true;
         }
 
-        if (editDie.name != editDie.die.name)
+        if (die.name != die.die.name)
         {
-            OnNameChanged(editDie.die, editDie.die.name);
+            OnNameChanged(die.die, die.die.name);
+            saveUpdatedData = true;
+        }
+
+        if (saveUpdatedData)
+        {
+            AppDataSet.Instance.SaveData();
         }
     }
 

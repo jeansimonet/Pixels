@@ -28,7 +28,8 @@ public class UIScanView
     {
         base.SetupHeader(false, false, "Scanning", null);
         RefreshView();
-        DicePool.Instance.BeginScanForDice(OnDieDiscovered);
+        DicePool.Instance.onDieDiscovered += OnDieDiscovered;
+        DicePool.Instance.BeginScanForDice();
         pairSelectedDice.SetActive(false);
     }
 
@@ -36,7 +37,8 @@ public class UIScanView
     {
         if (DicePool.Instance != null)
         {
-            DicePool.Instance.StopScanForDice(OnDieDiscovered);
+            DicePool.Instance.StopScanForDice();
+            DicePool.Instance.onDieDiscovered -= OnDieDiscovered;
         }
         foreach (var die in discoveredDice)
         {
@@ -161,9 +163,9 @@ public class UIScanView
 
     void ClearList()
     {
-        DicePool.Instance.StopScanForDice(OnDieDiscovered);
+        DicePool.Instance.StopScanForDice();
         DicePool.Instance.ClearScanList();
         RefreshView();
-        DicePool.Instance.BeginScanForDice(OnDieDiscovered);
+        DicePool.Instance.BeginScanForDice();
     }
 }

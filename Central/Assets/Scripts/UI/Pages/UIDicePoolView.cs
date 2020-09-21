@@ -31,7 +31,7 @@ public class UIDicePoolView
     void Awake()
     {
         addNewDiceButton.onClick.AddListener(AddNewDice);
-
+        refreshButton.onClick.AddListener(ForceRefresh);
     }
 
     public override void Enter(object context)
@@ -46,9 +46,12 @@ public class UIDicePoolView
     public override void Leave()
     {
         base.Leave();
-        StopCoroutine(connectAllDiceCoroutine);
-        ((System.IDisposable)connectAllDiceCoroutine).Dispose(); // This will make sure the
-        connectAllDiceCoroutine = null;
+        if (connectAllDiceCoroutine != null)
+        {
+            StopCoroutine(connectAllDiceCoroutine);
+            ((System.IDisposable)connectAllDiceCoroutine).Dispose(); // This will make sure the
+            connectAllDiceCoroutine = null;
+        }
     }
 
     void OnEnable()
@@ -144,58 +147,54 @@ public class UIDicePoolView
 
     IEnumerator ConnectAllDice()
     {
+        DicePool.Instance.ResetDiceErrors();
         var allDiceCopy = new List<EditDie>();
         var connectedDice = new List<EditDie>();
         try
         {
-            while (true)
+            OnBeginRefreshPool();
+            allDiceCopy.Clear();
+            allDiceCopy.AddRange(DiceManager.Instance.allDice);
+            foreach (var editDie in allDiceCopy)
             {
-                OnBeginRefreshPool();
-                allDiceCopy.Clear();
-                allDiceCopy.AddRange(DiceManager.Instance.allDice);
-                foreach (var editDie in allDiceCopy)
+                if (editDie.die == null || (editDie.die.connectionState != Die.ConnectionState.Ready && editDie.die.lastError == Die.LastError.None))
                 {
-                    if (editDie.die == null || editDie.die.connectionState != Die.ConnectionState.Ready)
+                    // Try connecting to the die
+                    bool connected = false;
+                    connectedDice.Add(editDie);
+                    yield return DiceManager.Instance.ConnectDie(editDie, (d, res, err) => connected = res);
+
+                    if (connected)
                     {
-                        // Try connecting to the die
-                        bool connected = false;
-                        connectedDice.Add(editDie);
-                        yield return DiceManager.Instance.ConnectDie(editDie, (d, res, err) => connected = res);
+                        // Fetch battery level
+                        bool battLevelReceived = false;
+                        editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                        yield return new WaitUntil(() => battLevelReceived == true);
 
-                        if (connected)
-                        {
-                            // Fetch battery level
-                            bool battLevelReceived = false;
-                            editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
-                            yield return new WaitUntil(() => battLevelReceived == true);
-
-                            // Fetch rssi
-                            bool rssiReceived = false;
-                            editDie.die.GetRssi((d, i) => rssiReceived = true);
-                            yield return new WaitUntil(() => rssiReceived == true);
-                        }
-                        else
-                        {
-                            connectedDice.Remove(editDie);
-                        }
-
-                        RefreshView();
+                        // Fetch rssi
+                        bool rssiReceived = false;
+                        editDie.die.GetRssi((d, i) => rssiReceived = true);
+                        yield return new WaitUntil(() => rssiReceived == true);
                     }
-                }
-                OnEndRefreshPool();
+                    else
+                    {
+                        Debug.Log("UIPoolView Error Connecting");
+                        connectedDice.Remove(editDie);
+                    }
 
-                yield return new WaitForSeconds(10.0f);
+                    RefreshView();
+                }
             }
         }
         finally
         {
-            Debug.Log("Finally Called");
             foreach (var editDie in connectedDice)
             {
                 DiceManager.Instance.DisconnectDie(editDie, null);
             }
             OnEndRefreshPool();
         }
+        connectAllDiceCoroutine = null;
     }
 
     void OnEndRefreshPool()
@@ -203,6 +202,16 @@ public class UIDicePoolView
         if (refreshButton.rotating)
         {
             refreshButton.StopRotating();
+        }
+    }
+
+    void ForceRefresh()
+    {
+        if (connectAllDiceCoroutine == null)
+        {
+            // Connect to all the dice in the pool if possible
+            connectAllDiceCoroutine = ConnectAllDice();
+            StartCoroutine(connectAllDiceCoroutine);
         }
     }
 }

@@ -80,9 +80,24 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             bool ret = (pages.Count > 1);
             if (ret)
             {
-                LeavePage(pages[pages.Count - 1]);
-                pages.RemoveAt(pages.Count - 1);
-                EnterPage(pages[pages.Count - 1]);
+                var curPage = pages[pages.Count - 1];
+                var prevPage = pages[pages.Count - 2];
+
+                void goBack()
+                {
+                    LeavePage(curPage);
+                    pages.RemoveAt(pages.Count - 1);
+                    EnterPage(prevPage);
+                }
+
+                if (checkCanGoToPage != null)
+                {
+                    checkCanGoToPage(prevPage.page, null, goBack);
+                }
+                else
+                {
+                    goBack();
+                }
             }
             // Else no page to go back to
             return ret;

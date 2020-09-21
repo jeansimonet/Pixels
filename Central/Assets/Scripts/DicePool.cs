@@ -37,34 +37,31 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     // exactly when to start or stop asking central.
     int scanRequestCount = 0;
 
+    public void ResetDiceErrors()
+    {
+        foreach (var die in dice)
+        {
+            die.setError(Die.LastError.None);
+        }
+    }
+    
     /// <summary>
     /// Start scanning for new and existing dice, filling our lists in the process from
     /// events triggered by Central.
     /// </sumary>
-    public void BeginScanForDice(DicePool.DieCreationEvent onScannedDie)
+    public void BeginScanForDice()
     {
-        // In either case, register to be notified on new dice
-        DicePool.Instance.onDieDiscovered += onScannedDie;
-
         scanRequestCount++;
         if (scanRequestCount == 1)
         {
             DoBeginScanForDice();
-        }
-        else
-        {
-            // Iterate over existing scanned dice
-            foreach (var die in DicePool.Instance.allDice.Where(d => d.connectionState == Die.ConnectionState.Available))
-            {
-                onScannedDie.Invoke(die);
-            }
         }
     }
 
     /// <summary>
     /// Stops the current scan 
     /// </sumary>
-    public void StopScanForDice(DicePool.DieCreationEvent onScannedDie)
+    public void StopScanForDice()
     {
         if (scanRequestCount == 0)
         {
@@ -72,7 +69,6 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
         else
         {
-            DicePool.Instance.onDieDiscovered -= onScannedDie;
             scanRequestCount--;
             if (scanRequestCount == 0)
             {
