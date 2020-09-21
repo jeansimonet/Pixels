@@ -2,7 +2,7 @@ PROJECT_NAME     := secure_bootloader_ble_s112_pca10040e
 TARGETS          := nrf52810_xxaa_s112
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := C:/nRF5_SDK
+SDK_ROOT := C:/nRF5_SDK_old
 PROJ_DIR := .
 
 $(OUTPUT_DIRECTORY)/nrf52810_xxaa_s112.out: \
