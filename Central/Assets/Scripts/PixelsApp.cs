@@ -228,13 +228,15 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                                 if (res3)
                                 {
                                     HideProgrammingBox();
-                                    DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(res));
+                                    DiceManager.Instance.DisconnectDie(editDie, null);
+                                    callback?.Invoke(true);
                                 }
                                 else
                                 {
                                     HideProgrammingBox();
                                     ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                                    DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
+                                    DiceManager.Instance.DisconnectDie(editDie, null);
+                                    callback?.Invoke(false);
                                 }
                             });
                         }
@@ -242,7 +244,8 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         {
                             HideProgrammingBox();
                             ShowDialogBox("Error uploading data to " + editDie.name, message, "Ok", null, null);
-                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
+                            DiceManager.Instance.DisconnectDie(editDie, null);
+                            callback?.Invoke(false);
                         }
                     });
                 }
@@ -254,13 +257,15 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         if (res3)
                         {
                             HideProgrammingBox();
-                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(res));
+                            DiceManager.Instance.DisconnectDie(editDie, null);
+                            callback?.Invoke(true);
                         }
                         else
                         {
                             HideProgrammingBox();
                             ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                            DiceManager.Instance.DisconnectDie(editDie, (d, res4, msg) => callback(false));
+                            DiceManager.Instance.DisconnectDie(editDie, null);
+                            callback?.Invoke(false);
                         }
                     });
                 }

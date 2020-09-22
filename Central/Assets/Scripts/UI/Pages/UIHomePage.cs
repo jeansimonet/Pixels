@@ -28,6 +28,10 @@ public class UIHomePage
         {
             Tutorial.Instance.StartMainTutorial();
         }
+        else if (AppSettings.Instance.homeTutorialEnabled)
+        {
+            Tutorial.Instance.StartHomeTutorial();
+        }
     }
 
     void OnEnable()

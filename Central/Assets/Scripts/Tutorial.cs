@@ -20,13 +20,20 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
     public RectTransform poolTutorialRoot;
     public Button poolTutorialNext;
 
+    public RectTransform pool2TutorialRoot;
+    public Button pool2TutorialNext;
+
+    public UIPage poolPage;
+
+    [Header("Home Tutorial")]
+
     public RectTransform homeTutorialRoot;
     public Button homeTutorialNext;
 
     public RectTransform home2TutorialRoot;
     public Button home2TutorialNext;
 
-    public UIPage poolPage;
+    public UIPage homePage;
 
     [Header("Presets Tutorial")]
     public RectTransform presetsTutorialRoot;
@@ -145,27 +152,32 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
                                     poolTutorialNext.onClick.RemoveAllListeners();
                                     poolTutorialNext.onClick.AddListener(() =>
                                     {
-                                        IEnumerator waitAndDisplayHomeTutorial()
+                                        poolTutorialRoot.gameObject.SetActive(false);
+                                        pool2TutorialRoot.gameObject.SetActive(true);
+                                        pool2TutorialNext.onClick.RemoveAllListeners();
+                                        pool2TutorialNext.onClick.AddListener(() =>
                                         {
-                                            poolTutorialRoot.gameObject.SetActive(false);
-                                            NavigationManager.Instance.GoToRoot(UIPage.PageId.Home);
-                                            yield return new WaitForSeconds(0.25f);
-                                            homeTutorialRoot.gameObject.SetActive(true);
-                                            homeTutorialNext.onClick.RemoveAllListeners();
-                                            homeTutorialNext.onClick.AddListener(() =>
-                                            {
-                                                homeTutorialRoot.gameObject.SetActive(false);
-                                                home2TutorialRoot.gameObject.SetActive(true);
-                                                home2TutorialNext.onClick.RemoveAllListeners();
-                                                home2TutorialNext.onClick.AddListener(() =>
-                                                {
-                                                    home2TutorialRoot.gameObject.SetActive(false);
-                                                    AppSettings.Instance.SetMainTutorialEnabled(false);
-                                                });
-                                            });
-                                        }
-                                        StartCoroutine(waitAndDisplayHomeTutorial());
+                                            pool2TutorialRoot.gameObject.SetActive(false);
+                                            AppSettings.Instance.SetMainTutorialEnabled(false);
 
+                                            // Now we wait until the user connects their dice
+                                            void checkCanGoToPage2(UIPage page2, object context2, System.Action goToPage2)
+                                            {
+                                                if (page2 == homePage)
+                                                {
+                                                    goToPage2?.Invoke();
+                                                }
+                                            }
+
+                                            void onPageChanged2(UIPage newPage2, object context2)
+                                            {
+                                                NavigationManager.Instance.onPageEntered -= onPageChanged2;
+                                                NavigationManager.Instance.checkCanGoToPage = null;
+                                            }
+
+                                            NavigationManager.Instance.onPageEntered += onPageChanged2;
+                                            NavigationManager.Instance.checkCanGoToPage = checkCanGoToPage2;
+                                        });
                                     });
                                 }
                             }
@@ -182,6 +194,29 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
                 StartCoroutine(waitAndDisplayScanningTutorial());
             });
         });
+    }
+
+    public void StartHomeTutorial()
+    {
+        IEnumerator waitAndDisplayHomeTutorial()
+        {
+            NavigationManager.Instance.GoToRoot(UIPage.PageId.Home);
+            yield return new WaitForSeconds(0.25f);
+            homeTutorialRoot.gameObject.SetActive(true);
+            homeTutorialNext.onClick.RemoveAllListeners();
+            homeTutorialNext.onClick.AddListener(() =>
+            {
+                homeTutorialRoot.gameObject.SetActive(false);
+                home2TutorialRoot.gameObject.SetActive(true);
+                home2TutorialNext.onClick.RemoveAllListeners();
+                home2TutorialNext.onClick.AddListener(() =>
+                {
+                    home2TutorialRoot.gameObject.SetActive(false);
+                    AppSettings.Instance.SetHomeTutorialEnabled(false);
+                });
+            });
+        }
+        StartCoroutine(waitAndDisplayHomeTutorial());
     }
 
     public void StartPresetsTutorial()

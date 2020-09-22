@@ -133,7 +133,11 @@ public class UIDicePoolView
 
     void OnDieAdded(EditDie editDie)
     {
-        DiceManager.Instance.ConnectDie(editDie, null);
+        if (!connectedDice.Contains(editDie))
+        {
+            connectedDice.Add(editDie);
+            DiceManager.Instance.ConnectDie(editDie, null);
+        }
         RefreshView();
     }
 

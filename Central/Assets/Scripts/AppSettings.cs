@@ -13,6 +13,7 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     {
         public bool displayWhatsNew = true;
         public bool mainTutorialEnabled = true;
+        public bool homeTutorialEnabled = true;
         public bool presetsTutorialEnabled = true;
         public bool presetTutorialEnabled = true;
         public bool behaviorTutorialEnabled = true;
@@ -24,6 +25,7 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
 
     public bool displayWhatsNew => data.displayWhatsNew;
     public bool mainTutorialEnabled => data.mainTutorialEnabled;
+    public bool homeTutorialEnabled => data.homeTutorialEnabled;
     public bool presetsTutorialEnabled => data.presetsTutorialEnabled;
     public bool presetTutorialEnabled => data.presetTutorialEnabled;
     public bool behaviorTutorialEnabled => data.behaviorTutorialEnabled;
@@ -40,6 +42,12 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public void SetMainTutorialEnabled(bool value)
     {
         data.mainTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetHomeTutorialEnabled(bool value)
+    {
+        data.homeTutorialEnabled = value;
         SaveData();
     }
 
@@ -128,11 +136,14 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public void LoadData()
     {
         var path = System.IO.Path.Combine(Application.persistentDataPath, AppConstants.Instance.SettingsFilename);
-        var serializer = CreateSerializer();
-        using (StreamReader sw = new StreamReader(path))
-        using (JsonReader reader = new JsonTextReader(sw))
+        if (System.IO.File.Exists(path))
         {
-            FromJson(reader, serializer);
+            var serializer = CreateSerializer();
+            using (StreamReader sw = new StreamReader(path))
+            using (JsonReader reader = new JsonTextReader(sw))
+            {
+                FromJson(reader, serializer);
+            }
         }
     }
 
