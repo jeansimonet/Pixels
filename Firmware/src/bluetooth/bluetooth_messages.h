@@ -181,6 +181,13 @@ struct MessageTransferAnimSet
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
 };
 
+struct MessageTransferAnimSetAck
+	: Message
+{
+	uint8_t result;
+	inline MessageTransferAnimSetAck() : Message(Message::MessageType_TransferAnimSetAck) {}
+};
+
 struct MessageTransferTestAnimSet
 	: Message
 {

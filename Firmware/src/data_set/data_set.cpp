@@ -52,6 +52,10 @@ namespace DataSet
 	uint32_t size = 0;
 	uint32_t hash = 0;
 
+	uint32_t availableDataSize() {
+		return Flash::getFlashEndAddress() - getDataSetDataAddress();
+	}
+
 	uint32_t dataSize() {
 		return size;
 	}
@@ -220,141 +224,150 @@ namespace DataSet
 			message->ruleCount * sizeof(Rule) +
 			message->behaviorCount * sizeof(Behavior);
 
-		NRF_LOG_DEBUG("Animation Data to be received:");
-		NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
-		NRF_LOG_DEBUG("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
-		NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
-		NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
-		NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(Track));
-		NRF_LOG_DEBUG("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Animations: %d", message->animationSize);
-		NRF_LOG_DEBUG("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Conditions: %d", message->conditionSize);
-		NRF_LOG_DEBUG("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
-		NRF_LOG_DEBUG("Actions: %d", message->actionSize);
-		NRF_LOG_DEBUG("Rules: %d * %d", message->ruleCount, sizeof(Rule));
-		NRF_LOG_DEBUG("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
+		if (availableDataSize() > dabs->bufferSize) {
+			NRF_LOG_DEBUG("Animation Data to be received:");
+			NRF_LOG_DEBUG("Palette: %d * %d", message->paletteSize, sizeof(uint8_t));
+			NRF_LOG_DEBUG("RGB Keyframes: %d * %d", message->rgbKeyFrameCount, sizeof(RGBKeyframe));
+			NRF_LOG_DEBUG("RGB Tracks: %d * %d", message->rgbTrackCount, sizeof(RGBTrack));
+			NRF_LOG_DEBUG("Keyframes: %d * %d", message->keyFrameCount, sizeof(Keyframe));
+			NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(Track));
+			NRF_LOG_DEBUG("Animation Offsets: %d * %d", message->animationCount, sizeof(uint16_t));
+			NRF_LOG_DEBUG("Animations: %d", message->animationSize);
+			NRF_LOG_DEBUG("Conditions Offsets: %d * %d", message->conditionCount, sizeof(uint16_t));
+			NRF_LOG_DEBUG("Conditions: %d", message->conditionSize);
+			NRF_LOG_DEBUG("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
+			NRF_LOG_DEBUG("Actions: %d", message->actionSize);
+			NRF_LOG_DEBUG("Rules: %d * %d", message->ruleCount, sizeof(Rule));
+			NRF_LOG_DEBUG("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
 
-		uint32_t totalSize = dabs->bufferSize + sizeof(Data);
-		uint32_t flashSize = Flash::getFlashByteSize(totalSize);
-		uint32_t pageAddress = getDataSetAddress();
-		uint32_t dataAddress = getDataSetDataAddress();
-		uint32_t pageCount = Flash::bytesToPages(flashSize);
+			uint32_t totalSize = dabs->bufferSize + sizeof(Data);
+			uint32_t flashSize = Flash::getFlashByteSize(totalSize);
+			uint32_t pageAddress = getDataSetAddress();
+			uint32_t dataAddress = getDataSetDataAddress();
+			uint32_t pageCount = Flash::bytesToPages(flashSize);
 
-		NRF_LOG_DEBUG("totalSize: 0x%04x", totalSize);
-		NRF_LOG_DEBUG("flashSize: 0x%04x", flashSize);
-		NRF_LOG_DEBUG("pageAddress: 0x%08x", pageAddress);
-		NRF_LOG_DEBUG("dataAddress: 0x%08x", dataAddress);
-		NRF_LOG_DEBUG("pageCount: %d", pageCount);
+			NRF_LOG_DEBUG("totalSize: 0x%04x", totalSize);
+			NRF_LOG_DEBUG("flashSize: 0x%04x", flashSize);
+			NRF_LOG_DEBUG("pageAddress: 0x%08x", pageAddress);
+			NRF_LOG_DEBUG("dataAddress: 0x%08x", dataAddress);
+			NRF_LOG_DEBUG("pageCount: %d", pageCount);
 
-		// Store the address and size
-		NRF_LOG_DEBUG("Setting up pointers");
-		dabs->newData.headMarker = ANIMATION_SET_VALID_KEY;
-		dabs->newData.version = ANIMATION_SET_VERSION;
+			// Store the address and size
+			NRF_LOG_DEBUG("Setting up pointers");
+			dabs->newData.headMarker = ANIMATION_SET_VALID_KEY;
+			dabs->newData.version = ANIMATION_SET_VERSION;
 
-		uint32_t address = dataAddress;
-		dabs->newData.animationBits.palette = (const uint8_t*)address;
-		dabs->newData.animationBits.paletteSize = message->paletteSize;
-		address += message->paletteSize * sizeof(uint8_t);
+			uint32_t address = dataAddress;
+			dabs->newData.animationBits.palette = (const uint8_t*)address;
+			dabs->newData.animationBits.paletteSize = message->paletteSize;
+			address += message->paletteSize * sizeof(uint8_t);
 
-		dabs->newData.animationBits.rgbKeyframes = (const RGBKeyframe*)address;
-		dabs->newData.animationBits.rgbKeyFrameCount = message->rgbKeyFrameCount;
-		address += message->rgbKeyFrameCount * sizeof(RGBKeyframe);
+			dabs->newData.animationBits.rgbKeyframes = (const RGBKeyframe*)address;
+			dabs->newData.animationBits.rgbKeyFrameCount = message->rgbKeyFrameCount;
+			address += message->rgbKeyFrameCount * sizeof(RGBKeyframe);
 
-		dabs->newData.animationBits.rgbTracks = (const RGBTrack*)address;
-		dabs->newData.animationBits.rgbTrackCount = message->rgbTrackCount;
-		address += message->rgbTrackCount * sizeof(RGBTrack);
+			dabs->newData.animationBits.rgbTracks = (const RGBTrack*)address;
+			dabs->newData.animationBits.rgbTrackCount = message->rgbTrackCount;
+			address += message->rgbTrackCount * sizeof(RGBTrack);
 
-		dabs->newData.animationBits.keyframes = (const Keyframe*)address;
-		dabs->newData.animationBits.keyFrameCount = message->keyFrameCount;
-		address += message->keyFrameCount * sizeof(Keyframe);
+			dabs->newData.animationBits.keyframes = (const Keyframe*)address;
+			dabs->newData.animationBits.keyFrameCount = message->keyFrameCount;
+			address += message->keyFrameCount * sizeof(Keyframe);
 
-		dabs->newData.animationBits.tracks = (const Track*)address;
-		dabs->newData.animationBits.trackCount = message->trackCount;
-		address += message->trackCount * sizeof(Track);
+			dabs->newData.animationBits.tracks = (const Track*)address;
+			dabs->newData.animationBits.trackCount = message->trackCount;
+			address += message->trackCount * sizeof(Track);
 
-		dabs->newData.animationOffsets = (const uint16_t*)address;
-		dabs->newData.animationCount = message->animationCount;
-		address += Utils::roundUpTo4(message->animationCount * sizeof(uint16_t)); // round to multiple of 4
-		dabs->newData.animations = (const Animation*)address;
-		dabs->newData.animationsSize = message->animationSize;
-		address += message->animationSize;
+			dabs->newData.animationOffsets = (const uint16_t*)address;
+			dabs->newData.animationCount = message->animationCount;
+			address += Utils::roundUpTo4(message->animationCount * sizeof(uint16_t)); // round to multiple of 4
+			dabs->newData.animations = (const Animation*)address;
+			dabs->newData.animationsSize = message->animationSize;
+			address += message->animationSize;
 
-		dabs->newData.conditionsOffsets = (const uint16_t*)address;
-		dabs->newData.conditionCount = message->conditionCount;
-		address += Utils::roundUpTo4(message->conditionCount * sizeof(uint16_t)); // round to multiple of 4
-		dabs->newData.conditions = (const Condition*)address;
-		dabs->newData.conditionsSize = message->conditionSize;
-		address += message->conditionSize;
+			dabs->newData.conditionsOffsets = (const uint16_t*)address;
+			dabs->newData.conditionCount = message->conditionCount;
+			address += Utils::roundUpTo4(message->conditionCount * sizeof(uint16_t)); // round to multiple of 4
+			dabs->newData.conditions = (const Condition*)address;
+			dabs->newData.conditionsSize = message->conditionSize;
+			address += message->conditionSize;
 
-		dabs->newData.actionsOffsets = (const uint16_t*)address;
-		dabs->newData.actionCount = message->actionCount;
-		address += Utils::roundUpTo4(message->actionCount * sizeof(uint16_t)); // round to multiple of 4
-		dabs->newData.actions = (const Action*)address;
-		dabs->newData.actionsSize = message->actionSize;
-		address += message->actionSize;
+			dabs->newData.actionsOffsets = (const uint16_t*)address;
+			dabs->newData.actionCount = message->actionCount;
+			address += Utils::roundUpTo4(message->actionCount * sizeof(uint16_t)); // round to multiple of 4
+			dabs->newData.actions = (const Action*)address;
+			dabs->newData.actionsSize = message->actionSize;
+			address += message->actionSize;
 
-		dabs->newData.rules = (const Rule*)address;
-		dabs->newData.ruleCount = message->ruleCount;
-		address += message->ruleCount * sizeof(Rule);
+			dabs->newData.rules = (const Rule*)address;
+			dabs->newData.ruleCount = message->ruleCount;
+			address += message->ruleCount * sizeof(Rule);
 
-		dabs->newData.behaviors = (const Behavior*)address;
-		dabs->newData.behaviorsCount = message->behaviorCount;
-		address += message->behaviorCount * sizeof(Behavior);
+			dabs->newData.behaviors = (const Behavior*)address;
+			dabs->newData.behaviorsCount = message->behaviorCount;
+			address += message->behaviorCount * sizeof(Behavior);
 
-		dabs->newData.tailMarker = ANIMATION_SET_VALID_KEY;
+			dabs->newData.tailMarker = ANIMATION_SET_VALID_KEY;
 
-		
-		// Start by erasing the flash
-		Flash::erase(pageAddress, pageCount,
-			[](bool result, uint32_t address, uint16_t data_size) {
-				NRF_LOG_DEBUG("done Erasing %d page", data_size);
+			
+			// Start by erasing the flash
+			Flash::erase(pageAddress, pageCount,
+				[](bool result, uint32_t address, uint16_t data_size) {
+					NRF_LOG_DEBUG("done Erasing %d page", data_size);
 
-				if (result) {
-					// Send Ack and receive data
-					MessageService::SendMessage(Message::MessageType_TransferAnimSetAck);
+					if (result) {
+						// Send Ack and receive data
+						MessageTransferAnimSetAck ack;
+						ack.result = 1;
+						MessageService::SendMessage(&ack);
 
-					// Receive all the buffers directly to flash
-					ReceiveBulkData::receiveToFlash(getDataSetDataAddress(), nullptr,
-						[](void* context, bool success, uint16_t data_size) {
-							NRF_LOG_DEBUG("Finished flashing animation data, flashing animation set itself");
-							NRF_LOG_DEBUG("Buffer Size: 0x%04x, Programmed Size: 0x%04x", dabs->bufferSize, data_size);
-							if (success) {
-								// Program the animation set itself
-								NRF_LOG_DEBUG("Writing set");
+						// Receive all the buffers directly to flash
+						ReceiveBulkData::receiveToFlash(getDataSetDataAddress(), nullptr,
+							[](void* context, bool success, uint16_t data_size) {
+								NRF_LOG_DEBUG("Finished flashing animation data, flashing animation set itself");
+								NRF_LOG_DEBUG("Buffer Size: 0x%04x, Programmed Size: 0x%04x", dabs->bufferSize, data_size);
+								if (success) {
+									// Program the animation set itself
+									NRF_LOG_DEBUG("Writing set");
 
-								Flash::write(getDataSetAddress(), &dabs->newData, sizeof(Data),
-									[](bool result, uint32_t address, uint16_t data_size) {
-										if (result) {
-											NRF_LOG_INFO("Data Set written to flash!");
+									Flash::write(getDataSetAddress(), &dabs->newData, sizeof(Data),
+										[](bool result, uint32_t address, uint16_t data_size) {
+											if (result) {
+												NRF_LOG_INFO("Data Set written to flash!");
 
-											if (!CheckValid()) {
-												NRF_LOG_ERROR("Dateset is not valid, reprogramming defaults!");
-												ProgramDefaultDataSet([](bool result) {
+												if (!CheckValid()) {
+													NRF_LOG_ERROR("Dateset is not valid, reprogramming defaults!");
+													ProgramDefaultDataSet([](bool result) {
+														finishProgramming();
+													});
+												} else {
+													// All good!
 													finishProgramming();
-												});
+												}
 											} else {
-												// All good!
+												NRF_LOG_ERROR("Error programming dataset to flash");
 												finishProgramming();
 											}
-										} else {
-											NRF_LOG_ERROR("Error programming dataset to flash");
-											finishProgramming();
 										}
-									}
-								);
-							} else {
-								NRF_LOG_ERROR("Error transfering animation data");
-								finishProgramming();
+									);
+								} else {
+									NRF_LOG_ERROR("Error transfering animation data");
+									finishProgramming();
+								}
 							}
-						}
-					);
-				} else {
-					NRF_LOG_ERROR("Error erasing flash");
-					finishProgramming();
+						);
+					} else {
+						NRF_LOG_ERROR("Error erasing flash");
+						finishProgramming();
+					}
 				}
-			}
-		);
+			);
+		} else {
+			MessageTransferAnimSetAck ack;
+			ack.result = 0; // Failed
+			MessageService::SendMessage(&ack);
+			finishProgramming();
+		}
 	}
 
 	void printAnimationInfo() {

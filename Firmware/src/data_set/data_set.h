@@ -22,6 +22,8 @@ namespace DataSet
 	void init(DataSetWrittenCallback callback);
 	bool CheckValid();
 
+	uint32_t availableDataSize();
+
 	// Size Hash
 	uint32_t dataSize();
 	uint32_t dataHash();
