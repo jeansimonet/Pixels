@@ -88,10 +88,19 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                         dice.Add(editDie);
                         onDieAdded?.Invoke(editDie);
                         editDie.die = die;
+
+                        // Fetch battery level
+                        bool battLevelReceived = false;
+                        editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                        yield return new WaitUntil(() => battLevelReceived == true);
+
+                        // Fetch rssi
+                        bool rssiReceived = false;
+                        editDie.die.GetRssi((d, r) => rssiReceived = true);
+                        yield return new WaitUntil(() => rssiReceived == true);
+
                     }
-                    res = null;
-                    DicePool.Instance.DisconnectDie(die, (d, r, s) => res = r);
-                    yield return new WaitUntil(() => res.HasValue);
+                    DicePool.Instance.DisconnectDie(die, null);
                 }
                 else
                 {
@@ -236,11 +245,20 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             onWillRemoveDie?.Invoke(editDie);
             if (dt.die != null)
             {
-                DicePool.Instance.ForgetDie(dt.die);
+                DicePool.Instance.ForgetDie(dt.die, (d, res, s) =>
+                {
+                    if (res)
+                    {
+                        AppDataSet.Instance.DeleteDie(editDie);
+                        dice.Remove(dt);
+                        AppDataSet.Instance.SaveData();
+                    }
+                    else
+                    {
+                        PixelsApp.Instance.ShowDialogBox("Forget Die Error", "Could not forget Die " + d.name + ":\n" + s, "Ok", null, null);
+                    }
+                });
             }
-            AppDataSet.Instance.DeleteDie(editDie);
-            dice.Remove(dt);
-            AppDataSet.Instance.SaveData();
         }
     }
 

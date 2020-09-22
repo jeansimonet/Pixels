@@ -78,25 +78,26 @@ class ColorUtils
         }
     }
 
+    public static float computeSqrColorDistance(Color color1, Color color2)
+    {
+        return
+            (color1.r - color2.r) * (color1.r - color2.r) +
+            (color1.g - color2.g) * (color1.g - color2.g) +
+            (color1.b - color2.b) * (color1.b - color2.b);
+    }
+
+
     public static List<Animations.EditRGBKeyframe> extractKeyframes(Color[] pixels)
     {
         var ret = new List<Animations.EditRGBKeyframe>();
         
-        float computeSqrDistance(Color color1, Color color2)
-        {
-            return 
-                (color1.r - color2.r) * (color1.r - color2.r) + 
-                (color1.g - color2.g) * (color1.g - color2.g) + 
-                (color1.b - color2.b) * (color1.b - color2.b);
-        }
-
         float computeInterpolationError(int firstIndex, int lastIndex) {
             Color startColor = pixels[firstIndex];
             Color endColor = pixels[lastIndex];
             float sumError = 0.0f;
             for (int i = firstIndex; i <= lastIndex; ++i) {
                 float pct = (float)(i - firstIndex) / (lastIndex - firstIndex);
-                sumError += computeSqrDistance(pixels[i], Color.Lerp(startColor, endColor, pct));
+                sumError += computeSqrColorDistance(pixels[i], Color.Lerp(startColor, endColor, pct));
             }
             return sumError;
         }
@@ -112,7 +113,7 @@ class ColorUtils
             color = pixels[0]
         });
 
-        const float sqrEpsilon = 0.1f;
+        const float sqrEpsilon = 0.5f;
 
         int currentPrev = 0;
         int currentNext = 1;

@@ -101,7 +101,9 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             switch (poolDie.die.connectionState)
             {
                 default:
-                    Debug.LogError("Die " + die.name + " in invalid die state " + poolDie.die.connectionState + " while attempting to connect");
+                    string errorMessage = "Die " + die.name + " in invalid die state " + poolDie.die.connectionState + " while attempting to connect";
+                    Debug.LogError(errorMessage);
+                    onConnectionResult?.Invoke(die, false, errorMessage);
                     break;
                 case Die.ConnectionState.Available:
                     Debug.Assert(poolDie.currentConnectionCount == 1);
@@ -122,12 +124,15 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
         else
         {
-            Debug.LogError("Pool atempting to connect to unknown die " + die.name);
+            string errorMessage = "Pool atempting to connect to unknown die " + die.name;
+            Debug.LogError(errorMessage);
+            onConnectionResult?.Invoke(die, false, errorMessage);
         }
     }
 
     public void DisconnectDie(Die die, System.Action<Die, bool, string> onDisconnectionResult)
     {
+        string errorMessage = null;
         var poolDie = dice.FirstOrDefault(d => d.die == die);
         if (poolDie != null)
         {
@@ -135,9 +140,15 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             switch (poolDie.die.connectionState)
             {
                 default:
-                    Debug.LogError("Die " + die.name + " in invalid die state " + poolDie.die.connectionState + " while attempting to disconnect");
+                    {
+                        errorMessage = "Die " + die.name + " in invalid die state " + poolDie.die.connectionState + " while attempting to disconnect";
+                        Debug.LogError(errorMessage);
+                        onDisconnectionResult?.Invoke(die, false, errorMessage);
+                    }
                     break;
                 case Die.ConnectionState.Ready:
+                case Die.ConnectionState.Connecting:
+                case Die.ConnectionState.Identifying:
                     // Register to be notified when disconnection is complete
                     poolDie.currentConnectionCount--;
                     if (poolDie.currentConnectionCount == 0)
@@ -151,7 +162,9 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
         else
         {
-            Debug.LogError("Pool atempting to disconnect to unknown die " + die.name);
+            errorMessage = "Pool atempting to disconnect to unknown die " + die.name;
+            Debug.LogError(errorMessage);
+            onDisconnectionResult?.Invoke(die, false, errorMessage);
         }
     }
 
@@ -159,7 +172,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// Removes a die from the pool, as if we never new it.
     /// Note: We may very well 'discover' it again the next time we scan.
     /// </sumary>
-    public void ForgetDie(Die die)
+    public void ForgetDie(Die die, System.Action<Die, bool, string> onForgetDieResult)
     {
         var poolDie = dice.FirstOrDefault(d => d.die == die);
         if (poolDie != null)
@@ -167,20 +180,26 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
             switch (poolDie.die.connectionState)
             {
                 default:
+                    DestroyDie(poolDie);
+                    onForgetDieResult?.Invoke(die, true, null);
                     break;
                 case Die.ConnectionState.Ready:
                 case Die.ConnectionState.Connecting:
                 case Die.ConnectionState.Identifying:
                     // Disconnect!
-                    DoDisconnectDie(die);
+                    DisconnectDie(die, (d, r, s) =>
+                    {
+                        DestroyDie(poolDie);
+                        onForgetDieResult?.Invoke(d, r, s);
+                    });
                     break;
             }
-
-            DestroyDie(poolDie);
         }
         else
         {
-            Debug.LogError("Pool atempting to forget unknown die " + die.name);
+            string errorMessage = "Pool atempting to forget unknown die " + die.name;
+            Debug.LogError(errorMessage);
+            onForgetDieResult?.Invoke(die, false, errorMessage);
         }
     }
 
@@ -194,6 +213,11 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             onWriteResult?.Invoke(die, res, errorMsg);
         });
+    }
+
+    void Awake()
+    {
+        Central.Instance.onBluetoothError += OnBluetoothError;
     }
 
     void Update()
@@ -269,11 +293,6 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         {
             Debug.LogError("Die " + die.name + " not in ready state, instead: " + die.connectionState);
         }
-    }
-
-    void Awake()
-    {
-        Central.Instance.onBluetoothError += OnBluetoothError;
     }
 
     void OnBluetoothError(string message)
@@ -464,7 +483,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         }
         else
         {
-            Debug.LogError("Received Die connected notification for unknown die " + die.name);
+            Debug.LogError("Received Die disconnected notification for unknown die " + die.name);
         }
     }
 
@@ -513,15 +532,30 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     /// </sumary>
     void DestroyDie(PoolDie ourDie)
     {
-        // Disconnect first
-        CheckDisconnectDie(ourDie.die);
+        void doDestroy()
+        {
+            // Trigger event
+            onWillDestroyDie?.Invoke(ourDie.die);
 
-        // Trigger event
-        onWillDestroyDie?.Invoke(ourDie.die);
+            ourDie.setState.Invoke(Die.ConnectionState.Invalid);
+            GameObject.Destroy(ourDie.die.gameObject);
+            dice.Remove(ourDie);
+        }
 
-        ourDie.setState.Invoke(Die.ConnectionState.Invalid);
-        GameObject.Destroy(ourDie.die.gameObject);
-        dice.Remove(ourDie);
+        switch (ourDie.die.connectionState)
+        {
+            default:
+                doDestroy();
+                break;
+            case Die.ConnectionState.Ready:
+                // Register to be notified when disconnection is complete
+                if (ourDie.currentConnectionCount == 0)
+                {
+                    ourDie.onDisconnectionResult += (d, r, s) => doDestroy();
+                    DoDisconnectDie(ourDie.die);
+                }
+                break;
+        }
     }
 
     /// <summary>
@@ -549,23 +583,6 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
     void ClearPool()
     {
         DestroyAll();
-    }
-
-    /// <summary>
-    /// Checks if a die is connected, and if so, disconnects it :) yay!
-    /// </sumary>
-    void CheckDisconnectDie(Die die)
-    {
-        switch (die.connectionState)
-        {
-            case Die.ConnectionState.Connecting:
-            case Die.ConnectionState.Identifying:
-            case Die.ConnectionState.Ready:
-                DoDisconnectDie(die);
-                break;
-            default:
-                break;
-        }
     }
 
 }

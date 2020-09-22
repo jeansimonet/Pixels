@@ -27,6 +27,7 @@ public class UIDicePoolView
     List<UIPairedDieToken> doubtedDice = new List<UIPairedDieToken>();
 
     IEnumerator connectAllDiceCoroutine;
+    List<EditDie> connectedDice = new List<EditDie>();
 
     void Awake()
     {
@@ -52,6 +53,11 @@ public class UIDicePoolView
             ((System.IDisposable)connectAllDiceCoroutine).Dispose(); // This will make sure the
             connectAllDiceCoroutine = null;
         }
+        foreach (var editDie in connectedDice)
+        {
+            DiceManager.Instance.DisconnectDie(editDie, null);
+        }
+        connectedDice.Clear();
     }
 
     void OnEnable()
@@ -127,11 +133,16 @@ public class UIDicePoolView
 
     void OnDieAdded(EditDie editDie)
     {
+        DiceManager.Instance.ConnectDie(editDie, null);
         RefreshView();
     }
 
     void OnWillRemoveDie(EditDie editDie)
     {
+        if (connectedDice.Contains(editDie))
+        {
+            connectedDice.Remove(editDie);
+        }
         var ui = pairedDice.FirstOrDefault(uid => uid.die == editDie);
         if (ui != null)
         {
@@ -149,7 +160,7 @@ public class UIDicePoolView
     {
         DicePool.Instance.ResetDiceErrors();
         var allDiceCopy = new List<EditDie>();
-        var connectedDice = new List<EditDie>();
+        Debug.Assert(connectedDice.Count == 0);
         try
         {
             OnBeginRefreshPool();
@@ -188,10 +199,6 @@ public class UIDicePoolView
         }
         finally
         {
-            foreach (var editDie in connectedDice)
-            {
-                DiceManager.Instance.DisconnectDie(editDie, null);
-            }
             OnEndRefreshPool();
         }
         connectAllDiceCoroutine = null;

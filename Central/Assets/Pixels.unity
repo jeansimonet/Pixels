@@ -970,7 +970,6 @@ GameObject:
   - component: {fileID: 33985710}
   - component: {fileID: 33985709}
   - component: {fileID: 33985708}
-  - component: {fileID: 33985711}
   m_Layer: 5
   m_Name: Die Selector
   m_TagString: Untagged
@@ -1052,18 +1051,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 33985706}
   m_CullTransparentMesh: 0
---- !u!114 &33985711
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 33985706}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c9e206f3b052964585c5a73030a0017, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &34409916
 GameObject:
   m_ObjectHideFlags: 0
@@ -24393,7 +24380,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.00012207031}
+  m_AnchoredPosition: {x: 0, y: -0.028564453}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1057913594
@@ -34558,10 +34545,10 @@ MonoBehaviour:
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 0
-  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
 --- !u!1 &1483426307

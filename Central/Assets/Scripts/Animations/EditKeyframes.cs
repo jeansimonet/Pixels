@@ -27,7 +27,9 @@ namespace Animations
             RGBKeyframe ret = new RGBKeyframe();
 
             // Add the color to the palette if not already there, otherwise grab the color index
-            int colorIndex = bits.palette.IndexOf(color);
+            float colorThreshold = 0.1f;
+            int colorIndex = bits.palette.FindIndex(c => ColorUtils.computeSqrColorDistance(c, color) < colorThreshold);
+//            int colorIndex = bits.palette.IndexOf(color);
             if (colorIndex == -1)
             {
                 colorIndex = bits.palette.Count;

@@ -389,6 +389,7 @@ namespace Dice
         : DieMessage
     {
         public DieMessageType type { get; set; } = DieMessageType.TransferAnimSetAck;
+        public byte result;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

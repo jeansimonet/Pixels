@@ -161,70 +161,77 @@ public partial class Die
             prepareDie.actionSize = (ushort)set.actions.Sum((action) => Marshal.SizeOf(action.GetType()));
             prepareDie.ruleCount = set.getRuleCount();
             prepareDie.behaviorCount = set.getBehaviorCount();
-            // StringBuilder builder = new StringBuilder();
-            // builder.AppendLine("Animation Data to be sent:");
-            // builder.AppendLine("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
-            // builder.AppendLine("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
-            // builder.AppendLine("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
-            // builder.AppendLine("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
-            // builder.AppendLine("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
-            // builder.AppendLine("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
-            // builder.AppendLine("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
-            // builder.AppendLine("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
-            // builder.AppendLine("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
-            // builder.AppendLine("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
-            // Debug.Log(builder.ToString());
-        
-            bool acknowledge = false;
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Animation Data to be sent:");
+            builder.AppendLine("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
+            builder.AppendLine("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+            builder.AppendLine("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
+            builder.AppendLine("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
+            builder.AppendLine("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
+            builder.AppendLine("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
+            builder.AppendLine("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
+            builder.AppendLine("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
+            builder.AppendLine("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
+            builder.AppendLine("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
+            Debug.Log(builder.ToString());
+
+                bool? acceptTransfer = null;
             yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
                 prepareDie,
                 DieMessageType.TransferAnimSetAck,
                 3.0f,
-                (ignore) => acknowledge = true,
+                (msg) => acceptTransfer = (msg as DieMessageTransferAnimSetAck).result == 0 ? false : true,
                 null,
                 null));
-            if (acknowledge)
+            if (acceptTransfer.HasValue)
             {
-                var setData = set.ToByteArray();
-
-                // StringBuilder hexdumpBuilder = new StringBuilder();
-                // for (int i = 0; i < setData.Length; ++i)
-                // {
-                //     if (i % 8 == 0)
-                //     {
-                //         hexdumpBuilder.AppendLine();
-                //     }
-                //     hexdumpBuilder.Append(setData[i].ToString("X02") + " ");
-                // }
-                // Debug.Log(hexdumpBuilder.ToString());
-
-                var hash = Utils.computeHash(setData);
-                Debug.Log("Die is ready to receive dataset, byte array should be: " + set.ComputeDataSetDataSize() + " bytes and hash 0x" + hash.ToString("X8"));
-
-                bool programmingFinished = false; 
-                MessageReceivedDelegate programmingFinishedCallback = (finishedMsg) =>
+                if (acceptTransfer.Value)
                 {
-                    programmingFinished = true;
-                };
+                    var setData = set.ToByteArray();
 
-                AddMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
+                    // StringBuilder hexdumpBuilder = new StringBuilder();
+                    // for (int i = 0; i < setData.Length; ++i)
+                    // {
+                    //     if (i % 8 == 0)
+                    //     {
+                    //         hexdumpBuilder.AppendLine();
+                    //     }
+                    //     hexdumpBuilder.Append(setData[i].ToString("X02") + " ");
+                    // }
+                    // Debug.Log(hexdumpBuilder.ToString());
 
-                yield return StartCoroutine(UploadBulkDataCr(
-                    setData,
-                    uploadPctCallback,
-                    (res) => result = res));
+                    var hash = Utils.computeHash(setData);
+                    Debug.Log("Die is ready to receive dataset, byte array should be: " + set.ComputeDataSetDataSize() + " bytes and hash 0x" + hash.ToString("X8"));
 
-                if (result)
-                {
-                    // We're done sending data, wait for the die to say its finished programming it!
-                    Debug.Log("Done sending data, waiting for die to finish programming!");
-                    yield return new WaitUntil(() => programmingFinished);
-                    RemoveMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
+                    bool programmingFinished = false;
+                    MessageReceivedDelegate programmingFinishedCallback = (finishedMsg) =>
+                    {
+                        programmingFinished = true;
+                    };
+
+                    AddMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
+
+                    yield return StartCoroutine(UploadBulkDataCr(
+                        setData,
+                        uploadPctCallback,
+                        (res) => result = res));
+
+                    if (result)
+                    {
+                        // We're done sending data, wait for the die to say its finished programming it!
+                        Debug.Log("Done sending data, waiting for die to finish programming!");
+                        yield return new WaitUntil(() => programmingFinished);
+                        RemoveMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
+                    }
+                    else
+                    {
+                        RemoveMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
+                        Debug.Log("Error!");
+                    }
                 }
                 else
                 {
-                    RemoveMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
-                    Debug.Log("Error!");
+                    Debug.Log("Transfer refused");
                 }
             }
             else
