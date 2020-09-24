@@ -172,7 +172,7 @@ public class UIDicePoolView
             allDiceCopy.AddRange(DiceManager.Instance.allDice);
             foreach (var editDie in allDiceCopy)
             {
-                if (editDie.die == null || (editDie.die.connectionState != Die.ConnectionState.Ready && editDie.die.lastError == Die.LastError.None))
+                if (editDie.die == null || editDie.die.lastError == Die.LastError.None)
                 {
                     // Try connecting to the die
                     bool connected = false;

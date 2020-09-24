@@ -258,5 +258,6 @@ public class UIPairedDieView : MonoBehaviour
         editDie.die.OnAppearanceChanged -= OnAppearanceChanged;
         editDie.die.OnBatteryLevelChanged -= OnBatteryLevelChanged;
         editDie.die.OnRssiChanged -= OnRssiChanged;
+        editDie.die.OnError -= OnError;
     }
 }

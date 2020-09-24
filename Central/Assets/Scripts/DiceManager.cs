@@ -245,20 +245,11 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
             onWillRemoveDie?.Invoke(editDie);
             if (dt.die != null)
             {
-                DicePool.Instance.ForgetDie(dt.die, (d, res, s) =>
-                {
-                    if (res)
-                    {
-                        AppDataSet.Instance.DeleteDie(editDie);
-                        dice.Remove(dt);
-                        AppDataSet.Instance.SaveData();
-                    }
-                    else
-                    {
-                        PixelsApp.Instance.ShowDialogBox("Forget Die Error", "Could not forget Die " + d.name + ":\n" + s, "Ok", null, null);
-                    }
-                });
+                DicePool.Instance.ForgetDie(dt.die, null);
             }
+            AppDataSet.Instance.DeleteDie(editDie);
+            dice.Remove(dt);
+            AppDataSet.Instance.SaveData();
         }
     }
 
