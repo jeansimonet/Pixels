@@ -304,7 +304,7 @@ namespace Dice
 
         public byte faceCount; // Which kind of dice this is
         public DesignAndColor designAndColor; // Physical look
-        public byte currentBehaviorIndex;
+        public byte padding;
         public uint dataSetHash;
         public uint deviceId; // A unique identifier
         public ushort flashSize;
@@ -381,7 +381,6 @@ namespace Dice
         public ushort actionCount;
         public ushort actionSize;
         public ushort ruleCount;
-        public ushort behaviorCount;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

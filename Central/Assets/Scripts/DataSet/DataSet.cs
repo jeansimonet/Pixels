@@ -108,7 +108,7 @@ public class DataSet
     public List<Behaviors.Condition> conditions = new List<Behaviors.Condition>();
     public List<Behaviors.Action> actions = new List<Behaviors.Action>();
     public List<Behaviors.Rule> rules = new List<Behaviors.Rule>();
-    public List<Behaviors.Behavior> behaviors = new List<Behaviors.Behavior>();
+    public Behaviors.Behavior behavior = null;
     public ushort padding;
 
     public int ComputeDataSetDataSize()
@@ -121,7 +121,7 @@ public class DataSet
             Utils.roundUpTo4(actions.Count * Marshal.SizeOf<ushort>()) + // offsets
             actions.Sum((action) => Marshal.SizeOf(action.GetType())) + // actual actions
             rules.Count * Marshal.SizeOf<Behaviors.Rule>() + 
-            behaviors.Count * Marshal.SizeOf<Behaviors.Behavior>();
+            Marshal.SizeOf<Behaviors.Behavior>();
     }
 
     public uint ComputeHash()
@@ -138,8 +138,7 @@ public class DataSet
 	public ushort getActionCount() => (ushort)actions.Count;
 	public Behaviors.Rule getRule(int ruleIndex) => rules[ruleIndex];
 	public ushort getRuleCount() => (ushort)rules.Count;
-	public Behaviors.Behavior getBehavior(int behaviorIndex) => behaviors[behaviorIndex];
-	public ushort getBehaviorCount() => (ushort)behaviors.Count;
+	public Behaviors.Behavior getBehavior() => behavior;
 
     public byte[] ToTestAnimationByteArray()
     {
@@ -247,11 +246,8 @@ public class DataSet
         }
 
         // Behaviors
-        foreach (var behavior in behaviors)
-        {
-            Marshal.StructureToPtr(behavior, current, false);
-            current += Marshal.SizeOf<Behaviors.Behavior>();
-        }
+        Marshal.StructureToPtr(behavior, current, false);
+        current += Marshal.SizeOf<Behaviors.Behavior>();
 
         return current;
     }

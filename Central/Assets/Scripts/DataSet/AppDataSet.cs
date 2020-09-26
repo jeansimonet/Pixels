@@ -29,6 +29,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public List<EditBehavior> behaviors = new List<EditBehavior>();
         public List<EditPreset> presets = new List<EditPreset>();
         public List<EditAudioClip> audioClips = new List<EditAudioClip>();
+        public EditBehavior defaultBehavior = null;
 
         [JsonIgnore]
         public EditPreset activePreset; // Updated after serializing
@@ -53,6 +54,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public List<EditBehavior> behaviors => data.behaviors;
     public List<EditPreset> presets => data.presets;
     public List<EditAudioClip> audioClips => data.audioClips;
+    public EditBehavior defaultBehavior { get { return data.defaultBehavior; } set { data.defaultBehavior = value; } }
 
     public EditPreset activePreset
     {
@@ -84,24 +86,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         data.Clear();
         serializer.Populate(reader, data); 
         data.activePreset = data.activePresetIndex != -1 ? data.presets[data.activePresetIndex] : null;
-    }
-
-    public EditDataSet ExtractEditSetForDie(EditDie die)
-    {
-        EditDataSet ret = new EditDataSet();
-
-        // Start with all the presets this die is a part of
-        foreach (var preset in presets.Where(p => p.dieAssignments.Any(a => a.die == die)))
-        {
-            // Grab the behavior
-            var behavior = preset.dieAssignments.First(a => a.die == die).behavior;
-            ret.behaviors.Add(behavior);
-
-            // And add the animations that this behavior uses
-            ret.animations.AddRange(behavior.CollectAnimations());
-        }
-
-        return ret;
     }
 
     public EditDataSet ExtractEditSetForAnimation(EditAnimation animation)
@@ -289,6 +273,13 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public void DeletePreset(EditPreset editPreset)
     {
+        foreach (var da in editPreset.dieAssignments)
+        {
+            if (da.behavior != null)
+            {
+                DeleteBehavior(da.behavior);
+            }
+        }
         presets.Remove(editPreset);
     }
 

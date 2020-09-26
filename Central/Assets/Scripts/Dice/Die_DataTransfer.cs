@@ -160,7 +160,6 @@ public partial class Die
             prepareDie.actionCount = set.getActionCount();
             prepareDie.actionSize = (ushort)set.actions.Sum((action) => Marshal.SizeOf(action.GetType()));
             prepareDie.ruleCount = set.getRuleCount();
-            prepareDie.behaviorCount = set.getBehaviorCount();
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("Animation Data to be sent:");
             builder.AppendLine("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
@@ -172,7 +171,7 @@ public partial class Die
             builder.AppendLine("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
             builder.AppendLine("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
             builder.AppendLine("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
-            builder.AppendLine("behaviors: " + prepareDie.behaviorCount + " * " + Marshal.SizeOf<Behaviors.Behavior>());
+            builder.AppendLine("behavior: " + Marshal.SizeOf<Behaviors.Behavior>());
             Debug.Log(builder.ToString());
 
                 bool? acceptTransfer = null;

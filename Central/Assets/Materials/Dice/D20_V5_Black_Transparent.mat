@@ -8,14 +8,13 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: D20_V5_Black_Transparent
-  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+  m_Shader: {fileID: 4800000, guid: 7778de3840375af42885fc8b082d5a84, type: 3}
   m_ShaderKeywords: _ALPHAPREMULTIPLY_ON _COLOROVERLAY_ON _EMISSION
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
-  stringTagMap:
-    RenderType: Transparent
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
@@ -78,11 +77,11 @@ Material:
     - _EmissionEnabled: 0
     - _FlipbookMode: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.884
+    - _Glossiness: 0.733
     - _GlossyReflections: 1
     - _LightingEnabled: 0
     - _MapScale: 10000
-    - _Metallic: 0.611
+    - _Metallic: 0.817
     - _Mode: 3
     - _OcclusionStrength: 1
     - _Parallax: 0.02
@@ -96,7 +95,7 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
-    - _Color: {r: 0, g: 0, b: 0, a: 0.5176471}
+    - _Color: {r: 0, g: 0, b: 0, a: 0.85882354}
     - _ColorAddSubDiff: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlowColor: {r: 1, g: 0.654902, b: 0, a: 0.85882354}

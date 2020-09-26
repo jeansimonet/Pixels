@@ -76,7 +76,13 @@ namespace Presets
         {
             var ret = new EditPreset();
             ret.name = name;
-            ret.dieAssignments = new List<EditDieAssignment>(dieAssignments);
+            ret.description = description;
+            ret.dieAssignments = new List<EditDieAssignment>();
+            foreach (var a in dieAssignments)
+            {
+                var behaviorCopy = AppDataSet.Instance.DuplicateBehavior(a.behavior);
+                ret.dieAssignments.Add(new EditDieAssignment() { die = a.die, behavior = behaviorCopy, defaultDieAssignmentIndex = 0 });
+            }
             return ret;
         }
 

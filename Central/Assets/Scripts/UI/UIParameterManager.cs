@@ -4,6 +4,10 @@ using UnityEngine;
 using System.Reflection;
 using System.Linq;
 
+public class IgnoreParameterAttribute : System.Attribute
+{
+}
+
 public class UIParameterManager : SingletonMonoBehaviour<UIParameterManager>
 {
     [Header("Parameter Prefabs")]
@@ -48,17 +52,21 @@ public class UIParameterManager : SingletonMonoBehaviour<UIParameterManager>
         foreach (var field in fields)
         {
             // Find a parameter ui for this field's type
-            var prefab = parameterPrefabs.FirstOrDefault(pp => pp.CanEdit(field.FieldType, field.GetCustomAttributes(false)));
-            if (prefab != null)
+            var att = field.GetCustomAttributes(false);
+            if (!att.Any(a => a.GetType() == typeof(IgnoreParameterAttribute)))
             {
-                // Create the UI
-                var uiparam = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity, root);
-                uiparam.Setup(field, objectToReflect);
-                uiparam.onParameterModified += (ui, val) =>
+                var prefab = parameterPrefabs.FirstOrDefault(pp => pp.CanEdit(field.FieldType, att));
+                if (prefab != null)
                 {
-                    reflectedObj.onParameterChanged?.Invoke(objectToReflect, ui, val);
-                };
-                reflectedObj.parameters.Add(uiparam);
+                    // Create the UI
+                    var uiparam = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity, root);
+                    uiparam.Setup(field, objectToReflect);
+                    uiparam.onParameterModified += (ui, val) =>
+                    {
+                        reflectedObj.onParameterChanged?.Invoke(objectToReflect, ui, val);
+                    };
+                    reflectedObj.parameters.Add(uiparam);
+                }
             }
         }
         return reflectedObj;

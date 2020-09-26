@@ -105,7 +105,7 @@ struct MessageIAmADie
 {
 	uint8_t faceCount; // Which kind of dice this is
 	Config::DiceVariants::DesignAndColor designAndColor; // Physical look
-	uint8_t currentBehaviorIndex;
+	uint8_t padding;
 	uint32_t dataSetHash;
 	uint32_t deviceId; // A unique identifier
 	uint16_t flashSize; // How much room available for data
@@ -176,7 +176,6 @@ struct MessageTransferAnimSet
 	uint16_t actionCount;
 	uint16_t actionSize;
 	uint16_t ruleCount;
-	uint16_t behaviorCount;
 
 	inline MessageTransferAnimSet() : Message(Message::MessageType_TransferAnimSet) {}
 };

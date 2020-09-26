@@ -89,7 +89,6 @@ namespace Dice
 
         public int faceCount { get; private set; } = 0;
         public DesignAndColor designAndColor { get; private set; } = DesignAndColor.Unknown;
-        public byte currentBehaviorIndex { get; private set; } = 0;
         public uint deviceId { get; private set; } = 0;
         public string firmwareVersionId { get; private set; } = "Unknown";
         public string address { get; private set; } = ""; // name is stored on the gameObject itself

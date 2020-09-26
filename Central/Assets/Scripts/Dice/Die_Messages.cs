@@ -208,7 +208,6 @@ public partial class Die
             faceCount = idMsg.faceCount;
 	        designAndColor = idMsg.designAndColor;
 	        deviceId = idMsg.deviceId;
-            currentBehaviorIndex = idMsg.currentBehaviorIndex;
             dataSetHash = idMsg.dataSetHash;
             flashSize = idMsg.flashSize;
             firmwareVersionId = System.Text.Encoding.UTF8.GetString(idMsg.versionInfo, 0, DieMessages.VERSION_INFO_SIZE);
@@ -319,20 +318,14 @@ public partial class Die
            new DieMessageSetDesignAndColor() { designAndColor = design },
            DieMessageType.SetDesignAndColorAck,
            3,
-           (ignore) => callback?.Invoke(true),
+           (ignore) =>
+           {
+               designAndColor = design;
+               OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
+               callback?.Invoke(true);
+           },
            () => callback?.Invoke(false),
            () => callback?.Invoke(false)));
-    }
-
-    public Coroutine SetCurrentBehavior(int behaviorIndex, System.Action<bool> callback)
-    {
-        return StartCoroutine(SendMessageWithAckOrTimeoutCr(
-            new DieMessageSetCurrentBehavior() { currentBehaviorIndex = (byte)behaviorIndex },
-            DieMessageType.SetCurrentBehaviorAck,
-            3,
-            (ignore) => callback?.Invoke(true),
-            () => callback?.Invoke(false),
-            () => callback?.Invoke(false)));
     }
 
     public Coroutine RenameDie(string newName, System.Action<bool> callback)

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: D20_V4_WhiteClear
-  m_Shader: {fileID: 4800000, guid: 7778de3840375af42885fc8b082d5a84, type: 3}
+  m_Shader: {fileID: 4800000, guid: 8f28a40dbf1f8134da4300e70ef5e0dd, type: 3}
   m_ShaderKeywords: _ALPHABLEND_ON _COLOROVERLAY_ON
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0

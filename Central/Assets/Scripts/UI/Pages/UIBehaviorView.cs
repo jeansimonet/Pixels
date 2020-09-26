@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Behaviors;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,6 +38,14 @@ public class UIBehaviorView
         {
             Setup(ctx);
         }
+        else
+        {
+            var bhv = context as Behaviors.EditBehavior;
+            if (bhv != null)
+            {
+                Setup(bhv, "Default Rules");
+            }
+        }
 
         if (AppSettings.Instance.behaviorTutorialEnabled)
         {
@@ -65,14 +74,21 @@ public class UIBehaviorView
 
     void Setup(Context context)
     {
-        editBehavior = context.behavior;
+        // Generate a title for the page
+        string title = context.parentPreset.name + " - " + (context.dieAssignment.die != null ? context.dieAssignment.die.name : "");
+        Setup(context.behavior, title);
+    }
+
+    void Setup(EditBehavior behavior, string name)
+    {
+        editBehavior = behavior;
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(editBehavior.defaultPreviewSettings.design, 300);
         if (dieRenderer != null)
         {
             previewImage.texture = dieRenderer.renderTexture;
         }
         // Generate a title for the page
-        string title = context.parentPreset.name + " - " + (context.dieAssignment.die != null ? context.dieAssignment.die.name : "");
+        string title = name;
         base.SetupHeader(false, false, title, null);
 
         RefreshView();

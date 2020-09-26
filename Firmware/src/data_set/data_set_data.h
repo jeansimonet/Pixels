@@ -48,9 +48,8 @@ namespace DataSet
         const Behaviors::Rule* rules; // pointer to array of rules, behaviors index into it!
         uint32_t ruleCount;
 
-        // Behaviors, or collection of condition->action pairs
-		const Behaviors::Behavior* behaviors;
-		uint32_t behaviorsCount;
+        // The behavior of this die, or a collection of condition->action pairs
+		const Behaviors::Behavior* behavior;
 
 		// Indicates whether there is valid data
 		uint32_t tailMarker;

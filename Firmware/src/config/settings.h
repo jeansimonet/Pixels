@@ -18,9 +18,6 @@ namespace Config
 		// Physical Appearance
 		DiceVariants::DesignAndColor designAndColor;
 
-		// Current active behavior
-		int currentBehaviorIndex;
-
 		char name[10];
 
 		// Face detector

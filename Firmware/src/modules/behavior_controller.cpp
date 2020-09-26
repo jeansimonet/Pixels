@@ -31,7 +31,7 @@ namespace BehaviorController
 
     void onDiceInitialized() {
         // Do we have a hello goodbye condition
-        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
+        auto bhv = DataSet::getBehavior();
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -54,7 +54,7 @@ namespace BehaviorController
 
 	void onConnectionEvent(void* param, bool connected) {
         // Do we have a connection event condition?
-        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
+        auto bhv = DataSet::getBehavior();
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -77,7 +77,7 @@ namespace BehaviorController
 
     void onBatterystateChange(void* param, BatteryController::BatteryState newState) {
         // Do we have a battery event condition?
-        auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
+        auto bhv = DataSet::getBehavior();
 
         // Iterate the rules and look for one!
         for (int i = 0; i < bhv->rulesCount; ++i) {
@@ -102,7 +102,7 @@ namespace BehaviorController
         if (Die::getCurrentState() == Die::TopLevel_SoloPlay)
         {
             // Do we have a roll state event condition?
-            auto bhv = DataSet::getBehavior(SettingsManager::getSettings()->currentBehaviorIndex);
+            auto bhv = DataSet::getBehavior();
 
             // Iterate the rules and look for one!
             for (int i = 0; i < bhv->rulesCount; ++i) {

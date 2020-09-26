@@ -23,6 +23,8 @@ namespace Animations
 		Keyframed,
 		[Name("Gradient Pattern")]
 		GradientPattern,
+		[Name("Simple Gradient")]
+		Gradient,
 	};
 
 	/// <summary>

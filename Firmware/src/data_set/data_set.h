@@ -50,8 +50,7 @@ namespace DataSet
 	uint16_t getRuleCount();
 
 	// Behaviors
-	const Behaviors::Behavior* getBehavior(int behaviorIndex);
-	uint16_t getBehaviorCount();
+	const Behaviors::Behavior* getBehavior();
 
 	uint32_t getDataSetAddress();
 	uint32_t getDataSetDataAddress();

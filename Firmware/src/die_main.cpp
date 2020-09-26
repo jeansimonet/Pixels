@@ -134,7 +134,6 @@ namespace Die
         // Central asked for the die state, return it!
         Bluetooth::MessageIAmADie identityMessage;
         identityMessage.deviceId = getDeviceID();
-        identityMessage.currentBehaviorIndex = SettingsManager::getSettings()->currentBehaviorIndex;
         identityMessage.dataSetHash = DataSet::dataHash();
         strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         identityMessage.faceCount = (uint8_t)BoardManager::getBoard()->ledCount;

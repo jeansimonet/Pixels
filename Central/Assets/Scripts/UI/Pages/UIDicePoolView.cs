@@ -164,7 +164,6 @@ public class UIDicePoolView
     {
         DicePool.Instance.ResetDiceErrors();
         var allDiceCopy = new List<EditDie>();
-        Debug.Assert(connectedDice.Count == 0);
         try
         {
             OnBeginRefreshPool();

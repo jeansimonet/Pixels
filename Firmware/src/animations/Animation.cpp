@@ -7,6 +7,7 @@
 #include "nrf_log.h"
 
 #include "animation_simple.h"
+#include "animation_gradient.h"
 #include "animation_keyframed.h"
 #include "animation_rainbow.h"
 #include "animation_gradientpattern.h"
@@ -62,6 +63,9 @@ namespace Animations
 			case Animation_Simple:
 				// Maybe we'll pass an allocator at some point, this is the only place I've ever used a new in the firmware...
 				ret = new AnimationInstanceSimple(static_cast<const AnimationSimple*>(preset), bits);
+				break;
+			case Animation_Gradient:
+				ret = new AnimationInstanceGradient(static_cast<const AnimationGradient*>(preset), bits);
 				break;
 			case Animation_Rainbow:
 				ret = new AnimationInstanceRainbow(static_cast<const AnimationRainbow*>(preset), bits);

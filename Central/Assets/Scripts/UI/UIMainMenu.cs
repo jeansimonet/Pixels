@@ -16,6 +16,7 @@ public class UIMainMenu : MonoBehaviour
     public Button lightingButton;
     public Button ledPatternButton;
     public Button audioClipsButton;
+    public Button disableOnDeviceButton;
 
     // Start is called before the first frame update
     void Awake()
@@ -29,6 +30,15 @@ public class UIMainMenu : MonoBehaviour
         lightingButton.onClick.AddListener(() => { Hide(); GoToRoot(UIPage.PageId.Patterns);});
         ledPatternButton.onClick.AddListener(() => { Hide(); GoToRoot(UIPage.PageId.GradientPatterns);});
         audioClipsButton.onClick.AddListener(() => { Hide(); GoToRoot(UIPage.PageId.AudioClips);});
+        disableOnDeviceButton.onClick.AddListener(() =>
+        {
+            Hide();
+            if (AppDataSet.Instance.defaultBehavior == null)
+            {
+                AppDataSet.Instance.defaultBehavior = new Behaviors.EditBehavior();
+            }
+            GoToPage(UIPage.PageId.Behavior, AppDataSet.Instance.defaultBehavior);
+        });
     }
 
     public void Show()
@@ -47,9 +57,9 @@ public class UIMainMenu : MonoBehaviour
         NavigationManager.Instance.GoToRoot(page);
     }
 
-    void GoToPage(UIPage.PageId page)
+    void GoToPage(UIPage.PageId page, object context)
     {
         this.gameObject.SetActive(false);
-        NavigationManager.Instance.GoToPage(page, null);
+        NavigationManager.Instance.GoToPage(page, context);
     }
 }

@@ -5,7 +5,7 @@ PUBLISH_DIRECTORY := binaries
 
 VERSION			 := 09_05
 
-SDK_VER = 17
+SDK_VER = 12
 
 ifeq ($(SDK_VER),17)
 	SDK_ROOT := C:/nRF5_SDK
@@ -80,6 +80,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/die_main.cpp \
 	$(PROJ_DIR)/src/animations/animation.cpp \
 	$(PROJ_DIR)/src/animations/animation_simple.cpp \
+	$(PROJ_DIR)/src/animations/animation_gradient.cpp \
 	$(PROJ_DIR)/src/animations/animation_keyframed.cpp \
 	$(PROJ_DIR)/src/animations/animation_rainbow.cpp \
 	$(PROJ_DIR)/src/animations/animation_gradientpattern.cpp \

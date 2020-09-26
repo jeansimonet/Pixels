@@ -44,6 +44,8 @@ namespace Animations
             {
                 case AnimationType.Simple:
                     return new EditAnimationSimple();
+                case AnimationType.Gradient:
+                    return new EditAnimationGradient();
                 case AnimationType.Keyframed:
                     return new EditAnimationKeyframed();
                 case AnimationType.Rainbow:
@@ -61,6 +63,8 @@ namespace Animations
             {
                 case AnimationType.Simple:
                     return typeof(EditAnimationSimple);
+                case AnimationType.Gradient:
+                    return typeof(EditAnimationGradient);
                 case AnimationType.Keyframed:
                     return typeof(EditAnimationKeyframed);
                 case AnimationType.Rainbow:

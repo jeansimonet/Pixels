@@ -35,7 +35,6 @@ namespace SettingsManager
 	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void ProgramDefaultParametersHandler(void* context, const Message* msg);
 	void SetDesignTypeAndColorHandler(void* context, const Message* msg);
-	void SetCurrentBehaviorHandler(void* context, const Message* msg);
 	void SetNameHandler(void* context, const Message* msg);
 	
 	#if BLE_LOG_ENABLED
@@ -52,7 +51,6 @@ namespace SettingsManager
 			MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetDesignAndColor, nullptr, SetDesignTypeAndColorHandler);
-			MessageService::RegisterMessageHandler(Message::MessageType_SetCurrentBehavior, nullptr, SetCurrentBehaviorHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetName, nullptr, SetNameHandler);
 			
 			#if BLE_LOG_ENABLED
@@ -144,14 +142,6 @@ namespace SettingsManager
 		});
 	}
 
-	void SetCurrentBehaviorHandler(void* context, const Message* msg) {
-		auto behaviorMsg = (const MessageSetCurrentBehavior*)msg;
-		NRF_LOG_INFO("Received request to set active behavior to %d", behaviorMsg->currentBehavior);
-		programCurrentBehavior(behaviorMsg->currentBehavior, [](bool result) {
-			MessageService::SendMessage(Message::MessageType_SetCurrentBehaviorAck);
-		});
-	}
-
 	void SetNameHandler(void* context, const Message* msg) {
 		auto nameMsg = (const MessageSetName*)msg;
 		NRF_LOG_INFO("Received request to rename die to %s", nameMsg->name);
@@ -225,7 +215,6 @@ namespace SettingsManager
         // }
         // outSettings.name[1+8] = '\0';
 		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Generic;
-		outSettings.currentBehaviorIndex = 0;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
 		outSettings.startMovingThreshold = 5.0f;
@@ -312,13 +301,6 @@ namespace SettingsManager
 		Settings settingsCopy;
 		memcpy(&settingsCopy, settings, sizeof(Settings));
 		settingsCopy.designAndColor = design;
-		writeToFlash(&settingsCopy, callback);
-	}
-
-	void programCurrentBehavior(uint8_t behaviorIndex, SettingsWrittenCallback callback) {
-		Settings settingsCopy;
-		memcpy(&settingsCopy, settings, sizeof(Settings));
-		settingsCopy.currentBehaviorIndex = behaviorIndex;
 		writeToFlash(&settingsCopy, callback);
 	}
 

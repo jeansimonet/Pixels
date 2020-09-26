@@ -157,16 +157,10 @@ namespace DataSet
 	}
 
 	// Behaviors
-	const Behavior* getBehavior(int behaviorIndex) {
+	const Behavior* getBehavior() {
 		assert(CheckValid());
-		return &data->behaviors[behaviorIndex];
+		return data->behavior;
 	}
-
-	uint16_t getBehaviorCount() {
-		assert(CheckValid());
-		return data->behaviorsCount;
-	}
-
 
 	struct DataAndBufferSize
 	{
@@ -222,7 +216,7 @@ namespace DataSet
 			Utils::roundUpTo4(sizeof(uint16_t) * message->actionCount) + // round up to multiple of 4
 			message->actionSize +
 			message->ruleCount * sizeof(Rule) +
-			message->behaviorCount * sizeof(Behavior);
+			sizeof(Behavior);
 
 		if (availableDataSize() > dabs->bufferSize) {
 			NRF_LOG_DEBUG("Animation Data to be received:");
@@ -238,7 +232,7 @@ namespace DataSet
 			NRF_LOG_DEBUG("Actions Offsets: %d * %d", message->actionCount, sizeof(uint16_t));
 			NRF_LOG_DEBUG("Actions: %d", message->actionSize);
 			NRF_LOG_DEBUG("Rules: %d * %d", message->ruleCount, sizeof(Rule));
-			NRF_LOG_DEBUG("Behaviors: %d * %d", message->behaviorCount, sizeof(Behavior));
+			NRF_LOG_DEBUG("Behavior: %d", sizeof(Behavior));
 
 			uint32_t totalSize = dabs->bufferSize + sizeof(Data);
 			uint32_t flashSize = Flash::getFlashByteSize(totalSize);
@@ -303,9 +297,8 @@ namespace DataSet
 			dabs->newData.ruleCount = message->ruleCount;
 			address += message->ruleCount * sizeof(Rule);
 
-			dabs->newData.behaviors = (const Behavior*)address;
-			dabs->newData.behaviorsCount = message->behaviorCount;
-			address += message->behaviorCount * sizeof(Behavior);
+			dabs->newData.behavior = (const Behavior*)address;
+			address += sizeof(Behavior);
 
 			dabs->newData.tailMarker = ANIMATION_SET_VALID_KEY;
 
@@ -384,7 +377,7 @@ namespace DataSet
 		NRF_LOG_INFO("Actions Offsets: %d * %d", data->actionCount, sizeof(uint16_t));
 		NRF_LOG_INFO("Actions: %d", data->actionsSize);
 		NRF_LOG_INFO("Rules: %d * %d", data->ruleCount, sizeof(Rule));
-		NRF_LOG_INFO("Behaviors: %d * %d", data->behaviorsCount, sizeof(Behavior));
+		NRF_LOG_INFO("Behaviors: %d", sizeof(Behavior));
 		Timers::resume();
 	}
 
@@ -400,7 +393,7 @@ namespace DataSet
             Utils::roundUpTo4(data->actionCount * sizeof(uint16_t)) + data->actionsSize +
             Utils::roundUpTo4(data->conditionCount * sizeof(uint16_t)) + data->conditionsSize + 
             data->ruleCount * sizeof(Rule) +
-            data->behaviorsCount * sizeof(Behavior);
+            sizeof(Behavior);
 	}
 
 	uint32_t computeDataSetHash() {

@@ -21,6 +21,7 @@ namespace Animations
 		Animation_Rainbow,
 		Animation_Keyframed,
 		Animation_GradientPattern,
+		Animation_Gradient,
 	};
 
 	/// <summary>

@@ -185,27 +185,31 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                 // The die is ready to be uploaded to
 
                 // Generate the data to be uploaded
-                var editSet = AppDataSet.Instance.ExtractEditSetForDie(editDieAssignment.die);
+                EditDataSet editSet = new EditDataSet();
+
+                // Grab the behavior
+                editSet.behavior = editDieAssignment.behavior.Duplicate();
+
+                // And add the animations that this behavior uses
+                editSet.animations.AddRange(editSet.behavior.CollectAnimations());
+
+                // Add default rules and animations to behavior / set
+                if (AppDataSet.Instance.defaultBehavior != null)
+                {
+                    // Add animations used by default rules
+                    foreach (var editAnim in AppDataSet.Instance.defaultBehavior.CollectAnimations())
+                    {
+                        editSet.animations.Add(editAnim);
+                    }
+
+                    foreach (var rule in AppDataSet.Instance.defaultBehavior.rules)
+                    {
+                        editSet.behavior.rules.Add(rule.Duplicate());
+                    }
+                }
 
                 // Set the behavior
                 var dataSet = editSet.ToDataSet();
-
-                void checkAndActivateSet(System.Action<bool> checkActivateCallback)
-                {
-                    // Still need to check current behavior index
-                    int currentBehaviorIndex = editSet.behaviors.IndexOf(editDieAssignment.behavior);
-                    if (currentBehaviorIndex != editDie.die.currentBehaviorIndex)
-                    {
-                        Debug.Log("Setting active behavior on " + editDie.name + " to " + currentBehaviorIndex);
-                        UpdateProgrammingBox(1.0f, "Activating behavior on " + editDie.name);
-                        editDie.die.SetCurrentBehavior(currentBehaviorIndex, checkActivateCallback);
-                    }
-                    else
-                    {
-                        Debug.Log("Die " + editDie.name + " already has behavior index " + currentBehaviorIndex + " active.");
-                        checkActivateCallback?.Invoke(true);
-                    }
-                }
 
                 // Check the dataset against the one stored in the die
                 var hash = dataSet.ComputeHash();
@@ -223,22 +227,9 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     {
                         if (res2)
                         {
-                            checkAndActivateSet(res3 =>
-                            {
-                                if (res3)
-                                {
-                                    HideProgrammingBox();
-                                    DiceManager.Instance.DisconnectDie(editDie, null);
-                                    callback?.Invoke(true);
-                                }
-                                else
-                                {
-                                    HideProgrammingBox();
-                                    ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                                    DiceManager.Instance.DisconnectDie(editDie, null);
-                                    callback?.Invoke(false);
-                                }
-                            });
+                            HideProgrammingBox();
+                            DiceManager.Instance.DisconnectDie(editDie, null);
+                            callback?.Invoke(true);
                         }
                         else
                         {
@@ -252,22 +243,9 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                 else
                 {
                     Debug.Log("Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
-                    checkAndActivateSet(res3 =>
-                    {
-                        if (res3)
-                        {
-                            HideProgrammingBox();
-                            DiceManager.Instance.DisconnectDie(editDie, null);
-                            callback?.Invoke(true);
-                        }
-                        else
-                        {
-                            HideProgrammingBox();
-                            ShowDialogBox("Error activating behavior on " + editDie.name, message, "Ok", null, null);
-                            DiceManager.Instance.DisconnectDie(editDie, null);
-                            callback?.Invoke(false);
-                        }
-                    });
+                    HideProgrammingBox();
+                    DiceManager.Instance.DisconnectDie(editDie, null);
+                    callback?.Invoke(true);
                 }
             }
             else

@@ -196,10 +196,9 @@ namespace DataSet
         currentOffset += ruleCount * sizeof(Rule);
         newData->ruleCount = ruleCount;
 		
-        newData->behaviors = (const Behavior*)(dataAddress + currentOffset);
+        newData->behavior = (const Behavior*)(dataAddress + currentOffset);
         auto writeBehaviors = (Behavior*)(writeBufferAddress + currentOffset);
-        currentOffset += behaviorCount * sizeof(Behavior);
-		newData->behaviorsCount = 1;
+        currentOffset += sizeof(Behavior);
 
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 

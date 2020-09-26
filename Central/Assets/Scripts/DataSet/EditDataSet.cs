@@ -14,7 +14,7 @@ using System.Text;
 public class EditDataSet
 {
     public List<EditAnimation> animations = new List<EditAnimation>();
-    public List<EditBehavior> behaviors = new List<EditBehavior>();
+    public EditBehavior behavior = null;
 
     public DataSet ToDataSet()
     {
@@ -31,12 +31,10 @@ public class EditDataSet
             }
         }
 
-        // Add behaviors
-        for (int behaviorIndex = 0; behaviorIndex < behaviors.Count; ++behaviorIndex)
+        // Now convert
+        if (behavior != null)
         {
-            var editBehavior = behaviors[behaviorIndex];
-            var behavior = editBehavior.ToBehavior(this, set);
-            set.behaviors.Add(behavior);
+            set.behavior = behavior.ToBehavior(this, set);
         }
 
         return set;
