@@ -118,6 +118,19 @@ namespace Presets
             return dieAssignments.Any(d => d.die == die);
         }
 
+        public bool IsActive()
+        {
+            bool ret = true;
+            foreach (var assignment in dieAssignments)
+            {
+                if (assignment.die.currentBehavior != assignment.behavior)
+                {
+                    ret = false;
+                    break;
+                }
+            }
+            return ret;
+        }
     }
 }
 

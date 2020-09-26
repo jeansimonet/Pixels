@@ -1,4 +1,6 @@
-﻿Shader "Custom/TriPlanarClearDiceFace"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/TriPlanarClearDiceFace"
 {
     Properties
     {
@@ -20,15 +22,61 @@
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" "Queue"="Transparent" }
+        Pass
+        {
+            Tags
+            {
+                "Queue" = "Transparent"
+                "IgnoreProjector" = "True"
+                "RenderType" = "Transparent"
+                "PreviewType" = "Plane"
+            }
+
+            Cull Off
+            Lighting Off
+            ZWrite Off
+            Blend One OneMinusSrcAlpha
+            ColorMask A
+
+            CGPROGRAM
+             #pragma vertex vert
+             #pragma fragment frag
+
+             #include "UnityCG.cginc"
+
+             float4 _Color;
+
+             struct v2f {
+                 float4  pos : SV_POSITION;
+             };
+
+             v2f vert(appdata_base v)
+             {
+                 v2f o;
+                 o.pos = UnityObjectToClipPos(v.vertex);
+                 return o;
+             }
+
+             half4 frag(v2f i) : COLOR
+             {
+                 return _Color;
+             }
+             ENDCG
+
+        }
+            
+        Tags { "Queue"="Transparent" "RenderType" = "Transparent" }
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         ZTest LEqual
+        Cull Off
+        ColorMask RGBA
         LOD 200
 
         CGPROGRAM
         // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard vertex:vert fullforwardshadows nolightmap alpha:blend
+        #pragma surface surf Standard vertex:vert fullforwardshadows nolightmap alpha:premul
+                 //finalcolor:writeAlpha
 
         #pragma target 3.0
 
@@ -104,7 +152,12 @@
 
             o.Emission = _GlowColor * glowMask.a;
             o.Albedo = _NumberColor.rgb * numberStrength + color.rgb * (1.0f - numberStrength);
-            o.Alpha = color.a;
+            o.Alpha = _Color.a;
+        }
+
+        void writeAlpha(Input IN, SurfaceOutputStandard o, inout fixed4 color)
+        {
+            color = float4(1,1,0,1);
         }
         ENDCG
     }

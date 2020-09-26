@@ -18,8 +18,8 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     public UIPatternPicker patternPicker;
     public UIAudioClipPicker audioClipPicker;
 
-    public delegate void OnPresetDownloadEvent(Presets.EditPreset activePreset);
-    public OnPresetDownloadEvent onPresetDownloadEvent;
+    public delegate void OnDieBehaviorUpdatedEvent(Dice.EditDie die, Behaviors.EditBehavior behavior);
+    public OnDieBehaviorUpdatedEvent onDieBehaviorUpdatedEvent;
 
     [Header("Controls")]
     public UIMainMenu mainMenu;
@@ -176,9 +176,14 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 
     public void UpdateDieDataSet(Presets.EditDieAssignment editDieAssignment, System.Action<bool> callback)
     {
+        UpdateDieDataSet(editDieAssignment.behavior, editDieAssignment.die, callback);
+    }
+
+    public void UpdateDieDataSet(Behaviors.EditBehavior behavior, Dice.EditDie die, System.Action<bool> callback)
+    {
         // Make sure the die is ready!
-        ShowProgrammingBox("Connecting to " + editDieAssignment.die.name + "...");
-        DiceManager.Instance.ConnectDie(editDieAssignment.die, (editDie, res, message) =>
+        ShowProgrammingBox("Connecting to " + die.name + "...");
+        DiceManager.Instance.ConnectDie(die, (editDie, res, message) =>
         {
             if (res)
             {
@@ -188,7 +193,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                 EditDataSet editSet = new EditDataSet();
 
                 // Grab the behavior
-                editSet.behavior = editDieAssignment.behavior.Duplicate();
+                editSet.behavior = behavior.Duplicate();
 
                 // And add the animations that this behavior uses
                 editSet.animations.AddRange(editSet.behavior.CollectAnimations());
@@ -229,6 +234,9 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         {
                             HideProgrammingBox();
                             DiceManager.Instance.DisconnectDie(editDie, null);
+                            die.currentBehavior = behavior;
+                            AppDataSet.Instance.SaveData();
+                            onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
                             callback?.Invoke(true);
                         }
                         else
@@ -273,16 +281,12 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     }
                     else
                     {
-                        AppDataSet.Instance.activePreset = editPreset;
                         // We're done!
-                        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
                         callback?.Invoke(true);
                     }
                 }
                 else
                 {
-                    AppDataSet.Instance.activePreset = null;
-                    onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
                     callback?.Invoke(false);
                 }
             });
@@ -295,10 +299,24 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         }
         else
         {
-            AppDataSet.Instance.activePreset = null;
-            onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
             callback(false);
         }
+    }
+
+    public void UploadBehavior(Behaviors.EditBehavior behavior, Dice.EditDie die, System.Action<bool> callback)
+    {
+        UpdateDieDataSet(behavior, die, (res) =>
+        {
+            if (res)
+            {
+                // We're done!
+                callback?.Invoke(true);
+            }
+            else
+            {
+                callback?.Invoke(false);
+            }
+        });
     }
 
     public void RestartTutorial()
@@ -311,7 +329,13 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     void Start()
     {
         // Pretend to have updated the current preset on load
-        onPresetDownloadEvent?.Invoke(AppDataSet.Instance.activePreset);
+        foreach (var die in AppDataSet.Instance.dice)
+        {
+            if (die.currentBehavior != null)
+            {
+                onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
+            }
+        }
     }
 
     // Update is called once per frame

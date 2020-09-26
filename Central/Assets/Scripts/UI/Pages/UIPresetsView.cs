@@ -29,7 +29,7 @@ public class UIPresetsView
 
     void OnEnable()
     {
-        base.SetupHeader(true, false, "Profiles", null);
+        base.SetupHeader(true, false, "Presets", null);
         RefreshView();
     }
 

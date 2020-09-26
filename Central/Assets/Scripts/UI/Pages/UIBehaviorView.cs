@@ -9,6 +9,7 @@ public class UIBehaviorView
     : UIPage
 {
     [Header("Controls")]
+    public InputField descriptionText;
     public RawImage previewImage;
     public RectTransform rulesRoot;
     public Button addRuleButton;
@@ -33,18 +34,10 @@ public class UIBehaviorView
     public override void Enter(object context)
     {
         base.Enter(context);
-        var ctx = context as Context;
-        if (ctx != null)
+        var bhv = context as Behaviors.EditBehavior;
+        if (bhv != null)
         {
-            Setup(ctx);
-        }
-        else
-        {
-            var bhv = context as Behaviors.EditBehavior;
-            if (bhv != null)
-            {
-                Setup(bhv, "Default Rules");
-            }
+            Setup(bhv);
         }
 
         if (AppSettings.Instance.behaviorTutorialEnabled)
@@ -72,14 +65,7 @@ public class UIBehaviorView
         rules.Clear();
     }
 
-    void Setup(Context context)
-    {
-        // Generate a title for the page
-        string title = context.parentPreset.name + " - " + (context.dieAssignment.die != null ? context.dieAssignment.die.name : "");
-        Setup(context.behavior, title);
-    }
-
-    void Setup(EditBehavior behavior, string name)
+    void Setup(EditBehavior behavior)
     {
         editBehavior = behavior;
         this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(editBehavior.defaultPreviewSettings.design, 300);
@@ -88,8 +74,8 @@ public class UIBehaviorView
             previewImage.texture = dieRenderer.renderTexture;
         }
         // Generate a title for the page
-        string title = name;
-        base.SetupHeader(false, false, title, null);
+        base.SetupHeader(false, false, behavior.name, SetName);
+        descriptionText.text = editBehavior.description;
 
         RefreshView();
 
@@ -101,6 +87,7 @@ public class UIBehaviorView
     void Awake()
     {
         addRuleButton.onClick.AddListener(AddNewRule);
+        descriptionText.onEndEdit.AddListener(SetDescription);
     }
 
     void AddNewRule()
@@ -216,5 +203,17 @@ public class UIBehaviorView
                 uip.Expand(false);
             }
         }
+    }
+
+    void SetName(string newName)
+    {
+        editBehavior.name = newName;
+        base.pageDirty = true;
+    }
+
+    void SetDescription(string newDescription)
+    {
+        editBehavior.description = newDescription;
+        base.pageDirty = true;
     }
 }

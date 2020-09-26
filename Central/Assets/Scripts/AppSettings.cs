@@ -16,6 +16,7 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
         public bool homeTutorialEnabled = true;
         public bool presetsTutorialEnabled = true;
         public bool presetTutorialEnabled = true;
+        public bool behaviorsTutorialEnabled = true;
         public bool behaviorTutorialEnabled = true;
         public bool ruleTutorialEnabled = true;
         public bool animationsTutorialEnabled = true;
@@ -28,6 +29,7 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public bool homeTutorialEnabled => data.homeTutorialEnabled;
     public bool presetsTutorialEnabled => data.presetsTutorialEnabled;
     public bool presetTutorialEnabled => data.presetTutorialEnabled;
+    public bool behaviorsTutorialEnabled => data.behaviorsTutorialEnabled;
     public bool behaviorTutorialEnabled => data.behaviorTutorialEnabled;
     public bool ruleTutorialEnabled => data.ruleTutorialEnabled;
     public bool animationsTutorialEnabled => data.animationsTutorialEnabled;
@@ -60,6 +62,12 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public void SetPresetTutorialEnabled(bool value)
     {
         data.presetTutorialEnabled = value;
+        SaveData();
+    }
+
+    public void SetBehaviorsTutorialEnabled(bool value)
+    {
+        data.behaviorsTutorialEnabled = value;
         SaveData();
     }
 

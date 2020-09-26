@@ -12,28 +12,12 @@ public class UIHomePresetToken : MonoBehaviour
     public Button mainButton;
     public RawImage presetRenderImage;
     public Text presetNameText;
-    public Image backgroundImage;
     public RectTransform checkMarkRoot;
-    public Image activePresetBorderImage;
-
-    [Header("Parameters")]
-    public Color textColor;
-    public Color activeTextColor;
-    public Sprite background;
-    public Sprite activeBackground;
 
     public EditPreset editPreset { get; private set; }
     public MultiDiceRenderer dieRenderer { get; private set; }
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
-
-    public enum State
-    {
-        Inactive = 0,
-        Active
-    }
-
-    public State state {get; private set; }
 
     public void Setup(EditPreset preset)
     {
@@ -56,27 +40,12 @@ public class UIHomePresetToken : MonoBehaviour
                 dieRenderer.Play(i, false);
             }
         }
-        SetState(State.Inactive);
+        RefreshState();
     }
 
-    public void SetState(State newState)
+    public void RefreshState()
     {
-        state = newState;
-        switch (newState)
-        {
-            case State.Inactive:
-                backgroundImage.sprite = background;
-                presetNameText.color = textColor;
-                checkMarkRoot.gameObject.SetActive(false);
-                activePresetBorderImage.gameObject.SetActive(false);
-                break;            
-            case State.Active:
-                backgroundImage.sprite = activeBackground;
-                presetNameText.color = activeTextColor;
-                checkMarkRoot.gameObject.SetActive(true);
-                activePresetBorderImage.gameObject.SetActive(true);
-                break;            
-        }
+        checkMarkRoot.gameObject.SetActive(editPreset.IsActive());
     }
 
     void OnDestroy()

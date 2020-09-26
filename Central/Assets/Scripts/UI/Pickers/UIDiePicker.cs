@@ -46,8 +46,12 @@ public class UIDiePicker : MonoBehaviour
         }
 
         dieSelector = selector;
+        if (dieSelector == null)
+        {
+            dieSelector = d => true;
+        }
         
-        foreach (var dt in DiceManager.Instance.allDice.Where(selector))
+        foreach (var dt in DiceManager.Instance.allDice.Where(dieSelector))
         {
             // New pattern
             var newDieUI = CreateDieToken(dt);

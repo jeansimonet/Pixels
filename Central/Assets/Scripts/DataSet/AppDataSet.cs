@@ -30,10 +30,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         public List<EditPreset> presets = new List<EditPreset>();
         public List<EditAudioClip> audioClips = new List<EditAudioClip>();
         public EditBehavior defaultBehavior = null;
-
-        [JsonIgnore]
-        public EditPreset activePreset; // Updated after serializing
-        public int activePresetIndex; // Updated before serializing
         public uint nextAudioClipUniqueId = 0;
 
         public void Clear()
@@ -56,12 +52,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public List<EditAudioClip> audioClips => data.audioClips;
     public EditBehavior defaultBehavior { get { return data.defaultBehavior; } set { data.defaultBehavior = value; } }
 
-    public EditPreset activePreset
-    {
-        get { return data.activePreset; }
-        set { data.activePreset = value; }
-    }
-
     JsonSerializer CreateSerializer()
     {
         var serializer = new JsonSerializer();
@@ -77,15 +67,21 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public void ToJson(JsonWriter writer, JsonSerializer serializer)
     {
-        data.activePresetIndex = data.presets.IndexOf(data.activePreset);
+        foreach (var editDie in dice)
+        {
+            editDie.OnBeforeSerialize();
+        }
         serializer.Serialize(writer, data);
     }
 
     public void FromJson(JsonReader reader, JsonSerializer serializer)
     {
         data.Clear();
-        serializer.Populate(reader, data); 
-        data.activePreset = data.activePresetIndex != -1 ? data.presets[data.activePresetIndex] : null;
+        serializer.Populate(reader, data);
+        foreach (var editDie in dice)
+        {
+            editDie.OnAfterDeserialize();
+        }
     }
 
     public EditDataSet ExtractEditSetForAnimation(EditAnimation animation)
@@ -103,7 +99,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
             deviceId = die.deviceId,
             faceCount = die.faceCount,
             designAndColor = die.designAndColor,
-            dataSetHash = die.dataSetHash
         };
         dice.Add(ret);
         return ret;
@@ -273,13 +268,6 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public void DeletePreset(EditPreset editPreset)
     {
-        foreach (var da in editPreset.dieAssignments)
-        {
-            if (da.behavior != null)
-            {
-                DeleteBehavior(da.behavior);
-            }
-        }
         presets.Remove(editPreset);
     }
 

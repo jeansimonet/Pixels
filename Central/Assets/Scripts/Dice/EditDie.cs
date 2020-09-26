@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Dice
 {
@@ -12,7 +13,10 @@ namespace Dice
         public System.UInt64 deviceId;
         public int faceCount; // Which kind of dice this is
         public DesignAndColor designAndColor; // Physical look
-        public uint dataSetHash;
+
+        [JsonIgnore]
+        public Behaviors.EditBehavior currentBehavior;
+        public int currentBehaviorIndex;
 
         public delegate void DieFoundLostEvent(EditDie editDie);
         [JsonIgnore]
@@ -40,5 +44,18 @@ namespace Dice
         }
         [JsonIgnore]
         Die _die;
+
+        public void OnBeforeSerialize()
+        {
+            currentBehaviorIndex = AppDataSet.Instance.behaviors.IndexOf(currentBehavior);
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (currentBehaviorIndex >= 0 && currentBehaviorIndex < AppDataSet.Instance.behaviors.Count)
+                currentBehavior = AppDataSet.Instance.behaviors[currentBehaviorIndex];
+            else
+                currentBehavior = null;
+        }
     }
 }

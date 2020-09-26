@@ -42,12 +42,25 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
     public RectTransform presets2TutorialRoot;
     public Button presets2TutorialNext;
 
+    public RectTransform presets3TutorialRoot;
+    public Button presets3TutorialNext;
+
+    public RectTransform presets4TutorialRoot;
+    public Button presets4TutorialNext;
+
     [Header("Preset Tutorial")]
     public RectTransform presetTutorialRoot;
     public Button presetTutorialNext;
 
     public RectTransform preset2TutorialRoot;
     public Button preset2TutorialNext;
+
+    [Header("Behaviors Tutorial")]
+    public RectTransform behaviorsTutorialRoot;
+    public Button behaviorsTutorialNext;
+
+    public RectTransform behaviors2TutorialRoot;
+    public Button behaviors2TutorialNext;
 
     [Header("Behavior Tutorial")]
     public RectTransform behaviorTutorialRoot;
@@ -231,7 +244,19 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
             presets2TutorialNext.onClick.AddListener(() =>
             {
                 presets2TutorialRoot.gameObject.SetActive(false);
-                AppSettings.Instance.SetPresetsTutorialEnabled(false);
+                presets3TutorialRoot.gameObject.SetActive(true);
+                presets3TutorialNext.onClick.RemoveAllListeners();
+                presets3TutorialNext.onClick.AddListener(() =>
+                {
+                    presets3TutorialRoot.gameObject.SetActive(false);
+                    presets4TutorialRoot.gameObject.SetActive(true);
+                    presets4TutorialNext.onClick.RemoveAllListeners();
+                    presets4TutorialNext.onClick.AddListener(() =>
+                    {
+                        presets4TutorialRoot.gameObject.SetActive(false);
+                        AppSettings.Instance.SetPresetsTutorialEnabled(false);
+                    });
+                });
             });
         });
     }
@@ -249,6 +274,23 @@ public class Tutorial : SingletonMonoBehaviour<Tutorial>
             {
                 preset2TutorialRoot.gameObject.SetActive(false);
                 AppSettings.Instance.SetPresetTutorialEnabled(false);
+            });
+        });
+    }
+
+    public void StartBehaviorsTutorial()
+    {
+        behaviorsTutorialRoot.gameObject.SetActive(true);
+        behaviorsTutorialNext.onClick.RemoveAllListeners();
+        behaviorsTutorialNext.onClick.AddListener(() =>
+        {
+            behaviorsTutorialRoot.gameObject.SetActive(false);
+            behaviors2TutorialRoot.gameObject.SetActive(true);
+            behaviors2TutorialNext.onClick.RemoveAllListeners();
+            behaviors2TutorialNext.onClick.AddListener(() =>
+            {
+                behaviors2TutorialRoot.gameObject.SetActive(false);
+                AppSettings.Instance.SetBehaviorsTutorialEnabled(false);
             });
         });
     }

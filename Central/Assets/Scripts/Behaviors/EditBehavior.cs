@@ -10,6 +10,8 @@ namespace Behaviors
     public class EditBehavior
         : EditObject
     {
+        public string name;
+        public string description;
         public List<EditRule> rules = new List<EditRule>();
 
         public PreviewSettings defaultPreviewSettings = new PreviewSettings() { design = Dice.DesignAndColor.V5_Grey };
@@ -34,6 +36,8 @@ namespace Behaviors
         public EditBehavior Duplicate()
         {
             var ret = new EditBehavior();
+            ret.name = name;
+            ret.description = description;
             foreach (var r in rules)
             {
                 ret.rules.Add(r.Duplicate());

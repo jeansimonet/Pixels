@@ -12,7 +12,7 @@ public class ActiveBehaviorMonitor : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        PixelsApp.Instance.onPresetDownloadEvent += OnPresetDownloadedEvent;        
+        PixelsApp.Instance.onDieBehaviorUpdatedEvent += OnBehaviorDownloadedEvent;
     }
 
     // Update is called once per frame
@@ -21,39 +21,33 @@ public class ActiveBehaviorMonitor : MonoBehaviour
         
     }
 
-    void OnPresetDownloadedEvent(Presets.EditPreset newPreset)
+    void OnBehaviorDownloadedEvent(Dice.EditDie die, Behaviors.EditBehavior behavior)
     {
         // Check whether we should stay connected to some of the dice
         List<EditDie> toDisconnect = new List<EditDie>(connectedDice);
-        if (newPreset != null)
+        if (behavior.CollectAudioClips().Any())
         {
-            foreach (var assignment in newPreset.dieAssignments)
+            // This die assignment uses a behavior that has audio clips, so stay connected to the die
+            if (connectedDice.Contains(die))
             {
-                if (assignment.behavior.CollectAudioClips().Any())
+                toDisconnect.Remove(die);
+            }
+            else if (die != null)
+            {
+                // Connect to the new die
+                DiceManager.Instance.ConnectDie(die, (d, res, _) =>
                 {
-                    // This die assignment uses a behavior that has audio clips, so stay connected to the die
-                    if (connectedDice.Contains(assignment.die))
+                    if (res)
                     {
-                        toDisconnect.Remove(assignment.die);
+                        connectedDice.Add(d);
                     }
-                    else if (assignment.die != null)
-                    {
-                        // Connect to the new die
-                        DiceManager.Instance.ConnectDie(assignment.die, (d, res, _) =>
-                        {
-                            if (res)
-                            {
-                                connectedDice.Add(d);
-                            }
-                        });
-                    }
-                }
+                });
             }
         }
 
-        foreach (var die in toDisconnect)
+        foreach (var d in toDisconnect)
         {
-            DiceManager.Instance.DisconnectDie(die, (d, res, _) => connectedDice.Remove(die));
+            DiceManager.Instance.DisconnectDie(d, (d2, res, _) => connectedDice.Remove(d2));
         }
     }
 }
