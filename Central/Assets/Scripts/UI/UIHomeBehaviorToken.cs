@@ -83,6 +83,12 @@ public class UIHomeBehaviorToken : MonoBehaviour
 
     void OnDestroy()
     {
+        // Remove remaining
+        foreach (var uidieToken in connectedDice)
+        {
+            DestroyDieToken(uidieToken);
+        }
+        connectedDice.Clear();
         if (this.dieRenderer != null)
         {
             DiceRendererManager.Instance.DestroyDiceRenderer(this.dieRenderer);

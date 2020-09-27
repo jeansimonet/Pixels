@@ -33,7 +33,11 @@ public class UIBehaviorPickerBehaviorToken : MonoBehaviour
         {
             dieRenderer.SetAuto(true);
             dieRenderImage.texture = dieRenderer.renderTexture;
+            dieRenderer.SetAnimations(this.editBehavior.CollectAnimations());
+            dieRenderer.Play(true);
         }
+        nameText.text = behavior.name;
+        descriptionText.text = behavior.description;
         SetSelected(false);
     }
 
