@@ -123,7 +123,11 @@ namespace Presets
             bool ret = true;
             foreach (var assignment in dieAssignments)
             {
-                if (assignment.die.currentBehavior != assignment.behavior)
+                if (assignment.die == null)
+                {
+                    ret = false;
+                }
+                else if (assignment.die.currentBehavior != assignment.behavior)
                 {
                     ret = false;
                     break;
