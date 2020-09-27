@@ -11,9 +11,9 @@ public class D20Normals : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        PositionAccelerometer();
-        //        GenerateD20FaceMapping();
-        TransformNormals();
+        //PositionAccelerometer();
+        ////        GenerateD20FaceMapping();
+        //TransformNormals();
     }
 
     // Update is called once per frame
@@ -22,29 +22,29 @@ public class D20Normals : MonoBehaviour
         
     }
 
-//    Vector3[] normals =
-//    {
-//0        new Vector3(0.187f, -0.7947f, 0.5774f),
-//1        new Vector3(0.6071f, -0.7947f, 0.0000f),
-//2        new Vector3(-0.4911f, -0.7947f, 0.3568f),
-//3        new Vector3(-0.4911f, -0.7947f, -0.3568f),
-//4        new Vector3(0.1876f, -0.7947f, -0.5774f),
-//5        new Vector3(0.9822f, -0.1876f, 0.0000f),
-//6        new Vector3(0.3035f, -0.1876f, 0.9342f),
-//7        new Vector3(-0.7946f, -0.1876f, 0.5774f),
-//8        new Vector3(-0.7946f, -0.1876f, -0.5774f),
-//9        new Vector3(0.3035f, -0.1876f, -0.9342f),
-//0        new Vector3(0.7946f, 0.1876f, 0.5774f),
-//1        new Vector3(-0.3035f, 0.1876f, 0.9342f),
-//2        new Vector3(-0.9822f, 0.1876f, 0.0000f),
-//3        new Vector3(-0.3035f, 0.1876f, -0.9342f),
-//4        new Vector3(0.7946f, 0.1876f, -0.5774f),
-//5        new Vector3(0.4911f, 0.7947f, 0.3568f),
-//6        new Vector3(-0.1876f, 0.7947f, 0.5774f),
-//7        new Vector3(-0.6071f, 0.7947f, 0.0000f),
-//8        new Vector3(-0.1876f, 0.7947f, -0.5774f),
-//9        new Vector3(0.4911f, 0.7947f, -0.3568f),
-//    };
+    Vector3[] normals =
+    {
+        new Vector3(0.187f, -0.7947f, 0.5774f),
+        new Vector3(0.6071f, -0.7947f, 0.0000f),
+        new Vector3(-0.4911f, -0.7947f, 0.3568f),
+        new Vector3(-0.4911f, -0.7947f, -0.3568f),
+        new Vector3(0.1876f, -0.7947f, -0.5774f),
+        new Vector3(0.9822f, -0.1876f, 0.0000f),
+        new Vector3(0.3035f, -0.1876f, 0.9342f),
+        new Vector3(-0.7946f, -0.1876f, 0.5774f),
+        new Vector3(-0.7946f, -0.1876f, -0.5774f),
+        new Vector3(0.3035f, -0.1876f, -0.9342f),
+        new Vector3(0.7946f, 0.1876f, 0.5774f),
+        new Vector3(-0.3035f, 0.1876f, 0.9342f),
+        new Vector3(-0.9822f, 0.1876f, 0.0000f),
+        new Vector3(-0.3035f, 0.1876f, -0.9342f),
+        new Vector3(0.7946f, 0.1876f, -0.5774f),
+        new Vector3(0.4911f, 0.7947f, 0.3568f),
+        new Vector3(-0.1876f, 0.7947f, 0.5774f),
+        new Vector3(-0.6071f, 0.7947f, 0.0000f),
+        new Vector3(-0.1876f, 0.7947f, -0.5774f),
+        new Vector3(0.4911f, 0.7947f, -0.3568f),
+    };
 
 
     Vector3[] d20normals =
@@ -101,9 +101,78 @@ public class D20Normals : MonoBehaviour
     // real acc Y => AccEuler X
 
     Vector3[] rotatedD20Normals =
-    {        new Vector3(-0.9341605f, -0.1273862f,  0.3333025f),        new Vector3( 0.0000000f,  0.6667246f, -0.7453931f),        new Vector3( 0.3568645f,  0.8726854f,  0.3333218f),        new Vector3( 0.5773069f, -0.3333083f, -0.7453408f),        new Vector3( 0.0000000f,  0.0000000f, -1.0000000f),        new Vector3(-0.5773357f, -0.7453963f,  0.3333219f),        new Vector3( 0.5774010f,  0.3333614f,  0.7453930f),        new Vector3( 0.5773722f, -0.7453431f,  0.3333741f),        new Vector3(-0.3567604f,  0.8726999f,  0.3333025f),        new Vector3(-0.9341723f,  0.1273475f, -0.3333741f),        new Vector3( 0.9341723f, -0.1273475f,  0.3333741f),        new Vector3( 0.3567604f, -0.8726999f, -0.3333025f),        new Vector3(-0.5773722f,  0.7453431f, -0.3333741f),        new Vector3(-0.5778139f, -0.3331230f, -0.7450288f),        new Vector3( 0.5773357f,  0.7453963f, -0.3333219f),        new Vector3( 0.0000000f,  0.0000000f,  1.0000000f),        new Vector3(-0.5773069f,  0.3333083f,  0.7453408f),        new Vector3(-0.3568645f, -0.8726854f, -0.3333218f),        new Vector3( 0.0000000f, -0.6667246f,  0.7453931f),        new Vector3( 0.9341605f,  0.1273862f, -0.3333025f),    };
+    {
+        new Vector3(-0.9341605f, -0.1273862f,  0.3333025f),
+        new Vector3( 0.0000000f,  0.6667246f, -0.7453931f),
+        new Vector3( 0.3568645f,  0.8726854f,  0.3333218f),
+        new Vector3( 0.5773069f, -0.3333083f, -0.7453408f),
+        new Vector3( 0.0000000f,  0.0000000f, -1.0000000f),
+        new Vector3(-0.5773357f, -0.7453963f,  0.3333219f),
+        new Vector3( 0.5774010f,  0.3333614f,  0.7453930f),
+        new Vector3( 0.5773722f, -0.7453431f,  0.3333741f),
+        new Vector3(-0.3567604f,  0.8726999f,  0.3333025f),
+        new Vector3(-0.9341723f,  0.1273475f, -0.3333741f),
+        new Vector3( 0.9341723f, -0.1273475f,  0.3333741f),
+        new Vector3( 0.3567604f, -0.8726999f, -0.3333025f),
+        new Vector3(-0.5773722f,  0.7453431f, -0.3333741f),
+        new Vector3(-0.5778139f, -0.3331230f, -0.7450288f),
+        new Vector3( 0.5773357f,  0.7453963f, -0.3333219f),
+        new Vector3( 0.0000000f,  0.0000000f,  1.0000000f),
+        new Vector3(-0.5773069f,  0.3333083f,  0.7453408f),
+        new Vector3(-0.3568645f, -0.8726854f, -0.3333218f),
+        new Vector3( 0.0000000f, -0.6667246f,  0.7453931f),
+        new Vector3( 0.9341605f,  0.1273862f, -0.3333025f),
+    };
+
     Vector3[] rotatedD20NormalsAccRF =
-    {        new Vector3(-0.1273862f,  0.3333025f,  0.9341605f),        new Vector3( 0.6667246f, -0.7453931f, -0.0000000f),        new Vector3( 0.8726854f,  0.3333218f, -0.3568645f),        new Vector3(-0.3333083f, -0.7453408f, -0.5773069f),        new Vector3( 0.0000000f, -1.0000000f, -0.0000000f),        new Vector3(-0.7453963f,  0.3333219f,  0.5773357f),        new Vector3( 0.3333614f,  0.7453930f, -0.5774010f),        new Vector3(-0.7453431f,  0.3333741f, -0.5773722f),        new Vector3( 0.8726999f,  0.3333025f,  0.3567604f),        new Vector3( 0.1273475f, -0.3333741f,  0.9341723f),        new Vector3(-0.1273475f,  0.3333741f, -0.9341723f),        new Vector3(-0.8726999f, -0.3333025f, -0.3567604f),        new Vector3( 0.7453431f, -0.3333741f,  0.5773722f),        new Vector3(-0.3331230f, -0.7450288f,  0.5778139f),        new Vector3( 0.7453963f, -0.3333219f, -0.5773357f),        new Vector3( 0.0000000f,  1.0000000f, -0.0000000f),        new Vector3( 0.3333083f,  0.7453408f,  0.5773069f),        new Vector3(-0.8726854f, -0.3333218f,  0.3568645f),        new Vector3(-0.6667246f,  0.7453931f, -0.0000000f),        new Vector3( 0.1273862f, -0.3333025f, -0.9341605f),    };
+    {
+        new Vector3(-0.1273862f,  0.3333025f,  0.9341605f),
+        new Vector3( 0.6667246f, -0.7453931f, -0.0000000f),
+        new Vector3( 0.8726854f,  0.3333218f, -0.3568645f),
+        new Vector3(-0.3333083f, -0.7453408f, -0.5773069f),
+        new Vector3( 0.0000000f, -1.0000000f, -0.0000000f),
+        new Vector3(-0.7453963f,  0.3333219f,  0.5773357f),
+        new Vector3( 0.3333614f,  0.7453930f, -0.5774010f),
+        new Vector3(-0.7453431f,  0.3333741f, -0.5773722f),
+        new Vector3( 0.8726999f,  0.3333025f,  0.3567604f),
+        new Vector3( 0.1273475f, -0.3333741f,  0.9341723f),
+        new Vector3(-0.1273475f,  0.3333741f, -0.9341723f),
+        new Vector3(-0.8726999f, -0.3333025f, -0.3567604f),
+        new Vector3( 0.7453431f, -0.3333741f,  0.5773722f),
+        new Vector3(-0.3331230f, -0.7450288f,  0.5778139f),
+        new Vector3( 0.7453963f, -0.3333219f, -0.5773357f),
+        new Vector3( 0.0000000f,  1.0000000f, -0.0000000f),
+        new Vector3( 0.3333083f,  0.7453408f,  0.5773069f),
+        new Vector3(-0.8726854f, -0.3333218f,  0.3568645f),
+        new Vector3(-0.6667246f,  0.7453931f, -0.0000000f),
+        new Vector3( 0.1273862f, -0.3333025f, -0.9341605f),
+    };
+
+    Vector3[] rotatedD20NormalsV5 =
+    {
+        new Vector3(-0.9341605f, -0.1273862f,  0.3333025f),
+        new Vector3( 0.5773357f,  0.7453963f, -0.3333219f),
+        new Vector3(-0.3568645f, -0.8726854f, -0.3333218f),
+        new Vector3( 0.5774010f,  0.3333614f,  0.7453930f),
+        new Vector3(-0.3567604f,  0.8726999f,  0.3333025f),
+        new Vector3( 0.5773722f, -0.7453431f,  0.3333741f),
+        new Vector3(-0.9341723f,  0.1273475f, -0.3333741f),
+        new Vector3( 0.5773069f, -0.3333083f, -0.7453408f),
+        new Vector3( 0.0000000f, -0.6667246f,  0.7453931f),
+        new Vector3( 0.0000000f,  0.0000000f, -1.0000000f),
+        new Vector3( 0.0000000f,  0.0000000f,  1.0000000f),
+        new Vector3( 0.0000000f,  0.6667246f, -0.7453931f),
+        new Vector3(-0.5773069f,  0.3333083f,  0.7453408f),
+        new Vector3( 0.9341723f, -0.1273475f,  0.3333741f),
+        new Vector3(-0.5773722f,  0.7453431f, -0.3333741f),
+        new Vector3( 0.3567604f, -0.8726999f, -0.3333025f),
+        new Vector3(-0.5778139f, -0.3331230f, -0.7450288f),
+        new Vector3( 0.3568645f,  0.8726854f,  0.3333218f),
+        new Vector3(-0.5773357f, -0.7453963f,  0.3333219f),
+        new Vector3( 0.9341605f,  0.1273862f, -0.3333025f),
+    };
+
+    Vector3 D20V5Rotation = new Vector3(19.398f, 158.043f, 82.284f); // Degrees
 
     void TransformNormals()
     {
@@ -189,17 +258,19 @@ public class D20Normals : MonoBehaviour
 
     }
 #if UNITY_EDITOR
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         // Create a rotation from face 1 to face i+1
-        var xform = D20s[1].transform.localToWorldMatrix * D20s[0].transform.worldToLocalMatrix;
+        //var xform = D20s[1].transform.localToWorldMatrix * D20s[0].transform.worldToLocalMatrix;
+        //var rotAcc = Quaternion.Inverse(Quaternion.LookRotation(rotatedD20NormalsV5[19]));
 
         for (int i = 0; i < 20; ++i)
         {
-            var n = d20normals[i];
+            Vector3 rotated = transform.localToWorldMatrix.MultiplyVector(rotatedD20NormalsV5[i]);
+            var n = rotated * 0.015f;
             //n = xform.MultiplyVector(n);
-            Gizmos.DrawLine(Vector3.zero, n);
-            UnityEditor.Handles.Label(n, (i + 1).ToString());
+            Gizmos.DrawLine(transform.position, transform.position + n);
+            UnityEditor.Handles.Label(transform.position + n, (i + 1).ToString());
         }
     }
 #endif
