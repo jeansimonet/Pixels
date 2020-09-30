@@ -12,7 +12,9 @@ public class UIDiePicker : MonoBehaviour
     public Button backButton;
     public Text titleText;
     public RectTransform contentRoot;
-
+    public RectTransform noPairedDice;
+    public RectTransform notEnoughPairedDice;
+    
     [Header("Prefabs")]
     public UIDiePickerDieToken dieTokenPrefab;
 
@@ -50,13 +52,32 @@ public class UIDiePicker : MonoBehaviour
         {
             dieSelector = d => true;
         }
-        
-        foreach (var dt in DiceManager.Instance.allDice.Where(dieSelector))
+
+        var allDice = DiceManager.Instance.allDice.Where(dieSelector);
+        if (allDice.Count() > 0)
         {
-            // New pattern
-            var newDieUI = CreateDieToken(dt);
-            newDieUI.SetSelected(dt == previousDie);
-            dice.Add(newDieUI);
+            noPairedDice.gameObject.SetActive(false);
+            notEnoughPairedDice.gameObject.SetActive(false);
+            foreach (var dt in allDice)
+            {
+                // New pattern
+                var newDieUI = CreateDieToken(dt);
+                newDieUI.SetSelected(dt == previousDie);
+                dice.Add(newDieUI);
+            }
+        }
+        else
+        {
+            if (DiceManager.Instance.allDice.Count() > 0)
+            {
+                noPairedDice.gameObject.SetActive(false);
+                notEnoughPairedDice.gameObject.SetActive(true);
+            }
+            else
+            {
+                noPairedDice.gameObject.SetActive(true);
+                notEnoughPairedDice.gameObject.SetActive(false);
+            }
         }
 
         gameObject.SetActive(true);

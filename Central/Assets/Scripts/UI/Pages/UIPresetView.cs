@@ -156,7 +156,7 @@ public class UIPresetView : UIPage
     UIAssignmentToken CreateAssignmentToken(Presets.EditDieAssignment assignment)
     {
         var uiass = GameObject.Instantiate<UIAssignmentToken>(assignmentTokenPrefab, assignmentsRoot);
-        uiass.Setup(assignment, (ed) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die.deviceId == ed.deviceId));
+        uiass.Setup(assignment, (ed) => !editPreset.dieAssignments.Where(ass => ass != assignment).Any(ass => ass.die != null && ass.die.deviceId == ed.deviceId));
         uiass.onChange += OnAssignmentChanged;
         uiass.onDelete.AddListener(() => DeleteAssignment(assignment));
         return uiass;

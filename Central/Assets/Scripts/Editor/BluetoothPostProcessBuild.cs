@@ -19,8 +19,8 @@ public class BluetoothPostProcessBuild
 			// Get root
 			PlistElementDict rootDict = plist.root;
 
-            rootDict.SetString("NSBluetoothAlwaysUsageDescription", "Uses BLE to communicate with Pixels dice.");
-            rootDict.SetString("NSBluetoothPeripheralUsageDescription", "Uses BLE to communicate with Pixels dice.");
+            rootDict.SetString("NSBluetoothAlwaysUsageDescription", "The App uses Bluetooth to communicate with the dice and program them with your custom lighting patterns.");
+            rootDict.SetString("NSBluetoothPeripheralUsageDescription", "The App uses Bluetooth to communicate with the dice and program them with your custom lighting patterns.");
 
 			// Write to file
 			File.WriteAllText(plistPath, plist.WriteToString());
