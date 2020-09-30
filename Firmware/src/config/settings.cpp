@@ -207,13 +207,13 @@ namespace SettingsManager
 	void setDefaultParameters(Settings& outSettings) {
         // Generate our name
         outSettings.name[0] = '\0';
-        strcpy(outSettings.name, "IAMADIE");
-		// uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
-        // for (int i = 0; i < 8; ++i) {
-        //     outSettings.name[1+i] = '0' + uniqueId % 10;
-        //     uniqueId /= 10;
-        // }
-        // outSettings.name[1+8] = '\0';
+        //strcpy(outSettings.name, "IAMADIE");
+		uint32_t uniqueId = NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
+        for (int i = 0; i < 7; ++i) {
+            outSettings.name[i] = '0' + uniqueId % 10;
+            uniqueId /= 10;
+        }
+        outSettings.name[1+7] = '\0';
 		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Generic;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
