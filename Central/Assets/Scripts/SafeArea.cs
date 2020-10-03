@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 
+[ExecuteInEditMode]
 public class SafeArea : MonoBehaviour
 {
     RectTransform Panel;
