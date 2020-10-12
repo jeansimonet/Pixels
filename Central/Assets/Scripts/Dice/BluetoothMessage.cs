@@ -76,6 +76,7 @@ namespace Dice
         PrintA2DReadings,
         LightUpFace,
         SetLEDToColor,
+        DebugAnimController,
     }
 
     public interface DieMessage
@@ -248,6 +249,9 @@ namespace Dice
                         break;
                     case DieMessageType.SetNameAck:
                         ret = FromByteArray<DieMessageSetNameAck>(data);
+                        break;
+                    case DieMessageType.DebugAnimController:
+                        ret = FromByteArray<DieMessageDebugAnimController>(data);
                         break;
                     default:
                         throw new System.Exception("Unhandled Message type " + type.ToString() + " for marshalling");
@@ -774,5 +778,14 @@ namespace Dice
     {
         public DieMessageType type { get; set; } = DieMessageType.SetNameAck;
     }
+
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public class DieMessageDebugAnimController
+    : DieMessage
+    {
+        public DieMessageType type { get; set; } = DieMessageType.DebugAnimController;
+    }
+    
 }
 

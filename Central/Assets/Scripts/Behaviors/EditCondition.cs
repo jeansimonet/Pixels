@@ -34,6 +34,8 @@ namespace Behaviors
                     return new EditConditionConnectionState();
                 case ConditionType.BatteryState:
                     return new EditConditionBatteryState();
+                case ConditionType.Idle:
+                    return new EditConditionIdle();
                 default:
                     throw new System.Exception("Unknown condition type");
             }
@@ -57,6 +59,8 @@ namespace Behaviors
                     return typeof(EditConditionConnectionState);
                 case ConditionType.BatteryState:
                     return typeof(EditConditionBatteryState);
+                case ConditionType.Idle:
+                    return typeof(EditConditionIdle);
                 default:
                     throw new System.Exception("Unknown condition type");
             }
@@ -98,6 +102,32 @@ namespace Behaviors
     /// Condition that triggers when the die is being handled
     /// </summary>
     [System.Serializable]
+    public class EditConditionIdle
+        : EditCondition
+    {
+        public override ConditionType type { get { return ConditionType.Idle; } }
+        [Slider, FloatRange(0.5f, 30.0f, 0.5f), Units("sec")]
+        public float period = 10.0f;
+        public override Condition ToCondition(EditDataSet editSet, DataSet set)
+        {
+            var ret = new ConditionIdle();
+            ret.repeatPeriodMs = (ushort)Mathf.RoundToInt(period * 1000.0f);
+            return ret;
+        }
+        public override EditCondition Duplicate()
+        {
+            return new EditConditionIdle() { period = period };
+        }
+        public override string ToString()
+        {
+            return "die is idle";
+        }
+    };
+
+    /// <summary>
+    /// Condition that triggers when the die is being handled
+    /// </summary>
+    [System.Serializable]
     public class EditConditionHandling
         : EditCondition
     {
@@ -124,13 +154,17 @@ namespace Behaviors
         : EditCondition
     {
         public override ConditionType type { get { return ConditionType.Rolling; } }
+        [Slider, FloatRange(0.5f, 5.0f, 0.1f), Units("sec")]
+        public float recheckAfter = 1.0f;
         public override Condition ToCondition(EditDataSet editSet, DataSet set)
         {
-            return new ConditionRolling();
+            var ret = new ConditionRolling();
+            ret.repeatPeriodMs = (ushort)Mathf.RoundToInt(recheckAfter * 1000.0f);
+            return ret;
         }
         public override EditCondition Duplicate()
         {
-            return new EditConditionRolling();
+            return new EditConditionRolling() { recheckAfter = recheckAfter };
         }
         public override string ToString()
         {

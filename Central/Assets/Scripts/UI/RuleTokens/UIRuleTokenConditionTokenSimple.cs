@@ -19,6 +19,7 @@ public class UIRuleTokenConditionTokenSimple
 		ConditionType.Crooked,
         ConditionType.ConnectionState,
         ConditionType.BatteryState,
+        ConditionType.Idle,
     };
 
     public override IEnumerable<ConditionType> conditionTypes

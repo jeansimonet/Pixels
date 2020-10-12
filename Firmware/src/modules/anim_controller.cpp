@@ -13,12 +13,15 @@
 #include "app_error_weak.h"
 #include "nrf_log.h"
 #include "accelerometer.h"
+#include "bluetooth/bluetooth_messages.h"
+#include "bluetooth/bluetooth_message_service.h"
 
 using namespace Animations;
 using namespace Modules;
 using namespace Config;
 using namespace DriversNRF;
 using namespace DriversHW;
+using namespace Bluetooth;
 
 #define MAX_ANIMS (20)
 #define TIMER2_RESOLUTION 33 //ms
@@ -43,11 +46,17 @@ namespace AnimController
 	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
 	void onDatasetProgrammingEvent(void* context, DataSet::ProgrammingEventType evt);
 
+
+	void printDebugAnimControllerState(void* context, const Message* msg);
+
 	APP_TIMER_DEF(animControllerTimer);
 	// To be passed to the timer
+	int animControllerTicks = 0;
 	void animationControllerUpdate(void* param)
 	{
-		update(Utils::millis());
+		animControllerTicks++;
+		int timeMs = animControllerTicks * TIMER2_RESOLUTION;
+		update(timeMs);
 	}
 
 	/// <summary>
@@ -57,6 +66,8 @@ namespace AnimController
 	{
 		DataSet::hookProgrammingEvent(onDatasetProgrammingEvent, nullptr);
 		SettingsManager::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
+
+		MessageService::RegisterMessageHandler(Message::MessageType_DebugAnimController, nullptr, printDebugAnimControllerState);
 
 		heat = 0.0f;
 		currentRainbowIndex = 0;
@@ -97,7 +108,8 @@ namespace AnimController
 			{
 				auto anim = animations[i];
 				int animTime = ms - anim->startTime;
-				if (anim->loop && animTime > anim->animationPreset->duration) {
+				if (anim->loop && animTime > anim->animationPreset->duration)
+				{
 					// Yes, update anim start time so next if statement updates the animation
 					anim->startTime += anim->animationPreset->duration;
 					animTime = ms - anim->startTime;
@@ -222,7 +234,7 @@ namespace AnimController
 			}
 		}
 
-		int ms = Utils::millis();
+		int ms = animControllerTicks * TIMER2_RESOLUTION;
 		if (prevAnimIndex < animationCount)
 		{
 			// Replace a previous animation
@@ -387,6 +399,15 @@ namespace AnimController
 			stop();
 		} else {
 			start();
+		}
+	}
+
+	void printDebugAnimControllerState(void* context, const Message* msg) {
+		NRF_LOG_INFO("Anim Controller has %d animations", animationCount);
+		for (int i = 0; i < animationCount; ++i) {
+			AnimationInstance* anim = animations[i];
+			NRF_LOG_INFO("Anim %d is of type %d, duration %d", i, anim->animationPreset->type, anim->animationPreset->duration);
+			NRF_LOG_INFO("StartTime %d, remapFace %d, loop %d", anim->startTime, anim->remapFace, anim->loop ? 1: 0);
 		}
 	}
 

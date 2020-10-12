@@ -17,6 +17,8 @@
 #include "drivers_hw/apa102.h"
 #include "drivers_nrf/power_manager.h"
 #include "drivers_nrf/gpiote.h"
+#include "drivers_nrf/timers.h"
+
 
 using namespace Modules;
 using namespace Core;
@@ -28,7 +30,7 @@ using namespace Bluetooth;
 // This defines how frequently we try to read the accelerometer
 #define TIMER2_RESOLUTION (100)	// ms
 #define JERK_SCALE (1000)		// To make the jerk in the same range as the acceleration
-#define MAX_ACC_CLIENTS 4
+#define MAX_ACC_CLIENTS 8
 
 namespace Modules
 {
@@ -75,7 +77,7 @@ namespace Accelerometer
 		LIS2DE12::read();
 		AccelFrame newFrame;
 		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-		newFrame.time = Utils::millis();
+		newFrame.time = DriversNRF::Timers::millis();
 		newFrame.jerk = float3::zero();
 		newFrame.sigma = 0.0f;
 		newFrame.smoothAcc = newFrame.acc;
@@ -103,7 +105,7 @@ namespace Accelerometer
 
 		AccelFrame newFrame;
 		newFrame.acc = float3(LIS2DE12::cx, LIS2DE12::cy, LIS2DE12::cz);
-		newFrame.time = Utils::millis();
+		newFrame.time = DriversNRF::Timers::millis();
 		newFrame.jerk = ((newFrame.acc - lastFrame.acc) * 1000.0f) / (float)(newFrame.time - lastFrame.time);
 
 		float jerkMag = newFrame.jerk.sqrMagnitude();
@@ -189,17 +191,17 @@ namespace Accelerometer
         }
 
 		//if (newFrame.face != face || newRollState != rollState) {
+		if (newFrame.face != face) {
+			face = newFrame.face;
+			confidence = newFrame.faceConfidence;
+
+			//NRF_LOG_INFO("Face %d, confidence " NRF_LOG_FLOAT_MARKER, face, NRF_LOG_FLOAT(confidence));
+		}
+
 		if (newRollState != rollState) {
 
 			// Debugging
 			//BLE_LOG_INFO("Face Normal: %d, %d, %d", (int)(newFrame.acc.x * 100), (int)(newFrame.acc.y * 100), (int)(newFrame.acc.z * 100));
-
-			if (newFrame.face != face) {
-				face = newFrame.face;
-				confidence = newFrame.faceConfidence;
-
-				//NRF_LOG_INFO("Face %d, confidence " NRF_LOG_FLOAT_MARKER, face, NRF_LOG_FLOAT(confidence));
-			}
 
 			if (newRollState != rollState) {
 				NRF_LOG_INFO("State: %s", getRollStateString(newRollState));

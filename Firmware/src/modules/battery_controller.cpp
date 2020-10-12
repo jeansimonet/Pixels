@@ -9,6 +9,7 @@
 #include "app_error_weak.h"
 #include "die.h"
 #include "drivers_hw/apa102.h"
+#include "drivers_nrf/timers.h"
 #include "utils/utils.h"
 #include "drivers_nrf/a2d.h"
 
@@ -115,7 +116,7 @@ namespace BatteryController
 		ret_code = app_timer_start(batteryControllerTimer, APP_TIMER_TICKS(BATTERY_TIMER_MS), NULL);
 		APP_ERROR_CHECK(ret_code);
 
-        lastUpdateTime = millis();
+        lastUpdateTime = DriversNRF::Timers::millis();
 
         if (lazyChargeDetect) {
             NRF_LOG_INFO("Battery controller initialized - Lazy Charge Detect - Battery %s", getChargeStateString(currentBatteryState));
@@ -177,7 +178,7 @@ namespace BatteryController
                         // Battery level going up, we must be charging
                         ret = BatteryState_Charging;
                         vBatWhenChargingStart = lowestVBat;
-                        chargingStartedTime = millis();
+                        chargingStartedTime = DriversNRF::Timers::millis();
                     } else {
                         // Update stored lowest level
                         if (level < lowestVBat) {
@@ -194,7 +195,7 @@ namespace BatteryController
                         ret = BatteryState_Ok;
                     } else
                     // Make sure we've waited enough to check state again
-                    if (millis() - chargingStartedTime > INVALID_CHARGE_TIMEOUT) {
+                    if (DriversNRF::Timers::millis() - chargingStartedTime > INVALID_CHARGE_TIMEOUT) {
                         if (level < vBatWhenChargingStart + CHARGE_START_DETECTION_THRESHOLD) {
                             // It looks like we stopped charging
                             if (level > SettingsManager::getSettings()->batteryLow) {
@@ -229,7 +230,7 @@ namespace BatteryController
                     // Battery level going up, we must be charging
                     ret = BatteryState_Charging;
                     vBatWhenChargingStart = lowestVBat;
-                    chargingStartedTime = millis();
+                    chargingStartedTime = DriversNRF::Timers::millis();
                 } else {
                     // Update stored lowest level
                     if (level < lowestVBat) {
@@ -319,7 +320,7 @@ namespace BatteryController
 
             // If it's been too long since we checked, check right away
             uint32_t delay = BATTERY_TIMER_MS;
-            if (millis() - lastUpdateTime > BATTERY_TIMER_MS) {
+            if (DriversNRF::Timers::millis() - lastUpdateTime > BATTERY_TIMER_MS) {
                 delay = BATTERY_TIMER_MS_QUICK;
             }
             // Restart the timer

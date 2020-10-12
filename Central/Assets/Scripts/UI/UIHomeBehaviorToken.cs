@@ -66,6 +66,7 @@ public class UIHomeBehaviorToken : MonoBehaviour
         foreach (var uidie in toDestroy)
         {
             DestroyDieToken(uidie);
+            connectedDice.Remove(uidie);
         }
     }
 
@@ -83,11 +84,6 @@ public class UIHomeBehaviorToken : MonoBehaviour
 
     void OnDestroy()
     {
-        // Remove remaining
-        foreach (var uidieToken in connectedDice)
-        {
-            DestroyDieToken(uidieToken);
-        }
         connectedDice.Clear();
         if (this.dieRenderer != null)
         {

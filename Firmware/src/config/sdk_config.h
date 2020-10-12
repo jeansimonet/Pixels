@@ -223,7 +223,7 @@
 // <7=> 4096 Hz 
 // <15=> 2048 Hz 
 // <31=> 1024 Hz 
-#define APP_TIMER_CONFIG_RTC_FREQUENCY 0
+#define APP_TIMER_CONFIG_RTC_FREQUENCY 7
 
 // <o> APP_TIMER_CONFIG_IRQ_PRIORITY  - Interrupt priority
 // <i> Priorities 0,2 (nRF51) and 0,1,4,5 (nRF52) are reserved for SoftDevice

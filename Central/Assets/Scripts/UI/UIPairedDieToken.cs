@@ -48,6 +48,7 @@ public class UIPairedDieToken : MonoBehaviour
         calibrateButton.onClick.AddListener(OnCalibrate);
         setDesignButton.onClick.AddListener(OnSetDesign);
         pingButton.onClick.AddListener(OnPing);
+        resetButton.onClick.AddListener(() => die.die.DebugAnimController());
     }
 
     void OnToggle()

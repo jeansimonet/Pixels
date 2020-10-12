@@ -83,6 +83,7 @@ struct Message
 		MessageType_PrintA2DReadings,
 		MessageType_LightUpFace,
 		MessageType_SetLEDToColor,
+		MessageType_DebugAnimController,
 
 		MessageType_Count
 	};

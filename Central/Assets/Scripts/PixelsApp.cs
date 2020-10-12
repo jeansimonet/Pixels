@@ -232,12 +232,25 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     {
                         if (res2)
                         {
-                            HideProgrammingBox();
-                            DiceManager.Instance.DisconnectDie(editDie, null);
-                            die.currentBehavior = behavior;
-                            AppDataSet.Instance.SaveData();
-                            onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
-                            callback?.Invoke(true);
+                            editDie.die.GetDieInfo(res3 =>
+                            {
+                                if (res3)
+                                {
+                                    HideProgrammingBox();
+                                    DiceManager.Instance.DisconnectDie(editDie, null);
+                                    die.currentBehavior = behavior;
+                                    AppDataSet.Instance.SaveData();
+                                    onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
+                                    callback?.Invoke(true);
+                                }
+                                else
+                                {
+                                    HideProgrammingBox();
+                                    ShowDialogBox("Error verifying data sendt to " + editDie.name, message, "Ok", null, null);
+                                    DiceManager.Instance.DisconnectDie(editDie, null);
+                                    callback?.Invoke(false);
+                                }
+                            });
                         }
                         else
                         {

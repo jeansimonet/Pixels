@@ -71,14 +71,6 @@ namespace Utils
 		return wordLen;
 	}
 
-	#define APP_TIMER_MS(TICKS) ((uint32_t)ROUNDED_DIV((TICKS) * 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1), (uint64_t)APP_TIMER_CLOCK_FREQ))
-
-	uint32_t millis( void )
-	{
-		auto ticks = app_timer_cnt_get();
-		return APP_TIMER_MS(ticks);
-	}
-
 	/* A PROGMEM (flash mem) table containing 8-bit unsigned sine wave (0-255).
 	Copy & paste this snippet into a Python REPL to regenerate:
 	import math

@@ -22,6 +22,7 @@ namespace Behaviors
 		Condition_Crooked,
         Condition_ConnectionState,
         Condition_BatteryState,
+        Condition_Idle,
     };
 
     /// <summary>
@@ -31,6 +32,18 @@ namespace Behaviors
 	struct Condition
 	{
 		ConditionType type;
+    };
+
+    /// <summary>
+    /// Condition that triggers when the die is idle for a while
+    /// </summary>
+    struct ConditionIdle
+        : public Condition
+    {
+        uint8_t padding1;
+        uint16_t repeatPeriodMs;
+        // No stored parameter for now
+        bool checkTrigger(Modules::Accelerometer::RollState newState, int newFaceIndex) const;
     };
 
     /// <summary>
@@ -53,8 +66,7 @@ namespace Behaviors
         : public Condition
     {
         uint8_t padding1;
-        uint8_t padding2;
-        uint8_t padding3;
+        uint16_t repeatPeriodMs; // 0 means do NOT repeat
         // No parameter for now
         bool checkTrigger(Modules::Accelerometer::RollState newState, int newFaceIndex) const;
     };

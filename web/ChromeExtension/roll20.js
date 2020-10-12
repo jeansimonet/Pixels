@@ -76,7 +76,9 @@ function handleFaceEvent(ev, face) {
     }
     else if (ev == 1) {
         log('Face up');
-        postChatMessage("Pixel roll: " + (face + 1));
+        //var message = "!power {{--name|Pixel Roll --D20|[[ " + (face + 1) + "+ [[ @{tumble} ]] ]]}}"
+        var message = "!power {{--name|Pixel Roll --Strength Check|[[ " + (face + 1) + "+ [[ 4 ]] ]]}}"
+        postChatMessage(message);
     }
 }
 

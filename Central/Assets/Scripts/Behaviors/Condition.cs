@@ -26,6 +26,8 @@ namespace Behaviors
         ConnectionState,
         [AdvancedEnumValue, Name("Battery Event...")]
         BatteryState,
+        [Name("Die is idle for...")]
+        Idle,
     };
 
     /// <summary>
@@ -35,6 +37,19 @@ namespace Behaviors
 	public interface Condition
 	{
 		ConditionType type { get; set; }
+    };
+
+    /// <summary>
+    /// Condition that triggers when the die is being handled
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [System.Serializable]
+    public class ConditionIdle
+        : Condition
+    {
+        public ConditionType type { get; set; } = ConditionType.Idle;
+        public byte padding1;
+        public ushort repeatPeriodMs;
     };
 
     /// <summary>
@@ -61,8 +76,7 @@ namespace Behaviors
     {
         public ConditionType type { get; set; } = ConditionType.Rolling;
         public byte padding1;
-        public byte padding2;
-        public byte padding3;
+        public ushort repeatPeriodMs; // o means do NOT repeat
     };
 
     /// <summary>

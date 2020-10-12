@@ -28,7 +28,7 @@ using namespace Animations;
 using namespace Behaviors;
 
 
-#define MAX_ACC_CLIENTS 2
+#define MAX_ACC_CLIENTS 4
 
 namespace DataSet
 {

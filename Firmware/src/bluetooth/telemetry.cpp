@@ -8,6 +8,7 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 #include "nrf_sdh_ble.h"
+#include "drivers_nrf/timers.h"
 #include "modules/accelerometer.h"
 #include "utils/utils.h"
 
@@ -37,7 +38,7 @@ namespace Telemetry
     }
 
 	void onAccDataReceived(void* param, const Accelerometer::AccelFrame& frame) {
-        uint32_t time = Utils::millis();
+        uint32_t time = DriversNRF::Timers::millis();
         if (time - lastMessageMS >= TELEMETRY_RATE_MS) {
             if (Stack::canSend()) {
                 teleMessage.data = frame;

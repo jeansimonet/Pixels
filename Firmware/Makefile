@@ -3,9 +3,9 @@ TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
 PUBLISH_DIRECTORY := binaries
 
-VERSION			 := 09_05
+VERSION			 := 10_12
 
-SDK_VER = 12
+SDK_VER = 17
 
 ifeq ($(SDK_VER),17)
 	SDK_ROOT := C:/nRF5_SDK

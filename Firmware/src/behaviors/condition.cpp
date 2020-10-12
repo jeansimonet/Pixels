@@ -1,8 +1,14 @@
 #include "condition.h"
 
-
 namespace Behaviors
 {
+    /// <summary>
+    /// Called by the Behavior Controller when a roll state event happens to see if this condition should trigger
+    /// </summary>
+    bool ConditionIdle::checkTrigger(Modules::Accelerometer::RollState newState, int newFaceIndex) const {
+        return newState == Modules::Accelerometer::RollState_OnFace || newState == Modules::Accelerometer::RollState_Crooked;
+    }
+
     /// <summary>
     /// Called by the Behavior Controller when a roll state event happens to see if this condition should trigger
     /// </summary>

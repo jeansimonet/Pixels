@@ -21,7 +21,7 @@ using namespace Bluetooth;
 using namespace Config;
 using namespace Modules;
 
-#define MAX_ACC_CLIENTS 2
+#define MAX_ACC_CLIENTS 4
 
 namespace Config
 {

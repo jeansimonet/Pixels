@@ -384,6 +384,11 @@ public partial class Die
         PostMessage(new DieMessageSetBattleState());
     }
 
+    public void DebugAnimController()
+    {
+        PostMessage(new DieMessageDebugAnimController());
+    }
+
     public void PrintNormals()
     {
         StartCoroutine(PrintNormalsCr());

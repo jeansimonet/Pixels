@@ -7,10 +7,26 @@
 #include "nrf_gpio.h"
 #include "nrf_drv_clock.h"
 
+#define MAX_DELAYED_CALLS 4
+
 namespace DriversNRF
 {
 namespace Timers
 {
+    APP_TIMER_DEF(delayedCallbacksTimer);
+    void delayedCallbacksTimerCallback(void* ignore);
+
+    struct delayedCallbacksTimerInfo
+    {
+        DelayedCallback callback;
+        void* param;
+        int callbackTime;
+    };
+
+    delayedCallbacksTimerInfo delayedCallbacks[MAX_DELAYED_CALLS];
+    int delayedCallbacksCount;
+    int delayedCallbackPauseRequestCount;
+
     void init() {
         ret_code_t err_code;
         
@@ -27,6 +43,11 @@ namespace Timers
         
         // Wait for the clock to be ready.
         while (!nrf_clock_lf_is_running()) {;}
+
+        // Create a temp timer that can be used by modules, like the behavior controller
+        createTimer(&delayedCallbacksTimer, APP_TIMER_MODE_SINGLE_SHOT, delayedCallbacksTimerCallback);
+        delayedCallbacksCount = 0;
+        delayedCallbackPauseRequestCount = 0;
 
         NRF_LOG_INFO("App Timers initialized");
 
@@ -61,6 +82,121 @@ namespace Timers
 
     void resume(void) {
         app_timer_resume();
+    }
+
+	#define APP_TIMER_MS(TICKS) ((uint32_t)ROUNDED_DIV((TICKS) * 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1), (uint64_t)APP_TIMER_CLOCK_FREQ))
+
+	int millis()
+	{
+		auto ticks = app_timer_cnt_get();
+		return APP_TIMER_MS(ticks);
+	}
+
+    void delayedCallbacksTimerCallback(void* ignore) {
+        int time = millis();
+        do
+        {
+            auto cb = delayedCallbacks[0].callback;
+            auto p = delayedCallbacks[0].param;
+            if (delayedCallbacksCount > 1) {
+                // Shift items down
+                for (int i = 0; i < delayedCallbacksCount - 1; ++i) {
+                    delayedCallbacks[i] = delayedCallbacks[i+1];
+                }
+            }
+            delayedCallbacksCount--;
+
+            // Trigger the callback
+            cb(p);
+        }
+        while (delayedCallbacksCount > 0 && delayedCallbacks[0].callbackTime <= time);
+
+        if (delayedCallbacksCount > 0) {
+            // Set the timer for the next call
+            startTimer(delayedCallbacksTimer, delayedCallbacks[0].callbackTime - time, nullptr);
+        }
+    }
+
+    bool setDelayedCallback(DelayedCallback callback, void* param, int periodMs) {
+        bool ret = delayedCallbacksCount < MAX_DELAYED_CALLS;
+        if (ret) {
+            // Find where to insert this call
+            int insertIndex = 0;
+            int callbackTime = millis() + periodMs;
+            while (insertIndex < delayedCallbacksCount && callbackTime > delayedCallbacks[insertIndex].callbackTime) {
+                insertIndex++;
+            }
+
+            // Shift all the elements after the new one to insert
+            if (delayedCallbacksCount > 1) {
+                for (int i = delayedCallbacksCount - 1; i >= insertIndex; --i) {
+                    delayedCallbacks[i+1] = delayedCallbacks[i];
+                }
+            }
+            if (insertIndex == 0 && delayedCallbacksCount > 0) {
+                // Stop the current timer since the new callback is sooner
+                stopTimer(delayedCallbacksTimer);
+            }
+
+            // Insert the new callback
+            auto& cb = delayedCallbacks[insertIndex];
+            cb.callback = callback;
+            cb.param = param;
+            cb.callbackTime = callbackTime;
+            delayedCallbacksCount++;
+
+            if (insertIndex == 0) {
+                // Start the timer
+                startTimer(delayedCallbacksTimer, periodMs, nullptr);
+            }
+        }
+        return ret;
+    }
+
+    bool cancelDelayedCallback(DelayedCallback callback, void* param) { 
+        bool ret = false;
+        for (int i = 0; i < delayedCallbacksCount; ++i) {
+            if (delayedCallbacks[i].callback == callback && delayedCallbacks[i].param == param) {
+                // Found the item to remove
+                if (i == 0) {
+                    stopTimer(delayedCallbacksTimer);
+                    if (delayedCallbacksCount > 1) {
+                        int nextMs = delayedCallbacks[1].callbackTime - delayedCallbacks[0].callbackTime;
+                        // Start the timer
+                        startTimer(delayedCallbacksTimer, nextMs, nullptr);
+                    }
+                }
+                for (int j = i; j < delayedCallbacksCount - 1; ++j) {
+                    delayedCallbacks[j] = delayedCallbacks[j+1];
+                }
+                delayedCallbacksCount--;
+                ret = true;
+                break;
+            }
+        }
+        return ret;
+    }
+
+    void pauseDelayedCallbacks() {
+        if (delayedCallbackPauseRequestCount == 0) {
+            // Cancel current timer, if any
+            if (delayedCallbacksCount > 0) {
+                NRF_LOG_INFO("Pausing delayed callbacks");
+                stopTimer(delayedCallbacksTimer);
+            }
+        }
+        delayedCallbackPauseRequestCount++;
+    }
+
+    void resumeDelayedCallbacks() {
+        delayedCallbackPauseRequestCount--;
+        if (delayedCallbackPauseRequestCount == 0) {
+            // Resume current timer, if any
+            if (delayedCallbacksCount > 0 && delayedCallbacks[0].callbackTime < millis()) {
+                NRF_LOG_INFO("Resuming delayed callbacks");
+                delayedCallbacksTimerCallback(nullptr); 
+            }
+        }
     }
 
     #if DICE_SELFTEST && TIMERS_SELFTEST

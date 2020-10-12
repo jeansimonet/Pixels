@@ -16,5 +16,12 @@ namespace DriversNRF
         void pause(void);
         void resume(void);
         void selfTest();
+        int millis();
+
+        typedef void (*DelayedCallback)(void* param);
+        bool setDelayedCallback(DelayedCallback callback, void* param, int periodMs);
+        bool cancelDelayedCallback(DelayedCallback callback, void* param);
+        void pauseDelayedCallbacks();
+        void resumeDelayedCallbacks();
     }
 }
