@@ -12,6 +12,8 @@ public class UIHomeConnectedDieToken : MonoBehaviour
     public Dice.EditDie editDie { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
 
+    bool visible = true;
+
     public void Setup(Dice.EditDie die)
     {
         editDie = die;
@@ -32,4 +34,15 @@ public class UIHomeConnectedDieToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

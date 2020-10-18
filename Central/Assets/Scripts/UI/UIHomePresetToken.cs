@@ -19,6 +19,8 @@ public class UIHomePresetToken : MonoBehaviour
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
+    bool visible = true;
+
     public void Setup(EditPreset preset)
     {
         this.editPreset = preset;
@@ -56,4 +58,15 @@ public class UIHomePresetToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

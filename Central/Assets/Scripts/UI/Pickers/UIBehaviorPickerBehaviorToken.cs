@@ -25,6 +25,8 @@ public class UIBehaviorPickerBehaviorToken : MonoBehaviour
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
+    bool visible = true;
+
     public void Setup(EditBehavior behavior)
     {
         this.editBehavior = behavior;
@@ -55,6 +57,16 @@ public class UIBehaviorPickerBehaviorToken : MonoBehaviour
             nameText.color = defaultTextColor;
             descriptionText.color = defaultTextColor;
             frame.color = defaultFrameColor;
+        }
+    }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
         }
     }
 

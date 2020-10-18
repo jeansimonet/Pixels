@@ -17,6 +17,8 @@ public class UIPatternPickerToken : MonoBehaviour
 
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
 
+    bool visible = true;
+
     public void Setup(EditPattern pattern)
     {
         this.editPattern = pattern;
@@ -48,7 +50,12 @@ public class UIPatternPickerToken : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
     }
 
     void OnDestroy()

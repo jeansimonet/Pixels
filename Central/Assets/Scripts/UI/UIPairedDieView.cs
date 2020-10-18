@@ -27,6 +27,8 @@ public class UIPairedDieView : MonoBehaviour
     public SingleDiceRenderer dieRenderer { get; private set; }
     public bool selected { get; private set; }
 
+    bool visible = true;
+
     public void Setup(EditDie die)
     {
         this.die = die;
@@ -76,7 +78,7 @@ public class UIPairedDieView : MonoBehaviour
 
         if (die.die == null)
         {
-            batteryView.SetLevel(null);
+            batteryView.SetLevel(null, null);
             signalView.SetRssi(null);
             dieRenderer.SetAuto(false);
             dieRenderImage.color = Color.white;
@@ -88,7 +90,7 @@ public class UIPairedDieView : MonoBehaviour
         }
         else
         {
-            batteryView.SetLevel(die.die.batteryLevel);
+            batteryView.SetLevel(die.die.batteryLevel, die.die.charging);
             signalView.SetRssi(die.die.rssi);
             switch (die.die.lastError)
             {
@@ -193,7 +195,7 @@ public class UIPairedDieView : MonoBehaviour
         UpdateState();
     }
 
-    void OnBatteryLevelChanged(Die die, float? level)
+    void OnBatteryLevelChanged(Die die, float? level, bool? charging)
     {
         UpdateState();
     }
@@ -260,4 +262,15 @@ public class UIPairedDieView : MonoBehaviour
         editDie.die.OnRssiChanged -= OnRssiChanged;
         editDie.die.OnError -= OnError;
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

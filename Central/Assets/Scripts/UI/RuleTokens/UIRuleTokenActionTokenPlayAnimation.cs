@@ -15,6 +15,8 @@ public class UIRuleTokenActionTokenPlayAnimation
 
     public SingleDiceRenderer dieRenderer { get; private set; }
 
+    bool visible = true;
+
     static readonly ActionType[] supportedActionTypes = new ActionType[]
     {
         ActionType.PlayAnimation
@@ -58,4 +60,15 @@ public class UIRuleTokenActionTokenPlayAnimation
             dieRenderer.Play(true);
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

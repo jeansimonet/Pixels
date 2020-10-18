@@ -46,7 +46,7 @@ public class UIDiscoveredDieView : MonoBehaviour
         {
             dieIDText.text = "ID: Unavailable";
         }
-        batteryView.SetLevel(die.batteryLevel);
+        batteryView.SetLevel(die.batteryLevel, die.charging);
         signalView.SetRssi(die.rssi);
         die.OnBatteryLevelChanged += OnBatteryLevelChanged;
         die.OnRssiChanged += OnRssiChanged;
@@ -83,9 +83,9 @@ public class UIDiscoveredDieView : MonoBehaviour
         }
     }
     
-    void OnBatteryLevelChanged(Die die, float? level)
+    void OnBatteryLevelChanged(Die die, float? level, bool? charging)
     {
-        batteryView.SetLevel(die.batteryLevel);
+        batteryView.SetLevel(die.batteryLevel, charging);
     }
 
     void OnRssiChanged(Die die, int? rssi)

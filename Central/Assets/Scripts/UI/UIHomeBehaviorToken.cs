@@ -25,6 +25,8 @@ public class UIHomeBehaviorToken : MonoBehaviour
 
     List<UIHomeConnectedDieToken> connectedDice = new List<UIHomeConnectedDieToken>();
 
+    bool visible = true;
+
     public void Setup(EditBehavior behavior)
     {
         this.editBehavior = behavior;
@@ -91,4 +93,15 @@ public class UIHomeBehaviorToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

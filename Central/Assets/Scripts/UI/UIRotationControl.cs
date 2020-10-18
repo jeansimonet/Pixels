@@ -10,14 +10,14 @@ public class UIRotationControl : MonoBehaviour
     public Image buttonBackgroundImage;
     public Button button;
 
-    DiceRendererDice die;
+    SingleDiceRenderer diceRenderer;
 
     // Start is called before the first frame update
-    public void Setup(DiceRendererDice die)
+    public void Setup(SingleDiceRenderer diceRenderer)
     {
-        this.die = die;
-        die.onRotationStateChange += OnRotationStateChange;
-        OnRotationStateChange(die.rotationState);
+        this.diceRenderer = diceRenderer;
+        diceRenderer.die.onRotationStateChange += OnRotationStateChange;
+        OnRotationStateChange(diceRenderer.die.rotationState);
     }
 
     void Awake()
@@ -46,13 +46,14 @@ public class UIRotationControl : MonoBehaviour
 
     void ToggleAuto()
     {
-        switch (die.rotationState)
+        switch (diceRenderer.die.rotationState)
         {
             case DiceRendererDice.RotationState.Auto:
-                die.SetAuto(false);
+                diceRenderer.die.SetAuto(false);
                 break;
             default:
-                die.SetAuto(true);
+                diceRenderer.die.SetAuto(true);
+                diceRenderer.ResetTilt();
                 break;
         }
     }

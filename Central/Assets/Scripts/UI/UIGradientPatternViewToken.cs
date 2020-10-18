@@ -38,6 +38,8 @@ public class UIGradientPatternViewToken : MonoBehaviour
 
     public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
+    bool visible = true;
+
     public void Setup(EditPattern pattern)
     {
         this.editPattern = pattern;
@@ -89,4 +91,15 @@ public class UIGradientPatternViewToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

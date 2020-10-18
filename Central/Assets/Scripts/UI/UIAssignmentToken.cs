@@ -25,6 +25,8 @@ public class UIAssignmentToken : MonoBehaviour
 
     System.Func<EditDie, bool> dieSelector;
 
+    bool visible = true;
+
     public void Setup(Presets.EditDieAssignment ass, System.Func<EditDie, bool> dieSelector)
     {
         this.editAssignment = ass;
@@ -117,4 +119,15 @@ public class UIAssignmentToken : MonoBehaviour
         dieName.text = dName;
         behaviorName.text = bName;
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

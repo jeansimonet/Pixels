@@ -271,7 +271,8 @@ public partial class Die
             {
                 var lvlMsg = (DieMessageBatteryLevel)msg;
                 batteryLevel = lvlMsg.level;
-                OnBatteryLevelChanged?.Invoke(this, lvlMsg.level);
+                charging = lvlMsg.charging != 0;
+                OnBatteryLevelChanged?.Invoke(this, lvlMsg.level, lvlMsg.charging != 0);
                 outLevelAction?.Invoke(this, lvlMsg.level);
             },
             () =>

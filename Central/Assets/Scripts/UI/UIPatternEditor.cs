@@ -120,24 +120,32 @@ public class UIPatternEditor : MonoBehaviour
         byte[] fileData = File.ReadAllBytes(currentFilepath);
         var tex = new Texture2D(2, 2);
         tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-        tex.filterMode = FilterMode.Point;
-        tex.wrapMode = TextureWrapMode.Clamp;
-        currentPattern.FromTexture(tex);
-        currentPattern.name = System.IO.Path.GetFileNameWithoutExtension(currentFilepath);
-        titleText.text = currentPattern.name;
+        if (tex.height > 20 || tex.width > 500)
+        {
+            PixelsApp.Instance.ShowDialogBox("Image too big", "Sorry the image you selected is too large. It should be smaller than 500x20 pixels", "Ok", null, null);
+        }
+        else
+        {
+            tex.filterMode = FilterMode.Point;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            currentPattern.FromTexture(tex);
+            currentPattern.name = System.IO.Path.GetFileNameWithoutExtension(currentFilepath);
+            titleText.text = currentPattern.name;
+            isDirty = true;
+            saveButton.gameObject.SetActive(true);
+            reloadFromFile.interactable = false;
+            RepaintPreview();
+        }
         GameObject.Destroy(tex);
-        isDirty = true;
-        saveButton.gameObject.SetActive(true);
-        reloadFromFile.interactable = false;
-        RepaintPreview();
     }
 
     void LoadFromFile()
     {
         #if UNITY_EDITOR
-            FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select png", "", "png"));
+        FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select png", "", "png"));
         #else
-            NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "png" ) });
+        NativeGallery.GetImageFromGallery(FileSelected, "Select Pattern");
+        // NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "png" ) });
         #endif
 
         //var filePath = System.IO.Path.Combine(Application.persistentDataPath, $"pattern.png");

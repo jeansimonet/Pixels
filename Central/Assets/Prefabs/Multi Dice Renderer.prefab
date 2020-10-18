@@ -403,6 +403,7 @@ MonoBehaviour:
   - {fileID: 7588544379202609222, guid: 3a1680edd12a5da4097ef39e4e06c220, type: 3}
   - {fileID: 1886759377466015590, guid: fd5c3d7d8b0dc1b46b3ba27e8a161c31, type: 3}
   - {fileID: 8936551567278000770, guid: 6e5017cfec1d33e43803c552804d40c9, type: 3}
+  cameraTiltRoot: {fileID: 0}
   dieLights:
   - {fileID: 807694993703330177}
   - {fileID: 807694994550514549}

@@ -308,6 +308,7 @@ struct MessageBatteryLevel
 {
 	float level;
 	float voltage;
+	uint8_t charging;
 	inline MessageBatteryLevel() : Message(Message::MessageType_BatteryLevel) {}
 };
 

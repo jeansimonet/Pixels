@@ -254,6 +254,8 @@ public partial class Die
         bool result = false;
         try
         {
+            PixelsApp.Instance.ShowProgrammingBox("Uploading animation to " + name);
+
             // Prepare the die
             var prepareDie = new DieMessageTransferTestAnimSet();
             prepareDie.paletteSize = testAnimSet.animationBits.getPaletteSize();;
@@ -298,7 +300,7 @@ public partial class Die
 
                         yield return StartCoroutine(UploadBulkDataCr(
                             setData,
-                            null,
+                            (pct) => PixelsApp.Instance.UpdateProgrammingBox(pct),
                             (res) => result = res));
 
                         if (result)
@@ -326,6 +328,7 @@ public partial class Die
         }
         finally
         {
+            PixelsApp.Instance.HideProgrammingBox();
             callBack?.Invoke(result);
         }
     }

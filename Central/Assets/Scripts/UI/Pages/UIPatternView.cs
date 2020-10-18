@@ -72,8 +72,8 @@ public class UIPatternView
             previewImage.texture = dieRenderer.renderTexture;
         }
 
-        rotationSlider.Setup(this.dieRenderer.die);
-        rotationControl.Setup(this.dieRenderer.die);
+        rotationSlider.Setup(this.dieRenderer);
+        rotationControl.Setup(this.dieRenderer);
 
         animationSelector.Setup(
             "Lighting Pattern Type",

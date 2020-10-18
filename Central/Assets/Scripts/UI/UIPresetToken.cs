@@ -41,6 +41,8 @@ public class UIPresetToken : MonoBehaviour
 
     public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
+    bool visible = true;
+
     public void Setup(EditPreset preset)
     {
         this.editPreset = preset;
@@ -92,4 +94,15 @@ public class UIPresetToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }

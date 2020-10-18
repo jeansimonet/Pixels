@@ -37,6 +37,8 @@ public class UIPatternToken : MonoBehaviour
     public Button.ButtonClickedEvent onEdit => editButton.onClick;
     public Button.ButtonClickedEvent onExpand => menuButton.onClick;
 
+    bool visible = true;
+
     public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
     public void Setup(EditAnimation anim)
@@ -72,6 +74,16 @@ public class UIPatternToken : MonoBehaviour
             backgroundImage.sprite = backgroundSprite;
             backgroundImage.color = backgroundColor;
             expandedRoot.gameObject.SetActive(false);
+        }
+    }
+
+    public void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
         }
     }
 

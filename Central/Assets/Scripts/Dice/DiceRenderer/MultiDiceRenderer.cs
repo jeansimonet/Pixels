@@ -63,6 +63,32 @@ public class MultiDiceRenderer : DiceRenderer
         }
     }
 
+    public override void SetIndex(int layerIndex)
+    {
+        dieCamera.cullingMask = 1 << layerIndex; // only render this die
+
+        foreach (var light in dieLights)
+        {
+            light.cullingMask = 1 << layerIndex;
+        }
+
+        // Instantiate the proper type of dice
+        for (int dieIndex = 0; dieIndex < dieRoots.Length; ++dieIndex)
+        {
+            dieRoots[dieIndex].layer = layerIndex;
+            var die = dice[dieIndex];
+            die.gameObject.layer = layerIndex;
+            foreach (var tr in die.gameObject.GetComponentsInChildren<Transform>())
+            {
+                tr.gameObject.layer = layerIndex;
+            }
+            foreach (var light in die.gameObject.GetComponentsInChildren<Light>())
+            {
+                light.cullingMask = 1 << layerIndex;
+            }
+        }
+    }
+
     public void SetDieAnimations(int index, IEnumerable<Animations.EditAnimation> animations)
     {
         dice[index].SetAnimations(animations);

@@ -99,6 +99,7 @@ namespace Dice
         public int face { get; private set; } = -1;
 
         public float? batteryLevel { get; private set; } = null;
+        public bool? charging { get; private set; } = null;
         public int? rssi { get; private set; } = null;
 
         public delegate void TelemetryEvent(Die die, AccelFrame frame);
@@ -144,7 +145,7 @@ namespace Dice
         public delegate void AppearanceChangedEvent(Die die, int newFaceCount, DesignAndColor newDesign);
         public AppearanceChangedEvent OnAppearanceChanged;
 
-        public delegate void BatteryLevelChangedEvent(Die die, float? level);
+        public delegate void BatteryLevelChangedEvent(Die die, float? level, bool? charging);
         public BatteryLevelChangedEvent OnBatteryLevelChanged;
 
         public delegate void RssiChangedEvent(Die die1, int? rssi);
@@ -211,7 +212,7 @@ namespace Dice
             this.rssi = rssi;
 
             // Trigger callbacks
-            OnBatteryLevelChanged?.Invoke(this, batteryLevel);
+            OnBatteryLevelChanged?.Invoke(this, batteryLevel, charging);
             if (appearanceChanged)
             {
                 OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
@@ -220,7 +221,6 @@ namespace Dice
             {
                 OnStateChanged?.Invoke(this, state, face);
             }
-            OnBatteryLevelChanged?.Invoke(this, batteryLevel);
             OnRssiChanged?.Invoke(this, rssi);
         }
 

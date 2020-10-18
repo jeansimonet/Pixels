@@ -617,6 +617,7 @@ namespace Dice
         public DieMessageType type { get; set; } = DieMessageType.BatteryLevel;
         public float level;
         public float voltage;
+        public byte charging;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

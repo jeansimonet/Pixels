@@ -23,6 +23,8 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
     public Button.ButtonClickedEvent onClick => mainButton.onClick;
     public bool selected { get; private set; }
 
+    bool visible = true;
+
     public void Setup(EditAnimation anim)
     {
         this.editAnimation = anim;
@@ -48,8 +50,14 @@ public class UIAnimationSelectorPatternToken : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
     }
+
 
     void OnDestroy()
     {

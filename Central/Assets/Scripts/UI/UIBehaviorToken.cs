@@ -39,6 +39,8 @@ public class UIBehaviorToken : MonoBehaviour
 
     public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
+    bool visible = true;
+
 
     public void Setup(EditBehavior bh)
     {
@@ -83,4 +85,15 @@ public class UIBehaviorToken : MonoBehaviour
             this.dieRenderer = null;
         }
     }
+
+    void Update()
+    {
+        bool newVisible = GetComponent<RectTransform>().IsVisibleFrom();
+        if (newVisible != visible)
+        {
+            visible = newVisible;
+            DiceRendererManager.Instance.OnDiceRendererVisible(dieRenderer, visible);
+        }
+    }
+
 }
