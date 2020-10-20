@@ -3,14 +3,26 @@
   <head>
     <style>
       button {
-        height: 50px;
+        height: 40px;
         width: 100px;
+        outline: none;
+      }
+      textarea {
+        height: 60px;
+        width: 200px;
         outline: none;
       }
     </style>
   </head>
   <body>
     <button id="connect">Connect to Pixel</button>
+    <button id="disconnect">Disconnect</button>
+    <div id="text">[nothing]</div>
+      Formula (@ for face value)<br/>
+      <div> <!-- style="display:flex;align-items:center" -->
+      <textarea id="formula"></textarea>
+      <button id="save" style="height:20px;width:60px">Save</button>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>
