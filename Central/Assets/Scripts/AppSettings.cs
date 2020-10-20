@@ -98,8 +98,10 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public void EnableAllTutorials()
     {
         SetMainTutorialEnabled(true);
+        SetHomeTutorialEnabled(true);
         SetPresetsTutorialEnabled(true);
         SetPresetTutorialEnabled(true);
+        SetBehaviorsTutorialEnabled(true);
         SetBehaviorTutorialEnabled(true);
         SetRuleTutorialEnabled(true);
         SetAnimationsTutorialEnabled(true);
@@ -109,8 +111,10 @@ public class AppSettings : SingletonMonoBehaviour<AppSettings>
     public void DisableAllTutorials()
     {
         SetMainTutorialEnabled(false);
+        SetHomeTutorialEnabled(false);
         SetPresetsTutorialEnabled(false);
         SetPresetTutorialEnabled(false);
+        SetBehaviorsTutorialEnabled(false);
         SetBehaviorTutorialEnabled(false);
         SetRuleTutorialEnabled(false);
         SetAnimationsTutorialEnabled(false);
