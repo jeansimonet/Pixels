@@ -381,20 +381,24 @@ namespace Behaviors
     {
         [Bitfield, Name("Battery State")]
         public ConditionBatteryState_Flags flags;
+        [Slider, FloatRange(5.0f, 60.0f, 1.0f), Units("sec")]
+        public float recheckAfter = 1.0f;
 
         public override ConditionType type { get { return ConditionType.BatteryState; } }
         public override Condition ToCondition(EditDataSet editSet, DataSet set)
         {
             return new ConditionBatteryState()
             {
-                flags = this.flags
+                flags = this.flags,
+                repeatPeriodMs = (ushort)Mathf.RoundToInt(recheckAfter * 1000.0f)
             };
         }
         public override EditCondition Duplicate()
         {
             return new EditConditionBatteryState()
             {
-                flags = this.flags
+                flags = this.flags,
+                recheckAfter = this.recheckAfter
             };
         }
         public override string ToString()

@@ -189,7 +189,6 @@ namespace Behaviors
     {
         public ConditionType type { get; set; } = ConditionType.BatteryState;
         public ConditionBatteryState_Flags flags;
-        public byte padding1;
-        public byte padding2;
+        public ushort repeatPeriodMs;
     };
 }

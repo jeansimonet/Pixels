@@ -167,8 +167,7 @@ namespace Behaviors
         : public Condition
     {
         uint8_t flags; // ConditionBatteryState_Flags
-        uint8_t padding1;
-        uint8_t padding2;
+        uint16_t repeatPeriodMs;
         bool checkTrigger(Modules::BatteryController::BatteryState newState) const;
     };
 }

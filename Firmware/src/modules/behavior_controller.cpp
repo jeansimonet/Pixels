@@ -23,6 +23,11 @@ namespace BehaviorController
     void onBatterystateChange(void* param, BatteryController::BatteryState newState);
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
 
+    void chargingTimerInit(void* param, int periodMs);
+	void chargingTimerRecheck(void* param);
+    void chargingStateChange(void* param, BatteryController::BatteryState newState);
+    void chargingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt);
+
     void idleTimerInit(void* param, int periodMs);
 	void idleTimerRecheck(void* param);
     void idleRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
@@ -114,6 +119,12 @@ namespace BehaviorController
                 auto cond = static_cast<const Behaviors::ConditionBatteryState*>(condition);
                 if (cond->checkTrigger(newState)) {
                     NRF_LOG_DEBUG("Triggering a Battery State Condition");
+                    
+                    // Setup a timer to repeat this check in a little bit if appropriate
+                    if (cond->repeatPeriodMs != 0) {
+                        chargingTimerInit((void*)rule, cond->repeatPeriodMs);
+                    }
+
                     // Go on, do the thing!
                     Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
@@ -122,6 +133,49 @@ namespace BehaviorController
                 }
             }
         }
+    }
+
+    void chargingTimerInit(void* param, int periodMs) {
+        // Subscribe to be updated on a timer, so we can repeatedly check the condition
+        if (Timers::setDelayedCallback(chargingTimerRecheck, param, periodMs)) {
+            // Also subscribe when rollstate changes so we can kill the timer
+            BatteryController::unHook(chargingStateChange);
+            DataSet::hookProgrammingEvent(chargingDataSetProgramming, param);
+        }
+    }
+
+	void chargingTimerRecheck(void* param) {
+		const Behaviors::Rule* rule = (const Behaviors::Rule*)param;
+        auto condition = DataSet::getCondition(rule->condition);
+        auto chargingCondition = static_cast<const Behaviors::ConditionBatteryState*>(condition);
+        if (chargingCondition->checkTrigger(BatteryController::getCurrentChargeState())) {
+            // do the thing
+            Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+            Timers::setDelayedCallback(chargingTimerRecheck, (void*)rule, chargingCondition->repeatPeriodMs);
+        } else {
+            // Stop Timer and unregister callback
+            Timers::cancelDelayedCallback(chargingTimerRecheck, (void*)rule);
+            BatteryController::unHook(chargingStateChange);
+            DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
+        }
+	}
+
+    void chargingStateChange(void* param, BatteryController::BatteryState newState) {
+		const Behaviors::Rule* rule = (const Behaviors::Rule*)param;
+        auto condition = DataSet::getCondition(rule->condition);
+        auto chargingCondition = static_cast<const Behaviors::ConditionBatteryState*>(condition);
+        if (!chargingCondition->checkTrigger(BatteryController::getCurrentChargeState())) {
+            // Stop Timer and unregister callback
+            Timers::cancelDelayedCallback(chargingTimerRecheck, (void*)rule);
+            BatteryController::unHook(chargingStateChange);
+            DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
+        }
+    }
+
+    void chargingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt) {
+        Timers::cancelDelayedCallback(chargingTimerRecheck, param);
+        BatteryController::unHook(chargingStateChange);
+        DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
     }
 
     void idleTimerInit(void* param, int periodMs) {
