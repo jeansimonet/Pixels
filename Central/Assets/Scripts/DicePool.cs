@@ -497,6 +497,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         var ourDie = dice.FirstOrDefault(d => d.die.address == die.address);
         if (ourDie != null)
         {
+            ourDie.setState.Invoke(Die.ConnectionState.Available);
             ourDie.setError.Invoke(Die.LastError.Disconnected);
 
             // Reset connection count since it didn't succeed
