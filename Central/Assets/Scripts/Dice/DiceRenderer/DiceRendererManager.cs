@@ -12,84 +12,46 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
     // Our renderer slots
     // The max of 24 renderers is a bit arbitrary, it needs to be less than 32 and leave some room
     // for a few other render layers for the rest of the app
-    const int invisibleRendererLayerIndex = 20;
-    DiceRenderer[] visibleRenderers = new DiceRenderer[invisibleRendererLayerIndex];
+    const int visibleLayerCount = 20;
+    DiceRenderer[] visibleRenderers = new DiceRenderer[visibleLayerCount];
     List<DiceRenderer> allRenderers = new List<DiceRenderer>();
 
     public SingleDiceRenderer CreateDiceRenderer(Dice.DesignAndColor variant, int widthHeight = 256)
     {
-        // Find the first empty slot
-        int newRendererIndex = 0;
-        for (; newRendererIndex < visibleRenderers.Length; ++newRendererIndex)
-        {
-            if (visibleRenderers[newRendererIndex] == null)
-            {
-                break;
-            }
-        }
-
-        // If we had a slot, then go ahead and instantiate a renderer
         var singleRenderer = GameObject.Instantiate<SingleDiceRenderer>(DiceRendererPrefab, Vector3.zero, Quaternion.identity, transform);
         allRenderers.Add(singleRenderer);
-        singleRenderer.Setup(newRendererIndex, variant, widthHeight);
-        if (newRendererIndex != invisibleRendererLayerIndex)
-        {
-            visibleRenderers[newRendererIndex] = singleRenderer;
-        }
+        singleRenderer.Setup(variant, widthHeight);
+
+        // Try to give the renderer a slot
+        int newRendererIndex = FindEmptySlot();
+        SetSlot(singleRenderer, newRendererIndex);
         return singleRenderer;
     }
 
     public MultiDiceRenderer CreateMultiDiceRenderer(List<Dice.DesignAndColor> variants, int widthHeight = 256)
     {
-        // Find the first empty slot
-        int newRendererIndex = 0;
-        for (; newRendererIndex < visibleRenderers.Length; ++newRendererIndex)
-        {
-            if (visibleRenderers[newRendererIndex] == null)
-            {
-                break;
-            }
-        }
-
-        // If we had a slot, then go ahead and instantiate a renderer
         var multiRenderer = GameObject.Instantiate<MultiDiceRenderer>(MultiDiceRendererPrefab, Vector3.zero, Quaternion.identity, transform);
         allRenderers.Add(multiRenderer);
-        multiRenderer.Setup(newRendererIndex, variants, widthHeight);
-        if (newRendererIndex != invisibleRendererLayerIndex)
-        {
-            visibleRenderers[newRendererIndex] = multiRenderer;
-        }
+        multiRenderer.Setup(variants, widthHeight);
+
+        int newRendererIndex = FindEmptySlot();
+        SetSlot(multiRenderer, newRendererIndex);
         return multiRenderer;
     }
 
     public void DestroyDiceRenderer(DiceRenderer renderer)
     {
-        int rendererIndex = 0;
-        for (; rendererIndex < visibleRenderers.Length; ++rendererIndex)
+        int slot = FindSlot(renderer);
+        if (slot != -1)
         {
-            if (visibleRenderers[rendererIndex] == renderer)
-            {
-                break;
-            }
-        }
-
-        if (rendererIndex < visibleRenderers.Length)
-        {
-            visibleRenderers[rendererIndex] = null;
+            visibleRenderers[slot] = null;
         }
         allRenderers.Remove(renderer);
         GameObject.Destroy(renderer.gameObject);
 
-        if (rendererIndex < visibleRenderers.Length)
+        if (slot != -1)
         {
-            // Try to find a renderer that needs a slot
-            var newRenderer = allRenderers.Find(r => r.visible && r.index == invisibleRendererLayerIndex);
-            if (newRenderer != null)
-            {
-                newRenderer.SetIndex(rendererIndex);
-                visibleRenderers[rendererIndex] = newRenderer;
-                newRenderer.gameObject.SetActive(true);
-            }
+            RecycleSlot(slot);
         }
     }
 
@@ -98,53 +60,90 @@ public class DiceRendererManager : SingletonMonoBehaviour<DiceRendererManager>
         renderer.visible = visible; // Don't like this...
         if (visible)
         {
-            // Can we display the renderer?
-            int newRendererIndex = 0;
-            for (; newRendererIndex < visibleRenderers.Length; ++newRendererIndex)
+            // Is the renderer displayed?
+            int index = FindSlot(renderer);
+            if (index == -1)
             {
-                if (visibleRenderers[newRendererIndex] == null)
+                // No, can it be?
+                index = FindEmptySlot();
+                if (index != -1)
                 {
-                    break;
+                    SetSlot(renderer, index);
                 }
+                // Else still can't display
             }
-
-            // If we had a slot, then go ahead and instantiate a renderer
-            if (newRendererIndex != invisibleRendererLayerIndex)
+            // Else already displayed
+        }
+        else
+        {
+            // Is the renderer displayed?
+            int index = FindSlot(renderer);
+            if (index != -1)
             {
-                renderer.SetIndex(newRendererIndex);
-                visibleRenderers[newRendererIndex] = renderer;
+                // Yes, turn it off
+                visibleRenderers[index] = null;
+                SetSlot(renderer, -1);
+                RecycleSlot(index);
             }
+            // Else already off
+        }
+    }
+
+    int FindEmptySlot()
+    {
+        for (int i = 0; i < visibleRenderers.Length; ++i)
+        {
+            if (visibleRenderers[i] == null)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    int FindSlot(DiceRenderer diceRenderer)
+    {
+        for (int rendererIndex = 0; rendererIndex < visibleRenderers.Length; ++rendererIndex)
+        {
+            if (visibleRenderers[rendererIndex] == diceRenderer)
+            {
+                return rendererIndex;
+            }
+        }
+        return -1;
+    }
+
+    void SetSlot(DiceRenderer renderer, int index)
+    {
+        if (index != -1)
+        {
+            renderer.SetIndex(index);
+            visibleRenderers[index] = renderer;
             renderer.gameObject.SetActive(true);
         }
         else
         {
-            int rendererIndex = 0;
-            for (; rendererIndex < visibleRenderers.Length; ++rendererIndex)
-            {
-                if (visibleRenderers[rendererIndex] == renderer)
-                {
-                    break;
-                }
-            }
-
-            if (rendererIndex < visibleRenderers.Length)
-            {
-                visibleRenderers[rendererIndex].SetIndex(invisibleRendererLayerIndex);
-                visibleRenderers[rendererIndex] = null;
-            }
             renderer.gameObject.SetActive(false);
+        }
+    }
 
-            if (rendererIndex < visibleRenderers.Length)
-            {
-                // Try to find a renderer that needs a slot
-                var newRenderer = allRenderers.Find(r => r.visible && r.index == invisibleRendererLayerIndex);
-                if (newRenderer != null)
-                {
-                    newRenderer.SetIndex(rendererIndex);
-                    visibleRenderers[rendererIndex] = newRenderer;
-                    newRenderer.gameObject.SetActive(true);
-                }
-            }
+    void ClearSlot(int index)
+    {
+        var renderer = visibleRenderers[index];
+        if (renderer != null)
+        {
+            renderer.gameObject.SetActive(false);
+            visibleRenderers[index] = null;
+        }
+    }
+
+    void RecycleSlot(int index)
+    {
+        // Try to find a renderer that needs a slot
+        var newRenderer = allRenderers.Find(r => r.visible && !visibleRenderers.Contains(r));
+        if (newRenderer != null)
+        {
+            SetSlot(newRenderer, index);
         }
     }
 }

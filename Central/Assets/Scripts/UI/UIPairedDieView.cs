@@ -12,6 +12,7 @@ public class UIPairedDieView : MonoBehaviour
     public RawImage dieRenderImage;
     public Text dieNameText;
     public Text dieIDText;
+    public Text firmwareIDText;
     public UIDieLargeBatteryView batteryView;
     public UIDieLargeSignalView signalView;
     public Text statusText;
@@ -87,9 +88,11 @@ public class UIPairedDieView : MonoBehaviour
             statusText.text = "Disconnected";
             disconnectedTextRoot.gameObject.SetActive(false);
             errorTextRoot.gameObject.SetActive(false);
+            firmwareIDText.text = "Firmware: Unavailable";
         }
         else
         {
+            firmwareIDText.text = "Firmware: " + die.die.firmwareVersionId;
             batteryView.SetLevel(die.die.batteryLevel, die.die.charging);
             signalView.SetRssi(die.die.rssi);
             switch (die.die.lastError)
