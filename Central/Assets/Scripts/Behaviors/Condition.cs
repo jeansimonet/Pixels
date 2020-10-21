@@ -12,7 +12,7 @@ namespace Behaviors
     {
 		[SkipEnumValue]
         Unknown = 0,
-        [AdvancedEnumValue, Name("Die wakes up / sleeps")]
+        [Name("Die wakes up / sleeps")]
         HelloGoodbye,
         [Name("Die is picked up")]
         Handling,
@@ -22,9 +22,9 @@ namespace Behaviors
 		FaceCompare,
         [Name("Die is crooked")]
 		Crooked,
-        [AdvancedEnumValue, Name("Bluetooth Event...")]
+        [Name("Bluetooth Event...")]
         ConnectionState,
-        [AdvancedEnumValue, Name("Battery Event...")]
+        [Name("Battery Event...")]
         BatteryState,
         [Name("Die is idle for...")]
         Idle,
