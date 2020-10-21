@@ -9,23 +9,27 @@ public abstract class DiceRenderer : MonoBehaviour
     public RenderTexture renderTexture { get; private set; }
     public int index { get; private set; }
     public int layerIndex { get; private set; }
+    public int layerMask { get; private set; }
 
     public bool visible { get; set; } = true;
 
     /// <summary>
     /// Called after instantiation to setup the camera, render texture, etc...
     /// </sumary>
-    protected void Setup(int index, int widthHeight)
+    protected void Setup(int widthHeight)
     {
-        this.index = index;
-        layerIndex = LayerMask.NameToLayer("Dice 0") + index;
         renderTexture = new RenderTexture(widthHeight, widthHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         renderTexture.wrapMode = TextureWrapMode.Clamp;
         renderTexture.filterMode = FilterMode.Point;
         renderTexture.Create();
     }
 
-    public abstract void SetIndex(int index);
+    public virtual void SetIndex(int index)
+    {
+        this.index = index;
+        layerIndex = LayerMask.NameToLayer("Dice 0") + index;
+        layerMask = 1 << layerIndex;
+    }
 
     void OnDestroy()
     {

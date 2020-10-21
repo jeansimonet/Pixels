@@ -18,61 +18,48 @@ public class SingleDiceRenderer : DiceRenderer
         set { var euler = cameraTiltRoot.localEulerAngles; euler.x = value; cameraTiltRoot.localEulerAngles = euler; }
     }
 
+    public int renderIndex = 0;
+
     float initialTilt;
 
     /// <summary>
     /// Called after instantiation to setup the camera, render texture, etc...
     /// </sumary>
-    public void Setup(int index, Dice.DesignAndColor variant, int widthHeight)
+    public void Setup(Dice.DesignAndColor variant, int widthHeight)
     {
-        base.Setup(index, widthHeight);
+        base.Setup(widthHeight);
         initialTilt = cameraTiltRoot.localEulerAngles.x;
-
-        dieCamera.cullingMask = 1 << layerIndex; // only render this die
         dieCamera.targetTexture = renderTexture;
-
-        foreach (var light in dieLights)
-        {
-            light.cullingMask = 1 << layerIndex;
-        }
 
         // Instantiate the proper type of dice
         die = GameObject.Instantiate<DiceRendererDice>(diceVariantPrefabs[(int)variant], Vector3.zero, Quaternion.identity, dieRoot.transform);
-
-        // Make it visible to the lights and camera
-        dieRoot.layer = layerIndex;
-        die.gameObject.layer = layerIndex;
-        foreach (var tr in die.gameObject.GetComponentsInChildren<Transform>())
-        {
-            tr.gameObject.layer = layerIndex;
-        }
-
-        foreach (var light in die.gameObject.GetComponentsInChildren<Light>())
-        {
-            light.cullingMask = 1 << layerIndex;
-        }
     }
 
-    public override void SetIndex(int layerIndex)
+    public override void SetIndex(int index)
     {
-        dieCamera.cullingMask = 1 << layerIndex; // only render this die
-
-        foreach (var light in dieLights)
+        if (index != -1)
         {
-            light.cullingMask = 1 << layerIndex;
-        }
+            base.SetIndex(index);
+            dieCamera.cullingMask = layerMask; // only render this die
 
-        // Make it visible to the lights and camera
-        dieRoot.layer = layerIndex;
-        die.gameObject.layer = layerIndex;
-        foreach (var tr in die.gameObject.GetComponentsInChildren<Transform>())
-        {
-            tr.gameObject.layer = layerIndex;
-        }
+            foreach (var light in dieLights)
+            {
+                light.cullingMask = layerMask;
+            }
 
-        foreach (var light in die.gameObject.GetComponentsInChildren<Light>())
-        {
-            light.cullingMask = 1 << layerIndex;
+            // Make it visible to the lights and camera
+            dieRoot.layer = layerIndex;
+            die.gameObject.layer = layerIndex;
+            foreach (var tr in die.gameObject.GetComponentsInChildren<Transform>())
+            {
+                tr.gameObject.layer = layerIndex;
+            }
+
+            foreach (var light in die.gameObject.GetComponentsInChildren<Light>())
+            {
+                light.cullingMask = layerMask;
+            }
+            renderIndex = layerIndex;
         }
     }
 
