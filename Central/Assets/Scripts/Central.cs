@@ -505,7 +505,6 @@ public class Central : SingletonMonoBehaviour<Central>
     {
         if (_dice.TryGetValue(address, out Die d))
         {
-            Debug.Log("Die advertising data" + data.ToString());
             d.onCustomAdvertisingData?.Invoke(d, rssi, data);
         }
         else 

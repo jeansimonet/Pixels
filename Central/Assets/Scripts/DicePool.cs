@@ -362,6 +362,7 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
                 // Update die data
                 ourDie.die.UpdateAdvertisingData(rssi, customData);
+                onDieDiscovered?.Invoke(ourDie.die);
             }
             else
             {
