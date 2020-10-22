@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 {
@@ -209,7 +210,10 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 
                     foreach (var rule in AppDataSet.Instance.defaultBehavior.rules)
                     {
-                        editSet.behavior.rules.Add(rule.Duplicate());
+                        if (!editSet.behavior.rules.Any(r => r.condition.type == rule.condition.type))
+                        {
+                            editSet.behavior.rules.Add(rule.Duplicate());
+                        }
                     }
                 }
 
