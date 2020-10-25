@@ -54,6 +54,7 @@
         "new": "cpp",
         "*.inc": "cpp",
         "algorithm": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "string": "cpp"
     },
 }

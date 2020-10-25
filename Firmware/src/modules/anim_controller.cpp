@@ -3,6 +3,7 @@
 #include "data_set/data_set.h"
 #include "drivers_nrf/timers.h"
 #include "drivers_nrf/power_manager.h"
+#include "drivers_nrf/flash.h"
 #include "utils/utils.h"
 #include "utils/rainbow.h"
 #include "config/board_config.h"
@@ -43,9 +44,7 @@ namespace AnimController
 	void onAccelFrame(void* param, const Accelerometer::AccelFrame& accelFrame);
 	uint8_t animIndexToLEDIndex(int animFaceIndex, int remapFace);
 
-	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
-	void onDatasetProgrammingEvent(void* context, DataSet::ProgrammingEventType evt);
-
+	void onProgrammingEvent(void* context, Flash::ProgrammingEventType evt);
 
 	void printDebugAnimControllerState(void* context, const Message* msg);
 
@@ -64,8 +63,7 @@ namespace AnimController
 	/// </summary>
 	void init()
 	{
-		DataSet::hookProgrammingEvent(onDatasetProgrammingEvent, nullptr);
-		SettingsManager::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
+		Flash::hookProgrammingEvent(onProgrammingEvent, nullptr);
 
 		MessageService::RegisterMessageHandler(Message::MessageType_DebugAnimController, nullptr, printDebugAnimControllerState);
 
@@ -386,16 +384,8 @@ namespace AnimController
 	}
 	
 
-	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt){
-		if (evt == SettingsManager::ProgrammingEventType_Begin) {
-			stop();
-		} else {
-			start();
-		}
-	}
-
-	void onDatasetProgrammingEvent(void* context, DataSet::ProgrammingEventType evt){
-		if (evt == DataSet::ProgrammingEventType_Begin) {
+	void onProgrammingEvent(void* context, Flash::ProgrammingEventType evt){
+		if (evt == Flash::ProgrammingEventType_Begin) {
 			stop();
 		} else {
 			start();

@@ -83,23 +83,22 @@ namespace Animations
             var ret = new AnimationKeyframed();
 		    ret.duration = (ushort)(duration * 1000); // stored in milliseconds
             ret.speedMultiplier256 = (ushort)(this.speedMultiplier * 256.0f);
-		    ret.tracksOffset = (ushort)bits.rgbTracks.Count;
-            // Copy the pattern so we can adjust the hue of the keyframes
-            var patternCopy = pattern.Duplicate();
-            foreach (var t in patternCopy.gradients)
-            {
-                foreach (var k in t.keyframes)
-                {
-                    float h, s, v;
-                    Color.RGBToHSV(k.color, out h, out s, out v);
-                    h = Mathf.Repeat(h + hueAdjust, 1.0f);
-                    k.color = Color.HSVToRGB(h, s, v);
-                }
-            }
-            var tracks = patternCopy.ToRGBTracks(editSet, bits);
-		    ret.trackCount = (ushort)tracks.Length;
+            ret.tracksOffset = (ushort)editSet.getPatternRGBTrackOffset(pattern);
+            //// Copy the pattern so we can adjust the hue of the keyframes
+            //var patternCopy = pattern.Duplicate();
+            //foreach (var t in patternCopy.gradients)
+            //{
+            //    foreach (var k in t.keyframes)
+            //    {
+            //        float h, s, v;
+            //        Color.RGBToHSV(k.color, out h, out s, out v);
+            //        h = Mathf.Repeat(h + hueAdjust, 1.0f);
+            //        k.color = Color.HSVToRGB(h, s, v);
+            //    }
+            //}
+            //var tracks = patternCopy.ToRGBTracks(editSet, bits);
+            ret.trackCount = (ushort)pattern.gradients.Count;
             ret.flowOrder = flowOrder ? (byte)1 : (byte)0;
-            bits.rgbTracks.AddRange(tracks);
             return ret;
         }
 
@@ -107,7 +106,7 @@ namespace Animations
         {
             EditAnimationKeyframed ret = new EditAnimationKeyframed();
             ret.name = this.name;
-            ret.pattern = this.pattern.Duplicate();
+            ret.pattern = this.pattern;
             ret.flowOrder = this.flowOrder;
             ret.speedMultiplier = this.speedMultiplier;
 		    ret.duration = this.duration;
@@ -129,8 +128,9 @@ namespace Animations
                 this.pattern = null;
             }
         }
-        public override bool DependsOnPattern(Animations.EditPattern pattern)
+        public override bool DependsOnPattern(Animations.EditPattern pattern, out bool asRGB)
         {
+            asRGB = true;
             return this.pattern == pattern;
         }
 

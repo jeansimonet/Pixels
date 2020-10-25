@@ -9,8 +9,18 @@
 #include "log.h"
 #include "nrf_soc.h"
 #include "scheduler.h"
+#include "core/delegate_array.h"
+#include "config/settings.h"
+#include "data_set/data_set.h"
+#include "data_set/data_set_data.h"
+#include "behaviors/behavior.h"
 
 using namespace DriversNRF;
+using namespace Config;
+using namespace DataSet;
+using namespace Behaviors;
+
+#define MAX_ACC_CLIENTS 8
 
 namespace DriversNRF
 {
@@ -21,6 +31,10 @@ namespace Flash
     NRF_FSTORAGE_DEF(nrf_fstorage_t fstorage);
 
     FlashCallback callback; // This should be allocated per call...
+    void* context;
+
+	DelegateArray<ProgrammingEventMethod, MAX_ACC_CLIENTS> programmingClients;
+
 
     /**@brief   Helper function to obtain the last address on the last page of the on-chip flash that
      *          can be used to write user data.
@@ -109,9 +123,11 @@ namespace Flash
         }
         
         if (callback != nullptr) {
-            callback(info.result, info.address, info.size);
+            auto callbackCopy = callback;
+            callback = nullptr;
+            callbackCopy(context, info.result, info.address, info.size);
         } else {
-            NRF_LOG_DEBUG("No callback");
+            NRF_LOG_INFO("No callback");
         }
     }
 
@@ -135,20 +151,23 @@ namespace Flash
         }
     }
 
-    void write(uint32_t flashAddress, const void* data, uint32_t size, FlashCallback theCallback) {
+    void write(void* theContext, uint32_t flashAddress, const void* data, uint32_t size, FlashCallback theCallback) {
         callback = theCallback;
+        context = theContext;
         ret_code_t rc = nrf_fstorage_write(&fstorage, flashAddress, data, size, NULL);
         APP_ERROR_CHECK(rc);
     }
 
-    void read(uint32_t flashAddress, void* outData, uint32_t size, FlashCallback theCallback) {
+    void read(void* theContext, uint32_t flashAddress, void* outData, uint32_t size, FlashCallback theCallback) {
         callback = theCallback;
+        context = theContext;
         ret_code_t rc = nrf_fstorage_read(&fstorage, flashAddress, outData, size);
         APP_ERROR_CHECK(rc);
     }
 
-    void erase(uint32_t flashAddress, uint32_t pages, FlashCallback theCallback) {
+    void erase(void* theContext, uint32_t flashAddress, uint32_t pages, FlashCallback theCallback) {
         callback = theCallback;
+        context = theContext;
         ret_code_t rc = nrf_fstorage_erase(&fstorage, flashAddress, pages, NULL);
         APP_ERROR_CHECK(rc);
     }
@@ -179,6 +198,126 @@ namespace Flash
 		return pageSize * ((totalDataByteSize + pageSize - 1) / pageSize);
 	}
 
+
+	bool programFlash(
+		const Data& newData,
+		const Settings& newSettings,
+		ProgramFlashFunc programFlashFunc,
+		ProgramFlashNotification onProgramFinished) {
+
+		static Data _newData __attribute__ ((aligned (4)));
+
+        // Hack so we don't try to construct a new Settings in static initialization block
+        static char _newSettingsBuffer[sizeof(Settings)]  __attribute__ ((aligned (4)));
+		static Settings& _newSettings = *((Settings*)_newSettingsBuffer);
+		static ProgramFlashFunc _programDataFunc;
+		static ProgramFlashNotification _onProgramFinished;
+
+		static auto beginProgramming = []() {
+			// Notify clients
+			for (int i = 0; i < programmingClients.Count(); ++i)
+			{
+				programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_Begin);
+			}
+		};
+
+		static auto finishProgramming = []() {
+			// Notify clients
+			for (int i = 0; i < programmingClients.Count(); ++i)
+			{
+				programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_End);
+			}
+		};
+
+        _newData = newData;
+        _newSettings = newSettings;
+        _programDataFunc = programFlashFunc;
+        _onProgramFinished = onProgramFinished;
+
+		uint32_t bufferSize = DataSet::computeDataSetDataSize(&_newData);
+		if (availableDataSize() > bufferSize) {
+			beginProgramming();
+
+			uint32_t totalSize = bufferSize + sizeof(Data) + sizeof(Settings);
+			uint32_t flashSize = Flash::getFlashByteSize(totalSize);
+			uint32_t pageAddress = Flash::getFlashStartAddress();
+			uint32_t pageCount = Flash::bytesToPages(flashSize);
+
+			// Start by erasing the flash
+			Flash::erase(nullptr, pageAddress, pageCount, [](void* context, bool result, uint32_t address, uint16_t data_size) {
+				NRF_LOG_INFO("done Erasing %d page", data_size);
+				if (result) {
+					// Program settings
+					Flash::write(nullptr, getSettingsStartAddress(), &_newSettings, sizeof(Settings), [](void* context, bool result, uint32_t address, uint16_t data_size) {
+						if (result) {
+							NRF_LOG_INFO("Finished flashing settings, flashing dataset data");
+							// Receive all the buffers directly to flash
+							_programDataFunc([](void* context, bool result, uint32_t address, uint16_t data_size) {
+								if (result) {
+									// Program the animation set itself
+    								NRF_LOG_INFO("Finished flashing dataset data, flashing dataset itself");
+									Flash::write(nullptr, getDataSetAddress(), &_newData, sizeof(Data),
+										[](void* context, bool result, uint32_t address, uint16_t data_size) {
+											if (result) {
+												NRF_LOG_INFO("Data Set written to flash!");
+											} else {
+												NRF_LOG_ERROR("Error programming dataset to flash");
+											}
+											_onProgramFinished(result);
+											finishProgramming();
+									});
+								} else {
+									NRF_LOG_ERROR("Error transfering animation data");
+									_onProgramFinished(false);
+									finishProgramming();
+								}
+							});
+						} else {
+							NRF_LOG_ERROR("Error writing settings");
+							_onProgramFinished(false);
+							finishProgramming();
+						}
+					});
+				} else {
+					NRF_LOG_ERROR("Error erasing flash");
+					_onProgramFinished(false);
+					finishProgramming();
+				}
+			});
+            return true;
+		} else {
+            return false;
+		}
+	}
+
+	uint32_t getDataSetAddress() {
+		return getSettingsEndAddress();
+	}
+
+	uint32_t getDataSetDataAddress() {
+		return getDataSetAddress() + sizeof(Data);
+	}
+
+	uint32_t getSettingsStartAddress() {
+		return (uint32_t)Flash::getFlashStartAddress();
+	}
+	uint32_t getSettingsEndAddress() {
+		return getSettingsStartAddress() + sizeof(Settings);
+	}
+
+
+	void hookProgrammingEvent(ProgrammingEventMethod client, void* param)
+	{
+		if (!programmingClients.Register(param, client))
+		{
+			NRF_LOG_ERROR("Too many hooks registered.");
+		}
+	}
+
+	void unhookProgrammingEvent(ProgrammingEventMethod client)
+	{
+		programmingClients.UnregisterWithHandler(client);
+	}
 
     #if DICE_SELFTEST && FLASH_SELFTEST
     bool testing = false;

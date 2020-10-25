@@ -378,4 +378,11 @@ namespace Utils
 		return toColor((uint8_t)red, (uint8_t)green, (uint8_t)blue);
     }
 
+	uint16_t nextRand(uint16_t prevRand) {
+		const uint32_t m = 1 << 16; // 16 bits
+		const uint32_t a = 1103515245;
+		const uint32_t c = 12345;
+		return (uint16_t)((a * (uint32_t)prevRand + c) % m);
+	}
+
 }

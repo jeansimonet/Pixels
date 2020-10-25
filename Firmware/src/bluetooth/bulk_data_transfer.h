@@ -29,7 +29,7 @@ namespace Bluetooth
 		typedef uint8_t* (*receiveAllocator)(void* context, uint16_t size);
 		typedef void (*receiveResultCallback)(void* context, bool result, uint8_t* data, uint16_t size);
 		void receive(void* context, receiveAllocator allocator, receiveResultCallback callback);
-		typedef void (*receiveToFlashResultCallback)(void* context, bool result, uint16_t size);
+		typedef void (*receiveToFlashResultCallback)(void* context, bool result, uint32_t address, uint16_t data_size);
 		void receiveToFlash(uint32_t flashAddress, void* context, receiveToFlashResultCallback callback);
 		void selfTest();
 	};

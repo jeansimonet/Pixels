@@ -11,6 +11,7 @@
 #include "animation_keyframed.h"
 #include "animation_rainbow.h"
 #include "animation_gradientpattern.h"
+#include "animation_noise.h"
 
 
 // Define new and delete
@@ -75,6 +76,9 @@ namespace Animations
 				break;
 			case Animation_GradientPattern:
 				ret = new AnimationInstanceGradientPattern(static_cast<const AnimationGradientPattern*>(preset), bits);
+				break;
+			case Animation_Noise:
+				ret = new AnimationInstanceNoise(static_cast<const AnimationNoise*>(preset), bits);
 				break;
 			default:
 				NRF_LOG_ERROR("Unknown animation preset type");

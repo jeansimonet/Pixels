@@ -163,6 +163,10 @@ namespace MessageService
         }
     }
 
+    void scheduled_update(void * p_event_data, uint16_t event_size) {
+        update();
+    }
+
     Stack::SendResult send(const uint8_t* data, uint16_t size) {
         NRF_LOG_DEBUG("Generic Service Message Sending: %d bytes", size);
         NRF_LOG_HEXDUMP_DEBUG(data, size);
@@ -190,6 +194,7 @@ namespace MessageService
                     ret = SendQueue.enqueue(queueMsg);
                     if (ret) {
                         NRF_LOG_DEBUG("Queued Message type %d of size %d", msg->type, msgSize);
+                        Scheduler::push(nullptr, 0, scheduled_update);
                     } else {
                         NRF_LOG_ERROR("Message of type %d of size %d NOT SENT (Queue full)", msg->type, msgSize);
                     }
@@ -233,6 +238,8 @@ namespace MessageService
                 queueMsg.size = len;
                 if (!ReceiveQueue.enqueue(queueMsg)) {
                     NRF_LOG_ERROR("Message of type %d NOT HANDLED (Scheduler full)", msg->type);
+                } else {
+                    Scheduler::push(nullptr, 0, scheduled_update);
                 }
             } else {
                 NRF_LOG_ERROR("Bad message type %d", msg->type);

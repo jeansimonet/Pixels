@@ -127,6 +127,18 @@ public class DataSet
     public uint ComputeHash()
     {
         byte[] dataSetDataBytes = ToByteArray();
+
+        StringBuilder hexdumpBuilder = new StringBuilder();
+        for (int i = 0; i < dataSetDataBytes.Length; ++i)
+        {
+            if (i % 8 == 0)
+            {
+                hexdumpBuilder.AppendLine();
+            }
+            hexdumpBuilder.Append(dataSetDataBytes[i].ToString("X02") + " ");
+        }
+        Debug.Log(hexdumpBuilder.ToString());
+
         return Utils.computeHash(dataSetDataBytes);
     }
 
@@ -145,6 +157,10 @@ public class DataSet
         Debug.Assert(animations.Count == 1);
         int size = animationBits.ComputeDataSize() + Marshal.SizeOf(animations[0].GetType());
         System.IntPtr ptr = Marshal.AllocHGlobal(size);
+        for (int i = 0; i < size; ++i)
+        {
+            Marshal.WriteByte(ptr + i, 0);
+        }
 
         System.IntPtr current = animationBits.WriteBytes(ptr);
         Marshal.StructureToPtr(animations[0], current, false);
@@ -159,6 +175,10 @@ public class DataSet
     {
         int size = ComputeDataSetDataSize();
         System.IntPtr ptr = Marshal.AllocHGlobal(size);
+        for (int i = 0; i < size; ++i)
+        {
+            Marshal.WriteByte(ptr + i, 0);
+        }
 
         WriteBytes(ptr);
 

@@ -8,6 +8,7 @@
 #include "utils/utils.h"
 #include "drivers_nrf/flash.h"
 #include "nrf_log.h"
+#include "config/settings.h"
 
 using namespace Utils;
 using namespace DriversNRF;
@@ -64,7 +65,7 @@ namespace DataSet
 
 #endif
 
-	void ProgramDefaultDataSet(DataSetWrittenCallback callback) {
+	void ProgramDefaultDataSet(const Settings& settingsPackAlong, DataSetWrittenCallback callback) {
 
 		static DataSetWrittenCallback _setWrittenCallback;
 		_setWrittenCallback = callback;
@@ -114,7 +115,7 @@ namespace DataSet
             ruleCount * sizeof(Rule) +
             behaviorCount * sizeof(Behavior);
 
-		uint32_t dataAddress = getDataSetDataAddress();
+		uint32_t dataAddress = Flash::getDataSetDataAddress();
 
 		// NRF_LOG_INFO("Total size: %d", totalSize);
 		// NRF_LOG_INFO("Flash size: %d", flashSize);
@@ -315,47 +316,10 @@ namespace DataSet
 
 #endif
 
-		uint32_t totalSize = bufferSize + sizeof(Data);
-		uint32_t flashSize = Flash::getFlashByteSize(totalSize);
-		uint32_t pageAddress = getDataSetAddress();
-		uint32_t pageCount = Flash::bytesToPages(flashSize);
+        static auto programDefaultsToFlash = [](Flash::ProgramFlashFuncCallback callback) {
+            Flash::write(nullptr, Flash::getDataSetDataAddress(), writeBuffer, bufferSize, callback);
+        };
 
-		static auto finishProgram = [] (bool result) {
-			// Cleanup
-			free(newData);
-			free(writeBuffer);
-
-			auto callBackCopy = _setWrittenCallback;
-			_setWrittenCallback = nullptr;
-			if (callBackCopy != nullptr) {
-				callBackCopy(result);
-			}
-		};
-
-		// Start by erasing the flash
-		NRF_LOG_DEBUG("Erasing flash");
-		Flash::erase(pageAddress, pageCount, [](bool result, uint32_t address, uint16_t size) {
-			if (result) {
-				// Then program the palette
-				NRF_LOG_DEBUG("Writing data");
-				Flash::write(getDataSetDataAddress(), writeBuffer, bufferSize, [] (bool result, uint32_t address, uint16_t size) {
-					if (result) {
-                        NRF_LOG_DEBUG("Writing anim set");
-                        Flash::write(getDataSetAddress(), newData, sizeof(Data), [] (bool result, uint32_t address, uint16_t size) {
-                            if (result) {
-                                NRF_LOG_DEBUG("Done");
-                                //printAnimationInfo();
-                            }
-                            finishProgram(result);
-                        });
-                    } else {
-                        finishProgram(false);
-                    }
-				});
-			} else {
-				finishProgram(false);
-			}
-		});
+        Flash::programFlash(*newData, settingsPackAlong, programDefaultsToFlash, _setWrittenCallback);
 	}
-
 }

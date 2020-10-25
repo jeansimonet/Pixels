@@ -47,7 +47,21 @@ public partial class Die
                 data.offset = offset;
                 data.size = (byte)Mathf.Min(remainingSize, DieMessages.maxDataSize);
                 data.data = new byte[DieMessages.maxDataSize];
+
                 System.Array.Copy(bytes, offset, data.data, 0, data.size);
+
+                //Debug.Log("Sending Bulk Data (offset: 0x" + data.offset.ToString("X") + ", length: " + data.size + ")");
+                //StringBuilder hexdumpBuilder = new StringBuilder();
+                //for (int i = 0; i < data.data.Length; ++i)
+                //{
+                //    if (i % 8 == 0)
+                //    {
+                //        hexdumpBuilder.AppendLine();
+                //    }
+                //    hexdumpBuilder.Append(data.data[i].ToString("X02") + " ");
+                //}
+                //Debug.Log(hexdumpBuilder.ToString());
+
                 acknowledged = false;
                 yield return StartCoroutine(SendMessageWithAckRetryCr(
                     data,
@@ -160,19 +174,20 @@ public partial class Die
             prepareDie.actionCount = set.getActionCount();
             prepareDie.actionSize = (ushort)set.actions.Sum((action) => Marshal.SizeOf(action.GetType()));
             prepareDie.ruleCount = set.getRuleCount();
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Animation Data to be sent:");
-            builder.AppendLine("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
-            builder.AppendLine("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
-            builder.AppendLine("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
-            builder.AppendLine("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
-            builder.AppendLine("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
-            builder.AppendLine("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
-            builder.AppendLine("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
-            builder.AppendLine("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
-            builder.AppendLine("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
-            builder.AppendLine("behavior: " + Marshal.SizeOf<Behaviors.Behavior>());
-            Debug.Log(builder.ToString());
+                StringBuilder builder = new StringBuilder();
+                builder.AppendLine("Animation Data to be sent:");
+                builder.AppendLine("palette: " + prepareDie.paletteSize * Marshal.SizeOf<byte>());
+                builder.AppendLine("rgb keyframes: " + prepareDie.rgbKeyFrameCount + " * " + Marshal.SizeOf<Animations.RGBKeyframe>());
+                builder.AppendLine("rgb tracks: " + prepareDie.rgbTrackCount + " * " + Marshal.SizeOf<Animations.RGBTrack>());
+                builder.AppendLine("keyframes: " + prepareDie.keyFrameCount + " * " + Marshal.SizeOf<Animations.Keyframe>());
+                builder.AppendLine("tracks: " + prepareDie.trackCount + " * " + Marshal.SizeOf<Animations.Track>());
+                builder.AppendLine("animations: " + prepareDie.animationCount + ", " + prepareDie.animationSize);
+                builder.AppendLine("conditions: " + prepareDie.conditionCount + ", " + prepareDie.conditionSize);
+                builder.AppendLine("actions: " + prepareDie.actionCount + ", " + prepareDie.actionSize);
+                builder.AppendLine("rules: " + prepareDie.ruleCount + " * " + Marshal.SizeOf<Behaviors.Rule>());
+                builder.AppendLine("behavior: " + Marshal.SizeOf<Behaviors.Behavior>());
+                Debug.Log(builder.ToString());
+                Debug.Log("Animation Data size: " + set.ComputeDataSetDataSize());
 
                 bool? acceptTransfer = null;
             yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(
@@ -188,18 +203,18 @@ public partial class Die
                 {
                     var setData = set.ToByteArray();
 
-                    // StringBuilder hexdumpBuilder = new StringBuilder();
-                    // for (int i = 0; i < setData.Length; ++i)
-                    // {
-                    //     if (i % 8 == 0)
-                    //     {
-                    //         hexdumpBuilder.AppendLine();
-                    //     }
-                    //     hexdumpBuilder.Append(setData[i].ToString("X02") + " ");
-                    // }
-                    // Debug.Log(hexdumpBuilder.ToString());
+                        StringBuilder hexdumpBuilder = new StringBuilder();
+                        for (int i = 0; i < setData.Length; ++i)
+                        {
+                            if (i % 8 == 0)
+                            {
+                                hexdumpBuilder.AppendLine();
+                            }
+                            hexdumpBuilder.Append(setData[i].ToString("X02") + " ");
+                        }
+                        Debug.Log(hexdumpBuilder.ToString());
 
-                    var hash = Utils.computeHash(setData);
+                        var hash = Utils.computeHash(setData);
                     Debug.Log("Die is ready to receive dataset, byte array should be: " + set.ComputeDataSetDataSize() + " bytes and hash 0x" + hash.ToString("X8"));
 
                     bool programmingFinished = false;
@@ -333,29 +348,29 @@ public partial class Die
         }
     }
 
-    public Coroutine UploadSettings(DieSettings settings, System.Action<bool> resultCallback)
-    {
-        return PerformBluetoothOperation(UploadSettingsCr(settings, resultCallback));
-    }
+    //public Coroutine UploadSettings(DieSettings settings, System.Action<bool> resultCallback)
+    //{
+    //    return PerformBluetoothOperation(UploadSettingsCr(settings, resultCallback));
+    //}
 
-    IEnumerator UploadSettingsCr(DieSettings settings, System.Action<bool> resultCallback)
-    {
-        // Prepare the die
-        var prepareDie = new DieMessageTransferSettings();
-        bool acknowledge = false;
-        yield return StartCoroutine(SendMessageWithAckRetryCr(prepareDie, DieMessageType.TransferSettingsAck, 3, (ignore) => acknowledge = true, null, null));
+    //IEnumerator UploadSettingsCr(DieSettings settings, System.Action<bool> resultCallback)
+    //{
+    //    // Prepare the die
+    //    var prepareDie = new DieMessageTransferSettings();
+    //    bool acknowledge = false;
+    //    yield return StartCoroutine(SendMessageWithAckRetryCr(prepareDie, DieMessageType.TransferSettingsAck, 3, (ignore) => acknowledge = true, null, null));
         
-        if (acknowledge)
-        {
-            // Die is ready, perform bulk transfer of the settings
-            byte[] settingsBytes = DieSettings.ToByteArray(settings);
-            yield return StartCoroutine(UploadBulkDataCr(settingsBytes, null, resultCallback));
-        }
-        else
-        {
-            resultCallback?.Invoke(false);
-        }
-    }
+    //    if (acknowledge)
+    //    {
+    //        // Die is ready, perform bulk transfer of the settings
+    //        byte[] settingsBytes = DieSettings.ToByteArray(settings);
+    //        yield return StartCoroutine(UploadBulkDataCr(settingsBytes, null, resultCallback));
+    //    }
+    //    else
+    //    {
+    //        resultCallback?.Invoke(false);
+    //    }
+    //}
 
     // public Coroutine DownloadSettings(System.Action<DieSettings> settingsReadCallback)
     // {

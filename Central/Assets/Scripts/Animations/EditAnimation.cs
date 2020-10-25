@@ -32,9 +32,10 @@ namespace Animations
         {
             // Base does nothing
         }
-        public virtual bool DependsOnPattern(Animations.EditPattern pattern)
+        public virtual bool DependsOnPattern(Animations.EditPattern pattern, out bool asRGB)
         {
             // Base does not
+            asRGB = false;
             return false;
         }
 

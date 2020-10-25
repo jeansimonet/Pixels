@@ -99,13 +99,14 @@ public partial class Die
         bool msgReceived = false;
         System.Action<DieMessage> msgAction = (msg) =>
         {
+            msgReceived = true;
             ackAction?.Invoke(msg);
         };
         int count = 0;
         while (!msgReceived && count < retryCount)
         {
             // Retry every half second if necessary
-            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 0.5f, msgAction, timeoutAction, errorAction));
+            yield return StartCoroutine(SendMessageWithAckOrTimeoutCr(message, ackType, 10.0f, msgAction, timeoutAction, errorAction));
             count++;
         }
     }
@@ -211,7 +212,7 @@ public partial class Die
             dataSetHash = idMsg.dataSetHash;
             flashSize = idMsg.flashSize;
             firmwareVersionId = System.Text.Encoding.UTF8.GetString(idMsg.versionInfo, 0, DieMessages.VERSION_INFO_SIZE);
-            Debug.Log("Die " + name + " has " + flashSize + " bytes available for data");
+            Debug.Log("Die " + name + " has " + flashSize + " bytes available for data, current dataset hash " + dataSetHash.ToString("X08"));
             if (appearanceChanged)
             {
                 OnAppearanceChanged?.Invoke(this, faceCount, designAndColor);
@@ -332,7 +333,7 @@ public partial class Die
     public Coroutine RenameDie(string newName, System.Action<bool> callback)
     {
         return StartCoroutine(SendMessageWithAckOrTimeoutCr(
-            new DieMessageSetName() { name = System.Text.Encoding.UTF8.GetBytes(newName) },
+            new DieMessageSetName() { name = System.Text.Encoding.UTF8.GetBytes(newName + "\0") },
             DieMessageType.SetNameAck,
             3,
             (ignore) => callback?.Invoke(true),

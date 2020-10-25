@@ -18,6 +18,7 @@
 #include "drivers_nrf/power_manager.h"
 #include "drivers_nrf/gpiote.h"
 #include "drivers_nrf/timers.h"
+#include "drivers_nrf/flash.h"
 
 
 using namespace Modules;
@@ -59,7 +60,7 @@ namespace Accelerometer
 
     void CalibrateHandler(void* context, const Message* msg);
 	void CalibrateFaceHandler(void* context, const Message* msg);
-	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt);
+	void onSettingsProgrammingEvent(void* context, Flash::ProgrammingEventType evt);
 	void onPowerEvent(void* context, nrf_pwr_mgmt_evt_t event);
 
 	void update(void* context);
@@ -68,7 +69,7 @@ namespace Accelerometer
         MessageService::RegisterMessageHandler(Message::MessageType_Calibrate, nullptr, CalibrateHandler);
         MessageService::RegisterMessageHandler(Message::MessageType_CalibrateFace, nullptr, CalibrateFaceHandler);
 
-		SettingsManager::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
+		Flash::hookProgrammingEvent(onSettingsProgrammingEvent, nullptr);
 
 		face = 0;
 		confidence = 0.0f;
@@ -545,8 +546,8 @@ namespace Accelerometer
 		});
 	}
 
-	void onSettingsProgrammingEvent(void* context, SettingsManager::ProgrammingEventType evt){
-		if (evt == SettingsManager::ProgrammingEventType_Begin) {
+	void onSettingsProgrammingEvent(void* context, Flash::ProgrammingEventType evt){
+		if (evt == Flash::ProgrammingEventType_Begin) {
 			stop();
 		} else {
 			start();

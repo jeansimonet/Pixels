@@ -1,6 +1,7 @@
 #include "behavior_controller.h"
 #include "bluetooth/bluetooth_stack.h"
 #include "drivers_nrf/timers.h"
+#include "drivers_nrf/flash.h"
 #include "data_set/data_set.h"
 #include "modules/battery_controller.h"
 #include "modules/accelerometer.h"
@@ -26,20 +27,19 @@ namespace BehaviorController
     void chargingTimerInit(void* param, int periodMs);
 	void chargingTimerRecheck(void* param);
     void chargingStateChange(void* param, BatteryController::BatteryState newState);
-    void chargingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt);
+    void chargingFlashProgramming(void* param, Flash::ProgrammingEventType evt);
 
     void idleTimerInit(void* param, int periodMs);
 	void idleTimerRecheck(void* param);
     void idleRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
-    void idleDataSetProgramming(void* param, DataSet::ProgrammingEventType evt);
+    void idleFlashProgramming(void* param, Flash::ProgrammingEventType evt);
 
     void rollingTimerInit(void* param, int periodMs);
 	void rollingTimerRecheck(void* param);
     void rollingRollStateChange(void* param, Accelerometer::RollState newState, int newFace);
-    void rollingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt);
+    void rollingFlashProgramming(void* param, Flash::ProgrammingEventType evt);
 
-    void onDataSetProgramming(void* param, DataSet::ProgrammingEventType evt);
-    void onSettingsProgramming(void* param, SettingsManager::ProgrammingEventType evt);
+    void onFlashProgramming(void* param, Flash::ProgrammingEventType evt);
 
 	void init() {
 
@@ -47,8 +47,7 @@ namespace BehaviorController
         Bluetooth::Stack::hook(onConnectionEvent, nullptr);
         BatteryController::hook(onBatterystateChange, nullptr);
         Accelerometer::hookRollState(onRollStateChange, nullptr);
-        DataSet::hookProgrammingEvent(onDataSetProgramming, nullptr);
-        SettingsManager::hookProgrammingEvent(onSettingsProgramming, nullptr);
+        Flash::hookProgrammingEvent(onFlashProgramming, nullptr);
 
 		NRF_LOG_INFO("Behavior Controller Initialized");
     }
@@ -140,7 +139,7 @@ namespace BehaviorController
         if (Timers::setDelayedCallback(chargingTimerRecheck, param, periodMs)) {
             // Also subscribe when rollstate changes so we can kill the timer
             BatteryController::unHook(chargingStateChange);
-            DataSet::hookProgrammingEvent(chargingDataSetProgramming, param);
+            Flash::hookProgrammingEvent(chargingFlashProgramming, param);
         }
     }
 
@@ -156,7 +155,7 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(chargingTimerRecheck, (void*)rule);
             BatteryController::unHook(chargingStateChange);
-            DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
+            Flash::unhookProgrammingEvent(chargingFlashProgramming);
         }
 	}
 
@@ -168,14 +167,14 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(chargingTimerRecheck, (void*)rule);
             BatteryController::unHook(chargingStateChange);
-            DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
+            Flash::unhookProgrammingEvent(chargingFlashProgramming);
         }
     }
 
-    void chargingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt) {
+    void chargingFlashProgramming(void* param, Flash::ProgrammingEventType evt) {
         Timers::cancelDelayedCallback(chargingTimerRecheck, param);
         BatteryController::unHook(chargingStateChange);
-        DataSet::unhookProgrammingEvent(chargingDataSetProgramming);
+        Flash::unhookProgrammingEvent(chargingFlashProgramming);
     }
 
     void idleTimerInit(void* param, int periodMs) {
@@ -183,7 +182,7 @@ namespace BehaviorController
         if (Timers::setDelayedCallback(idleTimerRecheck, param, periodMs)) {
             // Also subscribe when rollstate changes so we can kill the timer
             Accelerometer::hookRollState(idleRollStateChange, param);
-            DataSet::hookProgrammingEvent(idleDataSetProgramming, param);
+            Flash::hookProgrammingEvent(idleFlashProgramming, param);
         }
     }
 
@@ -199,7 +198,7 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(idleTimerRecheck, (void*)rule);
             Accelerometer::unHookRollState(idleRollStateChange);
-            DataSet::unhookProgrammingEvent(idleDataSetProgramming);
+            Flash::unhookProgrammingEvent(idleFlashProgramming);
         }
 	}
 
@@ -211,14 +210,14 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(idleTimerRecheck, (void*)rule);
             Accelerometer::unHookRollState(idleRollStateChange);
-            DataSet::unhookProgrammingEvent(idleDataSetProgramming);
+            Flash::unhookProgrammingEvent(idleFlashProgramming);
         }
     }
 
-    void idleDataSetProgramming(void* param, DataSet::ProgrammingEventType evt) {
+    void idleFlashProgramming(void* param, Flash::ProgrammingEventType evt) {
         Timers::cancelDelayedCallback(idleTimerRecheck, param);
         Accelerometer::unHookRollState(idleRollStateChange);
-        DataSet::unhookProgrammingEvent(idleDataSetProgramming);
+        Flash::unhookProgrammingEvent(idleFlashProgramming);
     }
 
     void rollingTimerInit(void* param, int periodMs) {
@@ -226,7 +225,7 @@ namespace BehaviorController
         if (Timers::setDelayedCallback(rollingTimerRecheck, param, periodMs)) {
             // Also subscribe when rollstate changes so we can kill the timer
             Accelerometer::hookRollState(rollingRollStateChange, param);
-            DataSet::hookProgrammingEvent(rollingDataSetProgramming, param);
+            Flash::hookProgrammingEvent(rollingFlashProgramming, param);
         }
     }
 
@@ -242,7 +241,7 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(rollingTimerRecheck, (void*)rule);
             Accelerometer::unHookRollState(rollingRollStateChange);
-            DataSet::unhookProgrammingEvent(rollingDataSetProgramming);
+            Flash::unhookProgrammingEvent(rollingFlashProgramming);
         }
 	}
 
@@ -254,14 +253,14 @@ namespace BehaviorController
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(rollingTimerRecheck, (void*)rule);
             Accelerometer::unHookRollState(rollingRollStateChange);
-            DataSet::unhookProgrammingEvent(rollingDataSetProgramming);
+            Flash::unhookProgrammingEvent(rollingFlashProgramming);
         }
     }
 
-    void rollingDataSetProgramming(void* param, DataSet::ProgrammingEventType evt) {
+    void rollingFlashProgramming(void* param, Flash::ProgrammingEventType evt) {
         Timers::cancelDelayedCallback(rollingTimerRecheck, param);
         Accelerometer::unHookRollState(rollingRollStateChange);
-        DataSet::unhookProgrammingEvent(rollingDataSetProgramming);
+        Flash::unhookProgrammingEvent(rollingFlashProgramming);
     }
 
 
@@ -332,23 +331,12 @@ namespace BehaviorController
         }
     }
 
-    void onDataSetProgramming(void* param, DataSet::ProgrammingEventType evt) {
+    void onFlashProgramming(void* param, Flash::ProgrammingEventType evt) {
         switch (evt) {
-            case DataSet::ProgrammingEventType_Begin:
+            case Flash::ProgrammingEventType_Begin:
                 Timers::pauseDelayedCallbacks();
                 break;
-            case DataSet::ProgrammingEventType_End:
-                Timers::resumeDelayedCallbacks();
-                break;
-        }
-    }
-    
-    void onSettingsProgramming(void* param, SettingsManager::ProgrammingEventType evt) {
-        switch (evt) {
-            case SettingsManager::ProgrammingEventType_Begin:
-                Timers::pauseDelayedCallbacks();
-                break;
-            case SettingsManager::ProgrammingEventType_End:
+            case Flash::ProgrammingEventType_End:
                 Timers::resumeDelayedCallbacks();
                 break;
         }

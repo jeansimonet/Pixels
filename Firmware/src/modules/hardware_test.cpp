@@ -50,7 +50,7 @@ namespace HardwareTest
         NRF_LOG_INFO("Starting Hardware Test");
 
         // Reprogram default anim settings
-        DataSet::ProgramDefaultDataSet([] (bool result) {
+        DataSet::ProgramDefaultDataSet(*SettingsManager::getSettings(), [] (bool result) {
 
             // Check Accelerometer WHOAMI
             if (LIS2DE12::checkWhoAMI()) {

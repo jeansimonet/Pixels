@@ -192,32 +192,13 @@ public class UIHomePage
 
     void ActivateBehavior(Behaviors.EditBehavior behavior)
     {
-        PixelsApp.Instance.ShowDialogBox(
-            "Activate " + behavior.name + "?",
-            "Do you want to activate this profile on one of your dice?",
-            "Yes",
-            "Cancel",
-            (res) =>
+        PixelsApp.Instance.ActivateBehavior(behavior, (die, res) =>
+        {
+            if (res)
             {
-                if (res)
-                {
-                    // Select the die
-                    PixelsApp.Instance.ShowDiePicker("Select Die", null, null, (res2, selectedDie) =>
-                    {
-                        if (res2)
-                        {
-                            // Attempt to activate the behavior on the die
-                            PixelsApp.Instance.UploadBehavior(behavior, selectedDie, (res3) =>
-                            {
-                                if (res3)
-                                {
-                                    UpdatePresetAndBehaviorStatuses();
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+                UpdatePresetAndBehaviorStatuses();
+            }
+        });
     }
 
     void CloseWhatsNew()

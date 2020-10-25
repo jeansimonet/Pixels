@@ -80,5 +80,6 @@ namespace Utils
 	uint8_t interpolateIntensity(uint8_t intensity1, int time1, uint8_t intensity2, int time2, int time);
     uint32_t modulateColor(uint32_t color, uint8_t intensity);
 
+	uint32_t nextRand(uint32_t prevRand);
 }
 

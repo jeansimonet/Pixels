@@ -22,6 +22,7 @@ namespace Animations
 		Animation_Keyframed,
 		Animation_GradientPattern,
 		Animation_Gradient,
+		Animation_Noise,
 	};
 
 	/// <summary>

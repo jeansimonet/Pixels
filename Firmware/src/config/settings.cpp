@@ -11,6 +11,7 @@
 #include "malloc.h"
 #include "config/dice_variants.h"
 #include "utils/utils.h"
+#include "data_set/data_set.h"
 
 #define SETTINGS_VALID_KEY (0x15E77165) // 1SETTINGS in leet speak ;)
 #define SETTINGS_VERSION 3
@@ -20,8 +21,7 @@ using namespace DriversNRF;
 using namespace Bluetooth;
 using namespace Config;
 using namespace Modules;
-
-#define MAX_ACC_CLIENTS 4
+using namespace DataSet;
 
 namespace Config
 {
@@ -30,9 +30,6 @@ namespace SettingsManager
 {
 	Settings const * settings = nullptr;
 
-	DelegateArray<ProgrammingEventMethod, MAX_ACC_CLIENTS> programmingClients;
-
-	void ReceiveSettingsHandler(void* context, const Message* msg);
 	void ProgramDefaultParametersHandler(void* context, const Message* msg);
 	void SetDesignTypeAndColorHandler(void* context, const Message* msg);
 	void SetNameHandler(void* context, const Message* msg);
@@ -44,11 +41,10 @@ namespace SettingsManager
 		static SettingsWrittenCallback _callback; // Don't initialize this static inline because it would only do it on first call!
 		_callback = callback;
 
-		settings = (Settings const * const)Flash::getFlashStartAddress();
+		settings = (Settings const * const)Flash::getSettingsStartAddress();
 
 		auto finishInit = [](bool success) {
 			// Register as a handler to program settings
-			MessageService::RegisterMessageHandler(Message::MessageType_TransferSettings, nullptr, ReceiveSettingsHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_ProgramDefaultParameters, nullptr, ProgramDefaultParametersHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetDesignAndColor, nullptr, SetDesignTypeAndColorHandler);
 			MessageService::RegisterMessageHandler(Message::MessageType_SetName, nullptr, SetNameHandler);
@@ -57,7 +53,7 @@ namespace SettingsManager
 			MessageService::RegisterMessageHandler(Message::MessageType_PrintNormals, nullptr, PrintNormals);
 			#endif
 
-			NRF_LOG_INFO("Settings initialized");
+			NRF_LOG_INFO("Settings initialized, size: %d bytes", sizeof(Settings));
 			auto callBackCopy = _callback;
 			_callback = nullptr;
 			if (callBackCopy != nullptr) {
@@ -79,52 +75,12 @@ namespace SettingsManager
 			settings->tailMarker == SETTINGS_VALID_KEY);
 	}
 
-	uint32_t getSettingsStartAddress() {
-		return (uint32_t)settings;
-	}
-	uint32_t getSettingsEndAddress() {
-		return (uint32_t)settings + Flash::getPageSize() * SETTINGS_PAGE_COUNT;
-	}
-
-
 	Settings const * const getSettings() {
 		if (!checkValid()) {
 			return nullptr;
 		} else {
 			return settings;
 		}
-	}
-
-	void ReceiveSettingsHandler(void* context, const Message* msg) {
-
-		NRF_LOG_INFO("Received Request to download new settings");
-
-		// Start by erasing the flash
-		Flash::erase((uint32_t)settings, 1,
-			[](bool result, uint32_t address, uint16_t size) {
-				NRF_LOG_DEBUG("done Erasing %d page", size);
-
-				// Send Ack and receive data
-				MessageService::SendMessage(Message::MessageType_TransferSettingsAck);
-
-				// Receive all the buffers directly to flash
-				ReceiveBulkData::receiveToFlash((uint32_t)settings, nullptr,
-					[](void* context, bool success, uint16_t size) {
-						if (success) {
-							NRF_LOG_DEBUG("Finished flashing settings");
-							MessageService::SendMessage(Message::MessageType_TransferSettingsFinished);
-							// TODO may need to wait!
-							// Restart the bluetooth stack
-							Stack::disconnect();
-							Stack::stopAdvertising();
-							Stack::startAdvertising();
-						} else {
-							NRF_LOG_ERROR("Error transfering animation data");
-						}
-					}
-				);
-			}
-		);
 	}
 
 	void ProgramDefaultParametersHandler(void* context, const Message* msg) {
@@ -150,60 +106,6 @@ namespace SettingsManager
 		});
 	}
 
-
-	void writeToFlash(const Settings* sourceSettings, SettingsWrittenCallback callback) {
-
-		// Notify clients
-		for (int i = 0; i < programmingClients.Count(); ++i)
-		{
-			programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_Begin);
-		}
-
-		// Temporary holders used in callbacks
-		static SettingsWrittenCallback _writeToFlashCallback;  // Don't initialize this static inline because it would only do it on first call!
-		_writeToFlashCallback = callback;
-
-		static Settings* _sourceSettings; // Don't initialize this static inline because it would only do it on first call!
-		_sourceSettings = (Settings*)malloc(sizeof(Settings));
-		memcpy(_sourceSettings, sourceSettings, sizeof(Settings));
-
-		static auto finishWrite = [] (bool result) {
-			free(_sourceSettings);
-			_sourceSettings = nullptr;
-
-			// Notify clients
-			for (int i = 0; i < programmingClients.Count(); ++i)
-			{
-				programmingClients[i].handler(programmingClients[i].token, ProgrammingEventType_End);
-			}
-
-			// Clear callback pointer before invoking it, in case the callback decides to trigger another write to flash!
-			auto callbackCopy = _writeToFlashCallback;
-			_writeToFlashCallback = nullptr;
-			if (callbackCopy != nullptr) {
-				callbackCopy(result);
-			}
-		};
-
-		// Start by erasing the flash!
-		Flash::erase((uint32_t)settings, SETTINGS_PAGE_COUNT, [] (bool result, uint32_t address, uint16_t size) {
-			if (result) {
-				Flash::write((uint32_t)settings, _sourceSettings, sizeof(Settings),
-					[](bool result, uint32_t address, uint16_t size) {
-						if (result) {
-							NRF_LOG_INFO("Settings written to flash");
-						} else {
-							NRF_LOG_INFO("Error writting to flash");
-						}
-						finishWrite(result);
-				});
-			} else {
-				NRF_LOG_ERROR("Error erasing flash");
-				finishWrite(false);
-			}
-		});
-	}
-
 	void setDefaultParameters(Settings& outSettings) {
         // Generate our name
         outSettings.name[0] = '\0';
@@ -213,7 +115,7 @@ namespace SettingsManager
             outSettings.name[i] = '0' + uniqueId % 10;
             uniqueId /= 10;
         }
-        outSettings.name[1+7] = '\0';
+        outSettings.name[7] = '\0';
 		outSettings.designAndColor = DiceVariants::DesignAndColor::DesignAndColor_Generic;
 		outSettings.jerkClamp = 10.f;
 		outSettings.sigmaDecay = 0.5f;
@@ -253,7 +155,7 @@ namespace SettingsManager
 	void programDefaults(SettingsWrittenCallback callback) {
 		Settings defaults;
 		setDefaults(defaults);
-		writeToFlash(&defaults, callback);
+		DataSet::ProgramDefaultDataSet(defaults, callback);
 	}
 
 	void programDefaultParameters(SettingsWrittenCallback callback) {
@@ -271,7 +173,7 @@ namespace SettingsManager
 		setDefaultParameters(settingsCopy);
 
 		// Reprogram settings
-		writeToFlash(&settingsCopy, callback);
+		DataSet::ProgramDefaultDataSet(settingsCopy, callback);
 	}
 
 	void programCalibrationData(const Core::float3* newNormals, int faceLayoutLookupIndex, const uint8_t* newFaceToLEDLookup, int count, SettingsWrittenCallback callback) {
@@ -294,14 +196,14 @@ namespace SettingsManager
 
 		// Reprogram settings
 		NRF_LOG_INFO("Programming settings in flash");
-		writeToFlash(&settingsCopy, callback);
+		DataSet::ProgramDefaultDataSet(settingsCopy, callback);
 	}
 
 	void programDesignAndColor(DiceVariants::DesignAndColor design, SettingsWrittenCallback callback) {
 		Settings settingsCopy;
 		memcpy(&settingsCopy, settings, sizeof(Settings));
 		settingsCopy.designAndColor = design;
-		writeToFlash(&settingsCopy, callback);
+		DataSet::ProgramDefaultDataSet(settingsCopy, callback);
 	}
 
 	SettingsWrittenCallback programNameCallback = nullptr;
@@ -310,7 +212,7 @@ namespace SettingsManager
 		memcpy(&settingsCopy, settings, sizeof(Settings));
 		strcpy(settingsCopy.name, newName);
 		programNameCallback = callback;
-		writeToFlash(&settingsCopy, [] (bool success) {
+		DataSet::ProgramDefaultDataSet(settingsCopy, [] (bool success) {
 			Bluetooth::Stack::resetOnDisconnect();
 			auto callbackCopy = programNameCallback;
 			programNameCallback = nullptr;
@@ -327,19 +229,6 @@ namespace SettingsManager
 		BLE_LOG_INFO("Face %d: %d, %d, %d", i, (int)(settings->faceNormals[i].x * 100), (int)(settings->faceNormals[i].y * 100), (int)(settings->faceNormals[i].z * 100));
 	}
 	#endif
-
-	void hookProgrammingEvent(ProgrammingEventMethod client, void* param)
-	{
-		if (!programmingClients.Register(param, client))
-		{
-			NRF_LOG_ERROR("Too many hooks registered.");
-		}
-	}
-
-	void unhookProgrammingEvent(ProgrammingEventMethod client)
-	{
-		programmingClients.UnregisterWithHandler(client);
-	}
 
 }
 }

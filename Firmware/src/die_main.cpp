@@ -138,7 +138,7 @@ namespace Die
         strncpy(identityMessage.versionInfo, FIRMWARE_VERSION, VERSION_INFO_SIZE);
         identityMessage.faceCount = (uint8_t)BoardManager::getBoard()->ledCount;
         identityMessage.designAndColor = SettingsManager::getSettings()->designAndColor;
-        identityMessage.flashSize = Flash::getUsableBytes();
+        identityMessage.flashSize = DataSet::availableDataSize();
         Bluetooth::MessageService::SendMessage(&identityMessage);
     }
 

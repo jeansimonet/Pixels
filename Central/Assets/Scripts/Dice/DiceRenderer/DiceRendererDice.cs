@@ -311,8 +311,7 @@ public class DiceRendererDice : MonoBehaviour
     void SetupInstance(int animationIndex, int startTime, byte remapFace)
     {
         currentAnimationIndex = animationIndex;
-        EditDataSet tempEditSet = new EditDataSet();
-        tempEditSet.animations.Add(animations[animationIndex]);
+        EditDataSet tempEditSet = AppDataSet.Instance.ExtractEditSetForAnimation(animations[animationIndex]);
         dataSet = tempEditSet.ToDataSet();
         currentInstance = dataSet.animations[0].CreateInstance(dataSet.animationBits);
         currentInstance.start(startTime, remapFace, false);

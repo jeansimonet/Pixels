@@ -88,6 +88,23 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     {
         EditDataSet ret = new EditDataSet();
         ret.animations.Add(animation);
+
+        foreach (var pattern in patterns)
+        {
+            bool asRGB = false;
+            if (animation.DependsOnPattern(pattern, out asRGB))
+            {
+                if (asRGB)
+                {
+                    ret.rgbPatterns.Add(pattern);
+                }
+                else
+                {
+                    ret.patterns.Add(pattern);
+                }
+            }
+        }
+
         return ret;
     }
 
@@ -178,7 +195,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
 
     public IEnumerable<Animations.EditAnimation> CollectAnimationsForPattern(Animations.EditPattern pattern)
     {
-        return animations.Where(b => b.DependsOnPattern(pattern));
+        return animations.Where(b => { bool ignore; return b.DependsOnPattern(pattern, out ignore); });
     }
 
     public IEnumerable<Presets.EditPreset> CollectPresetsForAnimation(Animations.EditAnimation anim)
@@ -195,6 +212,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     public EditBehavior AddNewDefaultBehavior()
     {
         var newBehavior = new Behaviors.EditBehavior();
+        newBehavior.name = "New Profile";
         newBehavior.rules.Add(new Behaviors.EditRule()
         {
             condition = new Behaviors.EditConditionFaceCompare()

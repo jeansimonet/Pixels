@@ -84,6 +84,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/animations/animation_keyframed.cpp \
 	$(PROJ_DIR)/src/animations/animation_rainbow.cpp \
 	$(PROJ_DIR)/src/animations/animation_gradientpattern.cpp \
+	$(PROJ_DIR)/src/animations/animation_noise.cpp \
 	$(PROJ_DIR)/src/animations/keyframes.cpp \
 	$(PROJ_DIR)/src/behaviors/action.cpp \
 	$(PROJ_DIR)/src/behaviors/condition.cpp \
@@ -260,7 +261,7 @@ firmware_debug: DEBUG_FLAGS += -DNRF_LOG_ENABLED=1
 
 COMMON_FLAGS += $(DEBUG_FLAGS)
 
-FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x2C000
+FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x2E000
 
 firmware_release: FSTORAGE_ADDR_DEFINES = -DFSTORAGE_START=0x26000
 

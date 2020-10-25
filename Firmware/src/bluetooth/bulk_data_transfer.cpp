@@ -5,7 +5,7 @@
 #include "malloc.h"
 #include "drivers_nrf/flash.h"
 
-#define RETRY_MS (300) // ms
+#define RETRY_MS (10000) // ms
 #define TIMEOUT_MS (3000) // ms
 #define BLOCK_SIZE (MAX_DATA_SIZE)
 #define MAX_RETRY_COUNT (5)
@@ -208,7 +208,7 @@ namespace Bluetooth
 		void* context;
 
 		#pragma pack(push, 4)
-		uint8_t dataBuffer[132]; // data is 100 bytes so this should be enough
+		uint8_t dataBuffer[132] __attribute__ ((aligned (4))); // data is 100 bytes so this should be enough
 		#pragma pack(pop)
 
 		APP_TIMER_DEF(timeoutTimer);
@@ -326,6 +326,51 @@ namespace Bluetooth
 			currentState = State_WaitingForSetup;
 		}
 
+		void receiveChunk(void* c, const Message* message) {
+			auto msg = (const MessageBulkData*)message;
+			// Cancel the timer first
+			Timers::stopTimer(timeoutTimer);
+
+			// Ignore further messaged until we've programmed flash
+			MessageService::UnregisterMessageHandler(Message::MessageType_BulkData);
+
+			// Program the data
+			NRF_LOG_DEBUG("Received Bulk Data (offset: 0x%04x, length: %d)", msg->offset, msg->size);
+
+			// Copy the data to properly aligned buffer
+			memcpy(dataBuffer, msg->data, msg->size);
+			NRF_LOG_DEBUG("Writing data to flash at 0x%08x", flashAddress + msg->offset);
+			//NRF_LOG_HEXDUMP_INFO(dataBuffer, msg->size);
+
+			// Round up the size of the data to write, which should be okay because the
+			// temporary buffer is large enough
+			uint32_t flashWriteSize = 4 * ((msg->size + 3) / 4);
+
+			// Go ahead
+			Flash::write(nullptr, flashAddress + msg->offset, dataBuffer, flashWriteSize,
+				[](void* context, bool result, uint32_t address, uint16_t s) {
+
+					uint16_t offset = (uint16_t)(address - flashAddress);
+					if (offset + s < size) {
+						// Be ready to receive the next message
+						MessageService::RegisterMessageHandler(Message::MessageType_BulkData, nullptr, receiveChunk);
+					}
+
+					// And send an ack!
+					sendBulkAckMessage(offset);
+
+					// Are we done?
+					if (offset + s >= size) {
+						// Done
+						NRF_LOG_DEBUG("Done!")
+						if (flashCallback != nullptr) {
+							flashCallback(context, true, flashAddress, size);
+						}
+					}
+				}
+			);
+		}
+
 		/// <summary>
 		/// Bulk data transfer directly to flash, note that the flash area must already be erased
 		/// </summary>
@@ -344,9 +389,10 @@ namespace Bluetooth
 				[](void* c) {
 					if (currentState == State_Init) {
 						// Fail!
+						NRF_LOG_WARNING("Timeout waiting for setup message");
 						currentState = State_Done;
 						MessageService::UnregisterMessageHandler(Message::MessageType_BulkSetup);
-						flashCallback(context, false, 0);
+						flashCallback(context, false, flashAddress, 0);
 					}
 					// Else ignore
 				}
@@ -376,9 +422,10 @@ namespace Bluetooth
 									retryCount++;
 									if (retryCount >= MAX_RETRY_COUNT) {
 										// Fail!
+										NRF_LOG_WARNING("Timeout waiting for next data message");
 										currentState = State_Done;
 										MessageService::UnregisterMessageHandler(Message::MessageType_BulkData);
-										flashCallback(context, false, 0);
+										flashCallback(context, false, flashAddress, 0);
 									} else {
 										// Try again...
 										sendSetupAckMessage();
@@ -388,45 +435,7 @@ namespace Bluetooth
 							}
 						);
 
-						MessageService::RegisterMessageHandler(Message::MessageType_BulkData, nullptr,
-							[](void* c, const Message* message) {
-
-								// Cancel the timer first
-								Timers::stopTimer(timeoutTimer);
-
-								// Program the data
-								auto msg = (const MessageBulkData*)message;
-								NRF_LOG_DEBUG("Received Bulk Data (offset: 0x%04x, length: %d)", msg->offset, msg->size);
-
-								// Copy the data to properly aligned buffer
-								memcpy(dataBuffer, msg->data, msg->size);
-								NRF_LOG_DEBUG("Writing data to flash at 0x%08x", flashAddress + msg->offset);
-
-								// Round up the size of the data to write, which should be okay because the
-								// temporary buffer is large enough
-								uint32_t flashWriteSize = 4 * ((msg->size + 3) / 4);
-
-								// Go ahead
-								Flash::write(flashAddress + msg->offset, dataBuffer, flashWriteSize,
-									[](bool result, uint32_t address, uint16_t s) {
-
-										// And send an ack!
-										uint16_t offset = (uint16_t)(address - flashAddress);
-										sendBulkAckMessage(offset);
-
-										// Are we done?
-										if (offset + s >= size) {
-											// Done
-											NRF_LOG_DEBUG("Done!")
-											MessageService::UnregisterMessageHandler(Message::MessageType_BulkData);
-											if (flashCallback != nullptr) {
-												flashCallback(context, true, size);
-											}
-										}
-									}
-								);
-							}
-						);
+						MessageService::RegisterMessageHandler(Message::MessageType_BulkData, nullptr, receiveChunk);
 
 						// Send Setup ack
 						sendSetupAckMessage();

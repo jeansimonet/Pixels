@@ -113,7 +113,7 @@ class ColorUtils
             color = pixels[0]
         });
 
-        const float sqrEpsilon = 0.1f;
+        const float sqrEpsilon = 0.2f;
 
         int currentPrev = 0;
         int currentNext = 1;

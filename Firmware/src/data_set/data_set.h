@@ -10,6 +10,7 @@
 #include "stdint.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bulk_data_transfer.h"
+#include "config/settings.h"
 
 #define MAX_COLOR_MAP_SIZE (1 << 7) // 128 colors!
 #define SPECIAL_COLOR_INDEX (MAX_COLOR_MAP_SIZE - 1)
@@ -17,6 +18,8 @@
 
 namespace DataSet
 {
+	struct Data;
+
 	typedef void (*DataSetWrittenCallback)(bool success);
 
 	void init(DataSetWrittenCallback callback);
@@ -52,21 +55,11 @@ namespace DataSet
 	// Behaviors
 	const Behaviors::Behavior* getBehavior();
 
-	uint32_t getDataSetAddress();
-	uint32_t getDataSetDataAddress();
+	uint32_t computeDataSetDataSize(const Data* newData);
 
-	void ProgramDefaultDataSet(DataSetWrittenCallback callback);
+	void ProgramDefaultDataSet(const Config::Settings& settingsPackAlong, DataSetWrittenCallback callback);
 	void ReceiveDataSetHandler(void* context, const Bluetooth::Message* msg);
+
 	void printAnimationInfo();
-
-	enum ProgrammingEventType
-	{
-		ProgrammingEventType_Begin = 0,
-		ProgrammingEventType_End
-	};
-
-	typedef void (*ProgrammingEventMethod)(void* param, ProgrammingEventType evt);
-	void hookProgrammingEvent(ProgrammingEventMethod client, void* param);
-	void unhookProgrammingEvent(ProgrammingEventMethod client);
 }
 

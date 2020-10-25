@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Animations;
+using System.Linq;
 
 public class UIGradientPatternViewToken : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public class UIGradientPatternViewToken : MonoBehaviour
     public RectTransform expandedRoot;
     public Button removeButton;
     public Button editButton;
+    public Text sizeText;
 
     [Header("Properties")]
     public Sprite expandImage;
@@ -54,6 +56,7 @@ public class UIGradientPatternViewToken : MonoBehaviour
         anim.name = "temp anim";
         anim.pattern = pattern;
         anim.duration = pattern.duration;
+        sizeText.text = "Size: " + (pattern.gradients.Sum(g => g.keyframes.Count) * 2).ToString() + " bytes";
 
         textureImage.texture = pattern.ToTexture();
 

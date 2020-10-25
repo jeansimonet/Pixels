@@ -92,15 +92,20 @@ namespace Behaviors
             return rules.Any(r => r.DependsOnAudioClip(clip));
         }
 
-        public IEnumerable<Animations.EditAnimation> CollectAnimations()
+        public List<Animations.EditAnimation> CollectAnimations()
         {
+            var ret = new List<Animations.EditAnimation>();
             foreach (var action in rules.SelectMany(r => r.actions))
             {
                 foreach (var anim in action.CollectAnimations())
                 {
-                    yield return anim;
+                    if (!ret.Contains(anim))
+                    {
+                        ret.Add(anim);
+                    }
                 }
             }
+            return ret;
         }
 
         public IEnumerable<AudioClips.EditAudioClip> CollectAudioClips()

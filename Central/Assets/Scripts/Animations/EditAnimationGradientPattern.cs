@@ -36,10 +36,8 @@ namespace Animations
             var ret = new AnimationGradientPattern();
 		    ret.duration = (ushort)(duration * 1000); // stored in milliseconds
             ret.speedMultiplier256 = (ushort)(this.speedMultiplier * 256.0f);
-		    ret.tracksOffset = (ushort)bits.tracks.Count;
-            var tracks = pattern.ToTracks(editSet, bits);
-		    ret.trackCount = (ushort)tracks.Length;
-            bits.tracks.AddRange(tracks);
+		    ret.tracksOffset = (ushort)editSet.getPatternTrackOffset(pattern);
+		    ret.trackCount = (ushort)pattern.gradients.Count;
 
             // Add gradient
             ret.gradientTrackOffset = (ushort)bits.rgbTracks.Count;
@@ -54,7 +52,7 @@ namespace Animations
         {
             EditAnimationGradientPattern ret = new EditAnimationGradientPattern();
             ret.name = this.name;
-            ret.pattern = this.pattern.Duplicate();
+            ret.pattern = this.pattern;
             ret.speedMultiplier = this.speedMultiplier;
 		    ret.duration = this.duration;
             ret.gradient = gradient.Duplicate();
@@ -75,8 +73,9 @@ namespace Animations
                 this.pattern = null;
             }
         }
-        public override bool DependsOnPattern(Animations.EditPattern pattern)
+        public override bool DependsOnPattern(Animations.EditPattern pattern, out bool asRGB)
         {
+            asRGB = false;
             return this.pattern == pattern;
         }
 

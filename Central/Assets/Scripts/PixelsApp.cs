@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Dice;
 
 public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 {
@@ -175,6 +176,33 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
         return ret;
     }
 
+    public void ActivateBehavior(Behaviors.EditBehavior behavior, System.Action<EditDie, bool> callback)
+    {
+        ShowDialogBox(
+            "Activate " + behavior.name + "?",
+            "Do you want to activate this profile on one of your dice?",
+            "Yes",
+            "Cancel",
+            (res) =>
+            {
+                if (res)
+                {
+                    // Select the die
+                    ShowDiePicker("Select Die", null, null, (res2, selectedDie) =>
+                    {
+                        if (res2)
+                        {
+                            // Attempt to activate the behavior on the die
+                            UploadBehavior(behavior, selectedDie, (res3) =>
+                            {
+                                callback?.Invoke(selectedDie, res3);
+                            });
+                        }
+                    });
+                }
+            });
+    }
+
     public void UpdateDieDataSet(Presets.EditDieAssignment editDieAssignment, System.Action<bool> callback)
     {
         UpdateDieDataSet(editDieAssignment.behavior, editDieAssignment.die, callback);
@@ -197,7 +225,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                 editSet.behavior = behavior.Duplicate();
 
                 // And add the animations that this behavior uses
-                editSet.animations.AddRange(editSet.behavior.CollectAnimations());
+                var animations = editSet.behavior.CollectAnimations();
 
                 // Add default rules and animations to behavior / set
                 if (AppDataSet.Instance.defaultBehavior != null)
@@ -205,7 +233,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     // Add animations used by default rules
                     foreach (var editAnim in AppDataSet.Instance.defaultBehavior.CollectAnimations())
                     {
-                        editSet.animations.Add(editAnim);
+                        animations.Add(editAnim);
                     }
 
                     foreach (var rule in AppDataSet.Instance.defaultBehavior.rules)
@@ -217,40 +245,81 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                     }
                 }
 
+                editSet.animations.AddRange(animations);
+
+                foreach (var pattern in AppDataSet.Instance.patterns)
+                {
+                    bool asRGB = false;
+                    if (animations.Any(anim => anim.DependsOnPattern(pattern, out asRGB)))
+                    {
+                        if (asRGB)
+                        {
+                            editSet.rgbPatterns.Add(pattern);
+                        }
+                        else
+                        {
+                            editSet.patterns.Add(pattern);
+                        }
+                    }
+                }
+
                 // Set the behavior
                 var dataSet = editSet.ToDataSet();
 
                 // Check the dataset against the one stored in the die
                 var hash = dataSet.ComputeHash();
-                if (hash != editDie.die.dataSetHash)
+
+                // Get the hash directly from the die
+                editDie.die.GetDieInfo((info_res) =>
                 {
-                    // We need to upload the dataset first
-                    Debug.Log("Uploading dataset to die " + editDie.name);
-                    UpdateProgrammingBox(0.0f, "Uploading data to " + editDie.name + "...");
-                    editDie.die.UploadDataSet(dataSet,
-                    (pct) =>
+                    if (info_res)
                     {
-                        UpdateProgrammingBox(pct, "Uploading data to " + editDie.name + "...");
-                    },
-                    (res2) =>
-                    {
-                        if (res2)
+                        if (hash != editDie.die.dataSetHash)
                         {
-                            editDie.die.GetDieInfo(res3 =>
+                            // We need to upload the dataset first
+                            Debug.Log("Uploading dataset to die " + editDie.name);
+                            UpdateProgrammingBox(0.0f, "Uploading data to " + editDie.name + "...");
+                            editDie.die.UploadDataSet(dataSet,
+                            (pct) =>
                             {
-                                if (res3)
+                                UpdateProgrammingBox(pct, "Uploading data to " + editDie.name + "...");
+                            },
+                            (res2) =>
+                            {
+                                if (res2)
                                 {
-                                    HideProgrammingBox();
-                                    DiceManager.Instance.DisconnectDie(editDie, null);
-                                    die.currentBehavior = behavior;
-                                    AppDataSet.Instance.SaveData();
-                                    onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
-                                    callback?.Invoke(true);
+                                    editDie.die.GetDieInfo(res3 =>
+                                    {
+                                        if (res3)
+                                        {
+                                            HideProgrammingBox();
+                                            if (hash != editDie.die.dataSetHash)
+                                            {
+                                                ShowDialogBox("Error verifying data sent to " + editDie.name, message, "Ok", null, null);
+                                                callback?.Invoke(false);
+                                            }
+                                            else
+                                            {
+                                                die.currentBehavior = behavior;
+                                                AppDataSet.Instance.SaveData();
+                                                onDieBehaviorUpdatedEvent?.Invoke(die, die.currentBehavior);
+                                                callback?.Invoke(true);
+                                            }
+                                            DiceManager.Instance.DisconnectDie(editDie, null);
+                                        }
+                                        else
+                                        {
+                                            HideProgrammingBox();
+                                            ShowDialogBox("Error fetching profile hash value from " + editDie.name, message, "Ok", null, null);
+                                            DiceManager.Instance.DisconnectDie(editDie, null);
+                                            callback?.Invoke(false);
+                                        }
+                                    });
                                 }
                                 else
                                 {
                                     HideProgrammingBox();
-                                    ShowDialogBox("Error verifying data sendt to " + editDie.name, message, "Ok", null, null);
+                                    ShowDialogBox("Error uploading data to " + editDie.name, message, "Ok", null, null);
                                     DiceManager.Instance.DisconnectDie(editDie, null);
                                     callback?.Invoke(false);
                                 }
@@ -258,20 +327,21 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         }
                         else
                         {
+                            Debug.Log("Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
                             HideProgrammingBox();
-                            ShowDialogBox("Error uploading data to " + editDie.name, message, "Ok", null, null);
+                            ShowDialogBox("Profile already Programmed", "Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.", "Ok", null, null);
                             DiceManager.Instance.DisconnectDie(editDie, null);
-                            callback?.Invoke(false);
+                            callback?.Invoke(true);
                         }
-                    });
-                }
-                else
-                {
-                    Debug.Log("Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
-                    HideProgrammingBox();
-                    DiceManager.Instance.DisconnectDie(editDie, null);
-                    callback?.Invoke(true);
-                }
+                    }
+                    else
+                    {
+                        HideProgrammingBox();
+                        ShowDialogBox("Error verifying profile hash on " + editDie.name, message, "Ok", null, null);
+                        DiceManager.Instance.DisconnectDie(editDie, null);
+                        callback?.Invoke(false);
+                    }
+                });
             }
             else
             {

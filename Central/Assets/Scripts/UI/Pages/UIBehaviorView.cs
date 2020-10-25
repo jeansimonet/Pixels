@@ -14,6 +14,7 @@ public class UIBehaviorView
     public RectTransform rulesRoot;
     public Button addRuleButton;
     public RectTransform spacer;
+    public Button activateButton;
 
     public Behaviors.EditBehavior editBehavior { get; private set; }
     public SingleDiceRenderer dieRenderer { get; private set; }
@@ -88,6 +89,7 @@ public class UIBehaviorView
     {
         addRuleButton.onClick.AddListener(AddNewRule);
         descriptionText.onEndEdit.AddListener(SetDescription);
+        activateButton.onClick.AddListener(ActivateBehavior);
     }
 
     void AddNewRule()
@@ -215,5 +217,10 @@ public class UIBehaviorView
     {
         editBehavior.description = newDescription;
         base.pageDirty = true;
+    }
+
+    void ActivateBehavior()
+    {
+        PixelsApp.Instance.ActivateBehavior(editBehavior, null);
     }
 }
