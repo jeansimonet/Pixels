@@ -207,7 +207,10 @@ namespace Behaviors
 
         public override IEnumerable<Animations.EditAnimation> CollectAnimations()
         {
-            yield return animation;
+            if (animation != null)
+            {
+                yield return animation;
+            }
         }
         public override string ToString()
         {
