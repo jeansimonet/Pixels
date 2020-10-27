@@ -3,7 +3,7 @@ TARGETS          := firmware
 OUTPUT_DIRECTORY := _build
 PUBLISH_DIRECTORY := binaries
 
-VERSION			 := 10_12
+VERSION			 := 10_26
 
 SDK_VER = 17
 
