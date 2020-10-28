@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Dice;
+using Behaviors;
 
 public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 {
@@ -284,7 +285,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                             {
                                 UpdateProgrammingBox(pct, "Uploading data to " + editDie.name + "...");
                             },
-                            (res2) =>
+                            (res2, errorMsg) =>
                             {
                                 if (res2)
                                 {
@@ -319,7 +320,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                                 else
                                 {
                                     HideProgrammingBox();
-                                    ShowDialogBox("Error uploading data to " + editDie.name, message, "Ok", null, null);
+                                    ShowDialogBox("Error uploading data to " + editDie.name, errorMsg, "Ok", null, null);
                                     DiceManager.Instance.DisconnectDie(editDie, null);
                                     callback?.Invoke(false);
                                 }
@@ -329,7 +330,7 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         {
                             Debug.Log("Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.");
                             HideProgrammingBox();
-                            ShowDialogBox("Profile already Programmed", "Die " + editDie.name + " already has preset with hash 0x" + hash.ToString("X8") + " programmed.", "Ok", null, null);
+                            ShowDialogBox("Profile already Programmed", "Die " + editDie.name + " already has profile \"" + behavior.name + "\" programmed.", "Ok", null, null);
                             DiceManager.Instance.DisconnectDie(editDie, null);
                             callback?.Invoke(true);
                         }

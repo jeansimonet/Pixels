@@ -114,7 +114,7 @@ namespace AnimationPreview
                 		MessageService::SendMessage(Message::MessageType_TransferTestAnimSetFinished);
 
                         // Play the ANIMATION NOW!!!
-                        AnimController::play(animation, &animationBits, 0, false);
+                        AnimController::play(animation, &animationBits, 19, false);
                     } else {
                         NRF_LOG_ERROR("Failed to download temp animation");
                         free(animationData);
@@ -139,7 +139,7 @@ namespace AnimationPreview
             MessageService::SendMessage(&ackMsg);
 
             // Play the ANIMATION NOW!!!
-            AnimController::play(animation, &animationBits, (uint8_t)Accelerometer::currentFace(), false);
+            AnimController::play(animation, &animationBits, 19, false);
        }
    }
 
