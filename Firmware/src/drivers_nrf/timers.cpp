@@ -31,10 +31,11 @@ namespace Timers
         ret_code_t err_code;
         
         // This doesn't seem needed when SD is enabled
+        #if !SOFTDEVICE_PRESENT
         if (!nrf_drv_clock_init_check()) {
-            err_code = nrf_drv_clock_init();
-            APP_ERROR_CHECK(err_code);
+            nrf_drv_clock_init(); // No need to check return value, only indicates that the module is already initialized
         }
+        #endif
 
         err_code = app_timer_init();
         APP_ERROR_CHECK(err_code);
