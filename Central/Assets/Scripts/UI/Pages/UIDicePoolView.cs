@@ -169,34 +169,28 @@ public class UIDicePoolView
             OnBeginRefreshPool();
             allDiceCopy.Clear();
             allDiceCopy.AddRange(DiceManager.Instance.allDice);
+            bool connected = false;
+            DiceManager.Instance.ConnectDiceList(allDiceCopy, () => connected = true);
+            yield return new WaitUntil(() => connected);
             foreach (var editDie in allDiceCopy)
             {
-                if (editDie.die == null || editDie.die.lastError == Die.LastError.None)
+                if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
                 {
-                    // Try connecting to the die
-                    bool connected = false;
-                    connectedDice.Add(editDie);
-                    yield return DiceManager.Instance.ConnectDie(editDie, (d, res, err) => connected = res);
+                    // Fetch battery level
+                    bool battLevelReceived = false;
+                    editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                    yield return new WaitUntil(() => battLevelReceived == true);
 
-                    if (connected)
-                    {
-                        // Fetch battery level
-                        bool battLevelReceived = false;
-                        editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
-                        yield return new WaitUntil(() => battLevelReceived == true);
-
-                        // Fetch rssi
-                        bool rssiReceived = false;
-                        editDie.die.GetRssi((d, i) => rssiReceived = true);
-                        yield return new WaitUntil(() => rssiReceived == true);
-                    }
-                    else
-                    {
-                        Debug.Log("UIPoolView Error Connecting");
-                        connectedDice.Remove(editDie);
-                    }
+                    // Fetch rssi
+                    bool rssiReceived = false;
+                    editDie.die.GetRssi((d, i) => rssiReceived = true);
+                    yield return new WaitUntil(() => rssiReceived == true);
 
                     RefreshView();
+                }
+                else
+                {
+                    connectedDice.Remove(editDie);
                 }
             }
         }

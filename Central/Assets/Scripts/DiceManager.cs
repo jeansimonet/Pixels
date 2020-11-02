@@ -222,6 +222,52 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         }
     }
 
+    public Coroutine ConnectDiceList(List<EditDie> editDice, System.Action callback)
+    {
+        bool allDiceValid = dice.All(d => dice.Any(d2 => d2 == d));
+        if (!allDiceValid)
+        {
+            Debug.LogError("some dice not valid");
+            callback?.Invoke();
+            return null;
+        }
+        else
+        {
+            return StartCoroutine(ConnectDiceListCr(editDice, callback));
+        }
+    }
+
+    IEnumerator ConnectDiceListCr(List<EditDie> editDice, System.Action callback)
+    {
+        yield return new WaitUntil(() => state == State.Idle);
+        state = State.ConnectingDie;
+        yield return StartCoroutine(DoConnectDiceListCr(editDice, callback));
+        state = State.Idle;
+    }
+
+    IEnumerator DoConnectDiceListCr(List<EditDie> editDice, System.Action callback)
+    {
+        if (editDice.Any(ed => ed.die == null))
+        {
+            DicePool.Instance.BeginScanForDice();
+            float startScanTime = Time.time;
+            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || editDice.All(ed => ed.die != null));
+            DicePool.Instance.StopScanForDice();
+        }
+
+        foreach (var ed in editDice)
+        {
+            if (ed.die != null)
+            {
+                bool? res = null;
+                DicePool.Instance.ConnectDie(ed.die, (d, r, s) => res = r);
+                yield return new WaitUntil(() => res.HasValue);
+            }
+        }
+
+        callback?.Invoke();
+    }
+
     public Coroutine ForgetDie(EditDie editDie)
     {
         return StartCoroutine(ForgetDieCr(editDie));

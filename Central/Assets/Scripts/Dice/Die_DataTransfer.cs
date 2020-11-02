@@ -150,14 +150,15 @@ public partial class Die
         onBufferReady.Invoke(buffer);
     }
 
-    public Coroutine UploadDataSet(DataSet set, System.Action<float> uploadPctCallback, System.Action<bool> callBack)
+    public Coroutine UploadDataSet(DataSet set, System.Action<float> uploadPctCallback, System.Action<bool, string> callBack)
     {
         return PerformBluetoothOperation(UploadDataSetCr(set, uploadPctCallback, callBack));
     }
 
-    IEnumerator UploadDataSetCr(DataSet set, System.Action<float> uploadPctCallback, System.Action<bool> callBack)
+    IEnumerator UploadDataSetCr(DataSet set, System.Action<float> uploadPctCallback, System.Action<bool, string> callBack)
     {
         bool result = false;
+        string errorMsg = null;
         try
         {
             // Prepare the die
@@ -239,22 +240,25 @@ public partial class Die
                     else
                     {
                         RemoveMessageHandler(DieMessageType.TransferAnimSetFinished, programmingFinishedCallback);
-                        Debug.Log("Error!");
+                        errorMsg = "Error during animation data upload";
+                        Debug.Log(errorMsg);
                     }
                 }
                 else
                 {
-                    Debug.Log("Transfer refused");
+                    errorMsg = "Transfer refused, not enough memory";
+                    Debug.Log(errorMsg);
                 }
             }
             else
             {
-                Debug.Log("TimedOut");
+                errorMsg = "Time out while trying to upload animation data";
+                Debug.Log(errorMsg);
             }
         }
         finally
         {
-            callBack?.Invoke(result);
+            callBack?.Invoke(result, errorMsg);
         }
     }
 
