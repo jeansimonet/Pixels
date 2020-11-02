@@ -332,8 +332,13 @@ public partial class Die
 
     public Coroutine RenameDie(string newName, System.Action<bool> callback)
     {
+        Debug.Log("Renaming to " + newName);
+        byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(newName + "\0");
+        byte[] nameByte10 = new byte[10]; // 10 is the declared size in DieMessageSetName. There is probably a better way to do this...
+        System.Array.Copy(nameBytes, nameByte10, nameBytes.Length);
+
         return StartCoroutine(SendMessageWithAckOrTimeoutCr(
-            new DieMessageSetName() { name = System.Text.Encoding.UTF8.GetBytes(newName + "\0") },
+            new DieMessageSetName() { name =  nameByte10},
             DieMessageType.SetNameAck,
             3,
             (ignore) => callback?.Invoke(true),
