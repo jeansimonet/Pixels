@@ -120,9 +120,9 @@ public class UIPatternEditor : MonoBehaviour
         byte[] fileData = File.ReadAllBytes(currentFilepath);
         var tex = new Texture2D(2, 2);
         tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-        if (tex.height > 20 || tex.width > 500)
+        if (tex.height > 20 || tex.width > 1000)
         {
-            PixelsApp.Instance.ShowDialogBox("Image too big", "Sorry the image you selected is too large. It should be smaller than 500x20 pixels", "Ok", null, null);
+            PixelsApp.Instance.ShowDialogBox("Image too big", "Sorry the image you selected is too large. It should be smaller than 1000x20 pixels", "Ok", null, null);
         }
         else
         {
