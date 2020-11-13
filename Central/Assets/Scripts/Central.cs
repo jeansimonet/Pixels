@@ -264,7 +264,9 @@ public class Central : SingletonMonoBehaviour<Central>
         }
         else
         {
-            Debug.LogError("Trying to connect to unknown die " + die.name);
+            string errorMessage = "Trying to connect to unknown die " + die.name;
+            Debug.LogError(errorMessage);
+            connectionResultCallback?.Invoke(die, false, errorMessage);
         }
     }
 

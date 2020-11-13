@@ -502,6 +502,9 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
 
             // Reset connection count since it didn't succeed
             ourDie.currentConnectionCount = 0;
+
+            // Forget the die for now
+            DestroyDie(ourDie);
         }
     }
 

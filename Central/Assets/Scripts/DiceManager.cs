@@ -144,7 +144,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         {
             DicePool.Instance.BeginScanForDice();
             float startScanTime = Time.time;
-            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || editDie.die != null);
+            yield return new WaitUntil(() => Time.time > startScanTime + 3.0f || editDie.die != null);
             DicePool.Instance.StopScanForDice();
 
             if (editDie.die != null)
@@ -161,6 +161,10 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
                 {
                     dieReadyCallback?.Invoke(editDie, false, "Could not connect to Die " + editDie.name + ". Communication Error");
                 }
+            }
+            else
+            {
+                dieReadyCallback?.Invoke(editDie, false, "Could not find Die " + editDie.name + ".");
             }
         }
         else
@@ -251,7 +255,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
         {
             DicePool.Instance.BeginScanForDice();
             float startScanTime = Time.time;
-            yield return new WaitUntil(() => Time.time > startScanTime + 5.0f || editDice.All(ed => ed.die != null));
+            yield return new WaitUntil(() => Time.time > startScanTime + 3.0f || editDice.All(ed => ed.die != null));
             DicePool.Instance.StopScanForDice();
         }
 
