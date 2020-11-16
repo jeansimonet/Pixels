@@ -106,21 +106,18 @@ public class UIPairedDieToken : MonoBehaviour
     void OnRename()
     {
         OnToggle();
-        DiceManager.Instance.ConnectDie(die, (d, r, err) =>
+        if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
-            if (r)
+            var newName = Names.GetRandomName();
+            die.die.RenameDie(newName, (res) =>
             {
-                var newName = Names.GetRandomName();
-                die.die.RenameDie(newName, (res) =>
-                {
-                    die.die.name = newName;
-                    die.name = newName;
-                    AppDataSet.Instance.SaveData();
-                    dieView.UpdateState();
-                    DiceManager.Instance.DisconnectDie(die, null);
-                });
-            }
-        });
+                die.die.name = newName;
+                die.name = newName;
+                AppDataSet.Instance.SaveData();
+                dieView.UpdateState();
+                DiceManager.Instance.DisconnectDie(die, null);
+            });
+        }
     }
 
     void OnCalibrate()
@@ -135,38 +132,32 @@ public class UIPairedDieToken : MonoBehaviour
     void OnSetDesign()
     {
         OnToggle();
-        DiceManager.Instance.ConnectDie(die, (d, r, err) =>
+        if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
-            if (r)
+            PixelsApp.Instance.ShowEnumPicker("Select Design", die.designAndColor, (res, newDesign) =>
             {
-                PixelsApp.Instance.ShowEnumPicker("Select Design", die.designAndColor, (res, newDesign) =>
+                die.designAndColor = (Dice.DesignAndColor)newDesign;
+                die.die.SetCurrentDesignAndColor((Dice.DesignAndColor)newDesign, (res2) =>
                 {
-                    die.designAndColor = (Dice.DesignAndColor)newDesign;
-                    die.die.SetCurrentDesignAndColor((Dice.DesignAndColor)newDesign, (res2) =>
+                    if (res2)
                     {
-                        if (res2)
-                        {
-                            AppDataSet.Instance.SaveData();
-                            dieView.UpdateState();
-                        }
-                        DiceManager.Instance.DisconnectDie(die, null);
-                    });
-                },
-                null);
-            }
-        });
+                        AppDataSet.Instance.SaveData();
+                        dieView.UpdateState();
+                    }
+                    DiceManager.Instance.DisconnectDie(die, null);
+                });
+            },
+            null);
+        }
     }
 
     void OnPing()
     {
         OnToggle();
-        DiceManager.Instance.ConnectDie(die, (d, r, err) =>
+        if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
-            if (r)
-            {
-                die.die.Flash(Color.yellow, 3, null);
-                DiceManager.Instance.DisconnectDie(die, null);
-            }
-        });
+            die.die.Flash(Color.yellow, 3, null);
+            DiceManager.Instance.DisconnectDie(die, null);
+        }
     }
 }
