@@ -31,7 +31,7 @@ namespace Timers
         ret_code_t err_code;
         
         // This doesn't seem needed when SD is enabled
-        #if !SOFTDEVICE_PRESENT
+        #if !SOFTDEVICE_PRESENT || DEBUG
         if (!nrf_drv_clock_init_check()) {
             nrf_drv_clock_init(); // No need to check return value, only indicates that the module is already initialized
         }
