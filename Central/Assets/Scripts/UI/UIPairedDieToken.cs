@@ -115,7 +115,6 @@ public class UIPairedDieToken : MonoBehaviour
                 die.name = newName;
                 AppDataSet.Instance.SaveData();
                 dieView.UpdateState();
-                DiceManager.Instance.DisconnectDie(die, null);
             });
         }
     }
@@ -144,7 +143,6 @@ public class UIPairedDieToken : MonoBehaviour
                         AppDataSet.Instance.SaveData();
                         dieView.UpdateState();
                     }
-                    DiceManager.Instance.DisconnectDie(die, null);
                 });
             },
             null);
@@ -157,7 +155,6 @@ public class UIPairedDieToken : MonoBehaviour
         if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
             die.die.Flash(Color.yellow, 3, null);
-            DiceManager.Instance.DisconnectDie(die, null);
         }
     }
 }

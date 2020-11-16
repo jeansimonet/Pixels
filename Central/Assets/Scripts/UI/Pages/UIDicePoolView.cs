@@ -133,20 +133,17 @@ public class UIDicePoolView
 
     void OnDieAdded(EditDie editDie)
     {
-        if (!connectedDice.Contains(editDie))
-        {
-            connectedDice.Add(editDie);
-            DiceManager.Instance.ConnectDie(editDie, null);
-        }
+        // if (!connectedDice.Contains(editDie))
+        // {
+        //     connectedDice.Add(editDie);
+        //     DiceManager.Instance.ConnectDie(editDie, null);
+        // }
         RefreshView();
     }
 
     void OnWillRemoveDie(EditDie editDie)
     {
-        if (connectedDice.Contains(editDie))
-        {
-            connectedDice.Remove(editDie);
-        }
+        connectedDice.Remove(editDie);
         var ui = pairedDice.FirstOrDefault(uid => uid.die == editDie);
         if (ui != null)
         {
@@ -168,7 +165,7 @@ public class UIDicePoolView
         {
             OnBeginRefreshPool();
             allDiceCopy.Clear();
-            allDiceCopy.AddRange(DiceManager.Instance.allDice);
+            allDiceCopy.AddRange(DiceManager.Instance.allDice.Where(d => d.die == null || d.die.connectionState == Die.ConnectionState.Available));
             bool connected = false;
             DiceManager.Instance.ConnectDiceList(allDiceCopy, () => connected = true);
             yield return new WaitUntil(() => connected);
@@ -176,6 +173,8 @@ public class UIDicePoolView
             {
                 if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
                 {
+                    connectedDice.Add(editDie);
+
                     // Fetch battery level
                     bool battLevelReceived = false;
                     editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
@@ -187,10 +186,6 @@ public class UIDicePoolView
                     yield return new WaitUntil(() => rssiReceived == true);
 
                     RefreshView();
-                }
-                else
-                {
-                    connectedDice.Remove(editDie);
                 }
             }
         }
