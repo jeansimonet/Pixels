@@ -133,11 +133,11 @@ public class UIDicePoolView
 
     void OnDieAdded(EditDie editDie)
     {
-        // if (!connectedDice.Contains(editDie))
-        // {
-        //     connectedDice.Add(editDie);
-        //     DiceManager.Instance.ConnectDie(editDie, null);
-        // }
+        if (!connectedDice.Contains(editDie))
+        {
+            connectedDice.Add(editDie);
+            DiceManager.Instance.ConnectDie(editDie, null);
+        }
         RefreshView();
     }
 
@@ -174,17 +174,6 @@ public class UIDicePoolView
                 if (editDie.die != null && editDie.die.connectionState == Die.ConnectionState.Ready)
                 {
                     connectedDice.Add(editDie);
-
-                    // Fetch battery level
-                    bool battLevelReceived = false;
-                    editDie.die.GetBatteryLevel((d, f) => battLevelReceived = true);
-                    yield return new WaitUntil(() => battLevelReceived == true);
-
-                    // Fetch rssi
-                    bool rssiReceived = false;
-                    editDie.die.GetRssi((d, i) => rssiReceived = true);
-                    yield return new WaitUntil(() => rssiReceived == true);
-
                     RefreshView();
                 }
             }

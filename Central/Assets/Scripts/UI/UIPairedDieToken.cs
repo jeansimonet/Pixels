@@ -34,9 +34,15 @@ public class UIPairedDieToken : MonoBehaviour
     public bool expanded => expandGroup.activeSelf;
     public EditDie die => dieView.die;
 
+    IEnumerator refreshInfoCoroutine;
+
     public void Setup(EditDie die)
     {
         dieView.Setup(die);
+
+        // Connect to all the dice in the pool if possible
+        refreshInfoCoroutine = RefreshInfo();
+        StartCoroutine(refreshInfoCoroutine);
     }
 
     void Awake()
@@ -155,6 +161,26 @@ public class UIPairedDieToken : MonoBehaviour
         if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
             die.die.Flash(Color.yellow, 3, null);
+        }
+    }
+
+    IEnumerator RefreshInfo()
+    {
+        while (true)
+        {
+            if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
+            {
+                // Fetch battery level
+                bool battLevelReceived = false;
+                die.die.GetBatteryLevel((d, f) => battLevelReceived = true);
+                yield return new WaitUntil(() => battLevelReceived == true);
+
+                // Fetch rssi
+                bool rssiReceived = false;
+                die.die.GetRssi((d, i) => rssiReceived = true);
+                yield return new WaitUntil(() => rssiReceived == true);
+            }
+            yield return new WaitForSeconds(3.0f);
         }
     }
 }
