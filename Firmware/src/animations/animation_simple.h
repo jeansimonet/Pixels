@@ -13,7 +13,7 @@ namespace Animations
 		: public Animation
 	{
 		uint32_t faceMask;
-        uint32_t color;
+        uint16_t colorIndex;
         uint8_t count;
         uint8_t fade;
 	};
@@ -24,6 +24,8 @@ namespace Animations
 	class AnimationInstanceSimple
 		: public AnimationInstance
 	{
+	private:
+		uint32_t rgb; // The color is determined at the beginning of the animation
 	public:
 		AnimationInstanceSimple(const AnimationSimple* preset, const DataSet::AnimationBits* bits);
 		virtual ~AnimationInstanceSimple();

@@ -103,7 +103,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         else if (ev == 1) {
             let txt = 'Face up: ' + (face + 1);
             log(txt);
-            postChatMessage(formula.replace("@", face + 1));
+            postChatMessage(formula.replace("$$", face + 1));
             updateStatus(txt);
         }
     }

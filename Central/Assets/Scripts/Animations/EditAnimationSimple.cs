@@ -12,7 +12,7 @@ namespace Animations
         public override float duration { get; set; }
         [FaceMask, IntRange(0, 19), Name("Face Mask")]
 		public int faces = 0xFFFFF;
-        public Color32 color = new Color32(0xFF, 0x30, 0x00, 0xff);
+        public EditColor color = EditColor.MakeRGB(new Color32(0xFF, 0x30, 0x00, 0xff));
         [Index, IntRange(1, 10), Name("Repeat Count")]
         public int count = 1;
         [Slider]
@@ -25,7 +25,7 @@ namespace Animations
             var ret = new AnimationSimple();
             ret.duration = (ushort)(this.duration * 1000.0f);
             ret.faceMask = (uint)this.faces;
-            ret.color = ColorUtils.toColor(this.color.r, this.color.g, this.color.b);
+            ret.colorIndex = (ushort)color.toColorIndex(ref bits.palette);
             ret.fade = (byte)(255.0f * fade);
             ret.count = (byte)count;
             return ret;

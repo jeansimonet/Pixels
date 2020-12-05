@@ -125,7 +125,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
     {
         var newAnim = new Animations.EditAnimationSimple();
         newAnim.duration = 3.0f;
-        newAnim.color = new Color32(0xFF, 0x30, 0x00, 0xFF);
+        newAnim.color = EditColor.MakeRGB(new Color32(0xFF, 0x30, 0x00, 0xFF));
         newAnim.faces = 0b11111111111111111111;
         newAnim.name = "New Lighting Pattern";
         animations.Add(newAnim);
@@ -422,7 +422,7 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         
         EditAnimationSimple simpleAnim = new EditAnimationSimple();
         simpleAnim.duration = 1.0f;
-        simpleAnim.color = Color.blue;
+        simpleAnim.color = EditColor.MakeRGB(Color.blue);
         simpleAnim.faces = 0b11111111111111111111;
         simpleAnim.name = "Simple Anim 1";
         ret.animations.Add(simpleAnim);

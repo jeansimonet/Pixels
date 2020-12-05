@@ -2,11 +2,25 @@
 #include "assert.h"
 #include "nrf_log.h"
 #include "utils/utils.h"
+#include "utils/rainbow.h"
+#include "modules/accelerometer.h"
+#include "config/board_config.h"
+
+using namespace Modules;
+using namespace Config;
 
 namespace DataSet
 {
 	uint32_t AnimationBits::getPaletteColor(uint16_t colorIndex) const {
-		if (colorIndex < (paletteSize / 3)) {
+		if (colorIndex == PALETTE_COLOR_FROM_FACE) {
+			// Color is based on the face
+			return Rainbow::faceWheel(Accelerometer::currentFace(), BoardManager::getBoard()->ledCount);
+		}
+		else if (colorIndex == PALETTE_COLOR_FROM_RANDOM) {
+			// Not implemented
+			return 0xFFFFFFFF;
+		}
+		else if (colorIndex < (paletteSize / 3)) {
 			return Utils::toColor(
 					palette[colorIndex * 3 + 0],
 					palette[colorIndex * 3 + 1],

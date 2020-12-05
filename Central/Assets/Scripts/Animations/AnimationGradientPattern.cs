@@ -130,6 +130,8 @@ namespace Animations
 		public ushort tracksOffset; // offset into a global buffer of tracks
 		public ushort trackCount;
 		public ushort gradientTrackOffset;
+        public byte overrideWithFace;
+        public byte overrideWithFacePadding;
 
         public AnimationInstance CreateInstance(DataSet.AnimationBits bits)
         {
@@ -143,6 +145,8 @@ namespace Animations
 	public class AnimationInstanceGradientPattern
 		: AnimationInstance
 	{
+        uint rgb = 0;
+
         public AnimationInstanceGradientPattern(AnimationGradientPattern preset, DataSet.AnimationBits bits)
             : base(preset, bits)
         {
@@ -151,6 +155,11 @@ namespace Animations
 		public override void start(int _startTime, byte _remapFace, bool _loop)
         {
             base.start(_startTime, _remapFace, _loop);
+            var preset = getPreset();
+            if (preset.overrideWithFace != 0)
+            {
+                rgb = animationBits.getColor32(DataSet.AnimationBits.PALETTE_COLOR_FROM_FACE);
+            }
         }
 
         /// <summary>
@@ -164,8 +173,17 @@ namespace Animations
 
             // Figure out the color from the gradient
             var gradient = animationBits.getRGBTrack(preset.gradientTrackOffset);
-            int gradientTime = time * 1000 / preset.duration;
-            uint gradientColor = gradient.evaluateColor(animationBits, gradientTime);
+
+            uint gradientColor = 0;
+            if (preset.overrideWithFace != 0)
+            {
+                gradientColor = rgb;
+            }
+            else
+            {
+                int gradientTime = time * 1000 / preset.duration;
+                gradientColor = gradient.evaluateColor(animationBits, gradientTime);
+            }
 
             int trackTime = time * 256 / preset.speedMultiplier256;
 

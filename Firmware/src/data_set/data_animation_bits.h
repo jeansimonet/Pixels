@@ -13,6 +13,9 @@ namespace DataSet
         const uint8_t* palette;
         uint32_t paletteSize; // In bytes (divide by 3 for colors)
 
+        #define PALETTE_COLOR_FROM_FACE     127
+        #define PALETTE_COLOR_FROM_RANDOM   126
+
         // The individual RGB keyframes we have, i.e. time and color, packed in
         const Animations::RGBKeyframe* rgbKeyframes; // pointer to the array of tracks
         uint32_t rgbKeyFrameCount;

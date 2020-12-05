@@ -80,7 +80,8 @@ namespace DataSet
         newData = (Data*)defaultDataSet;
 #else
 
-		int paletteSize = 0;
+		int paletteCount = 3;
+        int paletteSize = Utils::roundUpTo4(paletteCount * 3);
 		int rgbKeyframeCount = 0;
         int rgbTrackCount = 0;
 		int keyframeCount = 0;
@@ -139,9 +140,9 @@ namespace DataSet
 		newData->version = ANIMATION_SET_VERSION;
 
 		newData->animationBits.palette = (const uint8_t*)(dataAddress + currentOffset);
-        //auto writePalette = (const uint8_t*)(writeBufferAddress + currentOffset);
-        currentOffset += paletteSize * sizeof(uint8_t);
-		newData->animationBits.paletteSize = paletteSize;
+        auto writePalette = (uint8_t*)(writeBufferAddress + currentOffset);
+        currentOffset += paletteSize;
+		newData->animationBits.paletteSize = paletteCount * 3;
 
 		newData->animationBits.rgbKeyframes = (const RGBKeyframe*)(dataAddress + currentOffset);
         //auto writeKeyframes = (RGBKeyframe*)(writeBufferAddress + currentOffset);
@@ -204,6 +205,17 @@ namespace DataSet
 
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 
+        // Cute way to create Red Green Blue colors in palette
+        writePalette[0] = 0xFF;
+        writePalette[1] = 0x00;
+        writePalette[2] = 0x00;
+        writePalette[3] = 0x00;
+        writePalette[4] = 0xFF;
+        writePalette[5] = 0x00;
+        writePalette[6] = 0x00;
+        writePalette[7] = 0x00;
+        writePalette[8] = 0xFF;
+
 		// Create animations
 		for (int c = 0; c < 3; ++c) {
             writeAnimations[c].type = Animation_Simple;
@@ -211,7 +223,7 @@ namespace DataSet
 		    writeAnimations[c].faceMask = 0x80000;
             writeAnimations[c].count = 1;
             writeAnimations[c].fade = 255;
-            writeAnimations[c].color = 0xFF0000 >> (c * 8);
+            writeAnimations[c].colorIndex = c;
 		}
 
 		for (int c = 0; c < 3; ++c) {
@@ -220,7 +232,7 @@ namespace DataSet
 		    writeAnimations[3 + c].faceMask = 0xFFFFF;
             writeAnimations[3 + c].count = 2;
             writeAnimations[3 + c].fade = 255;
-            writeAnimations[3 + c].color = 0xFF0000 >> (c * 8);
+            writeAnimations[3 + c].colorIndex = c;
 		}
 
 		// Create offsets

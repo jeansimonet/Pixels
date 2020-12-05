@@ -1,6 +1,8 @@
 #include "animation_simple.h"
 #include "utils/utils.h"
 #include "config/board_config.h"
+#include "data_set/data_animation_bits.h"
+#include "data_set/data_set.h"
 
 namespace Animations
 {
@@ -30,6 +32,8 @@ namespace Animations
 	/// </summary>
 	void AnimationInstanceSimple::start(int _startTime, uint8_t _remapFace, bool _loop) {
 		AnimationInstance::start(_startTime, _remapFace, _loop);
+        auto preset = getPreset();
+        rgb = DataSet::getAnimationBits()->getPaletteColor(preset->colorIndex);
 	}
 
 	/// <summary>
@@ -53,12 +57,12 @@ namespace Animations
 
         if (time <= fadeTime) {
             // Ramp up
-            color = Utils::interpolateColors(black, 0, preset->color, fadeTime, time);
+            color = Utils::interpolateColors(black, 0, rgb, fadeTime, time);
         } else if (time <= fadeTime + onOffTime) {
-            color = preset->color;
+            color = rgb;
         } else if (time <= fadeTime * 2 + onOffTime) {
             // Ramp down
-            color = Utils::interpolateColors(preset->color, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
+            color = Utils::interpolateColors(rgb, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
         } else {
             color = black;
         }

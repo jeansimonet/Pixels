@@ -20,6 +20,8 @@ namespace Animations
 		uint16_t tracksOffset; // offset into a global buffer of tracks
 		uint16_t trackCount;
 		uint16_t gradientTrackOffset;
+		uint8_t overrideWithFace;
+		uint8_t overridePadding;
 	};
 
 	/// <summary>
@@ -29,7 +31,7 @@ namespace Animations
 		: public AnimationInstance
 	{
 	private:
-		uint32_t specialColorPayload; // meaning varies
+		uint32_t rgb;
 
 	public:
 		AnimationInstanceGradientPattern(const AnimationGradientPattern* preset, const DataSet::AnimationBits* bits);

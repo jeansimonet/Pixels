@@ -28,6 +28,8 @@ namespace Animations
 		public EditPattern pattern = new EditPattern();
         [Gradient]
         public EditRGBGradient gradient = new EditRGBGradient();
+        [Name("Override color based on face")]
+        public bool overrideWithFace = false;
 
         public override AnimationType type => AnimationType.GradientPattern;
 
@@ -44,6 +46,7 @@ namespace Animations
             var tempTrack = new EditRGBTrack() { gradient = gradient };
             var gradientTrack = tempTrack.ToTrack(editSet, bits);
             bits.rgbTracks.Add(gradientTrack);
+            ret.overrideWithFace = (byte)(overrideWithFace ? 1 : 0);
 
             return ret;
         }
@@ -56,6 +59,7 @@ namespace Animations
             ret.speedMultiplier = this.speedMultiplier;
 		    ret.duration = this.duration;
             ret.gradient = gradient.Duplicate();
+            ret.overrideWithFace = overrideWithFace;
             return ret;
         }
 

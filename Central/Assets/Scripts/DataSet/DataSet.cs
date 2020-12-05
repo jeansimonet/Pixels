@@ -32,11 +32,29 @@ public class DataSet
 
         public uint getColor32(ushort colorIndex)
         {
-            var cl32 = (Color32)(palette[colorIndex]);
+
+            var cl32 = (Color32)(getColor(colorIndex));
             return ColorUtils.toColor(cl32.r, cl32.g, cl32.b);
         }
 
-        public Color getColor(ushort colorIndex) => palette[colorIndex];
+        public const ushort PALETTE_COLOR_FROM_FACE = 127;
+        public const ushort PALETTE_COLOR_FROM_RANDOM = 126;
+
+        public Color getColor(ushort colorIndex)
+        {
+            if (colorIndex == PALETTE_COLOR_FROM_FACE)
+            {
+                return Color.blue;
+            }
+            else if (colorIndex == PALETTE_COLOR_FROM_RANDOM)
+            {
+                return Color.black;
+            }
+            else
+            {
+                return palette[colorIndex];
+            }
+        }
         public Animations.RGBKeyframe getRGBKeyframe(ushort keyFrameIndex) => rgbKeyframes[keyFrameIndex];
         public Animations.Keyframe getKeyframe(ushort keyFrameIndex) => keyframes[keyFrameIndex];
         public ushort getPaletteSize() => (ushort)(palette.Count * 3);
@@ -60,6 +78,7 @@ public class DataSet
         {
             // Copy palette
             System.IntPtr current = ptr;
+            var currentCopy = current;
             foreach (var color in palette)
             {
                 Color32 cl32 = color; 
@@ -70,6 +89,9 @@ public class DataSet
                 Marshal.WriteByte(current, cl32.b);
                 current += 1;
             }
+
+            // Round up to nearest multiple of 4
+            current = currentCopy + Utils.roundUpTo4(palette.Count * 3 * Marshal.SizeOf<byte>());
 
             // Copy keyframes
             foreach (var keyframe in rgbKeyframes)

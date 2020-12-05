@@ -156,7 +156,8 @@ namespace AnimationPreview
 		flashAnim.faceMask = 0xFFFFF;
         flashAnim.count = message->flashCount;
         flashAnim.fade = 255;
-        flashAnim.color = message->color;
+        //flashAnim.colorIndex = message->color;
+        flashAnim.colorIndex = 0;
         AnimController::play(&flashAnim, 0, false);
         MessageService::SendMessage(Message::MessageType_FlashFinished);
     }

@@ -17,7 +17,7 @@ namespace Animations
 		public byte padding_type { get; set; }
 		public ushort duration { get; set; }
 		public uint faceMask;
-        public uint color;
+        public ushort colorIndex;
         public byte count;
         public byte fade;
 
@@ -33,6 +33,8 @@ namespace Animations
 	public class AnimationInstanceSimple
 		: AnimationInstance
 	{
+        uint rgb = 0;
+
 		public AnimationInstanceSimple(Animation animation, DataSet.AnimationBits bits)
             : base(animation, bits)
         {
@@ -41,9 +43,11 @@ namespace Animations
 		public override void start(int _startTime, byte _remapFace, bool _loop)
         {
             base.start(_startTime, _remapFace, _loop);
+            var preset = getPreset();
+            rgb = animationBits.getColor32(preset.colorIndex);
         }
 
-		public override int updateLEDs(int ms, int[] retIndices, uint[] retColors)
+        public override int updateLEDs(int ms, int[] retIndices, uint[] retColors)
         {
             var preset = getPreset();
 
@@ -57,12 +61,12 @@ namespace Animations
 
             if (time <= fadeTime) {
                 // Ramp up
-                color = ColorUtils.interpolateColors(black, 0, preset.color, fadeTime, time);
+                color = ColorUtils.interpolateColors(black, 0, rgb, fadeTime, time);
             } else if (time <= fadeTime + onOffTime) {
-                color = preset.color;
+                color = rgb;
             } else if (time <= fadeTime * 2 + onOffTime) {
                 // Ramp down
-                color = ColorUtils.interpolateColors(preset.color, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
+                color = ColorUtils.interpolateColors(rgb, fadeTime + onOffTime, black, fadeTime * 2 + onOffTime, time);
             } else {
                 color = black;
             }

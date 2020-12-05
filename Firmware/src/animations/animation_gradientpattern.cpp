@@ -39,6 +39,11 @@ namespace Animations
 	/// </summary>
 	void AnimationInstanceGradientPattern::start(int _startTime, uint8_t _remapFace, bool _loop) {
 		AnimationInstance::start(_startTime, _remapFace, _loop);
+        auto preset = getPreset();
+		if (preset->overrideWithFace) {
+			// Compute color based on face is 127
+	        rgb = DataSet::getAnimationBits()->getPaletteColor(PALETTE_COLOR_FROM_FACE);
+		}
 	}
 
 	/// <summary>
@@ -57,8 +62,13 @@ namespace Animations
         // Figure out the color from the gradient
         auto& gradient = animationBits->getRGBTrack(preset->gradientTrackOffset);
 
-        int gradientTime = time * 1000 / preset->duration;
-        uint32_t gradientColor = gradient.evaluateColor(animationBits, gradientTime);
+		uint32_t gradientColor = 0;
+		if (preset->overrideWithFace) {
+        	gradientColor = rgb;
+		} else {
+			int gradientTime = time * 1000 / preset->duration;
+			gradientColor = gradient.evaluateColor(animationBits, gradientTime);
+		}
 
         int trackTime = time * 256 / preset->speedMultiplier256;
 

@@ -178,7 +178,7 @@ namespace DataSet
 		uint32_t address = Flash::getDataSetDataAddress();
 		newData.animationBits.palette = (const uint8_t*)address;
 		newData.animationBits.paletteSize = message->paletteSize;
-		address += message->paletteSize * sizeof(uint8_t);
+		address += Utils::roundUpTo4(message->paletteSize * sizeof(uint8_t));
 
 		newData.animationBits.rgbKeyframes = (const RGBKeyframe*)address;
 		newData.animationBits.rgbKeyFrameCount = message->rgbKeyFrameCount;
