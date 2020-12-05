@@ -26,7 +26,7 @@ let textarea = document.getElementById('formula');
 chrome.storage.sync.get('formula', function (data) {
   let txt = data.formula;
   if (!txt) {
-    txt = "!power {{--name|Pixel Roll --Strength Check|[[ @ + [[ 4 ]] ]]}}";
+    txt = "!power {{--name|Pixel Roll --Strength Check|[[ $$ + [[ 4 ]] ]]}}";
     saveFormula(txt);
   }
   textarea.value = txt;

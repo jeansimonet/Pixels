@@ -31,7 +31,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
     log("STARTING");
 
     var pixelServer = null;
-    var formula = "@";
+    var formula = "$$";
     let pixelStatus = 'Ready';
 
     const PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
@@ -103,7 +103,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         else if (ev == 1) {
             let txt = 'Face up: ' + (face + 1);
             log(txt);
-            postChatMessage(formula.replace("$$", face + 1));
+            formula.replaceAll("$$", face + 1).split("\\n").forEach(s => postChatMessage(s));
             updateStatus(txt);
         }
     }
