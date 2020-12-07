@@ -73,13 +73,13 @@ namespace Animations
                     if ((preset.faceMask & (1 << i)) != 0)
                     {
                         retIndices[retCount] = AnimationRainbow.faceIndices[i];
-                        retColors[retCount] = ColorUtils.rainbowWheel((byte)((wheelPos + i * 256 / 20) % 256), intensity);
+                        retColors[retCount] = ColorUtils.gamma(ColorUtils.rainbowWheel((byte)((wheelPos + i * 256 / 20) % 256), intensity));
                         retCount++;
                     }
                 }
             } else {
                 // All leds same color
-                color = ColorUtils.rainbowWheel((byte)wheelPos, intensity);
+                color = ColorUtils.gamma(ColorUtils.rainbowWheel((byte)wheelPos, intensity));
 
                 // Fill the indices and colors for the anim controller to know how to update leds
                 for (int i = 0; i < 20; ++i) {

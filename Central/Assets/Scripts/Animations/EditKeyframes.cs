@@ -25,18 +25,9 @@ namespace Animations
         public RGBKeyframe ToRGBKeyframe(EditDataSet editSet, DataSet.AnimationBits bits)
         {
             RGBKeyframe ret = new RGBKeyframe();
-
             // Add the color to the palette if not already there, otherwise grab the color index
-            float colorThreshold = 0.02f;
-            int colorIndex = bits.palette.FindIndex(c => ColorUtils.computeSqrColorDistance(c, color) < colorThreshold);
-//            int colorIndex = bits.palette.IndexOf(color);
-            if (colorIndex == -1)
-            {
-                colorIndex = bits.palette.Count;
-                bits.palette.Add(color);
-            }
-
-            ret.setTimeAndColorIndex((ushort)(time * 1000), (ushort)colorIndex);            
+            var colorIndex = EditColor.toColorIndex(ref bits.palette, color);
+            ret.setTimeAndColorIndex((ushort)(time * 1000), (ushort)colorIndex);
             return ret;
         }
 

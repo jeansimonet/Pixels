@@ -67,7 +67,7 @@ public class DataSet
 
         public int ComputeDataSize()
         {
-            return palette.Count * Marshal.SizeOf<byte>() * 3 + // 3 bytes per color
+            return Utils.roundUpTo4(palette.Count * Marshal.SizeOf<byte>() * 3) + // 3 bytes per color
                 rgbKeyframes.Count * Marshal.SizeOf<Animations.RGBKeyframe>() +
                 rgbTracks.Count * Marshal.SizeOf<Animations.RGBTrack>() +
                 keyframes.Count * Marshal.SizeOf<Animations.Keyframe>() +

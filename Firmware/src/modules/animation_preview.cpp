@@ -59,8 +59,10 @@ namespace AnimationPreview
             NRF_LOG_DEBUG("Tracks: %d * %d", message->trackCount, sizeof(Track));
             NRF_LOG_DEBUG("Animation: %d", message->animationSize);
 
+            int paletteBufferSize = Utils::roundUpTo4(message->paletteSize);
+
             int bufferSize =
-                message->paletteSize * sizeof(uint8_t) +
+                paletteBufferSize +
                 message->rgbKeyFrameCount * sizeof(RGBKeyframe) +
                 message->rgbTrackCount * sizeof(RGBTrack) +
                 message->keyFrameCount * sizeof(Keyframe) +
@@ -75,7 +77,7 @@ namespace AnimationPreview
                 uint32_t address = (uint32_t)animationData;
                 animationBits.palette = (const uint8_t*)address;
                 animationBits.paletteSize = message->paletteSize;
-                address += message->paletteSize * sizeof(uint8_t);
+                address += paletteBufferSize;
 
                 animationBits.rgbKeyframes = (const RGBKeyframe*)address;
                 animationBits.rgbKeyFrameCount = message->rgbKeyFrameCount;

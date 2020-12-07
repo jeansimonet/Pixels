@@ -43,17 +43,7 @@ public struct EditColor
         switch (type)
         {
             case ColorType.RGB:
-                {
-                    float colorThreshold = 0.02f;
-                    var rgb = rgbColor;
-                    int colorIndex = palette.FindIndex(c => ColorUtils.computeSqrColorDistance(c, rgb) < colorThreshold);
-                    if (colorIndex == -1)
-                    {
-                        colorIndex = palette.Count;
-                        palette.Add(rgb);
-                    }
-                    return (uint)colorIndex;
-                }
+                return EditColor.toColorIndex(ref palette, rgbColor);
             case ColorType.Face:
                 return DataSet.AnimationBits.PALETTE_COLOR_FROM_FACE;
             case ColorType.Random:
@@ -61,6 +51,18 @@ public struct EditColor
             default:
                 throw new System.NotImplementedException();
         }
+    }
+
+    public static uint toColorIndex(ref List<Color> palette, Color rgbColor)
+    {
+        var rgb = ColorUtils.gamma(rgbColor);
+        int colorIndex = palette.IndexOf(rgb);
+        if (colorIndex == -1)
+        {
+            colorIndex = palette.Count;
+            palette.Add(rgb);
+        }
+        return (uint)colorIndex;
     }
 
 }

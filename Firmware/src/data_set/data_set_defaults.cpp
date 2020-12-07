@@ -89,10 +89,10 @@ namespace DataSet
 		int animCount = 3 + 3;
         int animOffsetSize = Utils::roundUpTo4(animCount * sizeof(uint16_t));
         int animSize = sizeof(AnimationSimple) * animCount;
-        int actionCount = 5;
+        int actionCount = 4;
         int actionOffsetSize = Utils::roundUpTo4(actionCount * sizeof(uint16_t));
         int actionSize = sizeof(ActionPlayAnimation) * actionCount;
-        int conditionCount = 5;
+        int conditionCount = 4;
         int conditionOffsetSize = Utils::roundUpTo4(conditionCount * sizeof(uint16_t));
         uint32_t conditionsSize =
             sizeof(ConditionHelloGoodbye) + 
@@ -206,15 +206,15 @@ namespace DataSet
 		newData->tailMarker = ANIMATION_SET_VALID_KEY;
 
         // Cute way to create Red Green Blue colors in palette
-        writePalette[0] = 0xFF;
+        writePalette[0] = 4;
         writePalette[1] = 0x00;
         writePalette[2] = 0x00;
         writePalette[3] = 0x00;
-        writePalette[4] = 0xFF;
+        writePalette[4] = 4;
         writePalette[5] = 0x00;
         writePalette[6] = 0x00;
         writePalette[7] = 0x00;
-        writePalette[8] = 0xFF;
+        writePalette[8] = 4;
 
 		// Create animations
 		for (int c = 0; c < 3; ++c) {
@@ -283,32 +283,32 @@ namespace DataSet
         writeActions[2].faceIndex = FACE_INDEX_CURRENT_FACE;
         writeActions[2].loopCount = 1;
 
-        // Add Idle condition (index 4)
-        ConditionIdle* idle = reinterpret_cast<ConditionIdle*>(address);
-        idle->type = Condition_Idle; 
-        idle->repeatPeriodMs = 5000;
-        writeConditionsOffsets[3] = offset;
-        offset += sizeof(ConditionIdle);
-        address += sizeof(ConditionIdle);
-        // And matching action
-        writeActions[3].type = Action_PlayAnimation;
-        writeActions[3].animIndex = 2; // face led red
-        writeActions[3].faceIndex = FACE_INDEX_CURRENT_FACE;
-        writeActions[3].loopCount = 1;
+        // // Add Idle condition (index 4)
+        // ConditionIdle* idle = reinterpret_cast<ConditionIdle*>(address);
+        // idle->type = Condition_Idle; 
+        // idle->repeatPeriodMs = 5000;
+        // writeConditionsOffsets[3] = offset;
+        // offset += sizeof(ConditionIdle);
+        // address += sizeof(ConditionIdle);
+        // // And matching action
+        // writeActions[3].type = Action_PlayAnimation;
+        // writeActions[3].animIndex = 2; // face led red
+        // writeActions[3].faceIndex = FACE_INDEX_CURRENT_FACE;
+        // writeActions[3].loopCount = 1;
 
         // Add OnFace condition (index 3)
         ConditionFaceCompare* face = reinterpret_cast<ConditionFaceCompare*>(address);
         face->type = Condition_FaceCompare;
         face->flags = ConditionFaceCompare_Equal | ConditionFaceCompare_Greater;
         face->faceIndex = 0;
-        writeConditionsOffsets[4] = offset;
+        writeConditionsOffsets[3] = offset;
         offset += sizeof(ConditionFaceCompare);
         address += sizeof(ConditionFaceCompare);
         // And matching action
-        writeActions[4].type = Action_PlayAnimation;
-        writeActions[4].animIndex = 0; // face led green
-        writeActions[4].faceIndex = FACE_INDEX_CURRENT_FACE;
-        writeActions[4].loopCount = 1;
+        writeActions[3].type = Action_PlayAnimation;
+        writeActions[3].animIndex = 0; // face led green
+        writeActions[3].faceIndex = FACE_INDEX_CURRENT_FACE;
+        writeActions[3].loopCount = 1;
 
         // Create action offsets
 		for (int i = 0; i < actionCount; ++i) {

@@ -98,11 +98,11 @@ namespace Utils
 
 	/* Similar to above, but for an 8-bit gamma-correction table.
 	Copy & paste this snippet into a Python REPL to regenerate:
-	import math
-	gamma=2.6
-	for x in range(256):
-		print("{:3},".format(int(math.pow((x)/255.0,gamma)*255.0+0.5))),
-		if x&15 == 15: print
+import math
+gamma=5
+for x in range(256):
+	print("{:3},".format(int(math.pow((x)/255.0,gamma)*255.0+0.5))),
+	if x&15 == 15: print
 	*/
 	static const uint8_t _gammaTable[256] = {
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,

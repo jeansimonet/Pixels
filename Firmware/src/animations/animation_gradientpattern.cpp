@@ -40,9 +40,10 @@ namespace Animations
 	void AnimationInstanceGradientPattern::start(int _startTime, uint8_t _remapFace, bool _loop) {
 		AnimationInstance::start(_startTime, _remapFace, _loop);
         auto preset = getPreset();
+		NRF_LOG_INFO("override: %d", preset->overrideWithFace);
 		if (preset->overrideWithFace) {
 			// Compute color based on face is 127
-	        rgb = DataSet::getAnimationBits()->getPaletteColor(PALETTE_COLOR_FROM_FACE);
+	        rgb = animationBits->getPaletteColor(PALETTE_COLOR_FROM_FACE);
 		}
 	}
 

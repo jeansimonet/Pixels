@@ -33,7 +33,7 @@ namespace Animations
 	void AnimationInstanceSimple::start(int _startTime, uint8_t _remapFace, bool _loop) {
 		AnimationInstance::start(_startTime, _remapFace, _loop);
         auto preset = getPreset();
-        rgb = DataSet::getAnimationBits()->getPaletteColor(preset->colorIndex);
+        rgb = animationBits->getPaletteColor(preset->colorIndex);
 	}
 
 	/// <summary>

@@ -295,10 +295,11 @@ public class DiceRendererDice : MonoBehaviour
 
             for (int i = 0; i < FaceColors.Length; ++i)
             {
+                var reverseGammaCorrectedColor = ColorUtils.reverseGamma(FaceColors[i]);
                 var block = propertyBlocks[i];
-                block.SetColor("_GlowColor", FaceColors[i]);
+                block.SetColor("_GlowColor", reverseGammaCorrectedColor);
                 FaceRenderers[i].SetPropertyBlock(block);
-                FaceLights[i].color = FaceColors[i];
+                FaceLights[i].color = reverseGammaCorrectedColor;
             }
         }
     }
