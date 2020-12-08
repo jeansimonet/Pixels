@@ -8,6 +8,7 @@ public class MainNavigationButton : MonoBehaviour
     [Header("Controls")]
     public Button button;
     public Image buttonImage;
+    public Text label;
 
     [Header("Sprites")]
     public Sprite activeSprite;
@@ -22,5 +23,6 @@ public class MainNavigationButton : MonoBehaviour
     {
         buttonImage.sprite = current ? activeSprite : inactiveSprite;
         buttonImage.color = current ? activeColor : inactiveColor;
+        label.color = current ? activeColor : inactiveColor;
     }
 }
