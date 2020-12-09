@@ -141,4 +141,47 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
             Debug.LogError("Unknown Audio Clip id " + clipId);
         }
     }
+
+    public IEnumerator AddUserClip(string path, System.Action<string> fileLoadedCallback)
+    {
+        if (!Directory.Exists(userClipsRootPath))
+        {
+            Directory.CreateDirectory(userClipsRootPath);
+        }
+
+        string clipName = System.IO.Path.GetFileName(path);
+        string destPath = System.IO.Path.Combine(userClipsRootPath, clipName);
+        System.IO.File.Copy(path, destPath, true);
+        if (System.IO.Path.GetExtension(path) == ".wav")
+        {
+            UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(destPath, AudioType.WAV);
+            yield return AudioFileRequest.SendWebRequest();
+            if (!AudioFileRequest.isNetworkError)
+            {
+                AudioClip clip = DownloadHandlerAudioClip.GetContent(AudioFileRequest);
+                clip.name = clipName;
+                userClips.Add(clip);
+                Debug.Log("Imported user audio clip: " + destPath);
+
+                var preview = AudioUtils.PaintWaveformSpectrum(clip, 0.7f, 256, 256, AppConstants.Instance.AudioClipsWaveformColor);
+                var hash = AudioUtils.GenerateWaveformHash(clip);
+                audioClips.Add(new AudioClipInfo()
+                {
+                    builtIn = false,
+                    clip = clip,
+                    preview = preview
+                });
+
+                fileLoadedCallback?.Invoke(clipName);
+            }
+            else
+            {
+                fileLoadedCallback?.Invoke(null);
+            }
+        }
+        else
+        {
+            fileLoadedCallback?.Invoke(null);
+        }
+    }
 }

@@ -19,6 +19,7 @@ public class UIAudioClipsView
     List<UIAudioClipsViewToken> audioClips = new List<UIAudioClipsViewToken>();
 
     AudioSource audioSource;
+    string currentFilepath;
 
     void Awake()
     {
@@ -82,9 +83,31 @@ public class UIAudioClipsView
         }
     }
 
+    IEnumerator FileSelectedCr(string filePath)
+    {
+        Debug.Log("Audio file path: " + filePath);
+        // Copy the file to the user directory
+        string fileName = null;
+        yield return AudioClipManager.Instance.AddUserClip(filePath, n => fileName = n);
+        if (!string.IsNullOrEmpty(fileName))
+        {
+            AppDataSet.Instance.AddAudioClip(filePath);
+            RefreshView();
+        }
+    }
+
+    void FileSelected(string filePath)
+    {
+        StartCoroutine(FileSelectedCr(filePath));
+    }
+
     void AddNewClip()
     {
-        // import a new audio clip
+#if UNITY_EDITOR
+        FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select audio file", "", "wav"));
+#else
+        NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "wav" ) });
+#endif
     }
 
     void DeleteClip(AudioClipManager.AudioClipInfo clip)
