@@ -150,6 +150,8 @@ namespace DataSet
 		return data->behavior;
 	}
 
+	int offset = 0;
+
 	void ReceiveDataSetHandler(void* context, const Message* msg) {
 		NRF_LOG_INFO("Received Request to download new animation set");
 		const MessageTransferAnimSet* message = (const MessageTransferAnimSet*)msg;
@@ -238,6 +240,7 @@ namespace DataSet
 		static auto onProgramFinished = [](bool result) {
 			size = computeDataSetSize();
 			hash = computeDataSetHash();
+
 			//printAnimationInfo();
 			NRF_LOG_INFO("Dataset size=0x%x, hash=0x%08x", size, hash);
 			//NRF_LOG_INFO("Data addr: 0x%08x, data: 0x%08x", Flash::getDataSetAddress(), Flash::getDataSetDataAddress());
@@ -254,7 +257,7 @@ namespace DataSet
 
 	uint32_t computeDataSetDataSize(const Data* newData) {
 		return
-			newData->animationBits.paletteSize * sizeof(uint8_t) +
+			Utils::roundUpTo4(newData->animationBits.paletteSize * sizeof(uint8_t)) +
 			newData->animationBits.rgbKeyFrameCount * sizeof(RGBKeyframe) +
 			newData->animationBits.rgbTrackCount * sizeof(RGBTrack) +
 			newData->animationBits.keyFrameCount * sizeof(Keyframe) +

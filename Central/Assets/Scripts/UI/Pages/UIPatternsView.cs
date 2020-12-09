@@ -57,7 +57,6 @@ public class UIPatternsView
         ret.onRemove.AddListener(() => DeleteAnimation(anim));
         ret.onExpand.AddListener(() => ExpandAnimation(anim));
 
-        addPatternButton.transform.SetAsLastSibling();
         // Initialize it
         ret.Setup(anim);
         return ret;

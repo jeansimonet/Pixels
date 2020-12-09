@@ -209,10 +209,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   button: {fileID: 5919646794211695441}
   buttonImage: {fileID: 5919646793960714651}
+  label: {fileID: 8686402109847964462}
   activeSprite: {fileID: 0}
   inactiveSprite: {fileID: 0}
-  activeColor: {r: 0, g: 0, b: 0, a: 0}
-  inactiveColor: {r: 0, g: 0, b: 0, a: 0}
+  activeColor: {r: 0.41568628, g: 0.47058824, b: 1, a: 1}
+  inactiveColor: {r: 0.3254902, g: 0.37647063, b: 0.4666667, a: 0.5019608}
 --- !u!1 &6085578230306746176
 GameObject:
   m_ObjectHideFlags: 0
