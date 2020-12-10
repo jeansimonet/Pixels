@@ -110,6 +110,8 @@ namespace Animations
                     serializer.Serialize(writer, value.duration);
                     writer.WritePropertyName("gradient");
                     serializer.Serialize(writer, value.gradient);
+                    writer.WritePropertyName("overrideWithFace");
+                    serializer.Serialize(writer, value.overrideWithFace);
                     writer.WriteEndObject();
                 }
             }
@@ -132,6 +134,10 @@ namespace Animations
                     ret.speedMultiplier = jsonObject["speedMultiplier"].Value<float>();
                     ret.duration = jsonObject["duration"].Value<float>();
                     ret.gradient = jsonObject["gradient"].ToObject<EditRGBGradient>();
+                    if (jsonObject["overrideWithFace"] != null)
+                    {
+                        ret.overrideWithFace = jsonObject["overrideWithFace"].Value<bool>();
+                    }
                     return ret;
                 }
             }

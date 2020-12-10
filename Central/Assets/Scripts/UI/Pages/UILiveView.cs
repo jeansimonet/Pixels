@@ -17,6 +17,24 @@ public class UILiveView
     // The list of entries we have created to display behaviors
     List<UILiveDieEntry> entries = new List<UILiveDieEntry>();
 
+    // Dice list
+    List<Dice.EditDie> watchedDice = new List<Dice.EditDie>();
+
+    public override void Enter(object context)
+    {
+        base.Enter(context);
+        watchedDice.Clear();
+        watchedDice.AddRange(DiceManager.Instance.allDice);
+        DiceManager.Instance.ConnectDiceList(watchedDice, null);
+    }
+
+    public override void Leave()
+    {
+        base.Leave();
+        watchedDice.ForEach(d => DiceManager.Instance.DisconnectDie(d, null));
+        watchedDice.Clear();
+    }
+
     void OnEnable()
     {
         base.SetupHeader(true, false, "Live View", null);
