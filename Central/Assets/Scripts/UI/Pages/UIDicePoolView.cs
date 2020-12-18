@@ -19,13 +19,6 @@ public class UIDicePoolView
     // The list of controls we have created to display die status
     List<UIPairedDieToken> pairedDice = new List<UIPairedDieToken>();
 
-    // When refreshing the pool, this keeps track of the dice we *think* may not be there any more
-    // but don't want to update the status of until *after* we've finished re-scanning for them.
-    // That is simply for visual purposes, otherwise the status will flicker to "unknown" and it might
-    // confise the user. So instead we tell these dice UIs to stop updating their status, and then tell
-    // to return to normal after the refresh (updating at that time).
-    List<UIPairedDieToken> doubtedDice = new List<UIPairedDieToken>();
-
     IEnumerator connectAllDiceCoroutine;
     List<EditDie> connectedDice = new List<EditDie>();
 

@@ -28,6 +28,12 @@ public class UIScanView
     {
         base.SetupHeader(false, false, "Scanning", null);
         RefreshView();
+        StartCoroutine(BeginScanCr());
+    }
+
+    IEnumerator BeginScanCr()
+    {
+        yield return new WaitUntil(() => Central.Instance.state == Central.State.Idle);
         DicePool.Instance.onDieDiscovered += OnDieDiscovered;
         DicePool.Instance.BeginScanForDice();
         pairSelectedDice.SetActive(false);

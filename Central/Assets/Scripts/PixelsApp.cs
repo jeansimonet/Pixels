@@ -231,17 +231,38 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                 // Add default rules and animations to behavior / set
                 if (AppDataSet.Instance.defaultBehavior != null)
                 {
-                    // Add animations used by default rules
-                    foreach (var editAnim in AppDataSet.Instance.defaultBehavior.CollectAnimations())
-                    {
-                        animations.Add(editAnim);
-                    }
+                    // Rules that are in fact copied over
+                    var copiedRules = new List<EditRule>();
 
                     foreach (var rule in AppDataSet.Instance.defaultBehavior.rules)
                     {
                         if (!editSet.behavior.rules.Any(r => r.condition.type == rule.condition.type))
                         {
-                            editSet.behavior.rules.Add(rule.Duplicate());
+                            var ruleCopy = rule.Duplicate();
+                            copiedRules.Add(ruleCopy);
+                            editSet.behavior.rules.Add(ruleCopy);
+                        }
+                    }
+
+                    // Copied animations
+                    var copiedAnims = new Dictionary<Animations.EditAnimation, Animations.EditAnimation>();
+
+                    // Add animations used by default rules
+                    foreach (var editAnim in AppDataSet.Instance.defaultBehavior.CollectAnimations())
+                    {
+                        foreach (var copiedRule in copiedRules)
+                        {
+                            if (copiedRule.DependsOnAnimation(editAnim))
+                            {
+                                Animations.EditAnimation copiedAnim = null;
+                                if (!copiedAnims.TryGetValue(editAnim, out copiedAnim))
+                                {
+                                    copiedAnim = editAnim.Duplicate();
+                                    animations.Add(copiedAnim);
+                                    copiedAnims.Add(editAnim, copiedAnim);
+                                }
+                                copiedRule.ReplaceAnimation(editAnim, copiedAnim);
+                            }
                         }
                     }
                 }
