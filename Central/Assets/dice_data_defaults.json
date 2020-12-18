@@ -1,6 +1,7 @@
 {
   "jsonVersion": 1,
-  "dice": [],
+  "dice": [
+  ],
   "patterns": [
     {
       "name": "color_pattern_2",
@@ -76003,7 +76004,7 @@
           "firstTime": 0.0,
           "lastTime": 1.0
         },
-        "overrideWithFace": false
+        "overrideWithFace": true
       }
     },
     {
@@ -76062,7 +76063,7 @@
           "firstTime": 0.0,
           "lastTime": 1.0
         },
-        "overrideWithFace": false
+        "overrideWithFace": true
       }
     },
     {
@@ -76885,6 +76886,28 @@
         },
         "overrideWithFace": false
       }
+    },
+    {
+      "type": 1,
+      "data": {
+        "faces": 524288,
+        "color": {
+          "type": 0,
+          "rgbColor": {
+            "r": 89,
+            "g": 17,
+            "b": 0,
+            "a": 255
+          }
+        },
+        "count": 1,
+        "fade": 1.0,
+        "name": "Slow charge blink",
+        "defaultPreviewSettings": {
+          "design": 5
+        },
+        "duration": 3.0
+      }
     }
   ],
   "behaviors": [
@@ -76977,125 +77000,6 @@
               "type": 1,
               "data": {
                 "animationIndex": 10,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        },
-        {
-          "condition": {
-            "type": 7,
-            "data": {
-              "flags": 4,
-              "recheckAfter": 10.0377893
-            }
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 6,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        }
-      ],
-      "defaultPreviewSettings": {
-        "design": 5
-      }
-    },
-    {
-      "name": "Flashy",
-      "description": "Most of the animations in this profile have flashes!",
-      "rules": [
-        {
-          "condition": {
-            "type": 4,
-            "data": {
-              "flags": 2,
-              "faceIndex": 19
-            }
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 24,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        },
-        {
-          "condition": {
-            "type": 4,
-            "data": {
-              "flags": 2,
-              "faceIndex": 0
-            }
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 6,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        },
-        {
-          "condition": {
-            "type": 4,
-            "data": {
-              "flags": 4,
-              "faceIndex": 0
-            }
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 13,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        },
-        {
-          "condition": {
-            "type": 2,
-            "data": {}
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 22,
-                "faceIndex": -1,
-                "loopCount": 1
-              }
-            }
-          ]
-        },
-        {
-          "condition": {
-            "type": 3,
-            "data": {
-              "recheckAfter": 0.7253171
-            }
-          },
-          "actions": [
-            {
-              "type": 1,
-              "data": {
-                "animationIndex": 22,
                 "faceIndex": -1,
                 "loopCount": 1
               }
@@ -77515,12 +77419,112 @@
       "defaultPreviewSettings": {
         "design": 5
       }
+    },
+    {
+      "name": "Flashy",
+      "description": "Most of the animations in this profile have flashes!",
+      "rules": [
+        {
+          "condition": {
+            "type": 4,
+            "data": {
+              "flags": 2,
+              "faceIndex": 19
+            }
+          },
+          "actions": [
+            {
+              "type": 1,
+              "data": {
+                "animationIndex": 24,
+                "faceIndex": -1,
+                "loopCount": 1
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "type": 4,
+            "data": {
+              "flags": 2,
+              "faceIndex": 0
+            }
+          },
+          "actions": [
+            {
+              "type": 1,
+              "data": {
+                "animationIndex": 6,
+                "faceIndex": -1,
+                "loopCount": 1
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "type": 4,
+            "data": {
+              "flags": 4,
+              "faceIndex": 0
+            }
+          },
+          "actions": [
+            {
+              "type": 1,
+              "data": {
+                "animationIndex": 13,
+                "faceIndex": -1,
+                "loopCount": 1
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "type": 2,
+            "data": {}
+          },
+          "actions": [
+            {
+              "type": 1,
+              "data": {
+                "animationIndex": 22,
+                "faceIndex": -1,
+                "loopCount": 1
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "type": 3,
+            "data": {
+              "recheckAfter": 0.7253171
+            }
+          },
+          "actions": [
+            {
+              "type": 1,
+              "data": {
+                "animationIndex": 22,
+                "faceIndex": -1,
+                "loopCount": 1
+              }
+            }
+          ]
+        }
+      ],
+      "defaultPreviewSettings": {
+        "design": 5
+      }
     }
   ],
   "presets": [
     {
-      "name": "Rainbow Flashy",
-      "description": "Sets one die to the Rainbow profile and the other to Flashy.",
+      "name": "All dice basic",
+      "description": "Sets all dice to the basic profile.",
       "dieAssignments": [
         {
           "deviceId": 0,
@@ -77529,7 +77533,7 @@
         },
         {
           "deviceId": 0,
-          "behaviorIndex": 1,
+          "behaviorIndex": 0,
           "defaultDieAssignmentIndex": 1
         }
       ]
@@ -77636,650 +77640,6 @@
           {
             "type": 1,
             "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 7,
-          "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 1,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
               "animationIndex": 1,
               "faceIndex": -1,
               "loopCount": 1
@@ -78289,72 +77649,17 @@
       },
       {
         "condition": {
-          "type": 6,
-          "data": {
-            "flags": 1
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": 19,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 6,
-          "data": {
-            "flags": 2
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": 19,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
           "type": 7,
           "data": {
-            "flags": 2,
-            "recheckAfter": 1.0
+            "flags": 4,
+            "recheckAfter": 8.83275
           }
         },
         "actions": [
           {
             "type": 1,
             "data": {
-              "animationIndex": 4,
-              "faceIndex": -1,
-              "loopCount": 1
-            }
-          }
-        ]
-      },
-      {
-        "condition": {
-          "type": 4,
-          "data": {
-            "flags": 2,
-            "faceIndex": 19
-          }
-        },
-        "actions": [
-          {
-            "type": 1,
-            "data": {
-              "animationIndex": -1,
+              "animationIndex": 26,
               "faceIndex": -1,
               "loopCount": 1
             }
