@@ -75,15 +75,28 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
                         type = AudioType.MPEG
                     });
                 }
+                else if (item.Extension == ".m4a")
+                {
+                    audioFileInfos.Add(new AudioFileImportInfo()
+                    {
+                        fileName = item.Name,
+                        filePath = userClipsRootPath + "/" + item.Name,
+                        type = AudioType.MPEG
+                    });
+                }
             }
 
             foreach (var audioFileInfo in audioFileInfos)
             {
-#if UNITY_EDITOR
+                #if UNITY_EDITOR
                 if (audioFileInfo.type == AudioType.WAV)
-#endif
+                #endif
                 {
-                    UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(audioFileInfo.filePath, audioFileInfo.type);
+                    string streamingPath = audioFileInfo.filePath;
+                    #if UNITY_IOS
+                    streamingPath = "file://" + audioFileInfo.filePath;
+                    #endif
+                    UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(streamingPath, audioFileInfo.type);
                     yield return AudioFileRequest.SendWebRequest();
                     if (!AudioFileRequest.isNetworkError)
                     {
@@ -159,9 +172,15 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
         System.IO.File.Copy(path, destPath, true);
         bool isWav = System.IO.Path.GetExtension(path) == ".wav";
         bool isMp3 = System.IO.Path.GetExtension(path) == ".mp3";
-        if (isWav || isMp3)
+        bool isM4a = System.IO.Path.GetExtension(path) == ".m4a";
+        if (isWav || isMp3 || isM4a)
         {
-            UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(destPath, isWav ? AudioType.WAV : AudioType.MPEG);
+            Debug.Log("File path to import: " + destPath);
+            string streamingPath = destPath;
+            #if UINTY_IOS
+            streamingPath = "file://" + destPath;
+            #endif
+            UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(streamingPath, isWav ? AudioType.WAV : AudioType.MPEG);
             yield return AudioFileRequest.SendWebRequest();
             if (!AudioFileRequest.isNetworkError)
             {
