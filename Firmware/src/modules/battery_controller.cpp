@@ -28,6 +28,7 @@ using namespace Utils;
 #define CHARGE_VCOIL_THRESHOLD (4.0) //0.4V
 #define CHARGE_FULL (4.0f) // 4.0V
 #define INVALID_CHARGE_TIMEOUT 5000
+#define VBAT_READINGS_SIZE 10
 namespace Modules
 {
 namespace BatteryController
@@ -40,7 +41,6 @@ namespace BatteryController
     float LookupChargeLevel(float voltage);
 
     float vcoil = 0.0f;
-    float vBat = 0.0f;
     bool charging = false;
     float lowestVBat = 0.0f;
     bool lazyChargeDetect = false;
@@ -52,6 +52,31 @@ namespace BatteryController
 
 	DelegateArray<BatteryStateChangeHandler, MAX_BATTERY_CLIENTS> clients;
     DelegateArray<BatteryLevelChangeHandler, MAX_LEVEL_CLIENTS> levelClients;
+
+    float vBat = 0.0f; // Average reading
+    float vBatReadings[VBAT_READINGS_SIZE]; // Last readings
+    int vBatReadingsCount = 0;
+    float readVBat() {
+        if (vBatReadingsCount == VBAT_READINGS_SIZE) {
+            // Shift readings down
+            for (int i = 0; i < VBAT_READINGS_SIZE - 1; ++i) {
+                vBatReadings[i] = vBatReadings[i+1];
+            }
+            vBatReadingsCount--;
+        }
+        float reading = Battery::checkVBat();
+        vBatReadings[vBatReadingsCount] = reading;
+        vBatReadingsCount++;
+
+        float avg = 0.0f;
+        for (int i = 0; i < vBatReadingsCount; ++i) {
+            avg += vBatReadings[i];
+        }
+        avg /= vBatReadingsCount;
+
+        NRF_LOG_INFO("Measured Batt: " NRF_LOG_FLOAT_MARKER ", Avg: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(reading), NRF_LOG_FLOAT(avg));
+        return avg;
+    }
 
 	APP_TIMER_DEF(batteryControllerTimer);
 
@@ -96,7 +121,7 @@ namespace BatteryController
         MessageService::RegisterMessageHandler(Message::MessageType_RequestBatteryLevel, nullptr, getBatteryLevel);
 
         vcoil = Battery::checkVCoil();
-        vBat = Battery::checkVBat();
+        vBat = readVBat();
         charging = Battery::checkCharging();
         lowestVBat = vBat;
         lazyChargeDetect = !Battery::canCheckCharging();
@@ -154,7 +179,7 @@ namespace BatteryController
         BatteryState ret = BatteryState_Unknown;
 
         // Measure new vBat
-        float level = Battery::checkVBat();
+        vBat = readVBat();
         ret = currentBatteryState;
         switch (currentBatteryState)
         {
@@ -171,18 +196,18 @@ namespace BatteryController
                 // In lazy charge detect mode, we're not sure if the die is still on the charger
                 break;
             case BatteryState_Ok:
-                if (level < SettingsManager::getSettings()->batteryLow) {
+                if (vBat < SettingsManager::getSettings()->batteryLow) {
                     ret = BatteryState_Low;
                 } else {
-                    if ((lazyChargeDetect && (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
+                    if ((lazyChargeDetect && (vBat > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
                         // Battery level going up, we must be charging
                         ret = BatteryState_Charging;
                         vBatWhenChargingStart = lowestVBat;
                         chargingStartedTime = DriversNRF::Timers::millis();
                     } else {
                         // Update stored lowest level
-                        if (level < lowestVBat) {
-                            lowestVBat = level;
+                        if (vBat < lowestVBat) {
+                            lowestVBat = vBat;
                         }
                     }
                 }
@@ -190,15 +215,15 @@ namespace BatteryController
                 break;
             case BatteryState_Charging:
                 if (lazyChargeDetect) {
-                    if (level > SettingsManager::getSettings()->batteryHigh) {
+                    if (vBat > SettingsManager::getSettings()->batteryHigh) {
                         // Reset lowest level
                         ret = BatteryState_Ok;
                     } else
                     // Make sure we've waited enough to check state again
                     if (DriversNRF::Timers::millis() - chargingStartedTime > INVALID_CHARGE_TIMEOUT) {
-                        if (level < vBatWhenChargingStart + CHARGE_START_DETECTION_THRESHOLD) {
+                        if (vBat < vBatWhenChargingStart + CHARGE_START_DETECTION_THRESHOLD) {
                             // It looks like we stopped charging
-                            if (level > SettingsManager::getSettings()->batteryLow) {
+                            if (vBat > SettingsManager::getSettings()->batteryLow) {
                                 ret = BatteryState_Ok;
                             } else {
                                 ret = BatteryState_Low;
@@ -215,7 +240,7 @@ namespace BatteryController
                         // Else still charging
                     } else {
                         // No longer on charger, but we hadn't finished charging, check vBat
-                        if (level > SettingsManager::getSettings()->batteryLow) {
+                        if (vBat > SettingsManager::getSettings()->batteryLow) {
                             ret = BatteryState_Ok;
                         } else {
                             ret = BatteryState_Low;
@@ -223,25 +248,25 @@ namespace BatteryController
                     }
                 }
                 // Else still not charged enough
-                lowestVBat = level;
+                lowestVBat = vBat;
                 break;
             case BatteryState_Low:
-                if ((lazyChargeDetect && (level > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
+                if ((lazyChargeDetect && (vBat > lowestVBat + CHARGE_START_DETECTION_THRESHOLD)) || Battery::checkCharging()) {
                     // Battery level going up, we must be charging
                     ret = BatteryState_Charging;
                     vBatWhenChargingStart = lowestVBat;
                     chargingStartedTime = DriversNRF::Timers::millis();
                 } else {
                     // Update stored lowest level
-                    if (level < lowestVBat) {
-                        lowestVBat = level;
+                    if (vBat < lowestVBat) {
+                        lowestVBat = vBat;
                     }
                 }
                 break;
             default:
                 if (!lazyChargeDetect && Battery::checkCharging()) {
                     ret = BatteryState_Charging;
-                } else if (level > SettingsManager::getSettings()->batteryLow) {
+                } else if (vBat > SettingsManager::getSettings()->batteryLow) {
                     ret = BatteryState_Ok;
                 } else {
                     ret = BatteryState_Low;
@@ -250,19 +275,17 @@ namespace BatteryController
         }
 
         // Always update the stored battery voltage
-        vBat = level;
         return ret;
     }
 
     void getBatteryLevel(void* context, const Message* msg) {
         // Fetch battery level
-        float voltage = Battery::checkVBat();
-        float level = LookupChargeLevel(voltage);
+        float level = LookupChargeLevel(vBat);
         MessageBatteryLevel lvl;
-        lvl.voltage = voltage;
+        lvl.voltage = vBat;
         lvl.level = level;
         lvl.charging = currentBatteryState == BatteryState_Charging ? 1 : 0;
-        NRF_LOG_DEBUG("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER " (" NRF_LOG_FLOAT_MARKER "v)", NRF_LOG_FLOAT(level), NRF_LOG_FLOAT(voltage));
+        NRF_LOG_DEBUG("Received Battery Level Request, returning " NRF_LOG_FLOAT_MARKER " (" NRF_LOG_FLOAT_MARKER "v)", NRF_LOG_FLOAT(level), NRF_LOG_FLOAT(vBat));
         MessageService::SendMessage(&lvl);
     }
 

@@ -19,6 +19,10 @@ namespace Dice
         V5_White,
         V5_Black,
         V5_Gold,
+        Onyx_Back,
+        Hematite_Grey,
+        Midnight_Galaxy,
+        Aurora_Sky
     }
 
     public partial class Die

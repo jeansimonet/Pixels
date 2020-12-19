@@ -16,6 +16,8 @@ using namespace Config;
 using namespace DriversNRF;
 using namespace DataSet;
 
+#define BATT_TOO_LOW_LEVEL 0.5f
+
 namespace Modules
 {
 namespace BehaviorController
@@ -41,6 +43,14 @@ namespace BehaviorController
 
     void onFlashProgramming(void* param, Flash::ProgrammingEventType evt);
 
+    enum State
+    {
+        State_Running,
+        State_Paused // Paused while programming flash for instance
+    };
+
+    State state = State_Paused;
+
 	void init() {
 
 		// Hook up the behavior controller to all the events it needs to know about to do its job!
@@ -48,11 +58,14 @@ namespace BehaviorController
         BatteryController::hook(onBatterystateChange, nullptr);
         Accelerometer::hookRollState(onRollStateChange, nullptr);
         Flash::hookProgrammingEvent(onFlashProgramming, nullptr);
-
 		NRF_LOG_INFO("Behavior Controller Initialized");
     }
 
     void onDiceInitialized() {
+
+        // We're ready to go!
+        state = State_Running;
+
         // Do we have a hello goodbye condition
         auto bhv = DataSet::getBehavior();
 
@@ -64,9 +77,14 @@ namespace BehaviorController
                 // This is the right kind of condition, check it!
                 auto cond = static_cast<const Behaviors::ConditionHelloGoodbye*>(condition);
                 if (cond->checkTrigger(true)) {
-                    NRF_LOG_DEBUG("Triggering a HelloGoodbye Condition");
-                    // Go on, do the thing!
-                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+                    // Check the battery level!
+                    if (BatteryController::getCurrentLevel() > BATT_TOO_LOW_LEVEL) {
+                        NRF_LOG_INFO("Triggering a HelloGoodbye Condition");
+                        // Go on, do the thing!
+                        Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+                    } else {
+                        NRF_LOG_INFO("Skipped triggering a HelloGoodbye Condition because battery is too low");
+                    }
                 }
             } else if (condition->type == Behaviors::Condition_Idle) {
                 // We have an idle condition
@@ -78,57 +96,62 @@ namespace BehaviorController
                     idleTimerInit((void*)rule, idleCondition->repeatPeriodMs);
                 }
             }
-
         }
     }
 
 	void onConnectionEvent(void* param, bool connected) {
-        // Do we have a connection event condition?
-        auto bhv = DataSet::getBehavior();
+        if (state == State_Running)
+        {
+            // Do we have a connection event condition?
+            auto bhv = DataSet::getBehavior();
 
-        // Iterate the rules and look for one!
-        for (int i = 0; i < bhv->rulesCount; ++i) {
-            auto rule = DataSet::getRule(bhv->rulesOffset + i);
-            auto condition = DataSet::getCondition(rule->condition);
-            if (condition->type == Behaviors::Condition_ConnectionState) {
-                // This is the right kind of condition, check it!
-                auto cond = static_cast<const Behaviors::ConditionConnectionState*>(condition);
-                if (cond->checkTrigger(connected)) {
-                    NRF_LOG_DEBUG("Triggering a Connection State Condition");
-                    // Go on, do the thing!
-                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+            // Iterate the rules and look for one!
+            for (int i = 0; i < bhv->rulesCount; ++i) {
+                auto rule = DataSet::getRule(bhv->rulesOffset + i);
+                auto condition = DataSet::getCondition(rule->condition);
+                if (condition->type == Behaviors::Condition_ConnectionState) {
+                    // This is the right kind of condition, check it!
+                    auto cond = static_cast<const Behaviors::ConditionConnectionState*>(condition);
+                    if (cond->checkTrigger(connected)) {
+                        NRF_LOG_DEBUG("Triggering a Connection State Condition");
+                        // Go on, do the thing!
+                        Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
 
-                    // We're done!
-                    break;
+                        // We're done!
+                        break;
+                    }
                 }
             }
         }
     }
 
     void onBatterystateChange(void* param, BatteryController::BatteryState newState) {
-        // Do we have a battery event condition?
-        auto bhv = DataSet::getBehavior();
+        if (state == State_Running)
+        {
+            // Do we have a battery event condition?
+            auto bhv = DataSet::getBehavior();
 
-        // Iterate the rules and look for one!
-        for (int i = 0; i < bhv->rulesCount; ++i) {
-            auto rule = DataSet::getRule(bhv->rulesOffset + i);
-            auto condition = DataSet::getCondition(rule->condition);
-            if (condition->type == Behaviors::Condition_BatteryState) {
-                // This is the right kind of condition, check it!
-                auto cond = static_cast<const Behaviors::ConditionBatteryState*>(condition);
-                if (cond->checkTrigger(newState)) {
-                    NRF_LOG_DEBUG("Triggering a Battery State Condition");
-                    
-                    // Setup a timer to repeat this check in a little bit if appropriate
-                    if (cond->repeatPeriodMs != 0) {
-                        chargingTimerInit((void*)rule, cond->repeatPeriodMs);
+            // Iterate the rules and look for one!
+            for (int i = 0; i < bhv->rulesCount; ++i) {
+                auto rule = DataSet::getRule(bhv->rulesOffset + i);
+                auto condition = DataSet::getCondition(rule->condition);
+                if (condition->type == Behaviors::Condition_BatteryState) {
+                    // This is the right kind of condition, check it!
+                    auto cond = static_cast<const Behaviors::ConditionBatteryState*>(condition);
+                    if (cond->checkTrigger(newState)) {
+                        NRF_LOG_DEBUG("Triggering a Battery State Condition");
+                        
+                        // Setup a timer to repeat this check in a little bit if appropriate
+                        if (cond->repeatPeriodMs != 0) {
+                            chargingTimerInit((void*)rule, cond->repeatPeriodMs);
+                        }
+
+                        // Go on, do the thing!
+                        Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+
+                        // We're done!
+                        break;
                     }
-
-                    // Go on, do the thing!
-                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
-
-                    // We're done!
-                    break;
                 }
             }
         }
@@ -191,9 +214,14 @@ namespace BehaviorController
         auto condition = DataSet::getCondition(rule->condition);
         auto idleCondition = static_cast<const Behaviors::ConditionIdle*>(condition);
         if (idleCondition->checkTrigger(Accelerometer::currentRollState(), Accelerometer::currentFace())) {
-            // do the thing
-            Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
-            Timers::setDelayedCallback(idleTimerRecheck, (void*)rule, idleCondition->repeatPeriodMs);
+            // Check the battery level!
+            if (BatteryController::getCurrentLevel() > BATT_TOO_LOW_LEVEL) {
+                // do the thing
+                Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+                Timers::setDelayedCallback(idleTimerRecheck, (void*)rule, idleCondition->repeatPeriodMs);
+            } else {
+                NRF_LOG_INFO("Skipped triggering a Idle Condition because battery is too low");
+            }
         } else {
             // Stop Timer and unregister callback
             Timers::cancelDelayedCallback(idleTimerRecheck, (void*)rule);
@@ -266,66 +294,69 @@ namespace BehaviorController
 
     void onRollStateChange(void* param, Accelerometer::RollState newState, int newFace) {
 
-        if (Die::getCurrentState() == Die::TopLevel_SoloPlay)
+        if (state == State_Running)
         {
-            // Do we have a roll state event condition?
-            auto bhv = DataSet::getBehavior();
+            if (Die::getCurrentState() == Die::TopLevel_SoloPlay)
+            {
+                // Do we have a roll state event condition?
+                auto bhv = DataSet::getBehavior();
 
-            // Check for an rolling condition, we should trigger it even if we have an OnFace condition,
-            // regardless of where it sits in the list
-            for (int i = 0; i < bhv->rulesCount; ++i) {
-                auto rule = DataSet::getRule(bhv->rulesOffset + i);
-                auto condition = DataSet::getCondition(rule->condition);
-                if (condition->type == Behaviors::Condition_Idle) {
-                    // We have an idle condition
-                    auto idleCondition = static_cast<const Behaviors::ConditionIdle*>(condition);
-                    
-                    // Setup a timer to repeat this check in a little bit if appropriate
-                    if (idleCondition->checkTrigger(newState, newFace) && idleCondition->repeatPeriodMs != 0) {
-                        idleTimerInit((void*)rule, idleCondition->repeatPeriodMs);
-                    }
-                    break;
-                }
-            }
-
-            // Iterate the rules and look for one!
-            for (int i = 0; i < bhv->rulesCount; ++i) {
-                auto rule = DataSet::getRule(bhv->rulesOffset + i);
-                auto condition = DataSet::getCondition(rule->condition);
-
-                // This is the right kind of condition, check it!
-                bool conditionTriggered = false;
-                switch (condition->type) {
-                    case Behaviors::Condition_Handling:
-                        conditionTriggered = static_cast<const Behaviors::ConditionHandling*>(condition)->checkTrigger(newState, newFace);
-                        break;
-                    case Behaviors::Condition_Rolling:
-                        {
-                            auto rollingCondition = static_cast<const Behaviors::ConditionRolling*>(condition);
-                            conditionTriggered = rollingCondition->checkTrigger(newState, newFace);
-                            
-                            // Setup a timer to repeat this check in a little bit if appropriate
-                            if (conditionTriggered && rollingCondition->repeatPeriodMs != 0) {
-                                rollingTimerInit((void*)rule, rollingCondition->repeatPeriodMs);
-                            }
+                // Check for an rolling condition, we should trigger it even if we have an OnFace condition,
+                // regardless of where it sits in the list
+                for (int i = 0; i < bhv->rulesCount; ++i) {
+                    auto rule = DataSet::getRule(bhv->rulesOffset + i);
+                    auto condition = DataSet::getCondition(rule->condition);
+                    if (condition->type == Behaviors::Condition_Idle) {
+                        // We have an idle condition
+                        auto idleCondition = static_cast<const Behaviors::ConditionIdle*>(condition);
+                        
+                        // Setup a timer to repeat this check in a little bit if appropriate
+                        if (idleCondition->checkTrigger(newState, newFace) && idleCondition->repeatPeriodMs != 0) {
+                            idleTimerInit((void*)rule, idleCondition->repeatPeriodMs);
                         }
                         break;
-                    case Behaviors::Condition_Crooked:
-                        conditionTriggered = static_cast<const Behaviors::ConditionCrooked*>(condition)->checkTrigger(newState, newFace);
-                        break;
-                    case Behaviors::Condition_FaceCompare:
-                        conditionTriggered = static_cast<const Behaviors::ConditionFaceCompare*>(condition)->checkTrigger(newState, newFace);
-                        break;
-                    default:
-                        break;
+                    }
                 }
 
-                if (conditionTriggered) {
-                    // do the thing
-                    Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+                // Iterate the rules and look for one!
+                for (int i = 0; i < bhv->rulesCount; ++i) {
+                    auto rule = DataSet::getRule(bhv->rulesOffset + i);
+                    auto condition = DataSet::getCondition(rule->condition);
 
-                    // We're done
-                    break;
+                    // This is the right kind of condition, check it!
+                    bool conditionTriggered = false;
+                    switch (condition->type) {
+                        case Behaviors::Condition_Handling:
+                            conditionTriggered = static_cast<const Behaviors::ConditionHandling*>(condition)->checkTrigger(newState, newFace);
+                            break;
+                        case Behaviors::Condition_Rolling:
+                            {
+                                auto rollingCondition = static_cast<const Behaviors::ConditionRolling*>(condition);
+                                conditionTriggered = rollingCondition->checkTrigger(newState, newFace);
+                                
+                                // Setup a timer to repeat this check in a little bit if appropriate
+                                if (conditionTriggered && rollingCondition->repeatPeriodMs != 0) {
+                                    rollingTimerInit((void*)rule, rollingCondition->repeatPeriodMs);
+                                }
+                            }
+                            break;
+                        case Behaviors::Condition_Crooked:
+                            conditionTriggered = static_cast<const Behaviors::ConditionCrooked*>(condition)->checkTrigger(newState, newFace);
+                            break;
+                        case Behaviors::Condition_FaceCompare:
+                            conditionTriggered = static_cast<const Behaviors::ConditionFaceCompare*>(condition)->checkTrigger(newState, newFace);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (conditionTriggered) {
+                        // do the thing
+                        Behaviors::triggerActions(rule->actionOffset, rule->actionCount);
+
+                        // We're done
+                        break;
+                    }
                 }
             }
         }
@@ -334,10 +365,14 @@ namespace BehaviorController
     void onFlashProgramming(void* param, Flash::ProgrammingEventType evt) {
         switch (evt) {
             case Flash::ProgrammingEventType_Begin:
+                NRF_LOG_INFO("Pausing Behavior Controller");
                 Timers::pauseDelayedCallbacks();
+                state = State_Paused;
                 break;
             case Flash::ProgrammingEventType_End:
+                NRF_LOG_INFO("Resuming Behavior Controller");
                 Timers::resumeDelayedCallbacks();
+                state = State_Running;
                 break;
         }
     }

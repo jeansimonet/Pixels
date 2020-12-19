@@ -58,13 +58,18 @@ MonoBehaviour:
   - {fileID: 7588544379202609222, guid: 3a1680edd12a5da4097ef39e4e06c220, type: 3}
   - {fileID: 1886759377466015590, guid: fd5c3d7d8b0dc1b46b3ba27e8a161c31, type: 3}
   - {fileID: 8936551567278000770, guid: 6e5017cfec1d33e43803c552804d40c9, type: 3}
-  cameraTiltRoot: {fileID: 6875024463005030237}
+  - {fileID: 924127198619116328, guid: 8f8f67ea4379d084b808b8f365f89248, type: 3}
+  - {fileID: 5282361710014332555, guid: a169414bd4ab1e943b92920e6ea7580c, type: 3}
+  - {fileID: 4200559741845161587, guid: 3a044c68e97ead34bb23e98b9268ccbd, type: 3}
+  - {fileID: 4200559741845161587, guid: 84db52ed0effe0742ae521813e6e721c, type: 3}
   dieCamera: {fileID: 4585801559208865437}
   dieLights:
   - {fileID: 4585801559048599263}
   - {fileID: 4585801558855332907}
   - {fileID: 6716588592299447072}
   dieRoot: {fileID: 1097859080095767094}
+  cameraTiltRoot: {fileID: 6875024463005030237}
+  renderIndex: 0
 --- !u!1 &1097859080095767094
 GameObject:
   m_ObjectHideFlags: 0

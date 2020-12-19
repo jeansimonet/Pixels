@@ -21,6 +21,10 @@ namespace Config
             DesignAndColor_V5_White,
             DesignAndColor_V5_Black,
             DesignAndColor_V5_Gold,
+            DesignAndColor_Onyx_Back,
+            DesignAndColor_Hematite_Grey,
+            DesignAndColor_Midnight_Galaxy,
+            DesignAndColor_Aurora_Sky
         };
 
         struct Layout
