@@ -75,15 +75,15 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
                         type = AudioType.MPEG
                     });
                 }
-                else if (item.Extension == ".m4a")
-                {
-                    audioFileInfos.Add(new AudioFileImportInfo()
-                    {
-                        fileName = item.Name,
-                        filePath = userClipsRootPath + "/" + item.Name,
-                        type = AudioType.MPEG
-                    });
-                }
+                //else if (item.Extension == ".m4a")
+                //{
+                //    audioFileInfos.Add(new AudioFileImportInfo()
+                //    {
+                //        fileName = item.Name,
+                //        filePath = userClipsRootPath + "/" + item.Name,
+                //        type = AudioType.MPEG
+                //    });
+                //}
             }
 
             foreach (var audioFileInfo in audioFileInfos)

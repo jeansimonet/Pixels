@@ -106,7 +106,7 @@ public class UIAudioClipsView
 #if UNITY_EDITOR
         FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select audio file", "", "wav"));
 #else
-        NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "wav" ), NativeFilePicker.ConvertExtensionToFileType( "mp3" ), NativeFilePicker.ConvertExtensionToFileType( "m4a" ) });
+        NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "wav" ), NativeFilePicker.ConvertExtensionToFileType( "mp3" ) });
 #endif
     }
 
