@@ -32,7 +32,10 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             {
                 if (pages.Count > 0)
                 {
-                    LeavePage(pages[pages.Count - 1]);
+                    for (int i = pages.Count - 1; i >= 0; --i)
+                    {
+                        LeavePage(pages[pages.Count - 1]);
+                    }
                     pages.Clear();
                 }
                 // Else no page to leave obviously
@@ -57,7 +60,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
             {
                 if (pages.Count > 0)
                 {
-                    LeavePage(pages[pages.Count - 1]);
+                    PushPage(pages[pages.Count - 1]);
                 }
                 // Else no page to leave obviously
                 var p = new Page() { page = newPage, context = context };
@@ -87,7 +90,7 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
                 {
                     LeavePage(curPage);
                     pages.RemoveAt(pages.Count - 1);
-                    EnterPage(prevPage);
+                    PopPage(prevPage);
                 }
 
                 if (checkCanGoToPage != null)
@@ -113,6 +116,18 @@ public class NavigationManager : SingletonMonoBehaviour<NavigationManager>
         {
             onLeavingPage?.Invoke(page.page);
             page.page.Leave();
+        }
+
+        void PopPage(Page page)
+        {
+            page.page.Pop(page.context);
+            onPageEntered?.Invoke(page.page, page.context);
+        }
+
+        void PushPage(Page page)
+        {
+            onLeavingPage?.Invoke(page.page);
+            page.page.Push();
         }
     }
 

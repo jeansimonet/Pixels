@@ -23,7 +23,8 @@ public class UIRuleView
 
     public override void Enter(object context)
     {
-        base.Enter(context);
+        gameObject.SetActive(true);
+        base.SetupHeader(false, false, "Edit Rule", null);
         var rule = context as Behaviors.EditRule;
         if (rule != null)
         {
@@ -36,11 +37,28 @@ public class UIRuleView
         }
     }
 
-    void OnEnable()
+    public override void Push()
     {
+        // Don't clean up
+        gameObject.SetActive(false);
     }
 
-    void OnDisable()
+    public override void Pop(object context)
+    {
+        // Leave everything as is...
+        gameObject.SetActive(true);
+        base.SetupHeader(false, false, "Edit Rule", null);
+        ClearTokens();
+        SetupTokens();
+    }
+
+    public override void Leave()
+    {
+        ClearTokens();
+        gameObject.SetActive(false);
+    }
+
+    void ClearTokens()
     {
         if (conditionToken != null)
         {
@@ -58,15 +76,16 @@ public class UIRuleView
 
     void Setup(Behaviors.EditRule rule)
     {
-        base.SetupHeader(false, false, "Edit Rule", null);
         editRule = rule;
         workingRule = editRule.Duplicate();
+        SetupTokens();
+    }
 
+    void SetupTokens()
+    {
         conditionToken = GameObject.Instantiate<UIRuleConditionToken>(conditionPrefab, Vector3.zero, Quaternion.identity, contentRoot);
         conditionToken.Setup(workingRule, workingRule.condition);
         conditionToken.onConditionChanged += OnConditionChange;
-
-
         for (int i = 0; i < workingRule.actions.Count; ++i)
         {
             var action = workingRule.actions[i];
@@ -123,10 +142,15 @@ public class UIRuleView
     void AddActionToken(Behaviors.EditAction action, bool first)
     {
         var actionToken = GameObject.Instantiate<UIRuleActionToken>(actionPrefab, Vector3.zero, Quaternion.identity, contentRoot);
-        actionToken.Setup(workingRule, action, first);
+        UpdateActionToken(actionToken, action, first);
         actionToken.onDelete.AddListener(() => DeleteAction(action));
         actionToken.onActionChanged += OnActionChange;
         actionTokens.Add(actionToken);
+    }
+
+    void UpdateActionToken(UIRuleActionToken token, EditAction action, bool first)
+    {
+        token.Setup(workingRule, action, first);
     }
 
     void DestroyActionToken(Behaviors.EditAction action)

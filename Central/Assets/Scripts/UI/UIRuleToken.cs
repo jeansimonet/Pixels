@@ -40,19 +40,31 @@ public class UIRuleToken : MonoBehaviour
 
     public bool isExpanded => expandedRoot.gameObject.activeSelf;
 
+    UIRuleTokenConditionToken conditionToken = null;
+    List<UIRuleTokenActionToken> actionTokens = new List<UIRuleTokenActionToken>();
 
     public void Setup(EditRule rule)
     {
         editRule = rule;
         // Create the lines describing the rule.
         // First the condition
-        UIRuleTokenManager.Instance.CreateConditionToken(rule.condition, tokenRoot);
+        conditionToken = UIRuleTokenManager.Instance.CreateConditionToken(rule.condition, tokenRoot);
+        actionTokens.Clear();
         for (int i = 0; i < rule.actions.Count; ++i)
         {
             var action = rule.actions[i];
-            UIRuleTokenManager.Instance.CreateActionToken(action, i == 0, tokenRoot);
+            actionTokens.Add(UIRuleTokenManager.Instance.CreateActionToken(action, i == 0, tokenRoot));
         }
         Expand(false);
+    }
+
+    public void Refresh()
+    {
+        conditionToken?.Setup(editRule.condition);
+        for (int i = 0; i < editRule.actions.Count; ++i)
+        {
+            actionTokens[i].Setup(editRule.actions[i], i == 0);
+        }
     }
 
     public void Expand(bool expand)

@@ -42,23 +42,28 @@ public class UIRuleTokenActionTokenPlayAnimation
         actionText.text = action.ToString();
         labelText.text = first ? "Then" : "And";
 
-        var design = DesignAndColor.V5_Grey;
-        if (playAnimAction.animation != null)
+        if (this.dieRenderer == null)
         {
-            design = playAnimAction.animation.defaultPreviewSettings.design;
-        }
-        this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(design, 160);
-        if (dieRenderer != null)
-        {
-            dieRenderImage.texture = dieRenderer.renderTexture;
+            var design = DesignAndColor.V5_Grey;
+            if (playAnimAction.animation != null)
+            {
+                design = playAnimAction.animation.defaultPreviewSettings.design;
+            }
+            this.dieRenderer = DiceRendererManager.Instance.CreateDiceRenderer(design, 160);
+            if (dieRenderer != null)
+            {
+                dieRenderImage.texture = dieRenderer.renderTexture;
+            }
+
+            dieRenderer.SetAuto(true);
         }
 
-        dieRenderer.SetAuto(true);
-        if (playAnimAction.animation != null)
+        if (dieRenderer != null && playAnimAction.animation != null)
         {
             dieRenderer.SetAnimation(playAnimAction.animation);
             dieRenderer.Play(true);
         }
+
     }
 
     void Update()

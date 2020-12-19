@@ -123,16 +123,41 @@ Shader "Custom/TriPlanarClearDiceFace"
             float3 bf = normalize(abs(IN.localNormal));
             bf /= dot(bf, (float3)1);
 
+            float3 localCoord = IN.localCoord * _MapScale;
+
             // Triplanar mapping
-            float2 tx = IN.localCoord.yz * _MapScale;
-            float2 ty = IN.localCoord.zx * _MapScale;
-            float2 tz = IN.localCoord.xy * _MapScale;
+            float2 tx = localCoord.yz;
+            float2 ty = localCoord.zx;
+            float2 tz = localCoord.xy;
 
             // Base color
-            half4 cx = tex2D(_MainTex, tx) * bf.x;
-            half4 cy = tex2D(_MainTex, ty) * bf.y;
-            half4 cz = tex2D(_MainTex, tz) * bf.z;
-            half4 color = (cx + cy + cz) * _Color;
+            half4 color = _Color;
+            if (bf.x > bf.y)
+            {
+                if (bf.x > bf.z)
+                {
+                    color *= tex2D(_MainTex, tx);
+                }
+                else
+                {
+                    color *= tex2D(_MainTex, tz);
+                }
+            }
+            else
+            {
+                if (bf.y > bf.z)
+                {
+                    color *= tex2D(_MainTex, ty);
+                }
+                else
+                {
+                    color *= tex2D(_MainTex, tz);
+                }
+            }
+            //half4 cx = tex2D(_MainTex, tx) * bf.x;
+            //half4 cy = tex2D(_MainTex, ty) * bf.y;
+            //half4 cz = tex2D(_MainTex, tz) * bf.z;
+            //half4 color = (cx + cy + cz) * _Color;
 
             // Normal map
             half4 nx = tex2D(_BumpMap, tx) * bf.x;
@@ -152,6 +177,7 @@ Shader "Custom/TriPlanarClearDiceFace"
 
             o.Emission = _GlowColor * glowMask.a;
             o.Albedo = _NumberColor.rgb * numberStrength + color.rgb * (1.0f - numberStrength);
+
             o.Alpha = _Color.a;
         }
 

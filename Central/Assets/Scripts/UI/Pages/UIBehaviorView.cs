@@ -34,10 +34,11 @@ public class UIBehaviorView
 
     public override void Enter(object context)
     {
-        base.Enter(context);
+        gameObject.SetActive(true);
         var bhv = context as Behaviors.EditBehavior;
         if (bhv != null)
         {
+            SetupHeader(false, false, bhv.name, SetName);
             Setup(bhv);
         }
 
@@ -47,11 +48,31 @@ public class UIBehaviorView
         }
     }
 
-    void OnEnable()
+    public override void Push()
     {
+        // Don't clean up
+        gameObject.SetActive(false);
     }
 
-    void OnDisable()
+    public override void Pop(object context)
+    {
+        // Leave everything as is...
+        gameObject.SetActive(true);
+        if (editBehavior != null)
+        {
+            SetupHeader(false, false, editBehavior.name, SetName);
+
+            RefreshView();
+
+            dieRenderer.SetAuto(true);
+            dieRenderer.SetAnimations(editBehavior.CollectAnimations());
+            dieRenderer.Play(true);
+
+            base.pageDirty = true;
+        }
+    }
+
+    public override void Leave()
     {
         if (DiceRendererManager.Instance != null && this.dieRenderer != null)
         {
@@ -64,6 +85,7 @@ public class UIBehaviorView
             GameObject.Destroy(ruleui.gameObject);
         }
         rules.Clear();
+        gameObject.SetActive(false);
     }
 
     void Setup(EditBehavior behavior)
@@ -75,7 +97,6 @@ public class UIBehaviorView
             previewImage.texture = dieRenderer.renderTexture;
         }
         // Generate a title for the page
-        base.SetupHeader(false, false, behavior.name, SetName);
         descriptionText.text = editBehavior.description;
 
         RefreshView();
@@ -132,6 +153,9 @@ public class UIBehaviorView
 
                 // Still there, don't update it
                 toDestroy.RemoveAt(prevIndex);
+
+                // However, it may need to refresh its display
+                ruleui.Refresh();
 
                 // Fix the sibling index
                 int order = editBehavior.rules.IndexOf(rule);

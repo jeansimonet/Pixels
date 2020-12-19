@@ -60,33 +60,38 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
                 if (item.Extension == ".wav")
                 {
                     audioFileInfos.Add(new AudioFileImportInfo()
-                        {
-                            fileName = item.Name,
-                            filePath = userClipsRootPath + "/" + item.Name,
-                            type = AudioType.WAV
-                        });
+                    {
+                        fileName = item.Name,
+                        filePath = userClipsRootPath + "/" + item.Name,
+                        type = AudioType.WAV
+                    });
                 }
-                // else if (item.Extension == ".mp3")
-                // {
-                //     audioFileInfos.Add(new AudioFileInfo()
-                //         {
-                //             fileName = item.Name,
-                //             filePath = userClipsRootPath + "/" + item.Name,
-                //             type = AudioType.MPEG
-                //         });
-                // }
+                else if (item.Extension == ".mp3")
+                {
+                    audioFileInfos.Add(new AudioFileImportInfo()
+                    {
+                        fileName = item.Name,
+                        filePath = userClipsRootPath + "/" + item.Name,
+                        type = AudioType.MPEG
+                    });
+                }
             }
 
             foreach (var audioFileInfo in audioFileInfos)
             {
-                UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(audioFileInfo.filePath, audioFileInfo.type);
-                yield return AudioFileRequest.SendWebRequest();
-                if (!AudioFileRequest.isNetworkError)
+#if UNITY_EDITOR
+                if (audioFileInfo.type == AudioType.WAV)
+#endif
                 {
-                    AudioClip clip = DownloadHandlerAudioClip.GetContent(AudioFileRequest);
-                    clip.name = audioFileInfo.fileName;
-                    userClips.Add(clip);
-                    Debug.Log("Imported user audio clip: " + audioFileInfo.filePath);
+                    UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(audioFileInfo.filePath, audioFileInfo.type);
+                    yield return AudioFileRequest.SendWebRequest();
+                    if (!AudioFileRequest.isNetworkError)
+                    {
+                        AudioClip clip = DownloadHandlerAudioClip.GetContent(AudioFileRequest);
+                        clip.name = audioFileInfo.fileName;
+                        userClips.Add(clip);
+                        Debug.Log("Imported user audio clip: " + audioFileInfo.filePath);
+                    }
                 }
             }
         }
@@ -152,9 +157,11 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
         string clipName = System.IO.Path.GetFileName(path);
         string destPath = System.IO.Path.Combine(userClipsRootPath, clipName);
         System.IO.File.Copy(path, destPath, true);
-        if (System.IO.Path.GetExtension(path) == ".wav")
+        bool isWav = System.IO.Path.GetExtension(path) == ".wav";
+        bool isMp3 = System.IO.Path.GetExtension(path) == ".mp3";
+        if (isWav || isMp3)
         {
-            UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(destPath, AudioType.WAV);
+            UnityWebRequest AudioFileRequest = UnityWebRequestMultimedia.GetAudioClip(destPath, isWav ? AudioType.WAV : AudioType.MPEG);
             yield return AudioFileRequest.SendWebRequest();
             if (!AudioFileRequest.isNetworkError)
             {

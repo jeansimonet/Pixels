@@ -72,6 +72,20 @@ public class UIPage
     {
         gameObject.SetActive(false);
     }
+
+    public virtual void Push()
+    {
+        // This should give the page a chance to save to data
+        // Default is just to leave the page as normal
+        Leave();
+    }
+
+    public virtual void Pop(object context)
+    {
+        // Default is just to enter the page as normal
+        Enter(context);
+    }
+
     protected void SetupHeader(bool root, bool home, string title, System.Action<string> onTitleChanged)
     {
         NavigationManager.Instance.header.Setup(root, home, pageDirty, title, onTitleChanged);
