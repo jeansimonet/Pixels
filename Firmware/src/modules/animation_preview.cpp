@@ -1,6 +1,7 @@
 #include "animation_preview.h"
 #include "animations/animation.h"
 #include "animations/animation_simple.h"
+#include "data_set/data_set.h"
 #include "data_set/data_animation_bits.h"
 #include "bluetooth/bluetooth_messages.h"
 #include "bluetooth/bluetooth_message_service.h"
@@ -158,10 +159,22 @@ namespace AnimationPreview
 		flashAnim.faceMask = 0xFFFFF;
         flashAnim.count = message->flashCount;
         flashAnim.fade = 255;
-        //flashAnim.colorIndex = message->color;
-        flashAnim.colorIndex = 0;
-        AnimController::play(&flashAnim, 0, false);
-        MessageService::SendMessage(Message::MessageType_FlashFinished);
+
+        int colorIndex = 0;
+        auto animationBits = DataSet::getAnimationBits();
+        for (; colorIndex < animationBits->getPaletteSize() / 3; ++colorIndex) {
+            uint32_t color = animationBits->getPaletteColor(colorIndex);
+            if (Utils::getRed(color) > 127 || Utils::getGreen(color) > 127 || Utils::getBlue(color) > 127) {
+                break;
+            }
+        }
+
+        if (colorIndex < animationBits->getPaletteSize() / 3) {
+            //flashAnim.colorIndex = message->color;
+            flashAnim.colorIndex = colorIndex;
+            AnimController::play(&flashAnim, 0, false);
+            MessageService::SendMessage(Message::MessageType_FlashFinished);
+        }
     }
 }
 }

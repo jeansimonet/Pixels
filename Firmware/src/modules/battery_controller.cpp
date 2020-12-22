@@ -74,7 +74,7 @@ namespace BatteryController
         }
         avg /= vBatReadingsCount;
 
-        NRF_LOG_INFO("Measured Batt: " NRF_LOG_FLOAT_MARKER ", Avg: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(reading), NRF_LOG_FLOAT(avg));
+        //NRF_LOG_INFO("Measured Batt: " NRF_LOG_FLOAT_MARKER ", Avg: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(reading), NRF_LOG_FLOAT(avg));
         return avg;
     }
 
