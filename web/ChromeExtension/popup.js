@@ -26,7 +26,13 @@ let textarea = document.getElementById('formula');
 chrome.storage.sync.get('formula', function (data) {
   let txt = data.formula;
   if (!txt) {
-    txt = "!power {{--name|Pixel Roll --Strength Check|[[ $$ + [[ 4 ]] ]]}}";
+    txt = "!power {{" +
+      "--name|Pixels Roll" +
+      "--leftsub|Longsword Melee Attack" +
+      "--rightsub|5 ft. Reach" +
+      "--Attack:|[[ $$ + @{selected|strength_mod} ]]" +
+      "--Damage:|[[ 1d8 + @{selected|strength_mod} ]]" +
+    "}}";
     saveFormula(txt);
   }
   textarea.value = txt;
