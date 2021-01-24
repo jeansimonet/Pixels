@@ -18,6 +18,7 @@ public class UIPatternToken : MonoBehaviour
     public Button removeButton;
     public Button duplicateButton;
     public Button editButton;
+    public Button exportButton;
 
     [Header("Properties")]
     public Sprite expandImage;
@@ -36,6 +37,7 @@ public class UIPatternToken : MonoBehaviour
     public Button.ButtonClickedEvent onDuplicate => duplicateButton.onClick;
     public Button.ButtonClickedEvent onEdit => editButton.onClick;
     public Button.ButtonClickedEvent onExpand => menuButton.onClick;
+    public Button.ButtonClickedEvent onExport => exportButton.onClick;
 
     bool visible = true;
 

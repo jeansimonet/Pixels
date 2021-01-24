@@ -381,7 +381,45 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         }
     }
 
-    public static AppDataSet CreateTestDataSet()
+    public void ExportAnimation(EditAnimation animation, string jsonFilePath)
+    {
+        var editSet = ExtractEditSetForAnimation(animation);
+        var serializer = CreateSerializer();
+        using (StreamWriter sw = new StreamWriter(jsonFilePath))
+        using (JsonWriter writer = new JsonTextWriter(sw))
+        {
+            writer.Formatting = Formatting.Indented;
+            serializer.Serialize(writer, editSet);
+        }
+    }
+
+    public void ImportAnimation(string jsonFilePath)
+    {
+        if (System.IO.File.Exists(jsonFilePath))
+        {
+            var serializer = CreateSerializer();
+            using (StreamReader sw = new StreamReader(jsonFilePath))
+            using (JsonReader reader = new JsonTextReader(sw))
+            {
+                var editSet = new EditDataSet();
+                serializer.Populate(reader, editSet);
+
+                // Now merge the data into the app data set
+                MergeEditSet(editSet);
+                SaveData();
+            }
+        }
+    }
+
+    public void MergeEditSet(EditDataSet set)
+    {
+        data.patterns.AddRange(set.patterns);
+        data.patterns.AddRange(set.rgbPatterns);
+        data.animations.AddRange(set.animations);
+        data.behaviors.Add(set.behavior);
+    }
+    
+public static AppDataSet CreateTestDataSet()
     {
         AppDataSet ret = new AppDataSet();
 

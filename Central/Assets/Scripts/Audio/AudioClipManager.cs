@@ -88,7 +88,7 @@ public class AudioClipManager : SingletonMonoBehaviour<AudioClipManager>
 
             foreach (var audioFileInfo in audioFileInfos)
             {
-                #if UNITY_EDITOR
+                #if UNITY_EDITOR || UNITY_STANDALONE_WIN
                 if (audioFileInfo.type == AudioType.WAV)
                 #endif
                 {

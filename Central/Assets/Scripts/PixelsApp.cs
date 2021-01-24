@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Dice;
+using Animations;
 using Behaviors;
+using System.IO;
+using SimpleFileBrowser;
 
 public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
 {
@@ -300,6 +303,8 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
                         {
                             // We need to upload the dataset first
                             Debug.Log("Uploading dataset to die " + editDie.name);
+                            var dataSetDataSize = dataSet.ComputeDataSetDataSize();
+                            Debug.Log("Dataset data size " + dataSetDataSize);
                             UpdateProgrammingBox(0.0f, "Uploading data to " + editDie.name + "...");
                             editDie.die.UploadDataSet(dataSet,
                             (pct) =>
@@ -432,6 +437,60 @@ public class PixelsApp : SingletonMonoBehaviour<PixelsApp>
     {
         AppSettings.Instance.EnableAllTutorials();
         Tutorial.Instance.StartMainTutorial();
+    }
+
+    public void ImportPattern()
+    {
+        void FileSelected(string filePath)
+        {
+            // Load the pattern from JSON
+            AppDataSet.Instance.ImportAnimation(filePath);
+        }
+
+#if UNITY_EDITOR
+        FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select pattern json", "", "json"));
+#elif UNITY_STANDALONE_WIN
+        // Set filters (optional)
+		// It is sufficient to set the filters just once (instead of each time before showing the file browser dialog), 
+		// if all the dialogs will be using the same filters
+		FileBrowser.SetFilters( true, new FileBrowser.Filter( "JSON", ".json" ));
+
+		// Set default filter that is selected when the dialog is shown (optional)
+		// Returns true if the default filter is set successfully
+		// In this case, set Images filter as the default filter
+		FileBrowser.SetDefaultFilter( ".json" );
+        FileBrowser.ShowLoadDialog((paths) => FileSelected(paths[0]), null, FileBrowser.PickMode.Files, false, null, null, "Select JSON", "Select");
+#else
+        //NativeGallery.GetImageFromGallery(FileSelected, "Select Pattern JSON");
+        NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "json" ) });
+#endif
+    }
+
+    public void ExportPattern(EditAnimation animation)
+    {
+        void FileSelected(string filePath)
+        {
+            // Save the pattern to JSON
+            AppDataSet.Instance.ExportAnimation(animation, filePath);
+        }
+
+#if UNITY_EDITOR
+        FileSelected(UnityEditor.EditorUtility.SaveFilePanel("Export pattern to json", "", animation.name, "json"));
+#elif UNITY_STANDALONE_WIN
+        // Set filters (optional)
+        // It is sufficient to set the filters just once (instead of each time before showing the file browser dialog), 
+        // if all the dialogs will be using the same filters
+        FileBrowser.SetFilters( true, new FileBrowser.Filter( "JSON", ".json" ));
+
+		// Set default filter that is selected when the dialog is shown (optional)
+		// Returns true if the default filter is set successfully
+		// In this case, set Images filter as the default filter
+		FileBrowser.SetDefaultFilter( ".json" );
+        FileBrowser.ShowSaveDialog((paths) => FileSelected(paths[0]), null, FileBrowser.PickMode.Files, false, null, null, "Save JSON", "Select");
+#else
+        ////NativeGallery.GetImageFromGallery(FileSelected, "Select Pattern JSON");
+        //NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "json" ) });
+#endif
     }
 
     // Start is called before the first frame update

@@ -390,7 +390,7 @@ public class DiceManager : SingletonMonoBehaviour<DiceManager>
 
     void OnDieDiscovered(Die die)
     {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE_WIN
         var ourDie = dice.FirstOrDefault(d => d.name == die.name);
 #else
         var ourDie = dice.FirstOrDefault(d => d.deviceId == die.deviceId);

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Animations;
 using System.IO;
+using SimpleFileBrowser;
 
 
 public class UIPatternEditor : MonoBehaviour
@@ -141,12 +142,23 @@ public class UIPatternEditor : MonoBehaviour
 
     void LoadFromFile()
     {
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         FileSelected(UnityEditor.EditorUtility.OpenFilePanel("Select png", "", "png"));
-        #else
+#elif UNITY_STANDALONE_WIN
+        // Set filters (optional)
+		// It is sufficient to set the filters just once (instead of each time before showing the file browser dialog), 
+		// if all the dialogs will be using the same filters
+		FileBrowser.SetFilters( true, new FileBrowser.Filter( "Images", ".png" ));
+
+		// Set default filter that is selected when the dialog is shown (optional)
+		// Returns true if the default filter is set successfully
+		// In this case, set Images filter as the default filter
+		FileBrowser.SetDefaultFilter( ".png" );
+        FileBrowser.ShowLoadDialog((paths) => FileSelected(paths[0]), null, FileBrowser.PickMode.Files, false, null, null, "Select png", "Select");
+#else
         NativeGallery.GetImageFromGallery(FileSelected, "Select Pattern");
         // NativeFilePicker.PickFile( FileSelected, new string[] { NativeFilePicker.ConvertExtensionToFileType( "png" ) });
-        #endif
+#endif
 
         //var filePath = System.IO.Path.Combine(Application.persistentDataPath, $"pattern.png");
     }

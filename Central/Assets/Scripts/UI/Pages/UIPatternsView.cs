@@ -55,6 +55,7 @@ public class UIPatternsView
         ret.onEdit.AddListener(() => NavigationManager.Instance.GoToPage(UIPage.PageId.Pattern, anim));
         ret.onDuplicate.AddListener(() => DuplicateAnimation(anim));
         ret.onRemove.AddListener(() => DeleteAnimation(anim));
+        ret.onExport.AddListener(() => { PixelsApp.Instance.ExportPattern(anim); ret.Expand(false); });
         ret.onExpand.AddListener(() => ExpandAnimation(anim));
 
         // Initialize it

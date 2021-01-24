@@ -1,6 +1,0 @@
-<linker>
-    <assembly fullname="com.systemic-games.pixels" preserve="all" />
-    <assembly fullname="System.Core">
-        <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all" />
-    </assembly>
-</linker>
