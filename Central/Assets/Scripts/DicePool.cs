@@ -97,7 +97,17 @@ public class DicePool : SingletonMonoBehaviour<DicePool>
         if (poolDie != null)
         {
             Debug.Log(poolDie.die.name + ": Before request connect: " + poolDie.currentConnectionCount);
-            poolDie.currentConnectionCount++;
+            if (poolDie.currentConnectionCount == 0)
+            {
+                poolDie.currentConnectionCount += 1;
+            }
+            else
+            {
+                // Keep dice connected unless specifically asked to disconnect in the pool
+                // This is a bit of a hack to prevent communications errors and make the connected/disconnected
+                // state work more like users expect.
+                poolDie.currentConnectionCount += 2;
+            }
             switch (poolDie.die.connectionState)
             {
                 default:

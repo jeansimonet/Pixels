@@ -416,7 +416,10 @@ public class AppDataSet : SingletonMonoBehaviour<AppDataSet>
         data.patterns.AddRange(set.patterns);
         data.patterns.AddRange(set.rgbPatterns);
         data.animations.AddRange(set.animations);
-        data.behaviors.Add(set.behavior);
+        if (set.behavior != null)
+        {
+            data.behaviors.Add(set.behavior);
+        }
     }
     
 public static AppDataSet CreateTestDataSet()

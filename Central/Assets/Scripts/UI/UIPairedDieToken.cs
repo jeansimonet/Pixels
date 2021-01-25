@@ -24,6 +24,7 @@ public class UIPairedDieToken : MonoBehaviour
     public Button calibrateButton;
     public Button setDesignButton;
     public Button pingButton;
+    public Button disconnectButton;
 
     [Header("Images")]
     public Sprite backgroundCollapsedSprite;
@@ -55,6 +56,7 @@ public class UIPairedDieToken : MonoBehaviour
         setDesignButton.onClick.AddListener(OnSetDesign);
         pingButton.onClick.AddListener(OnPing);
         resetButton.onClick.AddListener(() => die.die.DebugAnimController());
+        disconnectButton.onClick.AddListener(OnDisconnect);
     }
 
     void OnToggle()
@@ -161,6 +163,18 @@ public class UIPairedDieToken : MonoBehaviour
         if (die.die != null && die.die.connectionState == Die.ConnectionState.Ready)
         {
             die.die.Flash(Color.yellow, 3, null);
+        }
+    }
+
+    void OnDisconnect()
+    {
+        OnToggle();
+        if (die.die != null &&
+            (die.die.connectionState == Die.ConnectionState.Ready ||
+             die.die.connectionState == Die.ConnectionState.Connecting ||
+             die.die.connectionState == Die.ConnectionState.Identifying))
+        {
+            DicePool.Instance.DisconnectDie(die.die, null);
         }
     }
 
