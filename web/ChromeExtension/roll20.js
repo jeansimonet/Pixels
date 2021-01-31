@@ -2,6 +2,11 @@
 
 if (typeof window.roll20PixelsLoaded == 'undefined') {
     var roll20PixelsLoaded = true;
+
+    //
+    // Helpers
+    //
+
     let log = console.log;
 
     function getArrayFirstElement(array) {
@@ -9,6 +14,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         return typeof array == "undefined" ? undefined : array[0];
     }
 
+    // Chat on Roll20
     function postChatMessage(message) {
         log("Posting message on Roll20: " + message);
 
@@ -28,8 +34,55 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         }
     }
 
-    log("Starting Pixels Roll20 extension");
+    //
+    // Pixels bluetooth discovery
+    //
 
+    const PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
+    const PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
+    const PIXELS_WRITE_CHARACTERISTIC = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
+
+    async function listDevices() {
+        let options = { filters: [{ services: [PIXELS_SERVICE_UUID] }] };
+        log('Requesting Bluetooth Device with ' + JSON.stringify(options));
+
+        var pixelServer;
+        var pixelName;
+        let service = await navigator.bluetooth.requestDevice(options)
+            .then(device => {
+                log('> Name:             ' + device.name);
+                log('> Id:               ' + device.id);
+                log('> Connected:        ' + device.gatt.connected);
+                pixelName = device.name;
+                return device.gatt.connect();
+            })
+            .then(server => {
+                pixelServer = server;
+                return server.getPrimaryService(PIXELS_SERVICE_UUID);
+            })
+            .catch(error => log('Error connecting to Pixel: ' + error));
+
+        if (service) {
+            let _subscriber = await service.getCharacteristic(PIXELS_SUBSCRIBE_CHARACTERISTIC);
+            //let _writer = await service.getCharacteristic(PIXELS_WRITE_CHARACTERISTIC);
+            
+            var pixel = new Pixel(pixelName, pixelServer);
+
+            await _subscriber.startNotifications()
+                .then(_ => {
+                    log('Notifications started!');
+                    _subscriber.addEventListener('characteristicvaluechanged', ev => pixel.handleNotifications(ev));
+                })
+                .catch(error => log('Error connecting to Pixel notifications: ' + error));
+
+                sendTextToExtension('Just connected to ' + pixelName);
+            pixels.push(pixel);
+        }
+    }
+
+    //
+    // Holds a bluetooth connection to a pixel dice
+    //
     class Pixel {
         constructor(name, server) {
             this._name = name;
@@ -100,61 +153,9 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         // }
     }
 
-    var pixels = []
-    var formula = "#face_value";
-
-    const PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
-    const PIXELS_SUBSCRIBE_CHARACTERISTIC = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
-    const PIXELS_WRITE_CHARACTERISTIC = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
-
-    async function listDevices() {
-        let options = { filters: [{ services: [PIXELS_SERVICE_UUID] }] };
-        log('Requesting Bluetooth Device with ' + JSON.stringify(options));
-
-        var pixelServer;
-        var pixelName;
-        let service = await navigator.bluetooth.requestDevice(options)
-            .then(device => {
-                log('> Name:             ' + device.name);
-                log('> Id:               ' + device.id);
-                log('> Connected:        ' + device.gatt.connected);
-                pixelName = device.name;
-                return device.gatt.connect();
-            })
-            .then(server => {
-                pixelServer = server;
-                return server.getPrimaryService(PIXELS_SERVICE_UUID);
-            })
-            .catch(error => log('Error connecting to Pixel: ' + error));
-
-        if (service) {
-            let _subscriber = await service.getCharacteristic(PIXELS_SUBSCRIBE_CHARACTERISTIC);
-            //let _writer = await service.getCharacteristic(PIXELS_WRITE_CHARACTERISTIC);
-            
-            var pixel = new Pixel(pixelName, pixelServer);
-
-            await _subscriber.startNotifications()
-                .then(_ => {
-                    log('Notifications started!');
-                    _subscriber.addEventListener('characteristicvaluechanged', ev => pixel.handleNotifications(ev));
-                })
-                .catch(error => log('Error connecting to Pixel notifications: ' + error));
-
-                sendTextToExtension('Just connected to ' + pixelName);
-            pixels.push(pixel);
-        }
-    }
-
-    function disconnectAll() {
-        pixels.forEach(pixel => pixel.disconnect());
-        pixels = []
-
-        sendStatus();
-    }
-
-    function sendStatus() {
-        sendTextToExtension(pixels.length + " pixels connected");
-    }
+    //
+    // Communicate with extension
+    //
 
     function sendMessageToExtension(data) {
         chrome.runtime.sendMessage(data);
@@ -164,10 +165,23 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         sendMessageToExtension({ action: "showText", text: txt });
     }
 
+    function sendStatusToExtention() {
+        sendTextToExtension(pixels.length + " pixels connected");
+    }
+
+    //
+    // Initialize
+    //
+
+    log("Starting Pixels Roll20 extension");
+
+    var pixels = []
+    var formula = "#face_value";
+
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         log("Received message from extension: " + msg.action);
         if (msg.action == "getStatus") {
-            sendStatus();            
+            sendStatusToExtention();            
         }
         else if (msg.action == "setFormula") {
             if (formula != msg.formula) {
@@ -180,9 +194,11 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         }
         else if (msg.action == "disconnect") {
             log("disconnect");
-            disconnectAll();
+            pixels.forEach(pixel => pixel.disconnect());
+            pixels = []
+            sendStatusToExtention();
         }
     });
 
-    sendStatus();
+    sendStatusToExtention();
 }
