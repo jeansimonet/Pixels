@@ -131,7 +131,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
 
     updateStatus("Not connected");
 
-    chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         log("Received message from extension: " + msg.action);
         if (msg.action == "getStatus")
             sendMessageToExtension({ action: "showText", text: pixelStatus });
