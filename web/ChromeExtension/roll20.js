@@ -28,10 +28,11 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         }
     }
 
-    log("STARTING");
+    log("Starting Pixels Roll20 extension");
 
     var pixelServer = null;
-    var formula = "$$";
+    var formula = "#face_value";
+    var pixelName = "";
     let pixelStatus = 'Ready';
 
     const PIXELS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E".toLowerCase()
@@ -49,6 +50,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
                 log('> Name:             ' + device.name);
                 log('> Id:               ' + device.id);
                 log('> Connected:        ' + device.gatt.connected);
+                pixelName = device.name;
                 return device.gatt.connect();
             })
             .then(server => { pixelServer = server; return server.getPrimaryService(PIXELS_SERVICE_UUID); })
@@ -103,7 +105,9 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         else if (ev == 1) {
             let txt = 'Face up: ' + (face + 1);
             log(txt);
-            formula.replaceAll("$$", face + 1).split("\\n").forEach(s => postChatMessage(s));
+            formula.replaceAll("#face_value", face + 1)
+                .replaceAll("#pixel_name", pixelName)
+                .split("\\n").forEach(s => postChatMessage(s));
             updateStatus(txt);
         }
     }
@@ -131,7 +135,7 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
         log("Received message from extension: " + msg.action);
         if (msg.action == "getStatus")
             sendMessageToExtension({ action: "showText", text: pixelStatus });
-        if (msg.action == "setFormula")
+        else if (msg.action == "setFormula")
             setFormula(msg.formula);
         else if (msg.action == "connect")
             connectToPixel();

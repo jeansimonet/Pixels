@@ -1,46 +1,38 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 'use strict';
 
-// chrome.storage.sync.get('text', function(data) {
-//   showText(data);
-// });
-
-function linkButton(name) {
+function hookButton(name) {
   document.getElementById(name)
     .onclick = function (element) {
       sendMessage({ action: name })
     }
 }
 
+hookButton('connect');
+hookButton('disconnect');
+
 function showText(txt) {
   document.getElementById('text').innerHTML = txt;
 }
 
-linkButton('connect');
-linkButton('disconnect');
+function initTextAreaFromStorage(textarea, storageName, dataGetter, defaultValue) {
+  chrome.storage.sync.get(storageName, function (data) {
+    let txt = dataGetter(data);
+    if (!txt) {
+      txt = defaultValue;
+      saveFormula(txt);
+    }
+    textarea.value = txt;
+  });
+}
 
-let textarea = document.getElementById('formula');
-chrome.storage.sync.get('formula', function (data) {
-  let txt = data.formula;
-  if (!txt) {
-    txt = "!power {{" +
-      "--name|Pixels Roll" +
-      "--leftsub|Longsword Melee Attack" +
-      "--rightsub|5 ft. Reach" +
-      "--Attack:|[[ $$ + @{selected|strength_mod} ]]" +
-      "--Damage:|[[ 1d8 + @{selected|strength_mod} ]]" +
-    "}}";
-    saveFormula(txt);
-  }
-  textarea.value = txt;
-});
+let textareaFormula = document.getElementById('formula');
+initTextAreaFromStorage(
+  textareaFormula, 'formula', data => data.formula,
+ "Pixel #pixel_name rolled a #face_value");
 
 let button = document.getElementById('save');
 button.addEventListener('click', function () {
-  saveFormula(textarea.value);
+  saveFormula(textareaFormula.value);
 });
 
 function saveFormula(txt) {
