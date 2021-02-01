@@ -1,28 +1,117 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <style>
+      body {
+        width: 350px;
+      }
       button {
-        height: 40px;
-        width: 100px;
         outline: none;
       }
       textarea {
-        height: 60px;
-        width: 200px;
         outline: none;
+      }
+      .roundbutton {
+        height: 35px;
+        width: 35px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .roundbutton.small {
+        height: 25px;
+        width: 25px;
+        padding: 0;
+      }
+      .blockdice {
+        display: flex;
+        align-items: center;
+        border: solid 1px #CCC;
+        border-radius: 8px;
+        padding: 5px 10px;
+      }
+      .dicename {
+        width: calc(100% - 85px);
+        font-weight: bold;
+      }
+      .blockdetail {
+        display: block;
+        margin: 0 10px;
+        padding: 0px 10px 10px 10px;
+        border: solid 1px #CCC;
+        border-radius:  0 0 8px 8px;
+        border-top: 0px;
+      }
+      .blockdetail textarea {
+        width: 100%;
+        height: 2.5em;
+        margin-top: 2px;
+      }
+      .blockdetail label {
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .blockdetail p {
+        font-size: 11px;
+        text-transform: none;
+        margin: 0;
+        color: gray;
+      }
+      .buttons {
+        text-align: right;
+      }
+      .buttons button {
+        height: 35px;
+        width: 35px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .buttons button:hover {
+        background-color: #CCC;
+      }
+      .connectdice {
+        margin-top: 10px;
+        display: block;
+        border: none;
+        border-radius: 10px;
+        padding: 5px 10px;
+        margin-left: auto;
+        margin-right: auto;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .connectdice span {
+        margin-right: 8px;
+        vertical-align: 1px;
+      }
+      .connectdice:hover {
+        background-color: #CCC;
       }
     </style>
   </head>
   <body>
-    <button id="connect">Connect to Pixel</button>
-    <button id="disconnect">Disconnect</button>
-    <div id="text">[nothing]</div>
-      Formula (Keywords: #dice_name, #face value)<br/>
-      <div> <!-- style="display:flex;align-items:center" -->
-      <textarea id="formula"></textarea>
-      <button id="save" style="height:20px;width:60px">Save</button>
+    <button id="connect" class="connectdice">
+      <span>&#10133;</span>
+      Connect to Pixel
+    </button>
+    <p></p>
+    <div class="blockdice">
+      <div id="text" class="dicename"></div>
     </div>
+    <div class="blockdetail">
+      <label>
+        <span>Macro</span>
+        <textarea id="formula" class="macro" placeholder="Roll20 macro"></textarea>
+        <p>Keywords: #pixel_name and #face_value</p>
+      </label>
+      <button id="save" class="connectdice">
+        <span>&#128190;</span>
+        Save
+      </button>
+    </div>
+    <!-- <button id="disconnect">Disconnect</button> -->
     <script src="popup.js"></script>
   </body>
 </html>

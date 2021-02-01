@@ -1,5 +1,15 @@
 'use strict';
 
+// var elements = document.getElementsByClassName("blockdice");
+// element.forEach(e => e.onclick = function (element) {
+//   console.log("coucou");
+//   if (element.parent.classList.contains("open")) {
+//     element.parent.classList.remove("open");
+//   } else {
+//     element.parent.classList.add("open");
+//   }
+// });
+
 function hookButton(name) {
   document.getElementById(name)
     .onclick = element => sendMessage({ action: name })
@@ -7,7 +17,7 @@ function hookButton(name) {
 
 // Hooks "connect" and "disconnect" buttons to injected JS
 hookButton('connect');
-hookButton('disconnect');
+//hookButton('disconnect');
 
 function showText(txt) {
   document.getElementById('text').innerHTML = txt;

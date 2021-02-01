@@ -166,7 +166,12 @@ if (typeof window.roll20PixelsLoaded == 'undefined') {
     }
 
     function sendStatusToExtention() {
-        sendTextToExtension(pixels.length + " pixels connected");
+        if (pixels.length == 0)
+            sendTextToExtension("No Pixel connected");
+        else if (pixels.length == 1)
+            sendTextToExtension("1 Pixel connected");
+        else
+            sendTextToExtension(pixels.length + " Pixels connected");
     }
 
     //
